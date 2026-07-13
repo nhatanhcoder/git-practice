@@ -1,0 +1,157 @@
+%% Entity Relationship Diagram — HSK Learning Platform
+%% Source: docs/shared/DATABASE_SCHEMA.md
+%% Render with: https://mermaid.live
+
+erDiagram
+    USER {
+        uuid id PK
+        string email
+        string passwordHash
+        string fullName
+        enum role "admin|teacher|student"
+        enum status "pending|active|suspended"
+        int hskLevel
+        string avatarUrl
+        string preferredLanguage
+    }
+
+    CLASS {
+        uuid id PK
+        uuid teacherId FK
+        string name
+        int hskLevel
+        string enrollmentCode
+        enum status "active|archived"
+    }
+
+    CLASS_ENROLLMENT {
+        uuid id PK
+        uuid classId FK
+        uuid studentId FK
+        enum status "active|dropped"
+        datetime enrolledAt
+    }
+
+    ASSIGNMENT {
+        uuid id PK
+        uuid classId FK
+        uuid teacherId FK
+        string title
+        enum skillType "listening|reading|writing|mixed"
+        enum type "homework|mock_test"
+        int timeLimitMinutes
+        json questionIds
+        datetime dueDate
+        enum status "draft|published|archived"
+    }
+
+    ATTEMPT {
+        uuid id PK
+        uuid assignmentId FK
+        uuid studentId FK
+        enum status "in_progress|submitted|graded"
+        float totalScore
+        datetime startedAt
+        datetime submittedAt
+    }
+
+    ATTEMPT_ANSWER {
+        uuid id PK
+        uuid attemptId FK
+        string questionId
+        json answer
+        bool isCorrect
+        float score
+        string teacherFeedback
+        string videoUrl
+        datetime videoExpiresAt
+    }
+
+    CLASS_SESSION {
+        uuid id PK
+        uuid classId FK
+        uuid teacherId FK
+        date sessionDate
+        time startTime
+        time endTime
+        datetime actualStartTime
+        datetime actualEndTime
+        enum status "scheduled|completed_pending|approved|rejected|paid"
+        string lessonTopic
+        string notes
+    }
+
+    SESSION_ATTENDANCE {
+        uuid id PK
+        uuid sessionId FK
+        uuid studentId FK
+        enum status "present|absent_excused|absent_unexcused"
+    }
+
+    TEACHER_PAY_RATE {
+        uuid id PK
+        uuid teacherId FK
+        enum rateType "per_session|per_hour"
+        decimal rateAmount
+        datetime effectiveFrom
+    }
+
+    PAYROLL_PERIOD {
+        uuid id PK
+        uuid teacherId FK
+        date periodStart
+        date periodEnd
+        decimal totalAmount
+        enum status "draft|finalized|paid"
+    }
+
+    STUDENT_TUITION_RATE {
+        uuid id PK
+        uuid studentId FK
+        decimal rateAmount
+        datetime effectiveFrom
+    }
+
+    STUDENT_INVOICE {
+        uuid id PK
+        uuid studentId FK
+        date invoiceDate
+        date periodStart
+        date periodEnd
+        decimal totalAmount
+        enum status "unpaid|partially_paid|paid|void"
+    }
+
+    TUITION_PAYMENT {
+        uuid id PK
+        uuid invoiceId FK
+        decimal amount
+        string paymentMethod
+        string transactionReference
+    }
+
+    NOTIFICATION {
+        uuid id PK
+        uuid recipientId FK
+        uuid senderId FK
+        enum type
+        string message
+        datetime readAt
+    }
+
+    USER ||--o{ CLASS : "teaches"
+    USER ||--o{ CLASS_ENROLLMENT : "enrolls"
+    CLASS ||--o{ CLASS_ENROLLMENT : "has"
+    CLASS ||--o{ ASSIGNMENT : "has"
+    CLASS ||--o{ CLASS_SESSION : "has"
+    ASSIGNMENT ||--o{ ATTEMPT : "has"
+    USER ||--o{ ATTEMPT : "submits"
+    ATTEMPT ||--o{ ATTEMPT_ANSWER : "contains"
+    CLASS_SESSION ||--o{ SESSION_ATTENDANCE : "has"
+    USER ||--o{ SESSION_ATTENDANCE : "attends"
+    USER ||--o{ TEACHER_PAY_RATE : "has"
+    USER ||--o{ PAYROLL_PERIOD : "earns"
+    USER ||--o{ STUDENT_TUITION_RATE : "has"
+    USER ||--o{ STUDENT_INVOICE : "receives"
+    STUDENT_INVOICE ||--o{ TUITION_PAYMENT : "paid_by"
+    USER ||--o{ NOTIFICATION : "receives"

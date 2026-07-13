@@ -1,0 +1,41 @@
+%% Architecture Layers — HSK Learning Platform (NestJS Monolith)
+%% Source: docs/shared/ARCHITECTURE.md
+%% ADR: docs/shared/decisions/001-monolith-5-layer.md
+
+graph TD
+    subgraph FE["Frontend (Next.js 14 App Router)"]
+        UI[React Components / Pages]
+        ZS[Zustand State]
+        TQ[TanStack Query]
+    end
+
+    subgraph BE["Backend (NestJS Monolith)"]
+        CTL[Controllers Layer\nDTO validation, route handling]
+        GRD[Guards & Middleware\nJWT auth, RolesGuard, OwnershipGuard]
+        SVC[Services Layer\nBusiness logic]
+        REP[Repository / ORM\nPrisma + Mongoose]
+    end
+
+    subgraph DB["Databases"]
+        PG[(PostgreSQL\nvia Supabase)]
+        MG[(MongoDB\nvia Atlas)]
+    end
+
+    subgraph EXT["External Services"]
+        GEM[Gemini AI\nGrading suggest]
+        R2[Cloudflare R2\nVideo storage]
+        STR[Supabase Storage\nAudio + Avatar]
+    end
+
+    UI --> TQ
+    TQ -->|HTTP REST| CTL
+    ZS -->|accessToken| TQ
+
+    CTL --> GRD
+    GRD --> SVC
+    SVC --> REP
+    REP --> PG
+    REP --> MG
+    SVC --> GEM
+    SVC --> R2
+    SVC --> STR
