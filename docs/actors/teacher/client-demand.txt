@@ -1,0 +1,10 @@
+﻿Teacher - Client Demand (Read Only)
+
+/ view my classes list (name, HSK level, enrollment code, student count, status)
+/ view students in a class (name, email, enrollment date, status, average score, attendance rate)
+/ view created assignments and tests (title, type, class, due date, submission count, pending grading count)
+/ view student submissions (answers per question, AI suggested score, teacher score and feedback if graded)
+/ view class analytics (average score per assignment, score distribution, submission rate, weak student list, per-student skill breakdown)
+/ view session and attendance history (date, topic, actual times, status, per-student attendance, admin review notes)
+/ view income and payroll history (monthly earnings, payroll period list, period status, sessions included, pay rate, total amount)
+/ view notifications (account approved, account suspended, session approved, session rejected with reason)

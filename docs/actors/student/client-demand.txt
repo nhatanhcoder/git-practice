@@ -1,0 +1,15 @@
+﻿Student - Client Demand (Read Only)
+
+/ view enrolled classes
+/ view class details (teacher name, HSK level, enrollment date, status)
+/ view assignment list (title, type, due date, status, score)
+/ view graded results and feedback per question
+/ view correct answers after grading
+/ view SRS flashcard stats (cards due, streak, retention rate, HSK breakdown)
+/ view personal progress heatmap (Listening / Reading / Writing)
+/ view score trend chart over time
+/ view per-assignment score history
+/ view class average comparison
+/ view invoice list (status, period, amount)
+/ view invoice payment history
+/ view notifications (account approved, account suspended, new assignment, deadline reminder, graded, new invoice)

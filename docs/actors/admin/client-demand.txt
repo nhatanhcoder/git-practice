@@ -1,0 +1,9 @@
+﻿Admin - Client Demand (Read Only)
+
+/ view all users list (name, email, role, status, registered date, last login)
+/ view user profile details (personal info, account status, class history, submission/session history)
+/ view student billing and invoice list (period, amount, status, payment history, tuition rate)
+/ view teacher payroll and session history (session date, duration, status, pay rate, payroll period, total earnings)
+/ view system dashboard (total users, pending approvals, suspended accounts, monthly revenue, monthly payroll, sessions pending review, active classes, Gemini API quota)
+/ view submitted sessions pending review (teacher, class, date, actual times, topic, attendance summary)
+/ view notifications (new teacher registration, new student registration, session submitted for review)
