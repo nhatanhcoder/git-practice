@@ -1,15 +1,99 @@
-﻿Student - Client Demand (Read Only)
+﻿STUDENT - REQUIREMENT DOCUMENT
+Chinese Learning & Management Web System
 
-/ view enrolled classes
-/ view class details (teacher name, HSK level, enrollment date, status)
-/ view assignment list (title, type, due date, status, score)
-/ view graded results and feedback per question
-/ view correct answers after grading
-/ view SRS flashcard stats (cards due, streak, retention rate, HSK breakdown)
-/ view personal progress heatmap (Listening / Reading / Writing)
-/ view score trend chart over time
-/ view per-assignment score history
-/ view class average comparison
-/ view invoice list (status, period, amount)
-/ view invoice payment history
-/ view notifications (account approved, account suspended, new assignment, deadline reminder, graded, new invoice)
+Role: Student
+Access level: Client Demand (Read Only)
+
+Đúng rồi, lesson là core content của lớp (client demand 1.1 nói rõ "mỗi lớp gồm: lesson, assignment mapping"), không nên để tận Sprint 4. Cập nhật lại toàn bộ:
+Sprint 1 — Luồng học tập cốt lõi
+1. Tham gia lớp học
+
+Nhập enrollment code → join lớp
+Xem danh sách lớp đã tham gia (tên lớp, giáo viên, HSK level)
+
+2. Xem bài học (Lesson) trong lớp
+
+Danh sách lesson theo thứ tự, mỗi lesson kèm bài tập liên quan (nếu có)
+Lưu ý: lesson là khái niệm mới, chưa có trong backend hiện tại — cần định nghĩa rõ trước khi làm (lesson gồm gì: tài liệu/video/mô tả? quan hệ với assignment ra sao?)
+
+3. Xem danh sách bài tập trong lớp
+
+Title, loại (assignment/mock test), hạn nộp, trạng thái (chưa làm/đang làm/đã nộp/đã chấm)
+
+4. Làm bài tập
+
+Trả lời câu hỏi (MCQ/nghe/đọc/viết), auto-save đáp án khi đang làm
+Nếu là mock test → có đếm giờ
+
+5. Nộp bài
+
+Nộp bài → khoá lại, không sửa được nữa
+Câu MCQ chấm điểm ngay; câu viết chờ giáo viên chấm
+
+6. Xem điểm cơ bản
+
+Sau khi được chấm → thấy tổng điểm
+
+
+Sprint 2 — Hoàn thiện trải nghiệm sau khi làm bài
+7. Xem chi tiết kết quả từng câu
+
+Đáp án đã chọn, đúng/sai, điểm từng câu
+
+8. Xem đáp án đúng + nhận xét giáo viên
+
+Chỉ hiện sau khi đã được chấm (graded)
+
+9. Cập nhật hồ sơ cá nhân
+
+Đổi nickname, avatar
+
+10. Xem thông báo
+
+Bài tập mới, sắp hết hạn, đã chấm điểm — bấm vào để nhảy tới đúng chỗ
+
+
+Sprint 3 — Ôn từ vựng (Flashcard)
+11. Duyệt flashcard theo HSK level
+
+Xem hanzi, pinyin, nghĩa, ví dụ
+
+12. Ôn tập SRS
+
+Lật thẻ, đánh giá Again/Hard/Good/Easy → hệ thống tự tính lịch ôn lại
+
+13. Thống kê ôn tập
+
+Streak, số thẻ đến hạn, tỉ lệ nhớ (retention rate)
+
+
+Sprint 4 — Tự luyện tập theo kỹ năng
+14. Tự luyện tập theo kỹ năng
+
+Tự chọn kỹ năng (đọc/nghe/viết) + HSK level + độ khó → làm bài không tính điểm chính thức, xem đáp án ngay
+Lưu ý: tách biệt hoàn toàn khỏi bài tập do giáo viên giao
+
+
+Sprint 5 — Join room chơi Quiz (live, real-time)
+15. Join phòng quiz
+
+Nhập mã phòng → vào phòng chờ, thấy người chơi khác
+
+16. Chơi quiz trực tiếp
+
+Câu hỏi hiện đồng thời cho tất cả người chơi, đếm giờ từng câu, trả lời nhanh + đúng → điểm cao hơn
+
+17. Bảng xếp hạng trong phòng (live)
+
+Cập nhật rank sau mỗi câu, hiện rank cuối khi kết thúc phòng
+
+Lưu ý: cần hạ tầng WebSocket, cần chốt ai tạo phòng và câu hỏi lấy từ đâu.
+
+Sprint 6 — Gamification & Billing
+18. Leaderboard tổng
+
+Xếp hạng theo điểm/streak/retention, tổng hợp toàn bộ hoạt động học
+
+19. Xem hoá đơn & lịch sử thanh toán
+
+Lưu ý: chỉ là phần xem, cần module tạo hoá đơn ở phía Admin trước — chưa có spec.

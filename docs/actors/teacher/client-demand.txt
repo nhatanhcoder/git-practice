@@ -1,10 +1,74 @@
-﻿Teacher - Client Demand (Read Only)
+﻿Teacher - REQUIREMENT DOCUMENT
+Chinese Learning & Management Web System
 
-/ view my classes list (name, HSK level, enrollment code, student count, status)
-/ view students in a class (name, email, enrollment date, status, average score, attendance rate)
-/ view created assignments and tests (title, type, class, due date, submission count, pending grading count)
-/ view student submissions (answers per question, AI suggested score, teacher score and feedback if graded)
-/ view class analytics (average score per assignment, score distribution, submission rate, weak student list, per-student skill breakdown)
-/ view session and attendance history (date, topic, actual times, status, per-student attendance, admin review notes)
-/ view income and payroll history (monthly earnings, payroll period list, period status, sessions included, pay rate, total amount)
-/ view notifications (account approved, account suspended, session approved, session rejected with reason)
+Role: teacher
+Access level: Client Demand (Read Only)
+
+
+Sprint 1 — Quản lý lớp & bài tập (core, tái dùng backend có sẵn)
+1. Xem danh sách lớp của tôi
+
+Tên, HSK level, enrollment code, số học sinh, trạng thái lớp (active/archived)
+Tái dùng F2.1, F2.2 — chỉ cần thêm đếm số học sinh
+
+2. Xem danh sách học sinh trong lớp
+
+Tên, email, ngày tham gia, trạng thái enrollment
+Tái dùng F2.5. Riêng "average score" thêm được ngay (aggregate từ attempts/skill_scores). "Attendance rate" để trống tạm — phụ thuộc Sprint 5 (chưa có khái niệm session/attendance)
+
+3. Xem danh sách bài tập/đề thi đã tạo
+
+Title, loại, lớp, hạn nộp, số bài đã nộp, số bài đang chờ chấm
+Tái dùng F4.1–F4.3, chỉ cần thêm 2 cột đếm (submission count, pending grading count)
+
+4. Xem thông báo (phần đã có sẵn)
+
+Account approved / suspended — tái dùng nguyên F8 (2/4 loại notification yêu cầu). 2 loại còn lại (session approved/rejected) để Sprint 5.
+
+
+Sprint 2 — Chấm bài & xem bài nộp học sinh
+5. Xem bài nộp của học sinh
+
+Đáp án từng câu, điểm giáo viên đã chấm, feedback (nếu đã chấm)
+Tái dùng F5.4/F5.5 phía Student, chỉ đổi thành view cho Teacher
+
+Lưu ý: "AI suggested score" trong yêu cầu này tách riêng ra Sprint 4 — vì đây là tính năng mới hoàn toàn (cần tích hợp AI chấm điểm), không nên trộn vào core flow chấm bài thủ công đã có.
+
+Sprint 3 — Class Analytics
+6. Xem thống kê lớp
+
+Điểm trung bình từng assignment, phân bố điểm, tỉ lệ nộp bài, danh sách học sinh yếu, skill breakdown từng học sinh
+Tái dùng gần như nguyên F6.1–F6.3 + F8.3 (ngưỡng học sinh yếu), chỉ cần gộp thành 1 dashboard
+
+
+Sprint 4 — AI Suggested Score (tính năng mới)
+7. Điểm gợi ý từ AI cho bài viết (writing)
+
+Hiển thị điểm AI đề xuất cạnh điểm giáo viên chấm, trong màn hình bài nộp (Sprint 2)
+
+Lưu ý: cần chốt trước — dùng model AI nào (nội bộ hay gọi API ngoài như Claude/GPT), chấm dựa trên tiêu chí gì (ngữ pháp, từ vựng, độ dài...), và AI score có tự động ghi đè điểm chính thức không hay chỉ là gợi ý tham khảo (đề xuất: chỉ là gợi ý, giáo viên vẫn phải chấm tay theo F5.4 hiện có).
+
+Sprint 5 — Session & Attendance (entity hoàn toàn mới)
+8. Xem lịch sử buổi học & điểm danh
+
+Ngày, chủ đề, giờ thực tế, trạng thái buổi học, điểm danh từng học sinh, ghi chú review của Admin
+
+9. Thông báo liên quan session
+
+session_approved, session_rejected (kèm lý do) — bổ sung 2 loại notification mới
+
+Lưu ý: đây là entity mới toàn bộ — chưa có bảng sessions/attendance nào trong features.md. Cần chốt: ai là người tạo/log session (Teacher tự nhập sau mỗi buổi dạy?), Admin review để làm gì (duyệt trước khi tính lương — xem Sprint 6), và "actual times" nghĩa là so với giờ dự kiến ban đầu để phát hiện dạy trễ/dạy bù. Sau khi có entity này, quay lại bổ sung "attendance rate" còn thiếu ở mục 2 (Sprint 1).
+
+Sprint 6 — Income & Payroll (phụ thuộc Sprint 5, rủi ro cao nhất)
+10. Xem thu nhập & lịch sử trả lương
+
+Thu nhập theo tháng, danh sách kỳ lương, trạng thái từng kỳ, danh sách session được tính vào kỳ đó, đơn giá/buổi, tổng tiền
+
+Lưu ý: giống Billing bên Student — đây chỉ là phần xem, cần có module tính lương ở phía Admin/Finance (dựa trên session đã được duyệt ở Sprint 5) mà module đó chưa có spec riêng. Cần chốt: pay rate cố định hay theo lớp/theo giờ, kỳ lương tính theo tháng hay theo chu kỳ khác, trạng thái kỳ lương gồm những giá trị gì (pending/paid/...).
+
+Tổng hợp phụ thuộc giữa các sprint
+
+Sprint 1 mục "attendance rate" → cần Sprint 5 hoàn thành mới điền được đầy đủ
+Sprint 1 mục notification → cần Sprint 5 bổ sung 2 loại còn thiếu
+Sprint 4 (AI score) độc lập, có thể làm song song hoặc đẩy lùi nếu chưa chọn được AI provider
+Sprint 6 phụ thuộc chặt vào Sprint 5 (không có session đã duyệt thì không tính được lương)

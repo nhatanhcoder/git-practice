@@ -1,9 +1,74 @@
-﻿Admin - Client Demand (Read Only)
+﻿Admin - REQUIREMENT DOCUMENT
+Chinese Learning & Management Web System
 
-/ view all users list (name, email, role, status, registered date, last login)
-/ view user profile details (personal info, account status, class history, submission/session history)
-/ view student billing and invoice list (period, amount, status, payment history, tuition rate)
-/ view teacher payroll and session history (session date, duration, status, pay rate, payroll period, total earnings)
-/ view system dashboard (total users, pending approvals, suspended accounts, monthly revenue, monthly payroll, sessions pending review, active classes, Gemini API quota)
-/ view submitted sessions pending review (teacher, class, date, actual times, topic, attendance summary)
-/ view notifications (new teacher registration, new student registration, session submitted for review)
+Role: Admin
+Access level: Client Demand (Read Only)
+
+Sprint 1 — Quản lý người dùng (core, sẵn sàng làm ngay)
+1. Xem danh sách tất cả user
+
+Tên, email, role, status, ngày đăng ký, lần đăng nhập cuối
+Tái dùng GET /admin/users (F1.3), bỏ filter mặc định status=pending để xem tất cả
+Lưu ý: "last login" chưa có cột lưu trong schema hiện tại — cần thêm last_login_at, update mỗi lần F1.2 (đăng nhập) thành công
+
+2. Xem chi tiết hồ sơ 1 user
+
+Thông tin cá nhân, trạng thái tài khoản, lịch sử lớp học (tái dùng enrollment), lịch sử bài nộp (tái dùng attempts)
+Lịch sử session để trống tạm — phụ thuộc Sprint 5
+
+
+Sprint 2 — Thông báo & Dashboard cơ bản
+3. Xem thông báo
+
+account_approved, account_suspended — đã có sẵn
+new_teacher_registration, new_student_registration — 2 loại mới, bắn ra khi có tài khoản pending mới tạo (tách theo role thay vì gộp chung như hiện tại)
+session_submitted_for_review — để Sprint 5
+
+4. Dashboard hệ thống (bản rút gọn)
+
+Total users, pending approvals, suspended accounts, active classes → tính được ngay từ dữ liệu hiện có
+Monthly revenue, monthly payroll, sessions pending review, Gemini API quota → để trống/placeholder, điền dần ở Sprint 3–6 khi các entity liên quan có dữ liệu
+
+
+Sprint 3 — Gemini API Quota Monitoring
+5. Xem quota & cache hit ratio
+
+Tái dùng gần nguyên F6.4 (Sprint 4 gốc: "API Quota Monitoring")
+Lưu ý: F6.4 gốc mô tả là quota cho "API dịch thuật" — cần xác nhận đây có phải cùng 1 tài nguyên Gemini API hay không. Nếu Teacher Sprint 4 (AI suggested score) cũng dùng Gemini, dashboard này nên gộp luôn lượt gọi từ tính năng đó — nên làm sau khi Teacher Sprint 4 xong để số liệu đầy đủ.
+
+
+Sprint 4 — Billing & Invoice (Admin view)
+6. Xem danh sách hoá đơn học sinh
+
+Kỳ, số tiền, trạng thái, lịch sử thanh toán, học phí (tuition rate)
+Lưu ý: dùng chung bảng invoices/payments với Student Sprint 6 — build 1 lần, Admin xem toàn hệ thống còn Student chỉ xem của mình. Cần chốt mô hình tính học phí trước (theo lớp/gói/tháng) — điểm này đã flag ở doc Student, chưa có quyết định.
+→ Sau sprint này, điền được số "monthly revenue" ở Dashboard (Sprint 2)
+
+
+Sprint 5 — Session & Attendance review (Admin action, không thuần read-only)
+7. Xem session chờ duyệt
+
+Giáo viên, lớp, ngày, giờ thực tế, chủ đề, tóm tắt điểm danh
+
+8. Duyệt / từ chối session (action, cần viết spec write API riêng dù doc gốc ghi "read only")
+
+Từ chối cần nhập lý do → bắn notification session_rejected kèm lý do cho Teacher (theo yêu cầu bên Teacher doc)
+Duyệt → bắn session_approved
+Lưu ý: dùng chung entity sessions/attendance với Teacher Sprint 5 — build chung backend. Chỉ session đã duyệt mới được tính vào Payroll (Sprint 6).
+→ Điền được "sessions pending review" ở Dashboard, và phần "session history" còn thiếu ở mục 2 (Sprint 1)
+
+
+Sprint 6 — Payroll (Admin view)
+9. Xem lịch sử payroll giáo viên
+
+Ngày session, thời lượng, trạng thái, đơn giá, kỳ lương, tổng thu nhập
+Lưu ý: dùng chung entity payroll với Teacher Sprint 6, chỉ tính session đã approved từ Sprint 5. Cần chốt cách tính đơn giá (theo giờ/theo buổi/theo lớp) trước khi build.
+→ Điền nốt "monthly payroll" ở Dashboard — lúc này Dashboard mới đầy đủ tất cả các ô số liệu
+
+
+Tổng hợp phụ thuộc chéo giữa 3 role
+
+Billing/Invoice: Admin Sprint 4 = Student Sprint 6 (1 backend, 2 UI)
+Session/Attendance: Admin Sprint 5 = Teacher Sprint 5 (1 backend, 2 UI); Admin còn có thêm action duyệt/từ chối mà Teacher không có
+Payroll: Admin Sprint 6 = Teacher Sprint 6 (1 backend, 2 UI), phụ thuộc chặt vào session đã duyệt
+Gemini quota: nên làm sau khi có ít nhất 1 tính năng dùng Gemini thật sự chạy (AI suggested score bên Teacher) để số liệu có ý nghĩa
