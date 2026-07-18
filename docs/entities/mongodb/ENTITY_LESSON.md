@@ -1,20 +1,9 @@
-﻿# ENTITY_LESSON
+# ENTITY_LESSON (MongoDB — DEPRECATED)
 
-> **Status**: Stub - TODO: fill in fields, relationships, business rules
-> See [entities/_INDEX.md](../_INDEX.md) for cross-references
+> **Status**: ⚠️ Moved to PostgreSQL  
+> **Reason**: Lesson requires JOIN with Class and Assignment for ordering and analytics.  
+> **New location**: [postgres/ENTITY_LESSON.md](../postgres/ENTITY_LESSON.md)
 
-## Fields
+---
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| id | uuid | yes | Primary key |
-| createdAt | DateTime | yes | |
-| updatedAt | DateTime | yes | |
-
-## Relationships
-
-> TODO
-
-## Business Rules
-
-> TODO
+This MongoDB stub has been superseded. Please refer to the PostgreSQL spec above for the full field definition, relationships, and business rules.

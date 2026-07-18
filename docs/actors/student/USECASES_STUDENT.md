@@ -15,7 +15,7 @@
 1. Student vào Classes → "Tham gia lớp"
 2. Nhập 8-char code → System validate (active class, code đúng)
 3. System tạo `ClassEnrollment` (status=active)
-4. Student thấy lớp trong danh sách, có thể xem assignments
+4. Student thấy lớp trong danh sách, có thể xem lessons và assignments
 
 **Error**: Code không tồn tại → 404. Class đã archived → 400.
 
@@ -62,3 +62,56 @@
 2. Xem tổng điểm + xếp loại
 3. Xem từng câu: đáp án mình chọn vs đáp án đúng + feedback từ teacher
 4. (Writing) Xem nhận xét chi tiết + điểm phần writing
+
+---
+
+## UC-S-005: Xem bài học (Lesson) trong lớp
+
+**Actor**: Student  
+**Precondition**: Đã tham gia lớp (enrollment active)
+
+**Main Flow**:
+1. Student vào Classes → chọn lớp → tab "Bài học"
+2. System hiện danh sách lesson theo thứ tự (sắp xếp do teacher thiết lập)
+3. Student chọn 1 lesson → xem nội dung (tài liệu / video / mô tả)
+4. Nếu lesson có bài tập gắn kèm → hiện link tới Assignment tương ứng
+5. Student có thể click qua làm bài tập trực tiếp từ màn hình lesson
+
+**Note**: Lesson entity cần được chốt định nghĩa (xem open questions trong implementation_plan.md) trước khi build.
+
+---
+
+## UC-S-006: Tự luyện tập theo kỹ năng (Skill Drill)
+
+**Actor**: Student  
+**Precondition**: Đã đăng nhập, tài khoản active
+
+**Main Flow**:
+1. Student vào "Luyện tập" → chọn kỹ năng: Đọc / Nghe / Viết
+2. Chọn HSK level (1–6) và độ khó (dễ / trung bình / khó)
+3. System random chọn câu hỏi phù hợp từ question bank
+4. Student trả lời câu hỏi — **không** tính điểm chính thức
+5. Sau mỗi câu: xem đáp án đúng + giải thích ngay lập tức
+6. Kết thúc phiên: xem tóm tắt (đúng X / tổng Y câu)
+
+**Note**: Kết quả phiên Skill Drill không ghi vào grade record, không ảnh hưởng GPA / ranking.
+
+---
+
+## UC-S-007: Tham gia và chơi Quiz Room real-time
+
+**Actor**: Student  
+**Precondition**: Phòng quiz đang mở (teacher đã tạo và chia sẻ mã)  
+**Dependency**: WebSocket infrastructure
+
+**Main Flow**:
+1. Student vào "Quiz Room" → nhập mã phòng
+2. System validate → Student vào phòng chờ, thấy danh sách người chơi đang join
+3. Host bắt đầu → câu hỏi hiện đồng thời cho tất cả người chơi
+4. Đếm giờ từng câu (countdown), student chọn đáp án trước khi hết giờ
+5. Trả lời **đúng + nhanh** → điểm cao hơn (speed bonus)
+6. Sau mỗi câu: bảng xếp hạng live cập nhật rank
+7. Kết thúc phòng: hiện rank cuối cùng + điểm tổng của từng người
+
+**Error**: Mã phòng không tồn tại → 404. Phòng đã bắt đầu → không cho join giữa chừng.  
+**Note**: Ai tạo phòng và câu hỏi lấy từ đâu cần chốt trước khi build (xem open questions).
