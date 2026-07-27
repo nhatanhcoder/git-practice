@@ -11,7 +11,7 @@
 | id | uuid | no | Primary key |
 | teacherId | uuid | no | FK → User (role=teacher) |
 | name | varchar(200) | no | Display name of the class |
-| hskLevel | int | no | 1–6 |
+| hskLevel | int | no | 1–9 |
 | enrollmentCode | char(8) | no | Unique, auto-generated, used by students to join |
 | status | enum | no | `active` / `archived` |
 | description | text | yes | Optional class description |
