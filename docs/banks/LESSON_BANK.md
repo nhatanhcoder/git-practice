@@ -9,7 +9,7 @@
 ```
 Lesson {
   _id: ObjectId,
-  hskLevel: 1 | 2 | 3 | 4 | 5 | 6,
+  hskLevel: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9,
   title: string,
   createdBy: string,     // teacher userId (PostgreSQL UUID)
   sections: Section[],

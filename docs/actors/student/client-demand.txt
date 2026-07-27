@@ -71,6 +71,8 @@ Sprint 4 — Tự luyện tập theo kỹ năng
 14. Tự luyện tập theo kỹ năng
 
 Tự chọn kỹ năng (đọc/nghe/viết) + HSK level + độ khó → làm bài không tính điểm chính thức, xem đáp án ngay
+- Các chữ cái trong bài tập kỹ năng đọc sẽ được chia thành span để có thể add vào kho từ của học sinh
+
 Lưu ý: tách biệt hoàn toàn khỏi bài tập do giáo viên giao
 
 

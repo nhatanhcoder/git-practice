@@ -9,7 +9,7 @@
 ```typescript
 {
   _id: ObjectId,
-  hskLevel: 1 | 2 | 3 | 4 | 5 | 6,
+  hskLevel: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9,
   hanzi: string,           // Chinese character(s), e.g. "学习"
   pinyin: string,          // Romanization, e.g. "xuéxí"
   meaning: string,         // Vietnamese translation, e.g. "học tập"

@@ -77,7 +77,7 @@ Examples:
 // ✅ GOOD: Explicit types, no any
 interface CreateClassDto {
   name: string;
-  hskLevel: 1 | 2 | 3 | 4 | 5 | 6;
+  hskLevel: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9;
   description?: string;
 }
 

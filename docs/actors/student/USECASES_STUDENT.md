@@ -88,7 +88,7 @@
 
 **Main Flow**:
 1. Student vào "Luyện tập" → chọn kỹ năng: Đọc / Nghe / Viết
-2. Chọn HSK level (1–6) và độ khó (dễ / trung bình / khó)
+2. Chọn HSK level (1–9) và độ khó (dễ / trung bình / khó)
 3. System random chọn câu hỏi phù hợp từ question bank
 4. Student trả lời câu hỏi — **không** tính điểm chính thức
 5. Sau mỗi câu: xem đáp án đúng + giải thích ngay lập tức

@@ -17,7 +17,7 @@
     | 'multiple_choice_multi' | 'fill_in_blank' | 'sentence_ordering' | 'matching'
     // Writing
     | 'sentence_construction' | 'essay',
-  hskLevel: 1 | 2 | 3 | 4 | 5 | 6,
+  hskLevel: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9,
   difficulty: 'easy' | 'medium' | 'hard',
   content: {
     audioUrl?: string,         // Listening: Supabase Storage URL

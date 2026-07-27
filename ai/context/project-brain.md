@@ -7,7 +7,7 @@
 
 ## What is this?
 
-HSK Learning Platform — web app for Chinese language learning (HSK 1-6).  
+HSK Learning Platform — web app for Chinese language learning (HSK 1-9).  
 Stack: Next.js 14 (App Router) + NestJS monolith + PostgreSQL (Supabase) + MongoDB Atlas.  
 Three actors: Admin, Teacher, Student.
 
@@ -21,9 +21,14 @@ Three actors: Admin, Teacher, Student.
 | Entity field details | docs/entities/_INDEX.md |
 | API contracts | docs/api/ |
 | Cross-actor flows (sequence) | docs/flows/ |
-| Architecture decisions | docs/shared/decisions/ |
-| Sprint plan | docs/roadmap/SPRINT_PLAN.md |
+| Architecture decisions (ADR) | docs/shared/decisions/ |
+| Sprint plan + progress | docs/roadmap/SPRINT_PLAN.md |
 | Glossary | docs/shared/GLOSSARY.md |
+| **AI coding rules** (đọc trước khi sửa route/DB/API) | ai/rules/coding-rules.md |
+| **Known bugs / technical debt** | ai/known-issues/KNOWN_ISSUES.md |
+| **Ghi chú phiên làm việc gần nhất** | ai/context/HANDOFF.md |
+
+> ⚠️ `archive/` (feature.md, feature-root.md, PROJECT_SUMMARY.md) là tài liệu cũ, lỗi thời — KHÔNG dùng làm nguồn tham khảo.
 
 ## Architecture Summary
 
@@ -38,4 +43,5 @@ Three actors: Admin, Teacher, Student.
 ## Current Status
 
 - Docs restructured, implementation not started
-- See docs/roadmap/SPRINT_PLAN.md for 5-sprint plan
+- HSK level range: **1–9** (confirmed 2026-07-19, matches all entity specs)
+- See docs/roadmap/SPRINT_PLAN.md for 10-sprint plan (S0–S9)

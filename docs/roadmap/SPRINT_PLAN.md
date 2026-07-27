@@ -190,7 +190,7 @@
 ### Tasks:
 
 #### Backend
-- [ ] `FlashcardsModule`: `GET /flashcards?hskLevel=` (browse), seed HSK 1–6 data
+- [ ] `FlashcardsModule`: `GET /flashcards?hskLevel=` (browse), seed HSK 1–9 data
 - [ ] `SRSModule`: `GET /srs/due` (cards due for user), `POST /srs/review` (rate card → SM-2 update)
 - [ ] `GET /srs/stats` — streak, cards reviewed today, retention rate
 - [ ] `WordBankModule`: `POST /word-bank` (save word), `GET /word-bank`, `DELETE /word-bank/:id`
@@ -330,7 +330,7 @@
 #### Launch
 - [ ] Production env vars verified
 - [ ] Vercel + Railway production deploy
-- [ ] Seed production DB with HSK 1–6 flashcard data
+- [ ] Seed production DB with HSK 1–9 flashcard data
 - [ ] Smoke test production environment
 
 ### Definition of Done S9:

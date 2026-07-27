@@ -51,7 +51,7 @@ model User {
   fullName          String
   role              UserRole    // admin | teacher | student
   status            UserStatus  // pending | active | suspended
-  hskLevel          Int?        // 1-6 (student only)
+  hskLevel          Int?        // 1-9 (student only)
   avatarUrl         String?
   preferredLanguage String      @default("vi")
   createdAt         DateTime    @default(now())
@@ -83,7 +83,7 @@ model Class {
   id             String      @id @default(cuid())
   name           String
   description    String?
-  hskLevel       Int         // 1-6
+  hskLevel       Int         // 1-9
   enrollmentCode String      @unique  // 8-char uppercase alphanumeric
   status         ClassStatus // active | archived
   teacherId      String

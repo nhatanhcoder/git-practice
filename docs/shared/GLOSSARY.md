@@ -49,8 +49,8 @@
 
 | Term | Định nghĩa |
 |------|-----------|
-| **HSK** | Hanyu Shuiping Kaoshi — kỳ thi đánh giá trình độ tiếng Trung quốc tế. Cấp độ 1–6 (HSK 1 dễ nhất). |
-| **hskLevel** | Trường dữ liệu chỉ cấp độ HSK (1–6), áp dụng cho User, Class, Question, Flashcard. |
+| **HSK** | Hanyu Shuiping Kaoshi — kỳ thi đánh giá trình độ tiếng Trung quốc tế. Cấp độ 1–9 (HSK 1 dễ nhất). |
+| **hskLevel** | Trường dữ liệu chỉ cấp độ HSK (1–9), áp dụng cho User, Class, Question, Flashcard. |
 
 ## I
 

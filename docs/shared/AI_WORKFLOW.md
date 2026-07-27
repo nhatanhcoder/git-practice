@@ -113,7 +113,7 @@ MongoDB Question schema (Mongoose):
 
 [REQUEST]
 Implement QuestionsService.search() cho full-text + filter:
-- Filter: hskLevel (1-6), skill (listening/reading/writing), subType
+- Filter: hskLevel (1-9), skill (listening/reading/writing), subType
 - Full-text search trên content.text (MongoDB text index)
 - Pagination: page, limit, total
 - Sort: createdAt DESC
@@ -158,7 +158,7 @@ Implement GeminiGradingService.gradeWriting():
 Input:
 - question: string (đề bài writing)
 - studentAnswer: string (bài viết của student)
-- hskLevel: number (1-6)
+- hskLevel: number (1-9)
 - maxScore: number (10)
 
 Output:

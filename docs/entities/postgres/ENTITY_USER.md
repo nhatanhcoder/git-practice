@@ -15,7 +15,7 @@
 | status | enum | no | `pending` / `active` / `suspended` |
 | nickname | varchar(100) | yes | Display name (student); full name (teacher/admin) |
 | avatarUrl | varchar | yes | Supabase Storage URL |
-| hskLevelGoal | int | yes | Student only (1–6) |
+| hskLevelGoal | int | yes | Student only (1–9) |
 | bio | text | yes | Teacher only |
 | lastLoginAt | DateTime | yes | Updated on every successful login (F1.2) |
 | createdAt | DateTime | no | Auto |

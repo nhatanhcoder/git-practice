@@ -61,7 +61,7 @@
 
 | # | Feature | Priority | Notes |
 |---|---------|----------|-------|
-| S-SRS-1 | Duyệt từ vựng theo HSK level (1–6) | 🔴 Must | MongoDB Flashcard collection |
+| S-SRS-1 | Duyệt từ vựng theo HSK level (1–9) | 🔴 Must | MongoDB Flashcard collection |
 | S-SRS-2 | Bắt đầu phiên ôn tập | 🔴 Must | Lấy cards due theo nextReviewDate |
 | S-SRS-3 | Đánh giá: Again / Hard / Good / Easy | 🔴 Must | SM-2 Algorithm cập nhật easeFactor, nextReviewDate |
 | S-SRS-4 | Xem mặt trước → Flip → xem đáp án | 🔴 Must | hanzi, pinyin, nghĩa, ví dụ |
