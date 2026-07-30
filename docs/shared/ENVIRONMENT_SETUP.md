@@ -73,10 +73,14 @@ DATABASE_URL="postgresql://postgres:[YOUR-PASSWORD]@db.[PROJECT-REF].supabase.co
 # MongoDB Atlas
 MONGODB_URI="mongodb+srv://[username]:[password]@cluster0.xxxxx.mongodb.net/hsk-platform?retryWrites=true&w=majority"
 
-# Cloudinary
-CLOUDINARY_CLOUD_NAME=your_cloud_name
-CLOUDINARY_API_KEY=your_api_key
-CLOUDINARY_API_SECRET=your_api_secret
+# Supabase Storage (dùng chung Supabase project với DATABASE_URL)
+SUPABASE_URL=https://[PROJECT-REF].supabase.co
+SUPABASE_SERVICE_ROLE_KEY=...
+
+# Cloudflare R2 (video)
+CLOUDFLARE_R2_ACCESS_KEY_ID=...
+CLOUDFLARE_R2_SECRET_ACCESS_KEY=...
+CLOUDFLARE_R2_BUCKET=...
 
 # AI (chọn 1)
 OPENAI_API_KEY=sk-...          # OpenAI (có phí)
@@ -97,9 +101,7 @@ NEXT_PUBLIC_API_URL=http://localhost:3001
 NEXT_PUBLIC_APP_NAME="HSK Learning Platform"
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 
-# Cloudinary (public, chỉ cloud name)
-NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=your_cloud_name
-```
+
 
 > ⚠️ **KHÔNG commit `.env` hay `.env.local`** — Chỉ commit `.env.example`
 
@@ -209,6 +211,17 @@ pnpm dev
 - Prisma Studio: http://localhost:5555 (sau khi chạy `pnpm prisma studio`)
 
 ---
+## 7. Supabase Storage Setup (Audio, Avatar)
+
+1. Supabase Dashboard → Storage → tạo 2 bucket: `audio`, `avatars`
+2. Set bucket policy: `avatars` public read, `audio` public read (hoặc signed URL nếu cần riêng tư)
+3. Copy `SUPABASE_SERVICE_ROLE_KEY` từ Settings > API vào `.env`
+
+## 7b. Cloudflare R2 Setup (Video)
+
+1. Cloudflare Dashboard → R2 → tạo bucket
+2. Tạo API token (Object Read & Write) → copy Access Key ID + Secret
+3. Copy vào `CLOUDFLARE_R2_*` trong `.env`
 
 ## 7. Cloudinary Setup (File Upload)
 
