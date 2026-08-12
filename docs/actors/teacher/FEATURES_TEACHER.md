@@ -10,12 +10,12 @@
 
 | # | Feature | Priority | Notes |
 |---|---------|----------|-------|
-| T-AUTH-1 | Đăng ký tài khoản (chờ admin duyệt) | 🔴 Must | status = pending |
-| T-AUTH-2 | Đăng nhập bằng email + password | 🔴 Must | JWT access + refresh token |
-| T-AUTH-3 | Đăng xuất | 🔴 Must | |
-| T-AUTH-4 | JWT Refresh Token tự động gia hạn | 🔴 Must | Silent re-auth |
-| T-AUTH-5 | Đổi mật khẩu | 🟡 Should | |
-| T-AUTH-6 | Cập nhật profile (tên, bio) + upload avatar | 🟡 Should | Supabase Storage |
+| T-AUTH-1 | Register an account (awaits admin approval) | 🔴 Must | status = pending |
+| T-AUTH-2 | Log in with email + password | 🔴 Must | JWT access + refresh token |
+| T-AUTH-3 | Log out | 🔴 Must | |
+| T-AUTH-4 | Automatic JWT refresh token renewal | 🔴 Must | Silent re-auth |
+| T-AUTH-5 | Change password | 🟡 Should | |
+| T-AUTH-6 | Update profile (name, bio) + upload avatar | 🟡 Should | Supabase Storage |
 
 ---
 
@@ -23,28 +23,28 @@
 
 | # | Feature | Priority | Notes |
 |---|---------|----------|-------|
-| T-CLASS-1 | Tạo lớp học (tên, HSK level) | 🔴 Must | Auto-generate 8-char enrollmentCode |
-| T-CLASS-2 | Xem danh sách lớp đang dạy | 🔴 Must | Tên, HSK level, enrollment code, số học sinh, trạng thái |
-| T-CLASS-3 | Xem / Tái tạo enrollment code | 🔴 Must | |
-| T-CLASS-4 | Xem danh sách học sinh trong lớp | 🔴 Must | Tên, email, ngày tham gia, trạng thái, điểm TB; attendance rate sau Sprint 5 |
-| T-CLASS-5 | Archive / đóng lớp | 🟡 Should | status: active → archived |
-| T-CLASS-6 | Chỉnh sửa thông tin lớp | 🟡 Should | |
+| T-CLASS-1 | Create a class (name, HSK level) | 🔴 Must | Auto-generates an 8-char enrollmentCode |
+| T-CLASS-2 | View the list of classes they teach | 🔴 Must | Name, HSK level, enrollment code, student count, status |
+| T-CLASS-3 | View / regenerate the enrollment code | 🔴 Must | |
+| T-CLASS-4 | View the student list for a class | 🔴 Must | Name, email, join date, status, average score; attendance rate after Sprint 5 |
+| T-CLASS-5 | Archive / close a class | 🟡 Should | status: active → archived |
+| T-CLASS-6 | Edit class details | 🟡 Should | |
 
-> 📄 Chi tiết: CLASS_MANAGEMENT.md
+> 📄 Details: CLASS_MANAGEMENT.md
 
 ---
 
 ## 📚 Lesson Management
 
-> **Note**: Lesson là entity mới — cần chốt định nghĩa (tài liệu/video/mô tả + quan hệ với assignment) và cơ chế sắp xếp thứ tự trước khi build.
+> **Note**: Lesson is a new entity — its definition (document/video/description + its relationship to assignments) and its ordering mechanism must be settled before building.
 
 | # | Feature | Priority | Notes |
 |---|---------|----------|-------|
-| T-LESSON-1 | Tạo lesson trong lớp (tiêu đề, mô tả, tài liệu/video) | 🔴 Must | Gắn vào lớp cụ thể |
-| T-LESSON-2 | Sắp xếp thứ tự lesson (drag-and-drop hoặc số thứ tự) | 🔴 Must | Học sinh thấy đúng thứ tự |
-| T-LESSON-3 | Gắn Assignment vào Lesson | 🔴 Must | 1 lesson → N assignments (hoặc M:N — cần chốt) |
-| T-LESSON-4 | Sửa / Xóa lesson | 🟡 Should | |
-| T-LESSON-5 | Xem danh sách lesson theo lớp | 🔴 Must | Preview thứ tự + trạng thái |
+| T-LESSON-1 | Create a lesson in a class (title, description, document/video) | 🔴 Must | Attached to a specific class |
+| T-LESSON-2 | Order lessons (drag-and-drop or an index number) | 🔴 Must | Students see the correct order |
+| T-LESSON-3 | Attach an Assignment to a Lesson | 🔴 Must | 1 lesson → N assignments (or M:N — to be settled) |
+| T-LESSON-4 | Edit / delete a lesson | 🟡 Should | |
+| T-LESSON-5 | View the lesson list for a class | 🔴 Must | Preview of order + status |
 
 ---
 
@@ -52,14 +52,14 @@
 
 | # | Feature | Priority | Notes |
 |---|---------|----------|-------|
-| T-QB-1 | Tạo câu hỏi Listening | 🔴 Must | Upload audio, chọn sub-type |
-| T-QB-2 | Tạo câu hỏi Reading | 🔴 Must | Passage + questions |
-| T-QB-3 | Tạo câu hỏi Writing | 🔴 Must | Prompt, rubric |
-| T-QB-4 | Xem / tìm kiếm câu hỏi trong ngân hàng | 🔴 Must | Filter: skill, HSK level, sub-type |
-| T-QB-5 | Sửa / Xóa câu hỏi | 🟡 Should | |
-| T-QB-6 | Xem preview câu hỏi | 🟡 Should | |
+| T-QB-1 | Create a Listening question | 🔴 Must | Upload audio, choose a sub-type |
+| T-QB-2 | Create a Reading question | 🔴 Must | Passage + questions |
+| T-QB-3 | Create a Writing question | 🔴 Must | Prompt, rubric |
+| T-QB-4 | Browse / search the question bank | 🔴 Must | Filters: skill, HSK level, sub-type |
+| T-QB-5 | Edit / delete a question | 🟡 Should | |
+| T-QB-6 | Preview a question | 🟡 Should | |
 
-**8+ Sub-types hỗ trợ:**
+**8+ supported sub-types:**
 
 | Skill | Sub-Type |
 |-------|----------|
@@ -67,7 +67,7 @@
 | Reading | multiple_choice_single, multiple_choice_multi, true_false_not_given, fill_in_blank, sentence_ordering, matching |
 | Writing | sentence_construction, essay |
 
-> 📄 Chi tiết: QUESTION_TYPES.md
+> 📄 Details: QUESTION_TYPES.md
 
 ---
 
@@ -75,26 +75,26 @@
 
 | # | Feature | Priority | Notes |
 |---|---------|----------|-------|
-| T-ASGN-1 | Tạo Assignment từ ngân hàng câu hỏi | 🔴 Must | Chọn lớp, dueDate, câu hỏi |
-| T-ASGN-2 | Tạo Mock Test (có giới hạn thời gian) | 🔴 Must | timeLimitMinutes |
-| T-ASGN-3 | Xem danh sách bài đã tạo | 🔴 Must | Title, loại, lớp, hạn nộp, số bài đã nộp, số bài chờ chấm |
-| T-ASGN-4 | Xem số học sinh đã nộp / chưa nộp | 🟡 Should | |
-| T-ASGN-5 | Chỉnh sửa / Xóa assignment (trước khi có submission) | 🟡 Should | |
+| T-ASGN-1 | Create an Assignment from the question bank | 🔴 Must | Choose class, dueDate, questions |
+| T-ASGN-2 | Create a Mock Test (with a time limit) | 🔴 Must | timeLimitMinutes |
+| T-ASGN-3 | View the list of created assignments | 🔴 Must | Title, type, class, due date, submission count, pending-grading count |
+| T-ASGN-4 | See how many students have / have not submitted | 🟡 Should | |
+| T-ASGN-5 | Edit / delete an assignment (before any submission) | 🟡 Should | |
 
 ---
 
-## ✅ Grading (Chấm bài)
+## ✅ Grading
 
 | # | Feature | Priority | Notes |
 |---|---------|----------|-------|
-| T-GRADE-1 | Xem danh sách bài đã nộp cần chấm | 🔴 Must | Filter: class, assignment |
-| T-GRADE-2 | Xem chi tiết bài làm của học sinh | 🔴 Must | Từng câu hỏi + đáp án |
-| T-GRADE-3 | AI gợi ý điểm cho câu hỏi Writing (Gemini) | 🔴 Must | score + reasoning — chỉ là gợi ý, teacher vẫn chấm tay |
-| T-GRADE-4 | Nhập điểm + feedback từng câu hỏi | 🔴 Must | |
-| T-GRADE-5 | Hoàn tất chấm → cập nhật trạng thái (graded) | 🔴 Must | Trigger: graded notification cho student |
-| T-GRADE-6 | Sửa điểm sau khi đã chấm | 🟢 Could | |
+| T-GRADE-1 | View submitted work awaiting grading | 🔴 Must | Filters: class, assignment |
+| T-GRADE-2 | View a student's submission in detail | 🔴 Must | Per question + answer |
+| T-GRADE-3 | AI-suggested score for Writing questions (Gemini) | 🔴 Must | score + reasoning — a suggestion only; the teacher still grades manually |
+| T-GRADE-4 | Enter a score + feedback per question | 🔴 Must | |
+| T-GRADE-5 | Finish grading → update status (graded) | 🔴 Must | Trigger: graded notification to the student |
+| T-GRADE-6 | Change a score after grading | 🟢 Could | |
 
-> 📄 Chi tiết: AI_FEATURES.md
+> 📄 Details: AI_FEATURES.md
 
 ---
 
@@ -102,12 +102,12 @@
 
 | # | Feature | Priority | Notes |
 |---|---------|----------|-------|
-| T-ANL-1 | Xem kết quả theo lớp: biểu đồ điểm, phân bố điểm, tỷ lệ nộp bài | 🔴 Must | Điểm TB từng assignment, distribution chart |
-| T-ANL-2 | Danh sách bài nộp của từng học sinh | 🔴 Must | |
-| T-ANL-3 | Phát hiện học sinh yếu (weak student alerts) | 🟡 Should | Điểm < ngưỡng threshold (F8.3) |
-| T-ANL-4 | Xem progress từng học sinh theo kỹ năng | 🟡 Should | Skill breakdown (Listening / Reading / Writing) từng học sinh |
+| T-ANL-1 | View class results: score chart, score distribution, submission rate | 🔴 Must | Average score per assignment, distribution chart |
+| T-ANL-2 | List of submissions per student | 🔴 Must | |
+| T-ANL-3 | Detect struggling students (weak student alerts) | 🟡 Should | Score below a threshold (F8.3) |
+| T-ANL-4 | View each student's progress by skill | 🟡 Should | Skill breakdown (Listening / Reading / Writing) per student |
 
-> 📄 Chi tiết: ANALYTICS_FLOW.md
+> 📄 Details: ANALYTICS_FLOW.md
 
 ---
 
@@ -115,50 +115,50 @@
 
 | # | Feature | Priority | Notes |
 |---|---------|----------|-------|
-| T-SES-1 | Tạo buổi học (date, startTime, endTime, topic) | 🔴 Must | status: scheduled |
-| T-SES-2 | Bắt đầu buổi học (ghi actualStartTime) | 🔴 Must | So sánh với giờ dự kiến để phát hiện dạy trễ/dạy bù |
-| T-SES-3 | Ghi điểm danh học sinh (present / absent_excused / absent_unexcused) | 🔴 Must | |
-| T-SES-4 | Kết thúc buổi học (ghi actualEndTime, notes) | 🔴 Must | |
-| T-SES-5 | Nộp buổi học để admin duyệt (→ completed_pending) | 🔴 Must | Phục vụ tính lương Sprint 6 |
-| T-SES-6 | Xem trạng thái duyệt (approved / rejected + lý do) | 🟡 Should | |
-| T-SES-7 | Xem lịch sử buổi học & ghi chú review của Admin | 🟡 Should | Ngày, chủ đề, giờ thực tế, trạng thái, điểm danh |
+| T-SES-1 | Create a class session (date, startTime, endTime, topic) | 🔴 Must | status: scheduled |
+| T-SES-2 | Start the session (records actualStartTime) | 🔴 Must | Compared against the scheduled time to spot late or make-up classes |
+| T-SES-3 | Record student attendance (present / absent_excused / absent_unexcused) | 🔴 Must | |
+| T-SES-4 | End the session (records actualEndTime, notes) | 🔴 Must | |
+| T-SES-5 | Submit the session for admin approval (→ completed_pending) | 🔴 Must | Feeds salary calculation in Sprint 6 |
+| T-SES-6 | View approval status (approved / rejected + reason) | 🟡 Should | |
+| T-SES-7 | View session history & the admin's review notes | 🟡 Should | Date, topic, actual times, status, attendance |
 
-> 📄 Chi tiết: SESSION_ATTENDANCE.md
+> 📄 Details: SESSION_ATTENDANCE.md
 
 ---
 
-## 💵 Income (Xem thu nhập)
+## 💵 Income
 
-> **Note**: Chỉ là phần xem — module tính lương nằm ở Admin (A-PAY-4/5). Chỉ session đã approved mới được tính vào lương. Cần chốt: pay rate cố định hay theo lớp/giờ, kỳ lương tính theo tháng hay chu kỳ khác.
+> **Note**: View-only — salary calculation lives on the Admin side (A-PAY-4/5). Only approved sessions count toward salary. Still to be settled: whether the pay rate is fixed or varies by class/hour, and whether payroll periods are monthly or on another cycle.
 
 | # | Feature | Priority | Notes |
 |---|---------|----------|-------|
-| T-INC-1 | Xem thu nhập theo tháng (sessions approved) | 🔴 Must | |
-| T-INC-2 | Xem chi tiết từng kỳ lương (PayrollPeriod) | 🟡 Should | status: draft / finalized / paid |
-| T-INC-3 | Xem lịch sử tất cả kỳ lương | 🟡 Should | Danh sách session trong kỳ, đơn giá/buổi, tổng tiền |
+| T-INC-1 | View monthly income (approved sessions) | 🔴 Must | |
+| T-INC-2 | View each payroll period in detail (PayrollPeriod) | 🟡 Should | status: draft / finalized / paid |
+| T-INC-3 | View the history of all payroll periods | 🟡 Should | Sessions in the period, rate per session, total |
 
 ---
 
 ## 🔔 Notifications Received
 
-| Loại thông báo | Trigger |
+| Notification type | Trigger |
 |----------------|---------|
-| Tài khoản được duyệt | Admin approve account |
-| Tài khoản bị khóa | Admin suspend account |
-| Session được duyệt | Admin approve session |
-| Session bị từ chối (kèm lý do) | Admin reject session |
+| Account approved | Admin approves the account |
+| Account suspended | Admin suspends the account |
+| Session approved | Admin approves the session |
+| Session rejected (with a reason) | Admin rejects the session |
 
-> 📄 Chi tiết: NOTIFICATION_FLOW.md
+> 📄 Details: NOTIFICATION_FLOW.md
 
 ---
 
 ## 🗺️ User Journey
 
 ```
-Register → (wait admin approval) → Login
+Register → (wait for admin approval) → Login
   └─► Dashboard
         ├─► Classes → Create Class → Share enrollment code
-        │     ├─► Lessons → Tạo lesson → Sắp xếp thứ tự → Gắn assignment
+        │     ├─► Lessons → Create lesson → Order them → Attach assignments
         │     └─► Session → Log → Mark attendance → Submit for approval
         ├─► Question Bank → Create questions (Listening/Reading/Writing)
         │     └─► Assignments → Create from questions → Assign to class
