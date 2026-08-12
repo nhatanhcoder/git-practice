@@ -1,4 +1,4 @@
-# 🏫 CLASS_MANAGEMENT.md — Quản lý Lớp học
+# 🏫 CLASS_MANAGEMENT.md — Class Management
 
 > **Sprint**: S2 — Classes + Enrollment  
 > **Module**: ClassesModule (NestJS)  
@@ -6,22 +6,22 @@
 
 ---
 
-## 1. Tổng quan
+## 1. Overview
 
-Class Management bao gồm:
-- Teacher tạo và quản lý lớp học
-- Hệ thống enrollment code (8 ký tự) để student tham gia
-- Student xem lớp, bài tập, và rời lớp
-- Admin xem tất cả lớp (monitoring)
+Class Management covers:
+- Teachers creating and managing classes
+- The enrollment code system (8 characters) students use to join
+- Students viewing classes and assignments, and leaving a class
+- Admins viewing every class (monitoring)
 
 ---
 
 ## 2. Teacher Flows
 
-### 2.1 Tạo Lớp
+### 2.1 Create a Class
 
 ```
-Teacher vào /teacher/classes/create
+Teacher goes to /teacher/classes/create
        │
        ▼
 POST /api/v1/classes
@@ -41,7 +41,7 @@ ClassesService.create():
 Response: { class, enrollmentCode: "ABC1DE2F" }
        │
        ▼
-Teacher copy và gửi code cho học sinh
+Teacher copies the code and sends it to students
 ```
 
 ### 2.2 Generate Enrollment Code
@@ -66,18 +66,19 @@ async generateEnrollmentCode(): Promise<string> {
     if (!existing) return code;
   }
 
+  // Message string stays Vietnamese — it surfaces in the Vietnamese-language UI
   throw new BusinessException('CLASS_CODE_GENERATION_FAILED', 'Không thể tạo mã lớp', 500);
 }
 ```
 
-### 2.3 Xem và Quản lý Lớp
+### 2.3 View and Manage Classes
 
 ```
-GET  /api/v1/classes              → Danh sách lớp của teacher
-GET  /api/v1/classes/:classId     → Chi tiết lớp
-PATCH /api/v1/classes/:classId    → Cập nhật tên, mô tả
-POST /api/v1/classes/:classId/archive   → Archive lớp
-GET  /api/v1/classes/:classId/students  → Danh sách học sinh
+GET  /api/v1/classes              → The teacher's class list
+GET  /api/v1/classes/:classId     → Class detail
+PATCH /api/v1/classes/:classId    → Update name, description
+POST /api/v1/classes/:classId/archive   → Archive the class
+GET  /api/v1/classes/:classId/students  → Student list
 GET  /api/v1/classes/:classId/dashboard → Class stats (avg score, completion)
 ```
 
@@ -119,10 +120,10 @@ async getClassDashboard(classId: string, teacherId: string) {
 
 ## 3. Student Flows
 
-### 3.1 Tham gia Lớp bằng Enrollment Code
+### 3.1 Join a Class with an Enrollment Code
 
 ```
-Student vào /student/classes → "Tham gia lớp"
+Student goes to /student/classes → "Join class"
        │
        ▼
 POST /api/v1/classes/enroll
@@ -130,91 +131,91 @@ POST /api/v1/classes/enroll
        │
        ▼
 ClassesService.enroll():
-  ① Tìm class theo enrollmentCode
-  ② Kiểm tra class.status === 'active'  → nếu không: CLASS_ALREADY_ARCHIVED
-  ③ Kiểm tra enrollment tồn tại         → nếu có: CLASS_ALREADY_ENROLLED
+  ① Find the class by enrollmentCode
+  ② Check class.status === 'active'   → if not: CLASS_ALREADY_ARCHIVED
+  ③ Check whether an enrollment exists → if so: CLASS_ALREADY_ENROLLED
   ④ Create ClassEnrollment (status: 'active')
-  ⑤ Tạo Notification cho teacher
+  ⑤ Create a Notification for the teacher
        │
        ▼
-201 Created — Student redirect sang class page
+201 Created — Student is redirected to the class page
 ```
 
-### 3.2 Xem Lớp của Student
+### 3.2 A Student's Class List
 
 ```
-GET /api/v1/users/me/classes         → Danh sách lớp đã tham gia
-GET /api/v1/classes/:classId          → Chi tiết lớp (nếu enrolled)
-GET /api/v1/classes/:classId/assignments → Bài tập trong lớp
+GET /api/v1/users/me/classes         → Classes the student has joined
+GET /api/v1/classes/:classId          → Class detail (if enrolled)
+GET /api/v1/classes/:classId/assignments → Assignments in the class
 ```
 
-### 3.3 Rời Lớp
+### 3.3 Leave a Class
 
 ```
 PATCH /api/v1/classes/:classId/leave
        │
        ▼
 ClassesService.leaveClass():
-  ① Tìm enrollment của student
-  ② Cập nhật status → 'dropped', droppedAt = now()
-  ③ Không xóa: giữ lịch sử enrollment
+  ① Find the student's enrollment
+  ② Set status → 'dropped', droppedAt = now()
+  ③ Do not delete: the enrollment history is kept
 ```
 
-> ⚠️ Khi student drop, các **attempt đang in_progress** vẫn còn. Không tự động submit.
+> ⚠️ When a student drops, any **in_progress attempts** remain. They are not auto-submitted.
 
 ---
 
 ## 4. Admin Flow
 
 ```
-GET /api/v1/admin/classes              → Tất cả classes (filter, search)
-GET /api/v1/admin/classes/:classId     → Chi tiết bất kỳ class
+GET /api/v1/admin/classes              → All classes (filter, search)
+GET /api/v1/admin/classes/:classId     → Detail for any class
 ```
 
-Admin không tạo/xóa class — chỉ monitor.
+Admins do not create or delete classes — they only monitor.
 
 ---
 
 ## 5. Frontend Components
 
-| Component | Route | Mô tả |
+| Component | Route | Description |
 |-----------|-------|-------|
-| `ClassList` | `/teacher/classes` | Grid lớp học của teacher |
-| `CreateClassForm` | `/teacher/classes/create` | Form tạo lớp + hiển thị enrollment code |
+| `ClassList` | `/teacher/classes` | Grid of the teacher's classes |
+| `CreateClassForm` | `/teacher/classes/create` | Class creation form + enrollment code display |
 | `ClassDetail` | `/teacher/classes/:id` | Dashboard + tabs (students, assignments) |
-| `EditClassForm` | `/teacher/classes/:id/edit` | Cập nhật thông tin lớp |
-| `StudentTable` | `/teacher/classes/:id/students` | Danh sách học sinh + điểm trung bình |
-| `EnrollDialog` | `/student/classes` | Dialog nhập enrollment code |
-| `ClassCard` | `/student/classes` | Card hiển thị lớp đã tham gia |
+| `EditClassForm` | `/teacher/classes/:id/edit` | Update class details |
+| `StudentTable` | `/teacher/classes/:id/students` | Student list + average score |
+| `EnrollDialog` | `/student/classes` | Dialog for entering an enrollment code |
+| `ClassCard` | `/student/classes` | Card showing a joined class |
 
 ---
 
 ## 6. Business Rules
 
-| Rule | Chi tiết |
+| Rule | Details |
 |------|---------|
-| Enrollment code | 8 ký tự, chỉ dùng `A-Z` và `2-9` (tránh nhầm 0/O, 1/I) |
-| Unique per class | Mỗi class có 1 enrollment code; code không tái sử dụng |
-| One enrollment | Student chỉ enroll 1 lần per class (unique constraint) |
-| Drop = soft delete | Enrollment status → 'dropped', không xóa record |
-| Re-enroll | Student drop rồi có thể enroll lại bằng cùng code |
-| Archive class | Teacher archive → class closed, student không thể enroll mới |
-| Teacher owns | Chỉ teacher của lớp mới có thể PATCH/archive |
+| Enrollment code | 8 characters, using only `A-Z` and `2-9` (avoids 0/O and 1/I confusion) |
+| Unique per class | Each class has one enrollment code; codes are never reused |
+| One enrollment | A student can only enroll once per class (unique constraint) |
+| Drop = soft delete | Enrollment status → 'dropped'; the record is not deleted |
+| Re-enroll | A student who dropped can re-enroll with the same code |
+| Archive class | Teacher archives → the class closes and no new students can enroll |
+| Teacher owns | Only the class's own teacher can PATCH or archive it |
 
 ---
 
-## 7. API Reference Quick
+## 7. Quick API Reference
 
-| Method | Endpoint | Role | Mô tả |
+| Method | Endpoint | Role | Description |
 |--------|----------|------|-------|
-| `POST` | `/classes` | Teacher | Tạo lớp |
-| `GET` | `/classes` | Teacher | Danh sách lớp của mình |
-| `GET` | `/classes/:id` | All | Chi tiết lớp |
-| `PATCH` | `/classes/:id` | Teacher | Cập nhật |
+| `POST` | `/classes` | Teacher | Create a class |
+| `GET` | `/classes` | Teacher | List their own classes |
+| `GET` | `/classes/:id` | All | Class detail |
+| `PATCH` | `/classes/:id` | Teacher | Update |
 | `POST` | `/classes/:id/archive` | Teacher | Archive |
-| `GET` | `/classes/:id/students` | Teacher | Danh sách học sinh |
+| `GET` | `/classes/:id/students` | Teacher | Student list |
 | `GET` | `/classes/:id/dashboard` | Teacher | Dashboard stats |
-| `GET` | `/classes/:id/assignments` | All | Assignments của lớp |
-| `POST` | `/classes/enroll` | Student | Tham gia lớp |
-| `PATCH` | `/classes/:id/leave` | Student | Rời lớp |
-| `GET` | `/users/me/classes` | Student | Lớp đã tham gia |
+| `GET` | `/classes/:id/assignments` | All | The class's assignments |
+| `POST` | `/classes/enroll` | Student | Join a class |
+| `PATCH` | `/classes/:id/leave` | Student | Leave a class |
+| `GET` | `/users/me/classes` | Student | Classes they have joined |
