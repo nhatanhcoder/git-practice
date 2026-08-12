@@ -8,12 +8,12 @@
 
 ## Context
 
-Cần chọn kiến trúc phù hợp với team nhỏ (1-3 người), thời gian phát triển ngắn, và yêu cầu deploy lên free-tier. Các lựa chọn: microservices, monolith, monorepo.
+We need an architecture that suits a small team (1–3 people), a short development timeline, and deployment on free tiers. The options were: microservices, monolith, monorepo.
 
 ## Decision
 
-Dùng **NestJS monolith** chia 5 layer rõ ràng:
-1. **Controller** — nhận HTTP request, validate DTO
+Use a **NestJS monolith** split into 5 clear layers:
+1. **Controller** — receives the HTTP request, validates the DTO
 2. **Service** — business logic
 3. **Repository / Prisma** — database access
 4. **Guard / Middleware** — auth, RBAC
@@ -22,17 +22,17 @@ Dùng **NestJS monolith** chia 5 layer rõ ràng:
 ## Consequences
 
 **Positive:**
-- Deploy đơn giản (1 instance trên Railway/Render free tier)
-- Không cần service discovery, message broker
-- Dễ refactor sang microservices sau này (module boundaries rõ)
+- Simple deployment (a single instance on the Railway/Render free tier)
+- No need for service discovery or a message broker
+- Easy to refactor into microservices later (module boundaries are clear)
 
 **Negative:**
-- Không scale horizontally theo từng feature
-- Mọi feature cùng chung memory / process
+- Cannot scale horizontally per feature
+- Every feature shares the same memory / process
 
 ## Alternatives Considered
 
-| Option | Lý do không chọn |
+| Option | Why it was not chosen |
 |--------|-----------------|
-| Microservices | Quá phức tạp cho team nhỏ, overhead ops lớn |
-| Serverless functions | Khó maintain state, cold start cho NestJS |
+| Microservices | Too complex for a small team, large ops overhead |
+| Serverless functions | Hard to maintain state, cold starts for NestJS |

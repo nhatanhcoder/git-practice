@@ -1,14 +1,14 @@
 # 🏗️ ARCHITECTURE.md — HSK Learning Platform
 
 > **Version**: 1.0  
-> **Ngày tạo**: 2026-07-09  
+> **Created**: 2026-07-09  
 > **Tech Stack**: Next.js 14 (FE) · NestJS (BE) · PostgreSQL · MongoDB
 
 ---
 
-## 1. Tổng quan kiến trúc
+## 1. Architecture Overview
 
-Dự án áp dụng kiến trúc **Separated Frontend / Backend** (không phải monolith):
+The project uses a **separated frontend / backend** architecture (not a monolith):
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────┐
@@ -60,7 +60,7 @@ Dự án áp dụng kiến trúc **Separated Frontend / Backend** (không phải
 
 ---
 
-## 2. Luồng dữ liệu chi tiết
+## 2. Detailed Data Flow
 
 ### 2.1 Request Lifecycle
 
@@ -246,24 +246,24 @@ types/                              # TypeScript interfaces
 
 ### 4.1 Data Fetching Strategy
 
-| Loại | Công cụ | Khi nào |
+| Kind | Tool | When |
 |------|---------|---------|
 | Server-side initial data | React Query + SSR prefetch | Dashboard pages |
 | Client-side mutations | React Query `useMutation` | Forms, actions |
 | Global UI state | Zustand | Theme, sidebar, auth |
-| Exam real-time state | Zustand `examStore` | Làm bài thi |
+| Exam real-time state | Zustand `examStore` | Taking an exam |
 
 ---
 
 ## 5. Database Strategy
 
-### 5.1 Khi nào dùng PostgreSQL vs MongoDB?
+### 5.1 When to use PostgreSQL vs MongoDB?
 
 | PostgreSQL (Prisma) | MongoDB (Mongoose) |
 |--------------------|--------------------|
-| Có quan hệ rõ ràng (FK) | Dữ liệu nested phức tạp |
-| Cần ACID transactions | Schema linh hoạt thay đổi |
-| Financial data (payroll, invoice) | Question content (nhiều sub-types) |
+| Clear relationships (FKs) | Complex nested data |
+| ACID transactions required | Schema changes frequently |
+| Financial data (payroll, invoice) | Question content (many sub-types) |
 | User, Class, Assignment, Attempt | Flashcard + SRS state |
 | Attendance, Session | Audio/media metadata |
 
@@ -276,16 +276,16 @@ PostgreSQL: assignments.questionIds = ["mongo_id_1", "mongo_id_2"]
 MongoDB: db.questions.findMany({ _id: { $in: questionIds } })
 ```
 
-> ⚠️ **Không có FK giữa 2 DB** — NestJS service layer chịu trách nhiệm join
+> ⚠️ **No FKs between the two databases** — the NestJS service layer is responsible for joining
 
 ---
 
 ## 6. External Services
 
-| Service | Mục đích | Free Tier |
+| Service | Purpose | Free Tier |
 |---------|---------|-----------|
 | **Cloudinary** | Upload audio, images | 25GB storage, 25GB bandwidth |
-| **OpenAI / Gemini** | AI grading writing | Rate limited, dùng Gemini Flash (free) |
+| **OpenAI / Gemini** | AI grading for writing | Rate limited; uses Gemini Flash (free) |
 | **Supabase** | Managed PostgreSQL | 500MB DB, 5GB storage |
 | **MongoDB Atlas** | Managed MongoDB | 512MB cluster |
 | **Vercel** | FE hosting | Unlimited hobby |
@@ -307,31 +307,31 @@ Request → Rate Limiter (ThrottlerModule)
 ```
 
 - **Passwords**: bcrypt (salt rounds: 12)
-- **JWT**: RS256 hoặc HS256, access token 15min, refresh 7 days
+- **JWT**: RS256 or HS256, access token 15min, refresh 7 days
 - **Refresh token**: Stored in DB, rotated on each use
-- **SQL Injection**: Prisma parameterized queries (tự động)
+- **SQL Injection**: Prisma parameterized queries (automatic)
 - **NoSQL Injection**: Mongoose sanitization
 - **XSS**: React escapes by default, Content-Security-Policy header
 
 ---
 
-## 8. Quyết định Kiến trúc (ADR)
+## 8. Architecture Decisions (ADR)
 
-### ADR-001: Tại sao tách FE/BE thay vì Next.js monolith?
-- **Lý do**: NestJS có DI container, module system → dễ maintain hơn khi grow
-- **Trade-off**: Thêm complexity network, CORS cần config
-- **Kết quả**: Chấp nhận để đổi lấy codebase scalable hơn
+### ADR-001: Why separate FE/BE instead of a Next.js monolith?
+- **Reason**: NestJS provides a DI container and module system → easier to maintain as the codebase grows
+- **Trade-off**: Added network complexity, CORS needs configuring
+- **Outcome**: Accepted, in exchange for a more scalable codebase
 
-### ADR-002: Tại sao dùng 2 databases?
-- **Lý do**: PostgreSQL tốt cho relational data, MongoDB tốt cho flexible question content
-- **Trade-off**: Phải join ở application layer, không có cross-DB transactions
-- **Kết quả**: Chấp nhận; question content hiếm khi cần atomic với user data
+### ADR-002: Why two databases?
+- **Reason**: PostgreSQL suits relational data, MongoDB suits flexible question content
+- **Trade-off**: Joins must happen in the application layer; no cross-DB transactions
+- **Outcome**: Accepted; question content rarely needs to be atomic with user data
 
-### ADR-003: Tại sao React Query thay vì SWR?
-- **Lý do**: React Query có `useMutation`, optimistic updates, better devtools
-- **Trade-off**: Bundle size lớn hơn SWR một chút
-- **Kết quả**: Chấp nhận vì feature phong phú hơn
+### ADR-003: Why React Query instead of SWR?
+- **Reason**: React Query has `useMutation`, optimistic updates, and better devtools
+- **Trade-off**: Slightly larger bundle size than SWR
+- **Outcome**: Accepted, for the richer feature set
 
 ---
 
-*Cập nhật khi có quyết định kiến trúc mới. Mỗi ADR cần ghi rõ context, quyết định, và trade-off.*
+*Update this when a new architecture decision is made. Every ADR must state its context, the decision, and the trade-off.*

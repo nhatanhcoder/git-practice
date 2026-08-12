@@ -5,17 +5,17 @@
 
 ---
 
-## 1. Tổng quan Token Strategy
+## 1. Token Strategy Overview
 
 ```
-Access Token  → Short-lived (15 phút) — stored in memory (Zustand)
-Refresh Token → Long-lived (7 ngày)   — stored in httpOnly cookie
+Access Token  → Short-lived (15 minutes) — stored in memory (Zustand)
+Refresh Token → Long-lived (7 days)      — stored in httpOnly cookie
 ```
 
-**Tại sao dùng 2 tokens?**
-- Access token ngắn → nếu bị lộ, tác hại chỉ 15 phút
-- Refresh token httpOnly → JavaScript không đọc được (chống XSS)
-- Refresh token rotate mỗi lần dùng (chống replay attack)
+**Why two tokens?**
+- A short access token → if leaked, the exposure window is only 15 minutes
+- An httpOnly refresh token → unreadable from JavaScript (XSS protection)
+- The refresh token rotates on every use (replay attack protection)
 
 ---
 
@@ -40,12 +40,12 @@ Frontend                    NestJS BE                   PostgreSQL
    │                            │                            │
    │◄── 201 Created ───────────│                            │
    │    {                       │                            │
-   │      message: "Đăng ký    │                            │
-   │      thành công. Chờ      │                            │
-   │      admin duyệt"          │                            │
+   │      message: "Registered   │                           │
+   │      successfully. Awaiting │                           │
+   │      admin approval"        │                           │
    │    }                       │                            │
    │                            │                            │
-   │                            │ ⑤ Tạo Notification ───────►│
+   │                            │ ⑤ Create Notification ────►│
    │                            │   → Admin: "New user"      │
 ```
 
@@ -209,15 +209,15 @@ Frontend                    NestJS BE               PostgreSQL
 export class ClassesController {
 
   @Post()
-  @Roles('teacher')                    // Chỉ teacher
+  @Roles('teacher')                    // Teacher only
   create(@Body() dto: CreateClassDto) {}
 
   @Get()
-  @Roles('admin', 'teacher', 'student') // Tất cả roles
+  @Roles('admin', 'teacher', 'student') // All roles
   findAll() {}
 
   @Post('enroll')
-  @Roles('student')                    // Chỉ student
+  @Roles('student')                    // Student only
   enroll(@Body() dto: EnrollDto) {}
 }
 ```
@@ -241,11 +241,11 @@ interface JwtPayload {
 
 ## 9. Security Checklist
 
-- [x] Passwords hashed với bcrypt (rounds: 12)
-- [x] Access token 15min — giảm window nếu bị lộ
-- [x] Refresh token httpOnly cookie — không đọc được từ JS
-- [x] Refresh token hashed trong DB (không lưu plain)
+- [x] Passwords hashed with bcrypt (rounds: 12)
+- [x] Access token 15min — shrinks the exposure window if leaked
+- [x] Refresh token in an httpOnly cookie — unreadable from JS
+- [x] Refresh token hashed in the DB (never stored in plaintext)
 - [x] Refresh token rotation — prevent replay attacks
-- [x] Rate limiting trên `/auth/login` (5 req/min)
-- [x] Account status check trước khi login
-- [x] HTTPS only cho production (Secure cookie flag)
+- [x] Rate limiting on `/auth/login` (5 req/min)
+- [x] Account status checked before login
+- [x] HTTPS only in production (Secure cookie flag)

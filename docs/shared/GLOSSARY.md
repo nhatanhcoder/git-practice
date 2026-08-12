@@ -1,126 +1,126 @@
 # 📖 Glossary — HSK Learning Platform
 
-> Thuật ngữ domain + kỹ thuật được dùng nhất quán trong toàn bộ docs.  
-> Khi thêm thuật ngữ mới, cập nhật file này trước rồi mới dùng ở chỗ khác.
+> Domain and technical terminology, used consistently across all docs.  
+> When adding a new term, update this file first, then use it elsewhere.
 
 ---
 
 ## A
 
-| Term | Định nghĩa |
+| Term | Definition |
 |------|-----------|
-| **Access Token** | JWT ngắn hạn (15 phút), lưu trong Zustand (memory). Dùng để xác thực mỗi API call. |
-| **Attempt** | Một lần làm bài của student cho một Assignment. Entity trong PostgreSQL. |
-| **AttemptAnswer** | Một đáp án của student cho một câu hỏi trong Attempt. |
+| **Access Token** | Short-lived JWT (15 minutes), held in Zustand (memory). Used to authenticate every API call. |
+| **Attempt** | One student's run at an Assignment. A PostgreSQL entity. |
+| **AttemptAnswer** | A single student answer to one question within an Attempt. |
 
 ## B
 
-| Term | Định nghĩa |
+| Term | Definition |
 |------|-----------|
-| **boxNumber** | Số thứ tự "hộp" trong SRS (Leitner system). Box 1 = ôn sớm nhất, Box 5+ = đã nhớ tốt. |
+| **boxNumber** | The "box" index in SRS (Leitner system). Box 1 = reviewed soonest, Box 5+ = well memorised. |
 
 ## C
 
-| Term | Định nghĩa |
+| Term | Definition |
 |------|-----------|
-| **ClassEnrollment** | Bản ghi liên kết Student ↔ Class. Tạo khi student nhập enrollmentCode. |
-| **ClassSession** | Một buổi học thực tế. Teacher log → submit → admin approve → payroll. |
+| **ClassEnrollment** | The record linking Student ↔ Class. Created when a student enters an enrollmentCode. |
+| **ClassSession** | An actual class session. Teacher logs it → submits → admin approves → payroll. |
 
 ## E
 
-| Term | Định nghĩa |
+| Term | Definition |
 |------|-----------|
-| **easeFactor** | Hệ số dễ của flashcard trong SM-2. Khởi tạo 2.5, giảm khi đánh giá "Again/Hard", tăng khi "Easy". Min: 1.3. |
-| **enrollmentCode** | Mã 8 ký tự (chữ hoa + số) dùng để student tham gia lớp. Auto-generated khi teacher tạo lớp. |
+| **easeFactor** | A flashcard's ease coefficient in SM-2. Starts at 2.5, decreases on an "Again/Hard" rating, increases on "Easy". Min: 1.3. |
+| **enrollmentCode** | An 8-character code (uppercase letters + digits) students use to join a class. Auto-generated when the teacher creates the class. |
 
 ## F
 
-| Term | Định nghĩa |
+| Term | Definition |
 |------|-----------|
-| **Flashcard** | Thẻ từ vựng tiếng Trung trong MongoDB. Chứa: chữ Hán, pinyin, nghĩa VN/EN, ví dụ, audio. |
+| **Flashcard** | A Chinese vocabulary card in MongoDB. Contains: hanzi, pinyin, Vietnamese/English meaning, example, audio. |
 
 ## G
 
-| Term | Định nghĩa |
+| Term | Definition |
 |------|-----------|
-| **Grading** | Quá trình teacher chấm điểm Attempt sau khi student submit. Trạng thái: submitted → graded. |
+| **Grading** | The process of a teacher scoring an Attempt after the student submits. States: submitted → graded. |
 
 ## H
 
-| Term | Định nghĩa |
+| Term | Definition |
 |------|-----------|
-| **HSK** | Hanyu Shuiping Kaoshi — kỳ thi đánh giá trình độ tiếng Trung quốc tế. Cấp độ 1–9 (HSK 1 dễ nhất). |
-| **hskLevel** | Trường dữ liệu chỉ cấp độ HSK (1–9), áp dụng cho User, Class, Question, Flashcard. |
+| **HSK** | Hanyu Shuiping Kaoshi — the international Chinese proficiency exam. Levels 1–9 (HSK 1 is the easiest). |
+| **hskLevel** | The field holding an HSK level (1–9); applies to User, Class, Question, and Flashcard. |
 
 ## I
 
-| Term | Định nghĩa |
+| Term | Definition |
 |------|-----------|
-| **Invoice** | Xem **StudentInvoice** |
+| **Invoice** | See **StudentInvoice** |
 
 ## J
 
-| Term | Định nghĩa |
+| Term | Definition |
 |------|-----------|
-| **JWT** | JSON Web Token. Platform dùng 2 loại: Access Token (15 phút) + Refresh Token (7 ngày). |
+| **JWT** | JSON Web Token. The platform uses two kinds: Access Token (15 minutes) + Refresh Token (7 days). |
 
 ## M
 
-| Term | Định nghĩa |
+| Term | Definition |
 |------|-----------|
-| **Mock Test** | Loại Assignment có giới hạn thời gian (timeLimitMinutes). Tự submit khi hết giờ. |
+| **Mock Test** | An Assignment type with a time limit (timeLimitMinutes). Auto-submits when time runs out. |
 
 ## N
 
-| Term | Định nghĩa |
+| Term | Definition |
 |------|-----------|
-| **nextReviewDate** | Ngày kế tiếp card SRS cần được ôn tập. Tính bởi SM-2 algorithm. |
+| **nextReviewDate** | The next date an SRS card is due for review. Computed by the SM-2 algorithm. |
 
 ## P
 
-| Term | Định nghĩa |
+| Term | Definition |
 |------|-----------|
-| **PayrollPeriod** | Kỳ lương của teacher (periodStart → periodEnd). Trạng thái: draft → finalized → paid. |
-| **Pinyin** | Hệ thống phiên âm tiếng Trung bằng chữ Latin. VD: 你好 = nǐ hǎo. |
+| **PayrollPeriod** | A teacher's pay period (periodStart → periodEnd). States: draft → finalized → paid. |
+| **Pinyin** | The romanisation system for Chinese. Example: 你好 = nǐ hǎo. |
 
 ## Q
 
-| Term | Định nghĩa |
+| Term | Definition |
 |------|-----------|
-| **Question** | Câu hỏi trong ngân hàng câu hỏi (MongoDB). Có skill (listening/reading/writing) và subType. |
-| **Question Bank** | Tập hợp tất cả câu hỏi của một teacher hoặc platform. Dùng để tạo Assignment. |
+| **Question** | A question in the question bank (MongoDB). Has a skill (listening/reading/writing) and a subType. |
+| **Question Bank** | The full set of questions belonging to a teacher or to the platform. Used to build Assignments. |
 
 ## R
 
-| Term | Định nghĩa |
+| Term | Definition |
 |------|-----------|
-| **RBAC** | Role-Based Access Control. Xem [RBAC_MATRIX.md](./RBAC_MATRIX.md). |
-| **Refresh Token** | JWT dài hạn (7 ngày), lưu trong httpOnly cookie. Dùng để lấy Access Token mới. |
-| **repetitionsCount** | Số lần đã ôn thành công liên tiếp. Dùng trong SM-2 để tính interval tiếp theo. |
+| **RBAC** | Role-Based Access Control. See [RBAC_MATRIX.md](./RBAC_MATRIX.md). |
+| **Refresh Token** | Long-lived JWT (7 days), stored in an httpOnly cookie. Used to obtain a new Access Token. |
+| **repetitionsCount** | The number of consecutive successful reviews. Used by SM-2 to compute the next interval. |
 
 ## S
 
-| Term | Định nghĩa |
+| Term | Definition |
 |------|-----------|
-| **SM-2** | Thuật toán Spaced Repetition (SuperMemo 2). Tính interval dựa trên easeFactor và repetitionsCount. |
-| **SRS** | Spaced Repetition System. Hệ thống ôn tập có khoảng cách ngày càng tăng theo mức nhớ. |
-| **StudentInvoice** | Hóa đơn học phí cho student. Admin tạo, student xem. Trạng thái: unpaid/partially_paid/paid/void. |
+| **SM-2** | The Spaced Repetition algorithm (SuperMemo 2). Computes the interval from easeFactor and repetitionsCount. |
+| **SRS** | Spaced Repetition System. A review system whose intervals grow as recall strengthens. |
+| **StudentInvoice** | A tuition invoice for a student. Created by an admin, viewed by the student. States: unpaid/partially_paid/paid/void. |
 
 ## T
 
-| Term | Định nghĩa |
+| Term | Definition |
 |------|-----------|
-| **timeLimitMinutes** | Giới hạn thời gian cho Mock Test (tính bằng phút). Null = không giới hạn (Assignment thường). |
-| **TuitionPayment** | Bản ghi thanh toán học phí. Liên kết với StudentInvoice. |
+| **timeLimitMinutes** | The time limit for a Mock Test (in minutes). Null = no limit (an ordinary Assignment). |
+| **TuitionPayment** | A tuition payment record. Linked to a StudentInvoice. |
 
 ## U
 
-| Term | Định nghĩa |
+| Term | Definition |
 |------|-----------|
-| **UserFlashcardState** | Trạng thái SRS của 1 user × 1 flashcard. Chứa: boxNumber, easeFactor, repetitionsCount, nextReviewDate. |
+| **UserFlashcardState** | The SRS state for one user × one flashcard. Contains: boxNumber, easeFactor, repetitionsCount, nextReviewDate. |
 
 ## V
 
-| Term | Định nghĩa |
+| Term | Definition |
 |------|-----------|
-| **VietQR** | Tiêu chuẩn QR thanh toán ngân hàng Việt Nam. Platform dùng cho student trả học phí. Đối soát thủ công bởi admin. |
+| **VietQR** | The Vietnamese bank payment QR standard. Used for student tuition payments, reconciled manually by an admin. |

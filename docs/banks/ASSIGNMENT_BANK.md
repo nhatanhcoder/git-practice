@@ -1,19 +1,19 @@
 # 🏦 Assignment Bank
 
-> Phân biệt **Assignment gốc** (template có thể tái sử dụng) vs **Assignment instance** (đã giao cho 1 lớp cụ thể).
+> Distinguishes a **source assignment** (a reusable template) from an **assignment instance** (already assigned to one specific class).
 
 ---
 
-## Khái niệm
+## Concepts
 
-| Concept | Mô tả |
-|---------|-------|
-| **Assignment gốc** | Template do teacher tạo từ Question Bank. Chứa danh sách questionIds, skillType, type, timeLimitMinutes. Chưa gắn với lớp cụ thể. |
-| **Assignment instance** | Assignment gốc được giao cho 1 lớp, có dueDate. Thực ra trong schema hiện tại, `Assignment` đã chứa cả `classId` — nên gốc và instance là cùng 1 record. |
+| Concept | Description |
+|---------|-------------|
+| **Source assignment** | A template the teacher builds from the Question Bank. Holds the questionIds, skillType, type, and timeLimitMinutes. Not yet tied to a specific class. |
+| **Assignment instance** | A source assignment handed to one class, with a dueDate. In the current schema `Assignment` already carries `classId` — so source and instance are in fact the same record. |
 
 ---
 
-## Hiện trạng Schema
+## Current Schema
 
 ```
 Assignment {
@@ -29,14 +29,14 @@ Assignment {
 
 ---
 
-## Flows liên quan
+## Related Flows
 
-- [FLOW_ASSIGNMENT_LIFECYCLE.md](../flows/FLOW_ASSIGNMENT_LIFECYCLE.md) — toàn bộ lifecycle
-- [ENTITY_ASSIGNMENT.md](../entities/postgres/ENTITY_ASSIGNMENT.md) — schema chi tiết
+- [FLOW_ASSIGNMENT_LIFECYCLE.md](../flows/FLOW_ASSIGNMENT_LIFECYCLE.md) — the full lifecycle
+- [ENTITY_ASSIGNMENT.md](../entities/postgres/ENTITY_ASSIGNMENT.md) — detailed schema
 
 ---
 
 ## TODO
 
-- [ ] Xem xét tách "Assignment template" (không có classId) vs "Assignment instance" (có classId) nếu cần tái sử dụng
-- [ ] Versioning câu hỏi: nếu teacher sửa question sau khi assignment đã published → ảnh hưởng gì?
+- [ ] Consider splitting "Assignment template" (no classId) from "Assignment instance" (has classId) if reuse becomes necessary
+- [ ] Question versioning: if a teacher edits a question after the assignment is published, what is the impact?

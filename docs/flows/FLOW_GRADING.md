@@ -1,8 +1,8 @@
 # 🔄 Flow: Grading
 
-> Submit → Teacher chấm → Feedback → Notification  
+> Submit → Teacher grades → Feedback → Notification  
 > Actors: **Teacher**, **Student**  
-> Liên quan: [FLOW_ASSIGNMENT_LIFECYCLE.md](./FLOW_ASSIGNMENT_LIFECYCLE.md)
+> Related: [FLOW_ASSIGNMENT_LIFECYCLE.md](./FLOW_ASSIGNMENT_LIFECYCLE.md)
 
 ---
 
@@ -16,7 +16,7 @@ Student               NestJS BE              Gemini AI           PostgreSQL
   │                       │   status: submitted                        │
   │◄── 200 OK ────────────│                      │                     │
   │                       │                      │                     │
-  │            [Teacher opens grading queue]      │                     │
+  │            [Teacher opens grading queue]     │                     │
   │                       │                      │                     │
 Teacher                   │                      │                     │
   │── GET /attempts ─────►│                      │                     │
@@ -37,7 +37,7 @@ Teacher                   │                      │                     │
 
 ---
 
-## Trạng thái Attempt
+## Attempt states
 
 ```
 in_progress → submitted → graded
@@ -47,14 +47,14 @@ in_progress → submitted → graded
 
 ## AI Grading Prompt
 
-Xem chi tiết: [AI_FEATURES.md](../shared/AI_FEATURES.md)
+Full details: [AI_FEATURES.md](../shared/AI_FEATURES.md)
 
 ```
 Input:  question prompt + rubric + student answer
 Output: { suggestedScore: number, reasoning: string }
 ```
 
-Teacher luôn có quyền override điểm AI.
+The teacher can always override the AI's score.
 
 ---
 

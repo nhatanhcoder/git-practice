@@ -1,12 +1,12 @@
 # 🗃️ Entities Index
 
-> Bảng tra cứu nhanh: entity → DB → file spec → actor liên quan → flow liên quan
+> Quick lookup table: entity → DB → spec file → related actors → related flows
 
 ---
 
 ## 🐘 PostgreSQL Entities
 
-| Entity | File | Status | Actors | Flows liên quan |
+| Entity | File | Status | Actors | Related flows |
 |--------|------|--------|--------|----------------|
 | **User** | [ENTITY_USER.md](postgres/ENTITY_USER.md) | ✅ | Admin, Teacher, Student | FLOW_AUTH |
 | **Class** | [ENTITY_CLASS.md](postgres/ENTITY_CLASS.md) | ✅ | Teacher, Student | FLOW_ENROLLMENT |
@@ -31,7 +31,7 @@
 
 ## 🍃 MongoDB Entities
 
-| Entity | File | Status | Actors | Flows liên quan |
+| Entity | File | Status | Actors | Related flows |
 |--------|------|--------|--------|----------------|
 | **Question** | [ENTITY_QUESTION.md](mongodb/ENTITY_QUESTION.md) | ✅ | Teacher | FLOW_ASSIGNMENT_LIFECYCLE |
 | **Flashcard** | [ENTITY_FLASHCARD.md](mongodb/ENTITY_FLASHCARD.md) | ✅ | Student | FLOW_SRS_REVIEW |
@@ -59,8 +59,8 @@
 
 ## Status Key
 
-| Symbol | Nghĩa |
+| Symbol | Meaning |
 |--------|-------|
-| ✅ | Spec đầy đủ |
-| 🚧 | Stub, cần bổ sung |
-| ⚠️ | Gap hoặc đã di chuyển |
+| ✅ | Complete spec |
+| 🚧 | Stub, needs filling in |
+| ⚠️ | Gap, or moved elsewhere |

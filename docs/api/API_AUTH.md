@@ -1,12 +1,12 @@
 # 🔐 API Auth — Authentication Endpoints
 
-> Dùng chung cho cả 3 actor. Conventions: [API_CONVENTIONS.md](./API_CONVENTIONS.md)
+> Shared by all three actors. Conventions: [API_CONVENTIONS.md](./API_CONVENTIONS.md)
 
 ---
 
 ## POST /api/v1/auth/register
 
-Đăng ký tài khoản mới. Status sẽ là `pending` cho đến khi admin duyệt.
+Register a new account. Status stays `pending` until an admin approves it.
 
 **Body**:
 ```json
@@ -43,7 +43,7 @@
   }
 }
 ```
-Sets httpOnly cookie: `refresh_token` (7 ngày)
+Sets httpOnly cookie: `refresh_token` (7 days)
 
 **Errors**: `INVALID_CREDENTIALS` (401), `ACCOUNT_PENDING` (403), `ACCOUNT_SUSPENDED` (403)
 
@@ -51,7 +51,7 @@ Sets httpOnly cookie: `refresh_token` (7 ngày)
 
 ## POST /api/v1/auth/refresh
 
-Silent token refresh. Dùng cookie `refresh_token`.
+Silent token refresh. Uses the `refresh_token` cookie.
 
 **Response 200**: `{ "data": { "accessToken": "eyJ..." } }`
 
@@ -70,7 +70,7 @@ Invalidate refresh token.
 
 ## GET /api/v1/auth/me
 
-Lấy profile của user đang đăng nhập.
+Get the currently authenticated user's profile.
 
 **Response 200**: `{ "data": { ...userProfile } }`
 
@@ -83,7 +83,7 @@ Lấy profile của user đang đăng nhập.
 
 ---
 
-## Liên quan
+## Related
 
-- [FLOW_AUTH.md](../flows/FLOW_AUTH.md) — sequence diagram đầy đủ
+- [FLOW_AUTH.md](../flows/FLOW_AUTH.md) — full sequence diagram
 - [ENTITY_USER.md](../entities/postgres/ENTITY_USER.md)

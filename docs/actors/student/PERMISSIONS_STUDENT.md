@@ -1,53 +1,53 @@
 # 🎓 Student — Permissions
 
-> Quyền cụ thể của Student. Nguồn sự thật đầy đủ: [RBAC_MATRIX.md](../../shared/RBAC_MATRIX.md)
+> Specific Student permissions. Full source of truth: [RBAC_MATRIX.md](../../shared/RBAC_MATRIX.md)
 
 ---
 
-## Tóm tắt
+## Summary
 
-Student có quyền **học tập** — xem và làm bài trong class mình tham gia, ôn SRS, xem hóa đơn. Không có quyền tạo nội dung hoặc xem data người khác.
+Students have **learning** permissions — viewing and taking assignments in the classes they have joined, doing SRS reviews, and viewing invoices. They cannot create content or view anyone else's data.
 
 ---
 
-## Quyền theo Resource
+## Permissions by Resource
 
 ### Classes
-- ✅ Join class bằng enrollmentCode
-- 🔒 Read class mình đang tham gia
-- ❌ Không tạo / sửa class
+- ✅ Join a class with an enrollmentCode
+- 🔒 Read the classes they are enrolled in
+- ❌ Cannot create or edit a class
 
 ### Assignments
-- 🔒 Read assignments của class mình
-- 🔒 Tạo Attempt (1 attempt / assignment)
-- 🔒 Submit own attempt
-- 🔒 Read result sau khi graded
+- 🔒 Read assignments belonging to their own classes
+- 🔒 Create an Attempt (1 attempt per assignment)
+- 🔒 Submit their own attempt
+- 🔒 Read the result once it is graded
 
 ### Flashcards
-- ✅ Read tất cả flashcards (theo HSK level)
-- 🔒 Update own UserFlashcardState
+- ✅ Read all flashcards (by HSK level)
+- 🔒 Update their own UserFlashcardState
 
 ### Finance
-- 🔒 Read own StudentInvoice
-- 🔒 Read own TuitionPayment history
-- ❌ Không tạo payment (chỉ admin record)
+- 🔒 Read their own StudentInvoice
+- 🔒 Read their own TuitionPayment history
+- ❌ Cannot create a payment (only an admin records one)
 
 ### Profile
-- 🔒 Read / Update own profile
-- ❌ Không đọc profile người khác
+- 🔒 Read / update their own profile
+- ❌ Cannot read anyone else's profile
 
 ### Notifications
-- 🔒 Read own notifications
+- 🔒 Read their own notifications
 
 ---
 
 ## Notes
 
-- Student chỉ thấy assignments của class mà họ đang enrolled (status=active)
-- Sau khi drop class (status=dropped): mất access assignment mới, giữ attempt cũ
-- Attempt chỉ được tạo 1 lần / assignment (trừ khi teacher reset)
+- A student only sees assignments for classes they are actively enrolled in (status=active)
+- After dropping a class (status=dropped): they lose access to new assignments but keep past attempts
+- An Attempt can only be created once per assignment (unless the teacher resets it)
 
-## Liên quan
+## Related
 
 - [RBAC_MATRIX.md](../../shared/RBAC_MATRIX.md)
 - [FEATURES_STUDENT.md](./FEATURES_STUDENT.md)

@@ -8,31 +8,31 @@
 
 ## Context
 
-Platform cần lưu 2 loại dữ liệu rất khác nhau:
-- Dữ liệu quan hệ chặt (users, enrollments, payroll, invoices) — ACID là bắt buộc
-- Dữ liệu linh hoạt, schema biến đổi (câu hỏi 8+ sub-type, flashcard, SRS state) — cần document model
+The platform needs to store two very different kinds of data:
+- Tightly relational data (users, enrollments, payroll, invoices) — ACID is mandatory
+- Flexible data with a changing schema (questions across 8+ sub-types, flashcards, SRS state) — needs a document model
 
 ## Decision
 
-**PostgreSQL via Supabase** cho relational data (Prisma ORM).  
-**MongoDB Atlas** cho document data (Mongoose).
+**PostgreSQL via Supabase** for relational data (Prisma ORM).  
+**MongoDB Atlas** for document data (Mongoose).
 
 ## Consequences
 
 **Positive:**
-- PostgreSQL: ACID, free-tier Supabase 500MB đủ dùng
-- MongoDB: schema-free cho Question (8+ sub-types không cần migration), tốt cho nested content
-- Cả hai đều có free-tier vĩnh viễn
+- PostgreSQL: ACID, and the 500MB Supabase free tier is enough
+- MongoDB: schema-free for Question (8+ sub-types with no migrations), good for nested content
+- Both have a permanent free tier
 
 **Negative:**
-- Team cần biết 2 query language (Prisma + Mongoose)
-- Không có cross-DB transaction
-- `questionIds` trong Assignment lưu dạng JSON array → không thể join trực tiếp
+- The team has to know two query languages (Prisma + Mongoose)
+- No cross-database transactions
+- `questionIds` on Assignment is stored as a JSON array → cannot be joined directly
 
 ## Alternatives Considered
 
-| Option | Lý do không chọn |
+| Option | Why it was not chosen |
 |--------|-----------------|
-| PostgreSQL only (JSONB) | JSONB query phức tạp, index kém hơn MongoDB cho nested |
-| MongoDB only | Khó đảm bảo financial integrity, thiếu foreign key constraint |
-| PlanetScale (MySQL) | Không hỗ trợ foreign key trên free tier |
+| PostgreSQL only (JSONB) | JSONB queries are complex, and indexing is weaker than MongoDB for nested data |
+| MongoDB only | Hard to guarantee financial integrity, no foreign key constraints |
+| PlanetScale (MySQL) | No foreign key support on the free tier |
