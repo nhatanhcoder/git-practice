@@ -1,4 +1,4 @@
-# 🎮 EXAM_ENGINE.md — State Machine Làm Bài
+# 🎮 EXAM_ENGINE.md — Exam-Taking State Machine
 
 > **Module**: AttemptsModule (NestJS)  
 > **Entities**: Attempt, AttemptAnswer (PostgreSQL)
@@ -54,20 +54,20 @@ Student types answer
 PUT /attempts/:id/answers/:questionId
        │
        ▼
-AttemptAnswer.upsert (create hoặc update)
+AttemptAnswer.upsert (create or update)
        │
        ▼
-Frontend: "✓ Đã lưu" indicator
+Frontend: "✓ Đã lưu" ("Saved") indicator
 ```
 
 **Edge cases:**
-- Mất mạng: Store answers trong localStorage, sync khi có mạng
-- Tab đóng đột ngột: beforeunload event → force save
-- Token expired trong khi làm: Refresh token tự động, tiếp tục
+- Network loss: store answers in localStorage, sync once back online
+- Tab closed abruptly: beforeunload event → force save
+- Token expires mid-exam: refresh the token automatically and continue
 
 ---
 
-## 3. Submit Flow Chi tiết
+## 3. Submit Flow in Detail
 
 ```typescript
 // attempts.service.ts
@@ -87,7 +87,7 @@ async submit(attemptId: string, userId: string): Promise<AttemptResult> {
     }
   }
 
-  // 3. Fetch questions từ MongoDB
+  // 3. Fetch the questions from MongoDB
   const questionIds = attempt.assignment.questionIds;
   const questions = await this.questionModel.find({ _id: { $in: questionIds } });
 
@@ -124,7 +124,8 @@ async submit(attemptId: string, userId: string): Promise<AttemptResult> {
     }
   });
 
-  // 6. Notify teacher nếu có writing
+  // 6. Notify the teacher if the assignment contains writing
+  //    (message strings below are Vietnamese UI copy)
   if (hasWriting) {
     await this.notificationsService.create({
       recipientId: attempt.assignment.class.teacherId,
@@ -132,7 +133,7 @@ async submit(attemptId: string, userId: string): Promise<AttemptResult> {
       message: `${attempt.user.fullName} đã nộp bài ${attempt.assignment.title}`
     });
   } else {
-    // Notify student kết quả
+    // Otherwise notify the student of the result
     await this.notificationsService.create({
       recipientId: userId,
       type: 'graded',
@@ -150,8 +151,8 @@ async submit(attemptId: string, userId: string): Promise<AttemptResult> {
 
 ### Backend: Soft enforcement
 ```typescript
-// Khi submit, check elapsed time (không forcibly end session)
-// Lý do: Network latency có thể gây submit trễ vài giây
+// On submit, check elapsed time (does not forcibly end the session)
+// Reason: network latency can delay a submit by a few seconds
 const GRACE_PERIOD_MINUTES = 2;
 ```
 
@@ -174,7 +175,7 @@ export function useCountdown(totalMinutes: number, onTimeUp: () => void) {
       setRemaining(prev => {
         if (prev <= 1) {
           clearInterval(interval);
-          onTimeUp();  // Auto-submit khi hết giờ
+          onTimeUp();  // Auto-submit when time runs out
           return 0;
         }
         return prev - 1;
@@ -193,21 +194,21 @@ export function useCountdown(totalMinutes: number, onTimeUp: () => void) {
 
 | Question Type | Auto-grade | Manual grade | Point value |
 |--------------|------------|--------------|------------|
-| MCQ (multiple choice) | ✅ Exact match | ❌ | 1 điểm |
-| True/False | ✅ Exact match | ❌ | 1 điểm |
-| Listening MCQ | ✅ Exact match | ❌ | 1 điểm |
-| Reading Comprehension | ✅ Exact match | ❌ | 1 điểm |
-| Gap Fill (word bank) | ✅ Exact match | ❌ | 1 điểm |
-| Sentence Ordering | ✅ Array comparison | ❌ | 2 điểm |
-| Writing (short) | ❌ | ✅ Teacher | 0–5 điểm |
-| Writing (paragraph) | ❌ | ✅ Teacher | 0–10 điểm |
+| MCQ (multiple choice) | ✅ Exact match | ❌ | 1 point(s) |
+| True/False | ✅ Exact match | ❌ | 1 point(s) |
+| Listening MCQ | ✅ Exact match | ❌ | 1 point(s) |
+| Reading Comprehension | ✅ Exact match | ❌ | 1 point(s) |
+| Gap Fill (word bank) | ✅ Exact match | ❌ | 1 point(s) |
+| Sentence Ordering | ✅ Array comparison | ❌ | 2 point(s) |
+| Writing (short) | ❌ | ✅ Teacher | 0–5 point(s) |
+| Writing (paragraph) | ❌ | ✅ Teacher | 0–10 point(s) |
 
 ---
 
 ## 6. Result Calculation
 
 ```typescript
-// Khi teacher chấm xong câu cuối cùng:
+// Once the teacher grades the final question:
 async checkAndFinalizeGrading(attemptId: string) {
   const answers = await this.prisma.attemptAnswer.findMany({
     where: { attemptId }

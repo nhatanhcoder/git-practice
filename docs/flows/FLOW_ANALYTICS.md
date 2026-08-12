@@ -1,4 +1,4 @@
-# 📊 ANALYTICS_FLOW.md — Analytics & Báo cáo Tiến bộ
+# 📊 ANALYTICS_FLOW.md — Analytics & Progress Reporting
 
 > **Sprint**: S5 — SRS Flashcards + Analytics  
 > **Module**: AnalyticsModule (NestJS)  
@@ -6,25 +6,25 @@
 
 ---
 
-## 1. Tổng quan Analytics Features
+## 1. Analytics Features Overview
 
-| Feature | Actor | Mô tả |
+| Feature | Actor | Description |
 |---------|-------|-------|
-| Skill Heatmap | Student | Hiệu suất theo skill × tuần |
-| Progress Chart | Student | Điểm trung bình theo thời gian |
-| Class Statistics | Teacher | Overview điểm class, tỷ lệ hoàn thành |
-| Weak Student Alert | Teacher | Học sinh cần hỗ trợ |
-| Score Distribution | Teacher | Biểu đồ phân bố điểm |
+| Skill Heatmap | Student | Performance by skill × week |
+| Progress Chart | Student | Average score over time |
+| Class Statistics | Teacher | Class score overview, completion rate |
+| Weak Student Alert | Teacher | Students who need support |
+| Score Distribution | Teacher | Score distribution chart |
 | API Quota Chart | Admin | Gemini API usage tracking |
 
 ---
 
 ## 2. SkillScore — Data Collection
 
-Mỗi khi attempt được **GRADED**, hệ thống tạo SkillScore records:
+Every time an attempt becomes **GRADED**, the system creates SkillScore records:
 
 ```typescript
-// attempts.service.ts — Sau khi grade xong
+// attempts.service.ts — after grading completes
 async recordSkillScores(attemptId: string): Promise<void> {
   const attempt = await this.prisma.attempt.findUnique({
     where: { id: attemptId },
@@ -34,7 +34,7 @@ async recordSkillScores(attemptId: string): Promise<void> {
     }
   });
 
-  // Lấy questions từ MongoDB để biết skill breakdown
+  // Fetch the questions from MongoDB to get the skill breakdown
   const questions = await this.questionModel.find({
     _id: { $in: attempt.assignment.questionIds }
   });
@@ -85,7 +85,7 @@ async getSkillHeatmap(userId: string, weeksBack = 12) {
   const startWeek = getISOWeek(startDate);
   const startYear = getYear(startDate);
 
-  // Lấy tất cả skill scores trong khoảng thời gian
+  // Fetch every skill score in the window
   const scores = await this.prisma.skillScore.findMany({
     where: {
       userId,
@@ -97,7 +97,7 @@ async getSkillHeatmap(userId: string, weeksBack = 12) {
     orderBy: [{ year: 'asc' }, { weekNumber: 'asc' }]
   });
 
-  // Aggregate: trung bình theo skill × tuần
+  // Aggregate: average per skill × week
   const heatmapData: HeatmapCell[] = [];
 
   // Group by (year, weekNumber, skill)
@@ -123,6 +123,8 @@ async getSkillHeatmap(userId: string, weeksBack = 12) {
 ```
 
 ### Frontend Heatmap Display
+
+> Mockup reflects the Vietnamese UI as built (Nghe = Listening, Đọc = Reading, Viết = Writing).
 
 ```
 Student Dashboard → Progress → Skill Heatmap
@@ -182,9 +184,9 @@ async getProgressChart(userId: string, skill?: string, monthsBack = 6) {
 ### Frontend Chart
 
 ```
-Student Dashboard → Progress → Tiến bộ theo thời gian
+Student Dashboard → Progress → Progress over time
 ┌──────────────────────────────────────────────────────┐
-│ 📈 Điểm trung bình (6 tháng qua)                    │
+│ 📈 Điểm trung bình (6 tháng qua) — "Average score"   │
 │                                                       │
 │ 100 ──────────────────────────────────────────       │
 │  80 ────────────────────────────── 🟢 Đọc ────       │
@@ -259,7 +261,7 @@ async getClassAnalytics(classId: string, teacherId: string) {
 ### Score Distribution (Histogram)
 
 ```typescript
-// Phân bố điểm cho 1 assignment
+// Score distribution for a single assignment
 async getScoreDistribution(assignmentId: string) {
   const attempts = await this.prisma.attempt.findMany({
     where: { assignmentId, status: 'graded' },
@@ -342,7 +344,7 @@ async detectWeakStudents(classId: string): Promise<WeakStudentAlert[]> {
 
 ## 7. API Reference
 
-| Method | Endpoint | Role | Mô tả |
+| Method | Endpoint | Role | Description |
 |--------|----------|------|-------|
 | `GET` | `/skill-scores/heatmap` | Student | Skill heatmap data |
 | `GET` | `/skill-scores/progress` | Student | Progress chart data |
@@ -356,7 +358,7 @@ async detectWeakStudents(classId: string): Promise<WeakStudentAlert[]> {
 ## 8. API Quota Tracking (Admin)
 
 ```typescript
-// Mỗi lần gọi Gemini API, log vào DB
+// Every Gemini API call is logged to the DB
 // admin.service.ts
 async getApiQuotaStats(days = 30) {
   const startDate = subDays(new Date(), days);
