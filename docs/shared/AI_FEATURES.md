@@ -1,7 +1,11 @@
 # 🤖 AI_FEATURES.md — AI-Powered Features
 
 > **AI Provider**: Google Gemini 1.5 Flash (Free tier)  
-> **Backup**: OpenAI GPT-4o-mini (nếu Gemini không đủ)
+> **Backup**: OpenAI GPT-4o-mini (if Gemini proves insufficient)
+
+> The Gemini prompt below is written in Vietnamese on purpose — it instructs the
+> model to produce feedback in Vietnamese for Vietnamese-speaking students. Do not
+> translate it; doing so would change the model's output language.
 
 ---
 
@@ -9,7 +13,7 @@
 
 | Feature | AI Role | Sprint |
 |---------|---------|--------|
-| Writing Grader | Suggest điểm + feedback | S4 |
+| Writing Grader | Suggests a score + feedback | S4 |
 | Weak Student Detection | Pattern analysis | S5 |
 | Question Difficulty Estimator | Suggest HSK level | S3 (optional) |
 | Study Recommendations | Next content to study | S7 (optional) |
@@ -36,8 +40,8 @@ Gemini API → structured JSON response
 Return: { suggestedScore, feedback, strengths, improvements }
           │
           ▼
-Teacher REVIEWS và CONFIRMS (hoặc override score)
-          ─── KHÔNG auto-apply AI score ───
+Teacher REVIEWS and CONFIRMS (or overrides the score)
+          ─── the AI score is NEVER auto-applied ───
 ```
 
 ### NestJS Implementation
@@ -111,9 +115,9 @@ Trả về JSON với format CHÍNH XÁC (không markdown):
 ### Rate Limiting
 
 ```typescript
-// Để tránh exceed Gemini free tier (60 req/min):
-// Chỉ call AI khi teacher bấm nút, không auto-call
-// Cache kết quả AI trong DB (nếu teacher nhấn lại)
+// To avoid exceeding the Gemini free tier (60 req/min):
+// Only call the AI when the teacher clicks the button — never automatically
+// Cache the AI result in the DB (in case the teacher clicks again)
 
 interface AttemptAnswer {
   // ... existing fields
@@ -132,7 +136,7 @@ interface AttemptAnswer {
 ```typescript
 // analytics.service.ts
 async detectWeakStudents(classId: string): Promise<WeakStudentAlert[]> {
-  // Lấy điểm 5 assignments gần nhất của từng student
+  // Fetch each student's scores from the 5 most recent assignments
   const recentAttempts = await this.prisma.attempt.findMany({
     where: {
       assignment: { classId },
@@ -148,7 +152,7 @@ async detectWeakStudents(classId: string): Promise<WeakStudentAlert[]> {
   for (const student of students) {
     const studentAttempts = recentAttempts.filter(a => a.userId === student.id);
 
-    // Alert nếu: điểm trung bình < 50% hoặc 3/5 bài đều dưới 50%
+    // Alert if: average score < 50%, or 3 of the last 5 are below 50%
     const avgScore = average(studentAttempts.map(a =>
       (a.totalScore / a.assignment.maxScore) * 100
     ));
@@ -196,14 +200,14 @@ export const GeminiConfig = {
   DAILY_LIMIT: 1000,        // Conservative limit (actual: unlimited for Flash)
   PER_MINUTE_LIMIT: 60,
   MAX_TOKENS_PER_REQUEST: 1000,
-  CACHE_TTL_HOURS: 24,     // Cache AI responses để tránh duplicate calls
+  CACHE_TTL_HOURS: 24,     // Cache AI responses to avoid duplicate calls
 };
 
-// Rate limiter middleware cho AI endpoints
+// Rate limiter middleware for the AI endpoints
 @Injectable()
 export class AiRateLimiterGuard implements CanActivate {
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    // Check daily usage từ DB
+    // Check today's usage from the DB
     const todayCount = await this.getAiCallCount(today);
     if (todayCount >= GeminiConfig.DAILY_LIMIT) {
       throw new BusinessException('AI_QUOTA_EXCEEDED', 'Đã hết quota AI hôm nay', 429);
@@ -215,7 +219,9 @@ export class AiRateLimiterGuard implements CanActivate {
 
 ---
 
-## 5. UI/UX cho AI Grading
+## 5. UI/UX for AI Grading
+
+> Mockup shows the Vietnamese UI as built.
 
 ```
 Teacher Grading Panel:
@@ -240,4 +246,4 @@ Teacher Grading Panel:
 └──────────────────────────────────────────────────────┘
 ```
 
-> 📌 **Quan trọng**: AI chỉ là gợi ý. Teacher phải nhập điểm cuối cùng.
+> 📌 **Important**: the AI only suggests. The teacher must enter the final score.
