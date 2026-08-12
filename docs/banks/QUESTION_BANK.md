@@ -1,27 +1,29 @@
 # 📝 QUESTION_TYPES.md — HSK Question Types
 
-> **Nguồn**: Chuẩn thi HSK mới (HSK 3.0, 2021)  
+> **Source**: The new HSK exam standard (HSK 3.0, 2021)  
 > **Storage**: MongoDB (flexible schema)
 
+> Chinese text in the examples below is genuine question content, not documentation prose — it stays as-is.
+
 ---
 
-## 1. Tổng quan Question Types
+## 1. Question Types Overview
 
-| Skill | Sub-type | Mô tả | Auto-grade |
+| Skill | Sub-type | Description | Auto-grade |
 |-------|---------|-------|-----------|
-| **Listening** | `listen_mcq` | Nghe và chọn đáp án | ✅ |
-| **Listening** | `listen_true_false` | Nghe và phán đoán đúng/sai | ✅ |
-| **Listening** | `listen_dialogue_mcq` | Nghe hội thoại, chọn đáp án | ✅ |
-| **Reading** | `read_mcq` | Đọc đoạn văn, chọn đáp án | ✅ |
-| **Reading** | `read_true_false` | Đọc và phán đoán | ✅ |
-| **Reading** | `read_gap_fill` | Điền từ vào chỗ trống (word bank) | ✅ |
-| **Reading** | `read_sentence_order` | Sắp xếp câu | ✅ (array comparison) |
-| **Writing** | `write_short` | Viết câu ngắn (1-2 câu) | ❌ Manual |
-| **Writing** | `write_paragraph` | Viết đoạn văn | ❌ Manual |
+| **Listening** | `listen_mcq` | Listen and choose an answer | ✅ |
+| **Listening** | `listen_true_false` | Listen and judge true/false | ✅ |
+| **Listening** | `listen_dialogue_mcq` | Listen to a dialogue, choose an answer | ✅ |
+| **Reading** | `read_mcq` | Read a passage, choose an answer | ✅ |
+| **Reading** | `read_true_false` | Read and judge | ✅ |
+| **Reading** | `read_gap_fill` | Fill in the blanks (word bank) | ✅ |
+| **Reading** | `read_sentence_order` | Put sentences in order | ✅ (array comparison) |
+| **Writing** | `write_short` | Write a short answer (1–2 sentences) | ❌ Manual |
+| **Writing** | `write_paragraph` | Write a paragraph | ❌ Manual |
 
 ---
 
-## 2. MongoDB Schema theo Type
+## 2. MongoDB Schema by Type
 
 ### 2.1 Listening MCQ (`listen_mcq`)
 
@@ -110,7 +112,7 @@
       { "id": "D", "text": "现在我每天跑步" }
     ]
   },
-  "correctAnswer": ["C", "B", "A", "D"],  // Thứ tự đúng
+  "correctAnswer": ["C", "B", "A", "D"],  // The correct order
   "pointValue": 2
 }
 ```
@@ -143,7 +145,7 @@
   "content": {
     "instruction": "请写一段80-100字的短文",
     "prompt": "介绍你最喜欢的节日，包括：时间、活动、你的感受",
-    "keywords": ["节日", "传统", "家人", "快乐"]  // Gợi ý từ cần dùng
+    "keywords": ["节日", "传统", "家人", "快乐"]  // Suggested words to use
   },
   "correctAnswer": null,
   "maxScore": 10,
@@ -153,7 +155,7 @@
 
 ---
 
-## 3. Frontend Rendering theo Type
+## 3. Frontend Rendering by Type
 
 | subType | Component | Input type |
 |---------|-----------|-----------|
@@ -161,7 +163,7 @@
 | `listen_true_false` | `TrueFalseQuestion` | True/False buttons |
 | `read_mcq` | `ReadingQuestion` | Radio buttons |
 | `read_true_false` | `TrueFalseQuestion` | True/False buttons |
-| `read_gap_fill` | `GapFillQuestion` | Drag-and-drop hoặc dropdown |
+| `read_gap_fill` | `GapFillQuestion` | Drag-and-drop or dropdown |
 | `read_sentence_order` | `SentenceOrderQuestion` | Drag-and-drop |
 | `write_short` | `WritingQuestion` | Textarea (max 200 chars) |
 | `write_paragraph` | `WritingQuestion` | Textarea (max 500 chars) |
@@ -181,11 +183,11 @@ function autoGrade(question: Question, studentAnswer: any): boolean | null {
       return studentAnswer === question.correctAnswer;
 
     case 'read_gap_fill':
-      // correctAnswer là object: { blank_1: "七", blank_2: "吃" }
+      // correctAnswer is an object: { blank_1: "七", blank_2: "吃" }
       return JSON.stringify(studentAnswer) === JSON.stringify(question.correctAnswer);
 
     case 'read_sentence_order':
-      // correctAnswer là array: ["C", "B", "A", "D"]
+      // correctAnswer is an array: ["C", "B", "A", "D"]
       return Array.isArray(studentAnswer) &&
         studentAnswer.join('') === question.correctAnswer.join('');
 
@@ -204,27 +206,27 @@ function autoGrade(question: Question, studentAnswer: any): boolean | null {
 ## 5. Teacher Create Question Flow
 
 ```
-Teacher mở form tạo câu hỏi
+Teacher opens the question-creation form
 │
-├── 1. Chọn Skill: [Listening] [Reading] [Writing]
+├── 1. Choose a Skill: [Listening] [Reading] [Writing]
 │
-├── 2. Chọn Sub-type (tùy theo skill):
+├── 2. Choose a Sub-type (depends on the skill):
 │   Listening → [MCQ] [True/False] [Dialogue MCQ]
 │   Reading   → [MCQ] [True/False] [Gap Fill] [Sentence Order]
 │   Writing   → [Short] [Paragraph]
 │
-├── 3. Chọn HSK Level: [1] [2] [3] [4] [5] [6]
+├── 3. Choose an HSK Level: [1] [2] [3] [4] [5] [6] [7] [8] [9]
 │
-└── 4. Form fields thay đổi theo sub-type:
+└── 4. Form fields change per sub-type:
     listen_mcq:
-    - Upload audio file (Cloudinary)
-    - Nhập transcript (hidden)
-    - Nhập 4 options A/B/C/D
-    - Chọn correct answer
-    
+    - Upload an audio file (Cloudinary)
+    - Enter the transcript (hidden)
+    - Enter the 4 options A/B/C/D
+    - Select the correct answer
+
     write_paragraph:
-    - Nhập instruction
-    - Nhập prompt
-    - Nhập rubric
-    - Chọn maxScore (5 hoặc 10)
+    - Enter the instruction
+    - Enter the prompt
+    - Enter the rubric
+    - Choose maxScore (5 or 10)
 ```

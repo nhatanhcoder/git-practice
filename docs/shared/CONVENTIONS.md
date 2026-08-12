@@ -1,7 +1,7 @@
-# 📏 CONVENTIONS.md — Quy ước Code & Git
+# 📏 CONVENTIONS.md — Code & Git Conventions
 
-> **Áp dụng cho**: Toàn bộ dự án (FE + BE)  
-> **Cập nhật**: 2026-07-09
+> **Applies to**: the entire project (FE + BE)  
+> **Updated**: 2026-07-09
 
 ---
 
@@ -13,7 +13,7 @@
 main          → Production-ready code (protected)
 develop       → Integration branch
 │
-├── feature/  → Tính năng mới
+├── feature/  → New features
 │   └── feature/S1-auth-login
 │   └── feature/S2-class-enrollment
 │
@@ -30,12 +30,12 @@ develop       → Integration branch
 <type>(<scope>): <description>
 
 Types:
-  feat     → Tính năng mới
-  fix      → Sửa bug
-  docs     → Chỉnh tài liệu
-  style    → Formatting (không đổi logic)
-  refactor → Refactor code
-  test     → Thêm/sửa tests
+  feat     → A new feature
+  fix      → A bug fix
+  docs     → Documentation changes
+  style    → Formatting (no logic change)
+  refactor → Refactoring
+  test     → Adding/updating tests
   chore    → Build, deps, config
 
 Scope: auth | users | classes | questions | assignments | attempts | flashcards | analytics | payroll | invoices | notifs | shared
@@ -50,23 +50,23 @@ Examples:
 ### Pull Request Template
 
 ```markdown
-## Mô tả
-[Mô tả ngắn gọn thay đổi]
+## Description
+[Brief description of the change]
 
 ## Sprint Task
-- [ ] Closes #S1-03 (Task ID từ TASK_BOARD.md)
+- [ ] Closes #S1-03 (Task ID from TASK_BOARD.md)
 
-## Loại thay đổi
-- [ ] feat: Tính năng mới
-- [ ] fix: Sửa bug
+## Type of change
+- [ ] feat: a new feature
+- [ ] fix: a bug fix
 - [ ] refactor
 
 ## Checklist
-- [ ] Code đã được lint (`pnpm lint`)
-- [ ] TypeScript không có errors (`pnpm type-check`)
-- [ ] Đã viết/cập nhật tests
-- [ ] Swagger docs cập nhật (nếu có API mới)
-- [ ] .env.example cập nhật (nếu có env mới)
+- [ ] Code is linted (`pnpm lint`)
+- [ ] TypeScript has no errors (`pnpm type-check`)
+- [ ] Tests written/updated
+- [ ] Swagger docs updated (if a new API was added)
+- [ ] .env.example updated (if a new env var was added)
 ```
 
 ---
@@ -84,17 +84,17 @@ interface CreateClassDto {
 // ❌ BAD: Avoid any
 function processData(data: any) { ... }
 
-// ✅ GOOD: Use enums cho fixed values
+// ✅ GOOD: Use enums for fixed values
 enum UserRole {
   ADMIN = 'admin',
   TEACHER = 'teacher',
   STUDENT = 'student',
 }
 
-// ✅ GOOD: Return type explicit cho services
+// ✅ GOOD: Explicit return types on services
 async findById(id: string): Promise<User | null> { ... }
 
-// ✅ GOOD: Destructure với types
+// ✅ GOOD: Destructure with types
 const { id, role }: JwtPayload = req.user;
 ```
 
@@ -105,13 +105,13 @@ const { id, role }: JwtPayload = req.user;
 ### Module Structure
 
 ```typescript
-// Mỗi feature module có đúng cấu trúc:
+// Every feature module follows exactly this structure:
 modules/
 └── classes/
     ├── classes.module.ts        // @Module decorator
     ├── classes.controller.ts    // HTTP handlers only
     ├── classes.service.ts       // Business logic
-    ├── classes.repository.ts    // DB queries (optional, nếu phức tạp)
+    ├── classes.repository.ts    // DB queries (optional, when complex)
     └── dto/
         ├── create-class.dto.ts
         ├── update-class.dto.ts
@@ -123,16 +123,16 @@ modules/
 ```typescript
 @Controller('classes')
 @ApiTags('Classes')                           // Swagger group
-@UseGuards(JwtAuthGuard, RolesGuard)          // Auth guard luôn ở controller level
+@UseGuards(JwtAuthGuard, RolesGuard)          // Auth guard always at controller level
 export class ClassesController {
 
   @Post()
-  @Roles('teacher')                           // Role ở method level
-  @ApiOperation({ summary: 'Tạo lớp học mới' })
+  @Roles('teacher')                           // Role at method level
+  @ApiOperation({ summary: 'Create a new class' })
   @ApiResponse({ status: 201, type: ClassResponseDto })
   async create(
-    @Body() dto: CreateClassDto,              // DTO với validation
-    @CurrentUser() user: JwtPayload,          // User từ JWT
+    @Body() dto: CreateClassDto,              // DTO with validation
+    @CurrentUser() user: JwtPayload,          // User from the JWT
   ): Promise<ApiResponse<ClassResponseDto>> {
     const result = await this.classesService.create(dto, user.sub);
     return { success: true, data: result };
@@ -148,7 +148,7 @@ export class ClassesService {
 
   constructor(private readonly prisma: PrismaService) {}
 
-  // ✅ Throw BusinessException, không trả null cho not found
+  // ✅ Throw a BusinessException; never return null for not-found
   async findById(id: string, userId: string): Promise<Class> {
     const cls = await this.prisma.class.findUnique({ where: { id } });
     if (!cls) throw new BusinessException('CLASS_NOT_FOUND', '...', 404);
@@ -174,14 +174,14 @@ kebab-case  → Route segments (app/student/class-detail/)
 ### Component Structure
 
 ```typescript
-// ✅ GOOD: Props interface trước component
+// ✅ GOOD: Props interface before the component
 interface ClassCardProps {
   classData: ClassDto;
   onEnroll?: () => void;
 }
 
 export function ClassCard({ classData, onEnroll }: ClassCardProps) {
-  // Hooks ở đầu
+  // Hooks first
   const router = useRouter();
   const { user } = useAuth();
 
@@ -230,28 +230,28 @@ function ClassList() {
 ### Prisma
 
 ```prisma
-// ✅ camelCase cho field names
+// ✅ camelCase for field names
 model User {
   id        String   @id @default(cuid())
   fullName  String                          // camelCase
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@map("users")                            // snake_case cho table name
+  @@map("users")                            // snake_case for the table name
 }
 ```
 
 ### MongoDB (Mongoose)
 
 ```typescript
-// ✅ snake_case cho MongoDB field names (JSON convention)
+// ✅ snake_case for MongoDB field names (JSON convention)
 const QuestionSchema = new Schema({
   hsk_level: { type: Number, required: true },
   created_by: { type: String, required: true },
   // ...
 });
 
-// Virtual để map sang camelCase khi cần:
+// A virtual maps back to camelCase where needed:
 QuestionSchema.set('toJSON', {
   virtuals: true,
   transform: (doc, ret) => {
@@ -266,9 +266,9 @@ QuestionSchema.set('toJSON', {
 ## 6. API Conventions
 
 - **URL**: kebab-case, plural nouns: `/api/v1/classes`, `/api/v1/flash-cards`
-- **Version**: Luôn prefix `/api/v1/`
+- **Version**: always prefixed `/api/v1/`
 - **Filtering**: Query params: `GET /questions?skill=listening&hskLevel=3&page=1`
-- **ID in path**: `GET /classes/:classId` (descriptive, không phải `:id`)
+- **ID in path**: `GET /classes/:classId` (descriptive, not `:id`)
 - **Actions**: `POST /classes/:classId/archive` (verb as last segment)
 - **Pagination**: `{ data: [...], meta: { total, page, limit, totalPages } }`
 
@@ -278,7 +278,7 @@ QuestionSchema.set('toJSON', {
 
 ```typescript
 // ✅ Test file naming: [name].spec.ts (unit) / [name].e2e-spec.ts (e2e)
-// ✅ Describe theo class/function, it() theo behavior
+// ✅ describe() per class/function, it() per behavior
 
 describe('ClassesService', () => {
   describe('enroll()', () => {
