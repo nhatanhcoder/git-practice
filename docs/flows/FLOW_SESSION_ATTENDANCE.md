@@ -1,4 +1,4 @@
-# 📅 SESSION_ATTENDANCE.md — Buổi học & Điểm danh
+# 📅 SESSION_ATTENDANCE.md — Class Sessions & Attendance
 
 > **Sprint**: S6 — Payroll + Invoicing + Notifications  
 > **Module**: ClassSessionsModule (NestJS)  
@@ -6,22 +6,22 @@
 
 ---
 
-## 1. Tổng quan
+## 1. Overview
 
-ClassSession là bản ghi cho mỗi buổi dạy thực tế. Teacher log buổi học sau khi dạy xong, bao gồm:
-- Chủ đề bài học (lesson topic)
-- Thời gian thực tế (actual start/end)
-- Điểm danh học sinh
-- Status flow để admin duyệt → tính lương
+A ClassSession is the record of one actual teaching session. The teacher logs it after teaching, capturing:
+- The lesson topic
+- The actual times (actual start/end)
+- Student attendance
+- A status flow for admin approval → salary calculation
 
 ---
 
 ## 2. Session State Machine
 
 ```
-Teacher tạo session (scheduled)
+Teacher creates a session (scheduled)
           │
-          │ Teacher dạy xong, ghi topic + attendance
+          │ Teacher finishes teaching, records topic + attendance
           ▼
     COMPLETED_PENDING ──────────────────────► Admin review
           │
@@ -30,23 +30,23 @@ Teacher tạo session (scheduled)
           │                          │            │
           │                       APPROVED     REJECTED
           │                          │            │
-          │                          │            └── Teacher chỉnh sửa và resubmit
+          │                          │            └── Teacher edits and resubmits
           │                          │
-          │                          ▼ (khi tạo PayrollPeriod và finalize)
+          │                          ▼ (when a PayrollPeriod is created and finalized)
           │                        PAID
           │
-          └── Admin reject: session về REJECTED state
+          └── Admin rejects: the session moves to the REJECTED state
 ```
 
 ---
 
 ## 3. Teacher Flow
 
-### 3.1 Tạo Buổi học (Pre-schedule)
+### 3.1 Create a Session (Pre-schedule)
 
 ```typescript
 // POST /api/v1/classes/:classId/sessions
-// Thường pre-schedule trước khi dạy
+// Usually pre-scheduled before teaching
 {
   sessionDate: "2026-07-15",
   startTime: "2026-07-15T14:00:00Z",
@@ -55,7 +55,9 @@ Teacher tạo session (scheduled)
 // → status: "scheduled"
 ```
 
-### 3.2 Submit Buổi học Sau Khi Dạy
+### 3.2 Submit the Session After Teaching
+
+> Payload strings below are Vietnamese — they are content the teacher types in the Vietnamese UI.
 
 ```typescript
 // PATCH /api/v1/sessions/:sessionId/submit
@@ -71,30 +73,30 @@ Teacher tạo session (scheduled)
   ]
 }
 // → status: "completed_pending"
-// → Tạo Notification cho admin: "Teacher X đã submit buổi học"
+// → Creates a Notification for the admin: "Teacher X submitted a session"
 ```
 
-### 3.3 Xem Sessions của Mình
+### 3.3 View Their Own Sessions
 
 ```
-GET /api/v1/classes/:classId/sessions    → Sessions của lớp
-GET /api/v1/sessions/:sessionId          → Chi tiết session
-GET /api/v1/sessions/my                  → Tất cả sessions của teacher (filter theo month)
+GET /api/v1/classes/:classId/sessions    → The class's sessions
+GET /api/v1/sessions/:sessionId          → Session detail
+GET /api/v1/sessions/my                  → All of the teacher's sessions (filterable by month)
 ```
 
 ---
 
 ## 4. Admin Flow
 
-### 4.1 Duyệt Session
+### 4.1 Approve a Session
 
 ```typescript
 // PATCH /api/v1/admin/sessions/:sessionId/approve
 // → status: "approved"
-// → Tạo Notification cho teacher: "Buổi học ngày X đã được duyệt"
+// → Creates a Notification for the teacher: "Your session on X was approved"
 ```
 
-### 4.2 Từ chối Session
+### 4.2 Reject a Session
 
 ```typescript
 // PATCH /api/v1/admin/sessions/:sessionId/reject
@@ -102,14 +104,14 @@ GET /api/v1/sessions/my                  → Tất cả sessions của teacher (
   rejectionReason: "Thời gian thực tế không khớp với lịch. Vui lòng kiểm tra lại."
 }
 // → status: "rejected"
-// → Tạo Notification cho teacher với rejectionReason
+// → Creates a Notification for the teacher carrying the rejectionReason
 ```
 
-### 4.3 Xem Sessions Pending
+### 4.3 View Pending Sessions
 
 ```
-GET /api/v1/admin/sessions?status=completed_pending  → Sessions chờ duyệt
-GET /api/v1/admin/sessions?teacherId=...&month=2026-07  → Sessions của teacher trong tháng
+GET /api/v1/admin/sessions?status=completed_pending  → Sessions awaiting approval
+GET /api/v1/admin/sessions?teacherId=...&month=2026-07  → A teacher's sessions for the month
 ```
 
 ---
@@ -217,6 +219,8 @@ async getAttendanceSummary(classId: string) {
 
 ### Teacher — Session Log UI
 
+> Mockups below show the Vietnamese UI as built.
+
 ```
 Teacher Dashboard → Classes → [Lớp HSK 3] → Sessions tab
 ┌──────────────────────────────────────────────────────┐
@@ -249,14 +253,14 @@ Admin Dashboard → Sessions
 
 ## 8. API Reference
 
-| Method | Endpoint | Role | Mô tả |
+| Method | Endpoint | Role | Description |
 |--------|----------|------|-------|
-| `POST` | `/classes/:classId/sessions` | Teacher | Tạo/lên lịch buổi học |
-| `GET` | `/classes/:classId/sessions` | Teacher, Admin | Danh sách sessions |
-| `GET` | `/sessions/:id` | Teacher, Admin | Chi tiết session |
-| `PATCH` | `/sessions/:id/submit` | Teacher | Submit sau khi dạy |
-| `PATCH` | `/sessions/:id` | Teacher | Cập nhật session (khi bị reject) |
-| `PATCH` | `/admin/sessions/:id/approve` | Admin | Duyệt session |
-| `PATCH` | `/admin/sessions/:id/reject` | Admin | Từ chối session |
-| `GET` | `/admin/sessions` | Admin | Tất cả sessions (filter) |
-| `GET` | `/classes/:classId/attendance-summary` | Teacher | Tổng hợp điểm danh |
+| `POST` | `/classes/:classId/sessions` | Teacher | Create/schedule a session |
+| `GET` | `/classes/:classId/sessions` | Teacher, Admin | List sessions |
+| `GET` | `/sessions/:id` | Teacher, Admin | Session detail |
+| `PATCH` | `/sessions/:id/submit` | Teacher | Submit after teaching |
+| `PATCH` | `/sessions/:id` | Teacher | Update a session (after a rejection) |
+| `PATCH` | `/admin/sessions/:id/approve` | Admin | Approve a session |
+| `PATCH` | `/admin/sessions/:id/reject` | Admin | Reject a session |
+| `GET` | `/admin/sessions` | Admin | All sessions (filterable) |
+| `GET` | `/classes/:classId/attendance-summary` | Teacher | Attendance summary |

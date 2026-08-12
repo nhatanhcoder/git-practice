@@ -1,21 +1,21 @@
-# 🧾 INVOICE_FLOW.md — Luồng Hóa đơn Học phí
+# 🧾 INVOICE_FLOW.md — Tuition Invoice Flow
 
 ---
 
-## 1. Flow Tổng quan
+## 1. Flow Overview
 
 ```
-Admin set StudentTuitionRate (học phí/tháng)
+Admin sets a StudentTuitionRate (tuition per month)
            │
            ▼
-Admin tạo StudentInvoice cho period
+Admin creates a StudentInvoice for the period
            │
            ▼
 StudentInvoice: UNPAID
            │
-           │ Student hoặc Admin ghi nhận thanh toán
+           │ The student or admin records a payment
            ▼
-TuitionPayment được tạo
+A TuitionPayment is created
            │
     ┌──────┴──────┐
     │             │
@@ -30,25 +30,27 @@ PARTIALLY_PAID   PAID
 ## 2. Entities
 
 ```typescript
-// StudentTuitionRate: Học phí áp dụng cho student
-// - effectiveFrom: Từ ngày nào áp dụng
-// - rateAmount: Số tiền/period (VND)
-// - Support thay đổi học phí theo thời gian
+// StudentTuitionRate: the tuition that applies to a student
+// - effectiveFrom: the date it takes effect
+// - rateAmount: amount per period (VND)
+// - Supports tuition changes over time
 
-// StudentInvoice: Hóa đơn cho 1 kỳ học
-// - periodStart, periodEnd: Kỳ học (thường 1 tháng)
-// - totalAmount: Tổng phải nộp
+// StudentInvoice: an invoice for one study period
+// - periodStart, periodEnd: the period (usually one month)
+// - totalAmount: the total owed
 // - status: unpaid | partially_paid | paid | void
 
-// TuitionPayment: Mỗi lần thanh toán
-// - amount: Số tiền đã trả lần này
+// TuitionPayment: one individual payment
+// - amount: the amount paid this time
 // - paymentMethod: cash | bank_transfer | momo | ...
-// - transactionReference: Mã giao dịch
+// - transactionReference: the transaction ID
 ```
 
 ---
 
 ## 3. Student View
+
+> Mockups below show the Vietnamese UI as built.
 
 ```
 Student Dashboard → Hóa đơn
