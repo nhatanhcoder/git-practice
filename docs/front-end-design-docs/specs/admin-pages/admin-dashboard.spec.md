@@ -1,136 +1,43 @@
 ---
 page: Admin · Dashboard
 route: /admin
-source_contract: ../pages/admin-pages/admin-dashboard.md
+contract: ../../pages/admin-pages/admin-dashboard.md
+requires: _DESIGN-SYSTEM.md
 status: ready-for-design
 last_updated: 2026-08-11
 ---
 
-# Design Spec — Admin · Dashboard
+# Page Spec — Admin · Dashboard
 
-> **Paste this entire file into Claude Design, together with the `ui-ux-pro-max` skill.**
-> Self-contained by design — every token, string, and number needed is below.
-> Do not look for other files.
-
----
-
-## 0. Build target
-
-A single self-contained HTML file (inline CSS + JS, no build step). Desktop-first at
-1440px, responsive to 375px. Static mockup, all data hardcoded from §6.
-The chart is **inline SVG** — no charting library, no CDN.
+> **Paste this together with `_DESIGN-SYSTEM.md`.**
+> That file holds the tokens, layout shell, standard components, chart rules and global
+> do-NOTs. This file holds only what is specific to this page.
+>
+> **If you were not given `_DESIGN-SYSTEM.md`, stop and ask for it.** Do not invent
+> colours, fonts or spacing — this product has a locked design system.
 
 ---
 
-## 1. Product context
+## 1. Purpose
 
-**Product:** HSK Learning Platform — a Chinese-language teaching platform (HSK 1–9) with
-three roles: Admin, Teacher, Student.
+the Admin's landing screen after login. Its only job is to answer *"what needs my attention today?"* and send the Admin to the right screen. It is a **hub, not a workspace** — nothing is approved or edited here.
 
-**This page:** the Admin's landing screen after login. Its only job is to answer
-*"what needs my attention today?"* and send the Admin to the right screen. It is a
-**hub, not a workspace** — nothing is approved or edited here.
+## 2. Access
 
-**Audience and tone:** administrative and accounting staff handling tuition and teacher
-payroll, often on a large monitor all day. Precise and trustworthy, high information
-density, no decoration. Reference points: Linear, Stripe Dashboard.
+admin. No ownership rule (global scope). On denial → `/login`.
 
-**Explicitly rejected:** purple/gradient "AI dashboard" styling, dark+neon themes,
-glassmorphism, large rounded corners, decorative illustrations, emoji as icons,
-progress rings, gauge/speedometer widgets. Ruled out deliberately — do not reintroduce.
+## 3. API mapping
 
----
+| Region / action | Method + path | Envelope | Errors |
+|---|---|---|---|
+| All KPI + queues + chart | `GET /api/v1/admin/dashboard/stats` | `data` | — |
+| KPI / queue row click | *navigation only, no request* | — | — |
 
-## 2. Design tokens — use these exact values
+⛔ **Payload shape unconfirmed.** `stats` must return at minimum `pendingUsers`,
+`suspendedUsers`, `totalUsers`, `activeClasses`, `pendingSessions`, `revenueThisMonth`,
+`payrollThisMonth`, plus a 6-month revenue/payroll series. Confirm before build.
 
-### Colour — interface
-
-| Role | Hex | Use |
-|---|---|---|
-| Primary | `#0F172A` | Sidebar, headings, primary button |
-| Primary hover | `#1E293B` | Primary hover |
-| Accent | `#2563EB` | Links, active nav, focus ring |
-| Background | `#F8FAFC` | Page background |
-| Surface | `#FFFFFF` | Cards, chart surface |
-| Border | `#E2E8F0` | Card borders, dividers |
-| Text primary | `#0F172A` | Headings, KPI values |
-| Text secondary | `#475569` | Labels, captions, axes |
-
-### Colour — chart series (2 series, categorical)
-
-| Series | Hex | Meaning |
-|---|---|---|
-| Thu học phí (revenue) | `#2563EB` | tuition collected |
-| Chi lương (payroll) | `#EA580C` | teacher salary paid |
-
-This pair was **validated, not chosen by eye**: adjacent-pair separation ΔE 31.3
-(protanopia), 34.6 (tritanopia), 39.6 (normal vision) against a white surface — passes
-lightness band, chroma floor, CVD separation, and 3:1 contrast. **Do not substitute
-other hues.**
-
-**Do not use the status colours below for chart series.** Green-for-revenue and
-red-for-payroll is the obvious instinct and it is wrong here: those hues are reserved
-for state, and reusing them makes a normal payroll month read as an error.
-
-### Colour — status (reserved; not used on this page, listed so they are not borrowed)
-
-`#16A34A` success · `#D97706` warning · `#DC2626` danger · `#0284C7` info · `#64748B` neutral
-
-### Typography
-
-```
-@import url('https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700&family=Source+Sans+3:wght@400;500;600&display=swap');
-```
-
-- Headings and KPI values → **Lexend**
-- Body, labels, axes, tables → **Source Sans 3**
-- Must render Vietnamese diacritics correctly — all UI copy is Vietnamese
-- All numbers use `font-variant-numeric: tabular-nums`
-
-### Spacing, radius, elevation
-
-| Token | Value |
-|---|---|
-| Base unit | `8px` (all spacing a multiple of 8) |
-| Card padding | `20px` desktop, `16px` mobile |
-| Radius | `8px` cards, `6px` buttons |
-| Shadow | `shadow-sm`; `shadow-md` only on hoverable cards |
-| Sidebar | `240px`, background `#0F172A` |
-| Header | `56px`, sticky |
-| Grid gap | `16px` between cards |
-
-### Breakpoints
-
-`375px` · `768px` (sidebar collapses) · `1024px` · `1440px` (content max-width caps)
-
-### Icons
-
-**Lucide only**, inline SVG, `stroke-width: 2`. Sizes `16px` inline, `20px` action, `24px` nav/KPI.
-Needed: `layout-dashboard`, `users`, `receipt`, `wallet`, `activity`, `bell`, `chevron-right`, `arrow-up-right`, `arrow-down-right`, `inbox`, `alert-circle`, `table`.
-
----
-
-## 3. Layout shell
-
-```
-┌──────────────┬────────────────────────────────────────────┐
-│  Sidebar     │  Header 56px sticky                        │
-│  240px       │  Trang chủ              [bell 2] [avatar ▾]│
-│  #0F172A     ├────────────────────────────────────────────┤
-│              │  Tổng quan                                 │
-│  Logo        │  ┌──────┐┌──────┐┌──────┐┌──────┐          │
-│  ─ Tổng quan◄│  │ KPI  ││ KPI  ││ KPI  ││ KPI  │          │
-│  ─ Tài khoản │  └──────┘└──────┘└──────┘└──────┘          │
-│  ─ Học phí   │  ┌───────────────┐┌───────────────┐        │
-│  ─ Lương     │  │ Chờ duyệt     ││ Buổi chờ duyệt│        │
-│  ─ Giám sát  │  └───────────────┘└───────────────┘        │
-│              │  ┌──────────────────────────────────────┐  │
-│              │  │ Thu & chi 6 tháng gần nhất (chart)   │  │
-│              │  └──────────────────────────────────────┘  │
-└──────────────┴────────────────────────────────────────────┘
-```
-
-Sidebar nav (active = **Tổng quan**): `Tổng quan` · `Tài khoản` · `Học phí` · `Lương` · `Giám sát`
+This page **never mutates**. Every interaction is navigation.
 
 ---
 
@@ -304,28 +211,3 @@ of the design (monospace, muted, thin border):
 - Do not add approve/reject/edit actions — this page only navigates
 - Do not render the incomplete current month as a solid line
 - Do not render Ready only — Empty, Partial and Error are required deliverables
-
----
-
-## 11. Instructions for `ui-ux-pro-max`
-
-Use it for **dashboard layout and information hierarchy**: KPI-row rhythm, the balance
-between the queue cards and the chart, card density, and empty-state craft on a
-data-dense B2B admin screen.
-
-**Do not run its design-system generator, and do not take its palette or font pairing.**
-This project has a locked design system, reproduced in §2. Where any suggestion conflicts
-with §2, §5, or §10 — including the validated chart pair — **§2/§5/§10 win**. Keep only
-structure and anti-pattern advice.
-
----
-
-## 12. Deliverable
-
-One `.html` file:
-
-- All CSS in one `<style>` block, all JS in one `<script>` block
-- Google Fonts via `@import`; Lucide icons inline SVG; chart as hand-written inline SVG; no other network requests
-- The §7 state switcher wired and working
-- Renders correctly at 1440px, 1024px, 768px, 375px
-- Text contrast ≥ 4.5:1; chart series ≥ 3:1 against white (the §2 values already satisfy both — do not deviate)

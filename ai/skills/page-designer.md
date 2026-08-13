@@ -10,13 +10,16 @@ related:
 
 # Skill: page-designer
 
-> **What it does:** turns a Page Contract into a **Design Spec** — a single portable
-> document listing everything the page must contain, written to be pasted into
-> Claude Design (with the `ui-ux-pro-max` skill) to produce an HTML mockup.
+> **What it does:** turns a Page Contract into a **page spec** — a short, portable
+> document holding the page description and its API mapping, written to be pasted into
+> Claude Design alongside the shared `_DESIGN-SYSTEM.md` to produce an HTML mockup.
 >
 > **Pipeline:**
-> `flow-mapper` → Page Contract → **`page-designer` → Design Spec** → Claude Design +
-> `ui-ux-pro-max` → HTML mockup → review → build in `apps/web/**`.
+> `flow-mapper` → Page Contract → **`page-designer` → `_DESIGN-SYSTEM.md` (once) + page spec (per screen)**
+> → Claude Design + `ui-ux-pro-max` → HTML mockup → review → build in `apps/web/**`.
+>
+> **The designer has no repo access.** It sees only the two files pasted into it. That
+> constraint decides everything about how these files are split — see §6.
 >
 > **The core idea:** this project already made its design decisions. They are locked in
 > `docs/front-end-design-docs/root-design-fe.md`. For almost every screen, designing is
@@ -155,82 +158,90 @@ of accountants and teachers handling tuition and payroll.
 
 ---
 
-## 5. Inputs — read these, in this order
+## 5. Preflight — check inputs before writing anything
 
-| # | Read | For |
+| Required | Where | If missing |
 |---|---|---|
-| 1 | the Page Contract | route, access, regions, states, actions, out-of-scope |
-| 2 | `docs/front-end-design-docs/root-design-fe.md` | every token, component convention, checklist |
-| 3 | `docs/entities/**/ENTITY_<X>.md` for each entity shown | **real field names and enum values** |
-| 4 | `docs/api/API_<ROLE>.md` | response shape behind each region |
-| 5 | `docs/api/API_ERROR_CODES.md` | the envelope + what error states must render |
-| 6 | `docs/front-end-design-docs/pattern-catalog.md` (if present) | already-solved novel patterns |
+| Page Contract | `docs/front-end-design-docs/pages/<role>-pages/<slug>.md` | **STOP.** Run `flow-mapper` first |
+| `root-design-fe.md` | `docs/front-end-design-docs/` | **STOP.** Report it by name. Do **not** invent tokens |
+| `_DESIGN-SYSTEM.md` | `docs/front-end-design-docs/specs/` | Generate it from `root-design-fe.md` before any page spec |
+| Entity specs | `docs/entities/**/ENTITY_<X>.md` | Continue; mark unknown fields `TODO(field)` and say which entity was missing |
+| `API_<ROLE>.md` | `docs/api/` | Continue; mark **every** endpoint `⛔` |
+| `API_ERROR_CODES.md` | `docs/api/` | Continue; mark **every** error `TODO(error-code)` |
+| `ui-ux-pro-max` | `.claude/skills/ui-ux-pro-max/` | Report: not installed → `npm i -g ui-ux-pro-max-cli && uipro init --ai claude`. Tier 1 unavailable until then |
+| `taste-skill` | installed skills | Report: `npx skills add Leonxlnx/taste-skill`. Tier 2 unavailable |
+| `pattern-catalog.md` | `docs/front-end-design-docs/` | Fine — it does not exist until the first Tier 1 escalation |
 
-**Read the entity spec, not just the feature doc.** Feature docs drift — they describe
-intent, entity specs describe what exists. When they disagree, the entity wins, and
-say so in the spec. (Real case: `FEATURES_ADMIN` claimed `last_login_at` still needed
-adding; `ENTITY_USER.md` already had `lastLoginAt`. The feature doc was stale.)
+**Never silently substitute.** Name the missing file, say what it blocks, and either stop
+or continue with explicit `⛔` / `TODO()` markers. A spec that quietly invented a palette
+or an endpoint is worse than one that stopped.
 
-Add anything else the page genuinely needs — a flow doc for a multi-step operation, an
-ADR for a contested decision. Adding a source is fine; skipping entity specs is not.
+**Read the entity spec, not just the feature doc.** Feature docs describe intent, entity
+specs describe what exists. When they disagree the entity wins — say so in the spec.
+(Real case: `FEATURES_ADMIN` claimed `last_login_at` still needed adding; `ENTITY_USER.md`
+already had `lastLoginAt`.)
 
-## 6. Output: the Design Spec
+---
 
-One file per page at:
+## 6. Output: two files, not one
 
-```
-docs/front-end-design-docs/specs/<role>-pages/<screen-slug>.spec.md
-```
+### The rule that governs both
 
-### The rule that governs this whole document
+**The designer sees only what is pasted into it. It has no repo access.** So a spec saying
+"tokens per root-design-fe.md §2" resolves to nothing and the model invents a palette.
 
-**Claude Design cannot read your repo.** It sees only the text pasted into it. So a
-Design Spec that says "tokens per root-design-fe.md §2" is worthless — that reference
-resolves to nothing, and the model will invent a palette.
+But inlining tokens into every page spec means N copies of the same 120 lines, and a token
+change means editing N files. So the content splits by *what varies*:
 
-Every spec must therefore be **self-contained**: inline the hex values, the font import,
-the pixel dimensions, the enum→colour map, the exact copy strings, and realistic sample
-data. Redundancy with the repo is the point, not a flaw. This is the single most
-important property of the artifact.
+| File | Holds | Written |
+|---|---|---|
+| `specs/_DESIGN-SYSTEM.md` | everything identical across screens — tokens, shell, standard components, the seven states, chart rules, global do-NOTs, `ui-ux-pro-max` instructions, deliverable format | **once per project** |
+| `specs/<role>-pages/<slug>.spec.md` | only what is specific to this page | one per screen |
 
-### Required sections
+The user pastes both. Regenerate `_DESIGN-SYSTEM.md` only when `root-design-fe.md` changes.
+
+### The page spec — required sections
 
 | § | Section | Must contain |
 |---|---|---|
-| 0 | Build target | one self-contained HTML file, viewports, static data |
-| 1 | Product context | what the product is, who uses this screen, tone — **and the styles explicitly rejected** |
-| 2 | Design tokens | full colour table, status enum→hex map, font `@import`, spacing/radius/shadow, breakpoints, icon set + sizes |
-| 3 | Layout shell | ASCII diagram with real pixel dimensions; nav items with the active one marked |
+| 1 | Purpose | one paragraph: what the user came here to do |
+| 2 | Access | roles, ownership rule, denial behaviour |
+| 3 | **API mapping** | region/action → method + path → envelope field → error codes, with `⛔` on anything that does not exist |
 | 4 | Page structure | regions top to bottom; state what is **not** on the page |
-| 5 | Component specs | per component: columns, sizes, hover/focus, variants |
-| 6 | Data | **real JSON sample rows**, deliberately covering edge cases (nulls, every enum value) |
-| 7 | States | all seven, each described visually; N/A ones marked with a reason |
-| 8 | Copy | exact strings in the product's UI language, in a table |
-| 9 | Interactions | click targets, transitions, keyboard, responsive collapse |
-| 10 | Constraints — do NOT | anti-patterns, including things a generic generator would add |
-| 11 | ui-ux-pro-max instructions | what to use it for, and that §2/§10 override anything it suggests |
-| 12 | Deliverable | file format, what must render, contrast requirement |
+| 5 | Component specs | only components this page introduces or configures |
+| 6 | Data | real JSON sample rows covering nulls and every enum value |
+| 7 | States | which of the seven apply, described visually; N/A ones with a reason |
+| 8 | Copy | exact strings in the product's UI language |
+| 9 | Interactions | clicks, transitions, keyboard, responsive collapse |
+| 10 | Do NOT | **page-specific only** — global ones live in `_DESIGN-SYSTEM.md` |
+
+Every page spec opens with: *"Paste with `_DESIGN-SYSTEM.md`. If you were not given it,
+stop and ask — do not invent tokens."* That line is what makes a missing shared file fail
+loudly instead of silently.
 
 ### The sections that do the real work
 
-**§6 sample data.** Hand-write rows that cover the awkward cases — a null date, every
-enum value, a long name. Generic sample data produces a mockup that only proves the
-happy path renders.
+**§3 API mapping.** The one section an engineer reads. Every action names its endpoint,
+its envelope field and its error codes. `⛔` marks what does not exist — this is where
+missing backend surface gets discovered, before anyone builds against it.
 
-**§7 states.** Require Empty and Error explicitly and describe what they look like.
-Left unstated, every generator returns Ready only, and the gap is discovered in QA.
+**§5 must not restate the standard components.** Do not re-describe a data table or a
+status pill; `_DESIGN-SYSTEM.md` §4 has them. Describe only this page's columns, its
+modals, its unusual pieces.
 
-**§10 do-NOTs.** Name the things a general-purpose design model reaches for by default:
-gradients, glassmorphism, dark themes, emoji icons, invented status colours, KPI tiles
-where none belong. Prohibiting them costs one line each and saves a regeneration.
+**§6 sample data.** Hand-write rows covering the awkward cases — a null date, every enum
+value, a long name. Generic data only proves the happy path renders.
 
-**§11.** Always state that the locked tokens beat any suggestion. `ui-ux-pro-max`
-contributes layout and interaction quality; it does not get a vote on brand.
+**§7 states.** Require `Empty` and `Error` explicitly and describe what they look like.
+Unstated, every generator returns `Ready` only and the gap surfaces in QA.
+
+**§10 page-specific do-NOTs only.** "No emoji icons" is global. "Do not put a record-payment
+button on the list page" is page-specific.
 
 ### After the spec
 
-Set `status: designed` in the Page Contract frontmatter and link the spec from it.
-Once the mockup is approved and the component is built, set `status: built`.
+Set `status: designed` in the Page Contract and link the spec. Once the mockup is approved
+and the component is built, set `status: built`.
 
 ---
 
@@ -239,8 +250,11 @@ Once the mockup is approved and the component is built, set `status: built`.
 Run `root-design-fe.md` §7 as written against the returned mockup — it is the authority,
 do not restate it here. These are the additional checks:
 
-- [ ] Spec is genuinely self-contained — no reference to a repo file the designer cannot open
-- [ ] Every hex in the mockup traces to spec §2; none invented
+- [ ] Page spec references **no** repo file the designer cannot open, except `_DESIGN-SYSTEM.md`
+- [ ] Page spec does not restate tokens or standard components — those live in the shared file
+- [ ] §3 API mapping names an endpoint, envelope field and error code for every action
+- [ ] Everything that does not exist yet is marked `⛔` or `TODO()`, never quietly omitted
+- [ ] Every hex in the mockup traces to `_DESIGN-SYSTEM.md` §2; none invented
 - [ ] Empty and Error states actually rendered, not just Ready
 - [ ] Sample data covers nulls and every enum value
 
