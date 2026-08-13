@@ -1,39 +1,39 @@
 # 👨‍💼 Admin — Permissions
 
-> Quyền cụ thể của Admin. Nguồn sự thật đầy đủ: [RBAC_MATRIX.md](../../shared/RBAC_MATRIX.md)
+> Specific Admin permissions. Full source of truth: [RBAC_MATRIX.md](../../shared/RBAC_MATRIX.md)
 
 ---
 
-## Tóm tắt
+## Summary
 
-Admin có **quyền cao nhất** trên platform, ngoại trừ: Admin không tạo nội dung học thuật (câu hỏi, assignment) và không làm bài thi.
+Admins hold the **highest privileges** on the platform, with two exceptions: an Admin does not author academic content (questions, assignments) and does not take exams.
 
 ---
 
-## Quyền theo Resource
+## Permissions by Resource
 
 ### Users
-- ✅ List tất cả users (mọi role)
-- ✅ Read profile bất kỳ user
-- ✅ Approve / Suspend user (`status` change)
-- ✅ Update own profile
+- ✅ List all users (every role)
+- ✅ Read any user's profile
+- ✅ Approve / suspend a user (`status` change)
+- ✅ Update their own profile
 
 ### Finance
-- ✅ Set `TeacherPayRate` cho bất kỳ teacher
-- ✅ Set `StudentTuitionRate` cho bất kỳ student
-- ✅ Create / Void `StudentInvoice`
-- ✅ Record `TuitionPayment`
-- ✅ Create / Finalize / Pay `PayrollPeriod`
+- ✅ Set a `TeacherPayRate` for any teacher
+- ✅ Set a `StudentTuitionRate` for any student
+- ✅ Create / void a `StudentInvoice`
+- ✅ Record a `TuitionPayment`
+- ✅ Create / finalize / pay a `PayrollPeriod`
 
 ### Sessions
-- ✅ Approve / Reject `ClassSession` (bất kỳ class)
-- 👁️ Read tất cả sessions (read-only)
+- ✅ Approve / reject a `ClassSession` (any class)
+- 👁️ Read all sessions (read-only)
 
 ### Notifications
 - ✅ Receive notifications: session pending, new user pending
 
 ### Classes / Questions / Assignments
-- ❌ Không tạo/sửa/xóa (đây là quyền Teacher)
+- ❌ Cannot create, edit, or delete (these are Teacher permissions)
 
 ---
 
@@ -41,10 +41,10 @@ Admin có **quyền cao nhất** trên platform, ngoại trừ: Admin không t�
 
 ```typescript
 @Roles(Role.ADMIN)
-// áp dụng cho: /admin/* routes
+// applied to: /admin/* routes
 ```
 
-## Liên quan
+## Related
 
-- [RBAC_MATRIX.md](../../shared/RBAC_MATRIX.md) — ma trận đầy đủ
-- [FEATURES_ADMIN.md](./FEATURES_ADMIN.md) — danh sách tính năng
+- [RBAC_MATRIX.md](../../shared/RBAC_MATRIX.md) — the full matrix
+- [FEATURES_ADMIN.md](./FEATURES_ADMIN.md) — feature list

@@ -1,58 +1,58 @@
 # 👩‍🏫 Teacher — Permissions
 
-> Quyền cụ thể của Teacher. Nguồn sự thật đầy đủ: [RBAC_MATRIX.md](../../shared/RBAC_MATRIX.md)
+> Specific Teacher permissions. Full source of truth: [RBAC_MATRIX.md](../../shared/RBAC_MATRIX.md)
 
 ---
 
-## Tóm tắt
+## Summary
 
-Teacher có quyền **tạo và quản lý nội dung** (lớp, câu hỏi, assignment) và **xem dữ liệu của lớp mình**. Không có quyền trên tài chính hoặc dữ liệu lớp người khác.
+Teachers can **create and manage content** (classes, questions, assignments) and **view data for their own classes**. They have no permissions over finances or other teachers' class data.
 
 ---
 
-## Quyền theo Resource
+## Permissions by Resource
 
 ### Classes (own only)
-- ✅ Create / Update / Archive class
-- 🔒 Read class + student list (chỉ class mình dạy)
-- 🔒 Regenerate enrollmentCode
+- ✅ Create / update / archive a class
+- 🔒 Read the class and its student list (only classes they teach)
+- 🔒 Regenerate the enrollmentCode
 
 ### Questions
-- ✅ Create / Update / Delete question (bất kỳ question mình tạo)
-- ✅ Read question bank
+- ✅ Create / update / delete a question (any question they created)
+- ✅ Read the question bank
 
 ### Assignments (own class only)
-- 🔒 Create / Update / Delete assignment
-- 🔒 Read submissions của class mình
+- 🔒 Create / update / delete an assignment
+- 🔒 Read submissions for their own classes
 
 ### Grading
-- 🔒 Grade attempt (chỉ class mình)
-- 🔒 Read attempt + answers
+- 🔒 Grade an attempt (own classes only)
+- 🔒 Read the attempt and its answers
 
 ### Sessions (own class only)
-- 🔒 Create / Log / Submit session
+- 🔒 Create / log / submit a session
 - 🔒 Mark attendance
 
 ### Income
-- 🔒 Read own PayrollPeriod
-- 🔒 Read own TeacherPayRate
+- 🔒 Read their own PayrollPeriod
+- 🔒 Read their own TeacherPayRate
 
 ### Users
-- ❌ Không đọc được profile user khác
-- 🔒 Own profile chỉ
+- ❌ Cannot read another user's profile
+- 🔒 Own profile only
 
 ---
 
 ## Ownership Check
 
 ```typescript
-// Service-level check (ngoài @Roles guard)
+// Service-level check (in addition to the @Roles guard)
 if (assignment.teacherId !== req.user.id) {
   throw new ForbiddenException();
 }
 ```
 
-## Liên quan
+## Related
 
 - [RBAC_MATRIX.md](../../shared/RBAC_MATRIX.md)
 - [FEATURES_TEACHER.md](./FEATURES_TEACHER.md)

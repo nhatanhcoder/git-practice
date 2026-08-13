@@ -7,12 +7,12 @@
 
 ## Overview
 
-Speaking/video submissions cho bài tập writing nâng cao:
-1. Student record video trong browser (MediaRecorder API)
-2. Nén video (client-side)
-3. Upload lên Cloudflare R2 (object storage)
-4. Teacher xem video để chấm
-5. Sau 30-60 ngày: video bị xóa (cost saving)
+Speaking/video submissions for advanced writing assignments:
+1. Student records a video in the browser (MediaRecorder API)
+2. Video is compressed (client-side)
+3. Uploaded to Cloudflare R2 (object storage)
+4. Teacher watches the video to grade it
+5. After 30–60 days the video is deleted (cost saving)
 
 ---
 
@@ -39,7 +39,7 @@ Student Browser           NestJS BE              Cloudflare R2
 ## Cleanup Job (Scheduled)
 
 ```typescript
-// NestJS @Cron('0 2 * * *') — chay luc 2am moi ngay
+// NestJS @Cron('0 2 * * *') — runs at 2am every day
 async cleanupExpiredVideos() {
   const expired = await this.prisma.attemptAnswer.findMany({
     where: { videoExpiresAt: { lte: new Date() }, videoUrl: { not: null } }
@@ -70,6 +70,6 @@ AttemptAnswer {
 
 ## TODO
 
-- [ ] Chon retention period: 30 hay 60 ngay?
-- [ ] Notify student truoc khi video bi xoa?
+- [ ] Choose the retention period: 30 or 60 days?
+- [ ] Notify the student before their video is deleted?
 - [ ] R2 bucket config + CORS

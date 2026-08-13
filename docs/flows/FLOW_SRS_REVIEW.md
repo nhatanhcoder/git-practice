@@ -5,20 +5,20 @@
 
 ---
 
-## 1. Tổng quan SM-2
+## 1. SM-2 Overview
 
-SM-2 lên lịch ôn tập dựa trên **chất lượng recall** của người học.  
-Càng nhớ tốt → interval càng dài → học ít hơn nhưng nhớ lâu hơn.
+SM-2 schedules reviews based on the learner's **recall quality**.  
+Better recall → longer interval → less studying but longer retention.
 
 ```
 Rating  Meaning     Action
 ──────────────────────────────
-  0     Again       Quên hoàn toàn — ôn lại ngay hôm nay
-  1     Again       Nhớ lờ mờ — ôn lại hôm nay
-  2     Hard        Nhớ nhưng khó — interval ngắn
-  3     Good        Nhớ đúng với chút do dự
-  4     Easy        Nhớ dễ dàng
-  5     Easy!       Nhớ rất dễ, nhanh
+  0     Again       Completely forgotten — review again today
+  1     Again       Vaguely remembered — review again today
+  2     Hard        Remembered but with difficulty — short interval
+  3     Good        Remembered correctly, with slight hesitation
+  4     Easy        Remembered easily
+  5     Easy!       Remembered very easily and quickly
 ```
 
 ---
@@ -28,10 +28,10 @@ Rating  Meaning     Action
 ```typescript
 // lib/srs/sm2.ts
 export interface SM2Input {
-  rating: 0 | 1 | 2 | 3 | 4 | 5;   // Chất lượng recall
-  repetitions: number;               // Số lần đã ôn liên tiếp thành công
-  interval: number;                  // Interval hiện tại (ngày)
-  easeFactor: number;               // EF: độ dễ nhớ (default 2.5)
+  rating: 0 | 1 | 2 | 3 | 4 | 5;   // Recall quality
+  repetitions: number;               // Consecutive successful reviews
+  interval: number;                  // Current interval (days)
+  easeFactor: number;               // EF: how easy the card is to recall (default 2.5)
 }
 
 export interface SM2Output {
@@ -52,7 +52,7 @@ export function calculateSM2(input: SM2Input): SM2Output {
     // Failed: reset
     newRepetitions = 0;
     newInterval = 1;
-    newEaseFactor = easeFactor;  // EF không giảm khi fail
+    newEaseFactor = easeFactor;  // EF is not reduced on failure
   } else {
     // Success
     newRepetitions = repetitions + 1;
@@ -67,7 +67,7 @@ export function calculateSM2(input: SM2Input): SM2Output {
 
     // Update EF
     newEaseFactor = easeFactor + (0.1 - (5 - rating) * (0.08 + (5 - rating) * 0.02));
-    newEaseFactor = Math.max(1.3, newEaseFactor);  // EF không xuống dưới 1.3
+    newEaseFactor = Math.max(1.3, newEaseFactor);  // EF never drops below 1.3
   }
 
   const nextReviewDate = new Date();
@@ -81,9 +81,9 @@ export function calculateSM2(input: SM2Input): SM2Output {
 
 ## 3. EF Calculation Examples
 
-| Rating | EF trước | EF sau | Thay đổi |
+| Rating | EF before | EF after | Change |
 |--------|---------|--------|---------|
-| 0 (Again) | 2.5 | 2.5 | ±0 (không phạt EF) |
+| 0 (Again) | 2.5 | 2.5 | ±0 (no EF penalty) |
 | 2 (Hard) | 2.5 | 2.18 | -0.32 |
 | 3 (Good) | 2.5 | 2.36 | -0.14 |
 | 4 (Easy) | 2.5 | 2.5 | ±0 |
@@ -93,11 +93,11 @@ export function calculateSM2(input: SM2Input): SM2Output {
 
 ## 4. Interval Progression Example
 
-Giả sử luôn rating = 3 (Good), EF = 2.5:
+Assuming a rating of 3 (Good) every time, EF = 2.5:
 
 ```
-Rep 1: interval = 1 day   → review ngày mai
-Rep 2: interval = 6 days  → review 6 ngày sau
+Rep 1: interval = 1 day   → review tomorrow
+Rep 2: interval = 6 days  → review 6 days later
 Rep 3: interval = 15 days → round(6 × 2.5)
 Rep 4: interval = 38 days → round(15 × 2.5)
 Rep 5: interval = 95 days → round(38 × 2.5)
@@ -112,7 +112,7 @@ Rep 5: interval = 95 days → round(38 × 2.5)
 @Schema({ collection: 'user_flashcard_states', timestamps: true })
 export class UserFlashcardState {
   @Prop({ required: true, index: true })
-  userId: string;  // UUID từ PostgreSQL
+  userId: string;  // UUID from PostgreSQL
 
   @Prop({ type: Types.ObjectId, ref: 'Flashcard', required: true })
   flashcardId: Types.ObjectId;
@@ -136,10 +136,10 @@ export class UserFlashcardState {
   correctReviews: number;
 }
 
-// Compound index: một user chỉ có một state per flashcard
+// Compound index: one user has exactly one state per flashcard
 UserFlashcardStateSchema.index({ userId: 1, flashcardId: 1 }, { unique: true });
 
-// Index cho review queue query
+// Index for the review queue query
 UserFlashcardStateSchema.index({ userId: 1, nextReviewDate: 1 });
 ```
 
@@ -150,13 +150,13 @@ UserFlashcardStateSchema.index({ userId: 1, nextReviewDate: 1 });
 ```typescript
 // flashcards.service.ts
 async getReviewQueue(userId: string, limit = 20): Promise<Flashcard[]> {
-  // Lấy cards đến hạn ôn hôm nay (nextReviewDate <= now)
+  // Fetch cards due for review today (nextReviewDate <= now)
   const states = await this.userFlashcardStateModel
     .find({
       userId,
       nextReviewDate: { $lte: new Date() }
     })
-    .sort({ nextReviewDate: 1 })  // Ưu tiên quá hạn lâu nhất
+    .sort({ nextReviewDate: 1 })  // Most overdue first
     .limit(limit)
     .lean();
 
@@ -165,7 +165,7 @@ async getReviewQueue(userId: string, limit = 20): Promise<Flashcard[]> {
     _id: { $in: flashcardIds }
   });
 
-  // Attach state vào flashcard để FE biết lịch sử
+  // Attach the state to each flashcard so the frontend has the history
   return flashcards.map(fc => ({
     ...fc.toJSON(),
     state: states.find(s => s.flashcardId.equals(fc._id))
@@ -187,11 +187,11 @@ async submitReview(
   rating: 0|1|2|3|4|5
 ): Promise<SM2Output> {
 
-  // Lấy state hiện tại
+  // Load the current state
   const state = await this.userFlashcardStateModel.findOne({ userId, flashcardId });
   if (!state) throw new BusinessException('FLASHCARD_NOT_IN_REVIEW', '...', 400);
 
-  // Tính SM-2
+  // Run SM-2
   const result = calculateSM2({
     rating,
     repetitions: state.repetitions,
@@ -199,7 +199,7 @@ async submitReview(
     easeFactor: state.easeFactor,
   });
 
-  // Cập nhật state
+  // Persist the new state
   await this.userFlashcardStateModel.updateOne(
     { userId, flashcardId },
     {

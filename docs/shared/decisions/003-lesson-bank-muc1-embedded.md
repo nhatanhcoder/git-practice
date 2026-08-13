@@ -1,4 +1,4 @@
-# ADR-003: Lesson Bank Mức 1 — Embedded in MongoDB
+# ADR-003: Lesson Bank Level 1 — Embedded in MongoDB
 
 **Date**: 2026-07  
 **Status**: Accepted  
@@ -8,15 +8,18 @@
 
 ## Context
 
-Platform cần hỗ trợ "Lesson" — đơn vị nội dung bài học có cấu trúc section (warmup, vocab, grammar, practice, wrapup). Cần quyết định: lưu ở đâu và ở mức độ phức tạp nào (Mức 1 = simple, Mức 3 = interactive exercises).
+The platform needs to support "Lessons" — units of teaching content structured into sections (warmup, vocab, grammar, practice, wrapup). We had to decide where to store them and at what level of complexity (Level 1 = simple, Level 3 = interactive exercises).
 
 ## Decision
 
-**Mức 1 — Embedded document trong MongoDB:**
-- Lesson là một MongoDB document với array of sections
-- Mỗi section có: `type`, `title`, `content` (markdown hoặc rich text)
-- Không có interactive exercises ở Mức 1
-- Teacher tạo Lesson như tạo document thông thường
+**Level 1 — embedded document in MongoDB:**
+- A Lesson is a single MongoDB document with an array of sections
+- Each section has: `type`, `title`, `content` (markdown or rich text)
+- No interactive exercises at Level 1
+- Teachers author a Lesson the same way they would author an ordinary document
+
+> Example content below is left in Vietnamese — it is sample end-user data for a
+> Vietnamese-language audience, not documentation prose.
 
 ```json
 {
@@ -35,18 +38,18 @@ Platform cần hỗ trợ "Lesson" — đơn vị nội dung bài học có cấ
 ## Consequences
 
 **Positive:**
-- Schema linh hoạt, không cần migration khi thêm section type
-- Fetch 1 document = đủ toàn bộ nội dung bài học
-- Phù hợp free tier MongoDB Atlas (512MB)
+- Flexible schema — no migration needed when a new section type is added
+- Fetching one document returns the entire lesson
+- Fits the MongoDB Atlas free tier (512MB)
 
 **Negative:**
-- Không có interactive exercises (chỉ text/markdown)
-- Không version control nội dung lesson
-- Khó search full-text qua sections nếu document lớn
+- No interactive exercises (text/markdown only)
+- No version control over lesson content
+- Full-text search across sections is awkward once a document grows large
 
 ## Alternatives Considered
 
-| Option | Lý do không chọn |
+| Option | Why it was not chosen |
 |--------|-----------------|
-| PostgreSQL JSONB | Kém linh hoạt hơn, migration phức tạp |
-| Mức 3 (interactive) | Quá phức tạp cho MVP, để sprint sau |
+| PostgreSQL JSONB | Less flexible, migrations are more complex |
+| Level 3 (interactive) | Too complex for the MVP; deferred to a later sprint |

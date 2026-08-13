@@ -1,7 +1,11 @@
-# ⚠️ API_ERROR_CODES.md — Chuẩn hóa Error Response
+# ⚠️ API_ERROR_CODES.md — Standardised Error Responses
 
-> **Áp dụng từ**: Sprint 1  
-> **Mục tiêu**: Tất cả errors đều có format nhất quán, FE dễ handle
+> **In effect from**: Sprint 1  
+> **Goal**: Every error has a consistent format so the frontend can handle them uniformly
+
+> **Note on language**: descriptive prose in this document is English, but the
+> Vietnamese strings inside the code samples are **runtime messages shown to
+> end users** — the product's UI language is Vietnamese, so they are left as-is.
 
 ---
 
@@ -13,8 +17,8 @@
 // 200 OK / 201 Created
 {
   "success": true,
-  "data": { ... },          // Hoặc array [...] 
-  "meta": {                  // Chỉ cho paginated responses
+  "data": { ... },          // Or an array [...]
+  "meta": {                  // Paginated responses only
     "total": 100,
     "page": 1,
     "limit": 20,
@@ -31,7 +35,7 @@
   "success": false,
   "error": {
     "code": "USER_NOT_FOUND",     // Machine-readable error code
-    "message": "Không tìm thấy người dùng với ID này",  // Human-readable
+    "message": "Không tìm thấy người dùng với ID này",  // Human-readable (Vietnamese UI copy)
     "details": { ... }            // Optional: validation errors, etc.
   }
 }
@@ -41,19 +45,19 @@
 
 ## 2. HTTP Status Codes
 
-| Code | Meaning | Khi nào dùng |
+| Code | Meaning | When to use |
 |------|---------|-------------|
-| `200` | OK | GET, PATCH thành công |
-| `201` | Created | POST tạo mới thành công |
-| `204` | No Content | DELETE thành công |
+| `200` | OK | Successful GET or PATCH |
+| `201` | Created | Successful POST that created a resource |
+| `204` | No Content | Successful DELETE |
 | `400` | Bad Request | Validation error, business rule violation |
-| `401` | Unauthorized | Chưa login hoặc token expired |
-| `403` | Forbidden | Đã login nhưng không có quyền |
-| `404` | Not Found | Resource không tồn tại |
-| `409` | Conflict | Duplicate data (email đã tồn tại, đã enrolled) |
-| `422` | Unprocessable | DTO hợp lệ nhưng logic fail |
+| `401` | Unauthorized | Not logged in, or the token expired |
+| `403` | Forbidden | Logged in but lacking permission |
+| `404` | Not Found | The resource does not exist |
+| `409` | Conflict | Duplicate data (email already exists, already enrolled) |
+| `422` | Unprocessable | The DTO is valid but the logic fails |
 | `429` | Too Many Requests | Rate limit exceeded |
-| `500` | Internal Server Error | Lỗi server không lường trước |
+| `500` | Internal Server Error | Unanticipated server error |
 
 ---
 
@@ -61,93 +65,93 @@
 
 ### Auth Errors (AUTH_*)
 
-| Code | HTTP | Mô tả |
+| Code | HTTP | Description |
 |------|------|-------|
-| `AUTH_EMAIL_EXISTS` | 409 | Email đã được đăng ký |
-| `AUTH_INVALID_CREDENTIALS` | 401 | Email hoặc mật khẩu sai |
-| `AUTH_ACCOUNT_PENDING` | 403 | Tài khoản chờ admin duyệt |
-| `AUTH_ACCOUNT_SUSPENDED` | 403 | Tài khoản bị khóa |
-| `AUTH_TOKEN_EXPIRED` | 401 | Access token hết hạn |
-| `AUTH_TOKEN_INVALID` | 401 | Token không hợp lệ |
-| `AUTH_REFRESH_INVALID` | 401 | Refresh token không hợp lệ hoặc đã dùng |
-| `AUTH_INSUFFICIENT_ROLE` | 403 | Không đủ quyền cho action này |
+| `AUTH_EMAIL_EXISTS` | 409 | The email is already registered |
+| `AUTH_INVALID_CREDENTIALS` | 401 | Wrong email or password |
+| `AUTH_ACCOUNT_PENDING` | 403 | The account is awaiting admin approval |
+| `AUTH_ACCOUNT_SUSPENDED` | 403 | The account is suspended |
+| `AUTH_TOKEN_EXPIRED` | 401 | The access token has expired |
+| `AUTH_TOKEN_INVALID` | 401 | The token is invalid |
+| `AUTH_REFRESH_INVALID` | 401 | The refresh token is invalid or already used |
+| `AUTH_INSUFFICIENT_ROLE` | 403 | Insufficient permission for this action |
 
 ### User Errors (USER_*)
 
-| Code | HTTP | Mô tả |
+| Code | HTTP | Description |
 |------|------|-------|
-| `USER_NOT_FOUND` | 404 | Không tìm thấy user |
-| `USER_ALREADY_APPROVED` | 409 | User đã được duyệt rồi |
-| `USER_AVATAR_UPLOAD_FAILED` | 500 | Lỗi upload avatar |
+| `USER_NOT_FOUND` | 404 | User not found |
+| `USER_ALREADY_APPROVED` | 409 | The user has already been approved |
+| `USER_AVATAR_UPLOAD_FAILED` | 500 | Avatar upload failed |
 
 ### Class Errors (CLASS_*)
 
-| Code | HTTP | Mô tả |
+| Code | HTTP | Description |
 |------|------|-------|
-| `CLASS_NOT_FOUND` | 404 | Không tìm thấy lớp |
-| `CLASS_ACCESS_DENIED` | 403 | Không phải teacher của lớp này |
-| `CLASS_ALREADY_ARCHIVED` | 400 | Lớp đã archive |
-| `CLASS_ENROLL_CODE_INVALID` | 404 | Mã tham gia lớp không đúng |
-| `CLASS_ALREADY_ENROLLED` | 409 | Học sinh đã trong lớp này |
-| `CLASS_NOT_ENROLLED` | 400 | Học sinh không ở trong lớp |
+| `CLASS_NOT_FOUND` | 404 | Class not found |
+| `CLASS_ACCESS_DENIED` | 403 | Not the teacher of this class |
+| `CLASS_ALREADY_ARCHIVED` | 400 | The class is already archived |
+| `CLASS_ENROLL_CODE_INVALID` | 404 | The class enrollment code is wrong |
+| `CLASS_ALREADY_ENROLLED` | 409 | The student is already in this class |
+| `CLASS_NOT_ENROLLED` | 400 | The student is not in the class |
 
 ### Question Errors (QUESTION_*)
 
-| Code | HTTP | Mô tả |
+| Code | HTTP | Description |
 |------|------|-------|
-| `QUESTION_NOT_FOUND` | 404 | Không tìm thấy câu hỏi |
-| `QUESTION_NOT_OWNER` | 403 | Không phải người tạo câu hỏi |
-| `QUESTION_AUDIO_REQUIRED` | 400 | Loại câu hỏi này cần file audio |
-| `QUESTION_AUDIO_UPLOAD_FAILED` | 500 | Lỗi upload audio |
+| `QUESTION_NOT_FOUND` | 404 | Question not found |
+| `QUESTION_NOT_OWNER` | 403 | Not the author of the question |
+| `QUESTION_AUDIO_REQUIRED` | 400 | This question type requires an audio file |
+| `QUESTION_AUDIO_UPLOAD_FAILED` | 500 | Audio upload failed |
 
 ### Assignment Errors (ASSIGNMENT_*)
 
-| Code | HTTP | Mô tả |
+| Code | HTTP | Description |
 |------|------|-------|
-| `ASSIGNMENT_NOT_FOUND` | 404 | Không tìm thấy bài tập |
-| `ASSIGNMENT_NO_QUESTIONS` | 400 | Bài tập cần ít nhất 1 câu hỏi |
-| `ASSIGNMENT_PAST_DUE` | 400 | Bài tập đã hết hạn |
-| `ASSIGNMENT_ALREADY_SUBMITTED` | 409 | Đã nộp bài này rồi |
+| `ASSIGNMENT_NOT_FOUND` | 404 | Assignment not found |
+| `ASSIGNMENT_NO_QUESTIONS` | 400 | An assignment needs at least one question |
+| `ASSIGNMENT_PAST_DUE` | 400 | The assignment is past its due date |
+| `ASSIGNMENT_ALREADY_SUBMITTED` | 409 | This assignment has already been submitted |
 
 ### Attempt Errors (ATTEMPT_*)
 
-| Code | HTTP | Mô tả |
+| Code | HTTP | Description |
 |------|------|-------|
-| `ATTEMPT_NOT_FOUND` | 404 | Không tìm thấy lần làm bài |
-| `ATTEMPT_ALREADY_SUBMITTED` | 409 | Bài đã nộp, không thể sửa |
-| `ATTEMPT_NOT_IN_PROGRESS` | 400 | Không phải trạng thái làm bài |
-| `ATTEMPT_NOT_OWNER` | 403 | Không phải bài của bạn |
-| `ATTEMPT_TIME_EXCEEDED` | 400 | Đã hết thời gian làm bài |
+| `ATTEMPT_NOT_FOUND` | 404 | Attempt not found |
+| `ATTEMPT_ALREADY_SUBMITTED` | 409 | Already submitted; cannot be edited |
+| `ATTEMPT_NOT_IN_PROGRESS` | 400 | The attempt is not in progress |
+| `ATTEMPT_NOT_OWNER` | 403 | Not your attempt |
+| `ATTEMPT_TIME_EXCEEDED` | 400 | The time limit has been exceeded |
 
 ### Flashcard Errors (FLASHCARD_*)
 
-| Code | HTTP | Mô tả |
+| Code | HTTP | Description |
 |------|------|-------|
-| `FLASHCARD_NOT_FOUND` | 404 | Không tìm thấy flashcard |
-| `FLASHCARD_ALREADY_IN_REVIEW` | 409 | Đã thêm vào danh sách ôn rồi |
-| `FLASHCARD_INVALID_RATING` | 400 | Rating phải từ 0-5 |
+| `FLASHCARD_NOT_FOUND` | 404 | Flashcard not found |
+| `FLASHCARD_ALREADY_IN_REVIEW` | 409 | Already added to the review list |
+| `FLASHCARD_INVALID_RATING` | 400 | The rating must be between 0 and 5 |
 
 ### Payroll Errors (PAYROLL_*)
 
-| Code | HTTP | Mô tả |
+| Code | HTTP | Description |
 |------|------|-------|
-| `PAYROLL_SESSION_NOT_FOUND` | 404 | Không tìm thấy buổi học |
-| `PAYROLL_SESSION_NOT_COMPLETED` | 400 | Buổi học chưa hoàn thành |
-| `PAYROLL_PERIOD_NOT_FOUND` | 404 | Không tìm thấy kỳ lương |
-| `PAYROLL_PERIOD_FINALIZED` | 409 | Kỳ lương đã chốt, không thể sửa |
+| `PAYROLL_SESSION_NOT_FOUND` | 404 | Class session not found |
+| `PAYROLL_SESSION_NOT_COMPLETED` | 400 | The class session is not yet completed |
+| `PAYROLL_PERIOD_NOT_FOUND` | 404 | Payroll period not found |
+| `PAYROLL_PERIOD_FINALIZED` | 409 | The payroll period is finalized and cannot be edited |
 
 ### Validation Errors (VALIDATION_*)
 
-| Code | HTTP | Mô tả |
+| Code | HTTP | Description |
 |------|------|-------|
-| `VALIDATION_ERROR` | 400 | DTO validation fail (với details) |
+| `VALIDATION_ERROR` | 400 | DTO validation failed (with details) |
 
 ---
 
 ## 4. Validation Error Format
 
 ```typescript
-// POST /auth/register với dữ liệu sai
+// POST /auth/register with invalid data
 // Response 400:
 {
   "success": false,
@@ -214,7 +218,7 @@ export class BusinessException extends HttpException {
   }
 }
 
-// Usage in service:
+// Usage in a service:
 throw new BusinessException('CLASS_ENROLL_CODE_INVALID', 'Mã tham gia lớp không đúng', 404);
 ```
 
@@ -229,7 +233,7 @@ export function handleApiError(error: AxiosError) {
 
   switch (apiError?.code) {
     case 'AUTH_TOKEN_EXPIRED':
-      // Interceptor xử lý tự động (refresh)
+      // Handled automatically by the interceptor (refresh)
       break;
     case 'AUTH_ACCOUNT_PENDING':
       toast.info('Tài khoản đang chờ admin duyệt');
@@ -238,7 +242,7 @@ export function handleApiError(error: AxiosError) {
       toast.error('Tài khoản của bạn đã bị khóa. Liên hệ admin.');
       break;
     case 'VALIDATION_ERROR':
-      // Map details vào form errors (react-hook-form)
+      // Map details onto form errors (react-hook-form)
       return apiError.details;
     default:
       toast.error(apiError?.message || 'Đã xảy ra lỗi. Thử lại sau.');

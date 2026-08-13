@@ -1,23 +1,23 @@
 # 🔐 RBAC Matrix — Actor × Resource × Action
 
-> **Nguồn sự thật duy nhất** cho toàn bộ phân quyền hệ thống.  
-> Mọi route guard, API middleware đều phải tham chiếu tài liệu này.  
-> Chi tiết quyền từng actor: xem `docs/actors/<role>/PERMISSIONS_<ROLE>.md`
+> **The single source of truth** for all permissions in the system.  
+> Every route guard and API middleware must reference this document.  
+> Per-actor permission details: see `docs/actors/<role>/PERMISSIONS_<ROLE>.md`
 
 ---
 
 ## Legend
 
-| Ký hiệu | Nghĩa |
+| Symbol | Meaning |
 |---------|-------|
 | ✅ | Full access (own + others) |
-| 🔒 | Own only (chỉ data của mình) |
+| 🔒 | Own only (only the user's own data) |
 | 👁️ | Read-only |
 | ❌ | No access |
 
 ---
 
-## Ma trận tổng quan
+## Matrix overview
 
 | Resource | Action | Admin | Teacher | Student |
 |----------|--------|-------|---------|---------|
@@ -58,7 +58,7 @@
 ## Route Guard Implementation
 
 ```typescript
-// NestJS: dùng @Roles() decorator + RolesGuard
+// NestJS: use the @Roles() decorator + RolesGuard
 @Roles(Role.ADMIN)
 @Get('users')
 listAllUsers() { ... }
@@ -67,13 +67,13 @@ listAllUsers() { ... }
 @Post('questions')
 createQuestion() { ... }
 
-// Ownership check: dùng custom guard hoặc service-level check
+// Ownership check: use a custom guard or a service-level check
 // e.g., assignment.teacherId === req.user.id
 ```
 
 ---
 
-## Liên quan
+## Related
 
 - [PERMISSIONS_ADMIN.md](../actors/admin/PERMISSIONS_ADMIN.md)
 - [PERMISSIONS_TEACHER.md](../actors/teacher/PERMISSIONS_TEACHER.md)

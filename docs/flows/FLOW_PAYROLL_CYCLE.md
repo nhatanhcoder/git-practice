@@ -1,19 +1,19 @@
-# 💰 PAYROLL_FLOW.md — Luồng Tính Lương Giáo viên
+# 💰 PAYROLL_FLOW.md — Teacher Salary Calculation Flow
 
 ---
 
 ## 1. State Machine
 
 ```
-Teacher dạy xong buổi học
+Teacher finishes teaching a session
          │
          ▼
 ClassSession: SCHEDULED
          │
-Teacher ghi lesson topic + attendance
+Teacher records the lesson topic + attendance
          │
          ▼
-Teacher submit session
+Teacher submits the session
          │
          ▼
 ClassSession: COMPLETED_PENDING
@@ -22,21 +22,21 @@ ClassSession: COMPLETED_PENDING
          │
     ┌────┴────┐
     │         │
-  APPROVED  REJECTED ──► Teacher chỉnh sửa và resubmit
+  APPROVED  REJECTED ──► Teacher edits and resubmits
     │
     ▼
-Admin tạo PayrollPeriod
+Admin creates a PayrollPeriod
     │
-Tổng hợp tất cả APPROVED sessions trong period
-    │
-    ▼
-PayrollPeriod: DRAFT ──► Admin review numbers
+Aggregates every APPROVED session in the period
     │
     ▼
-PayrollPeriod: FINALIZED ──► Thực hiện thanh toán
+PayrollPeriod: DRAFT ──► Admin reviews the numbers
     │
     ▼
-PayrollPeriod: PAID ──► Sessions status → PAID
+PayrollPeriod: FINALIZED ──► Payment is made
+    │
+    ▼
+PayrollPeriod: PAID ──► Session statuses → PAID
 ```
 
 ---
@@ -44,18 +44,18 @@ PayrollPeriod: PAID ──► Sessions status → PAID
 ## 2. Teacher Pay Rate
 
 ```typescript
-// Hai loại rate:
+// Two rate types:
 type RateType = 'per_session' | 'per_hour';
 
-// per_session: Trả theo buổi (không quan tâm thời gian)
-// Ví dụ: 200,000 VND/buổi
+// per_session: paid per session (duration is irrelevant)
+// Example: 200,000 VND per session
 
-// per_hour: Trả theo giờ (dựa trên actual time)
-// Ví dụ: 300,000 VND/giờ
+// per_hour: paid by the hour (based on actual time)
+// Example: 300,000 VND per hour
 // Actual hours = (actualEndTime - actualStartTime) / 60
 
-// Rate có effectiveFrom → support rate changes over time
-// Lấy rate hiệu lực: WHERE effectiveFrom <= periodEndDate ORDER BY effectiveFrom DESC LIMIT 1
+// Rates carry an effectiveFrom → supports rate changes over time
+// Fetch the effective rate: WHERE effectiveFrom <= periodEndDate ORDER BY effectiveFrom DESC LIMIT 1
 ```
 
 ---
@@ -65,7 +65,7 @@ type RateType = 'per_session' | 'per_hour';
 ```typescript
 // payroll.service.ts
 async calculatePeriodAmount(teacherId: string, periodStart: Date, periodEnd: Date) {
-  // 1. Lấy pay rate hiệu lực trong period
+  // 1. Fetch the pay rate in effect for the period
   const payRate = await this.prisma.teacherPayRate.findFirst({
     where: {
       teacherId,
@@ -74,7 +74,7 @@ async calculatePeriodAmount(teacherId: string, periodStart: Date, periodEnd: Dat
     orderBy: { effectiveFrom: 'desc' }
   });
 
-  // 2. Lấy approved sessions trong period
+  // 2. Fetch approved sessions in the period
   const sessions = await this.prisma.classSession.findMany({
     where: {
       class: { teacherId },
@@ -84,7 +84,7 @@ async calculatePeriodAmount(teacherId: string, periodStart: Date, periodEnd: Dat
     include: { class: true }
   });
 
-  // 3. Tính tiền
+  // 3. Compute the amount
   let totalAmount = 0;
   const breakdown = [];
 
@@ -94,7 +94,7 @@ async calculatePeriodAmount(teacherId: string, periodStart: Date, periodEnd: Dat
     if (payRate.rateType === 'per_session') {
       sessionAmount = payRate.rateAmount;
     } else {
-      // per_hour: round lên 0.5 giờ
+      // per_hour: round up to the nearest half hour
       const minutes = differenceInMinutes(session.actualEndTime, session.actualStartTime);
       const hours = Math.ceil(minutes / 30) * 0.5;  // Round up to nearest 0.5h
       sessionAmount = hours * payRate.rateAmount;
@@ -119,6 +119,8 @@ async calculatePeriodAmount(teacherId: string, periodStart: Date, periodEnd: Dat
 ---
 
 ## 4. Teacher View
+
+> Mockup shows the Vietnamese UI as built ("Thu nhập" = Income, "buổi" = session, "phút" = minutes).
 
 ```
 Teacher Dashboard → Payroll

@@ -1,18 +1,18 @@
-# 🔔 NOTIFICATION_FLOW.md — Hệ thống Thông báo
+# 🔔 NOTIFICATION_FLOW.md — Notification System
 
 > **Sprint**: S6 — Payroll + Invoicing + Notifications  
 > **Module**: NotificationsModule (NestJS)  
 > **Entity**: Notification (PostgreSQL)  
-> **Strategy**: Polling (không dùng WebSocket)
+> **Strategy**: Polling (no WebSocket)
 
 ---
 
-## 1. Tổng quan
+## 1. Overview
 
-Notifications là hệ thống thông báo 1 chiều (server → client). Dùng **polling** thay vì WebSocket để đơn giản hóa:
-- Frontend poll mỗi 60 giây để fetch unread notifications
-- Badge hiển thị số thông báo chưa đọc trên Navbar
-- Dropdown panel xem danh sách và đánh dấu đã đọc
+Notifications are a one-way system (server → client). We use **polling** rather than WebSocket to keep things simple:
+- The frontend polls every 60 seconds for unread notifications
+- A badge in the Navbar shows the unread count
+- A dropdown panel lists them and marks them read
 
 ---
 
@@ -20,18 +20,18 @@ Notifications là hệ thống thông báo 1 chiều (server → client). Dùng 
 
 | Type | Trigger | Recipient |
 |------|---------|-----------|
-| `new_assignment` | Teacher publish assignment | Tất cả students trong class |
-| `deadline_reminder` | 24h trước dueDate (cron job) | Students chưa nộp bài |
-| `grading_required` | Student submit bài có writing | Teacher của class |
-| `graded` | Teacher/AI grade xong tất cả câu | Student |
-| `weak_student_alert` | Analytics detect điểm < 50% | Teacher |
+| `new_assignment` | Teacher publishes an assignment | All students in the class |
+| `deadline_reminder` | 24h before dueDate (cron job) | Students who have not submitted |
+| `grading_required` | Student submits work containing writing | The class's teacher |
+| `graded` | Teacher/AI finishes grading every question | Student |
+| `weak_student_alert` | Analytics detects a score < 50% | Teacher |
 | `account_approved` | Admin approve user | User |
 | `account_suspended` | Admin suspend user | User |
 | `session_submitted` | Teacher submit session | Admin |
 | `session_approved` | Admin approve session | Teacher |
 | `session_rejected` | Admin reject session | Teacher |
 | `payroll_finalized` | Admin finalize payroll period | Teacher |
-| `invoice_created` | Admin tạo hóa đơn | Student |
+| `invoice_created` | Admin creates an invoice | Student |
 
 ---
 
@@ -117,26 +117,26 @@ export class NotificationsService {
 }
 ```
 
-### 4.2 Gửi Bulk Notifications (new_assignment)
+### 4.2 Sending Bulk Notifications (new_assignment)
 
 ```typescript
-// assignments.service.ts — khi teacher publish assignment
+// assignments.service.ts — when a teacher publishes an assignment
 async publishAssignment(assignmentId: string, teacherId: string) {
   const assignment = await this.findByIdOrThrow(assignmentId, teacherId);
 
-  // Cập nhật status
+  // Update the status
   await this.prisma.assignment.update({
     where: { id: assignmentId },
     data: { status: 'published' }
   });
 
-  // Lấy tất cả active students trong class
+  // Fetch every active student in the class
   const enrollments = await this.prisma.classEnrollment.findMany({
     where: { classId: assignment.classId, status: 'active' },
     include: { student: true }
   });
 
-  // Gửi notification cho từng student
+  // Send a notification to each student (message copy is Vietnamese UI text)
   await this.notificationsService.createBulk(
     enrollments.map(e => ({
       recipientId: e.studentId,
@@ -156,14 +156,14 @@ async publishAssignment(assignmentId: string, teacherId: string) {
 @Injectable()
 export class NotificationCronService {
 
-  @Cron(CronExpression.EVERY_DAY_AT_8AM)  // 8:00 AM hàng ngày
+  @Cron(CronExpression.EVERY_DAY_AT_8AM)  // 8:00 AM daily
   async sendDeadlineReminders() {
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
     const dayAfter = new Date(tomorrow);
     dayAfter.setDate(dayAfter.getDate() + 1);
 
-    // Tìm assignments có dueDate trong 24h tới
+    // Find assignments whose dueDate falls in the next 24h
     const upcomingAssignments = await this.prisma.assignment.findMany({
       where: {
         dueDate: { gte: tomorrow, lt: dayAfter },
@@ -179,7 +179,7 @@ export class NotificationCronService {
     });
 
     for (const assignment of upcomingAssignments) {
-      // Tìm students chưa nộp bài
+      // Find students who have not submitted
       const submittedStudentIds = await this.prisma.attempt.findMany({
         where: { assignmentId: assignment.id, status: { not: 'in_progress' } },
         select: { userId: true }
@@ -247,7 +247,7 @@ Navbar (top right):
 │  🏠 HSK Platform        🔔 [3]    👤 Nguyễn Văn A  │
 └─────────────────────────────────────────────────────┘
 
-Khi click vào 🔔:
+Clicking 🔔 opens (mockup shows the Vietnamese UI as built):
 ┌─────────────────────────────────────────┐
 │ Thông báo                [Đọc tất cả]  │
 ├─────────────────────────────────────────┤
@@ -268,29 +268,29 @@ Khi click vào 🔔:
 
 ## 6. API Reference
 
-| Method | Endpoint | Auth | Mô tả |
+| Method | Endpoint | Auth | Description |
 |--------|----------|------|-------|
-| `GET` | `/notifications` | All | Danh sách (paginated) |
-| `GET` | `/notifications/unread-count` | All | Số chưa đọc |
-| `PATCH` | `/notifications/:id/read` | All | Đánh dấu đã đọc |
-| `PATCH` | `/notifications/read-all` | All | Đọc tất cả |
+| `GET` | `/notifications` | All | List (paginated) |
+| `GET` | `/notifications/unread-count` | All | Unread count |
+| `PATCH` | `/notifications/:id/read` | All | Mark as read |
+| `PATCH` | `/notifications/read-all` | All | Mark all as read |
 
 ---
 
 ## 7. Design Decisions
 
-| Quyết định | Lý do |
+| Decision | Reason |
 |-----------|-------|
-| **Polling (60s) thay vì WebSocket** | Solo dev — WebSocket cần thêm infrastructure (Redis pub/sub). Polling đủ cho use case hiện tại |
-| **Không push email** | MVP scope; có thể thêm email service (Resend, SendGrid) ở Sprint 7+ |
-| **Không delete notifications** | Giữ lịch sử; dùng `readAt` để phân biệt đọc/chưa đọc |
-| **data JSON field** | Flexible extra context; FE dùng để navigate đến đúng page |
-| **createBulk cho class-wide** | Tránh N+1 khi gửi cho nhiều students cùng lúc |
+| **Polling (60s) instead of WebSocket** | Solo dev — WebSocket needs extra infrastructure (Redis pub/sub). Polling is sufficient for the current use case |
+| **No email push** | MVP scope; an email service (Resend, SendGrid) can be added in Sprint 7+ |
+| **Notifications are never deleted** | Preserves history; `readAt` distinguishes read from unread |
+| **`data` JSON field** | Flexible extra context; the frontend uses it to navigate to the right page |
+| **createBulk for class-wide sends** | Avoids N+1 when notifying many students at once |
 
 ---
 
 ## 8. Technical Debt
 
-- [ ] **[DEBT]** Polling tạo DB load khi có nhiều users online đồng thời. Cân nhắc SSE (Server-Sent Events) nếu scale
-- [ ] **[FUTURE]** Email notifications cho deadline reminders quan trọng
-- [ ] **[FUTURE]** Push notifications (PWA) cho mobile users
+- [ ] **[DEBT]** Polling adds DB load when many users are online at once. Consider SSE (Server-Sent Events) if this scales up
+- [ ] **[FUTURE]** Email notifications for important deadline reminders
+- [ ] **[FUTURE]** Push notifications (PWA) for mobile users

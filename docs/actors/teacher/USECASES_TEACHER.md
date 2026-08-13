@@ -1,115 +1,115 @@
 # 👩‍🏫 Teacher — Use Cases
 
-> Các use case chi tiết cho Teacher.  
-> Xem danh sách tính năng: [FEATURES_TEACHER.md](./FEATURES_TEACHER.md)  
-> Xem quyền: [PERMISSIONS_TEACHER.md](./PERMISSIONS_TEACHER.md)
+> Detailed use cases for the Teacher.  
+> Feature list: [FEATURES_TEACHER.md](./FEATURES_TEACHER.md)  
+> Permissions: [PERMISSIONS_TEACHER.md](./PERMISSIONS_TEACHER.md)
 
 ---
 
-## UC-T-001: Tạo lớp học và chia sẻ enrollment code
+## UC-T-001: Create a class and share the enrollment code
 
 **Actor**: Teacher  
-**Precondition**: Tài khoản đã được admin duyệt (active)
+**Precondition**: The account has been approved by an admin (active)
 
 **Main Flow**:
-1. Teacher vào Classes → "Tạo lớp mới"
-2. Nhập: tên lớp, HSK level, mô tả
-3. System tạo Class với 8-char `enrollmentCode` (auto)
-4. Teacher chia sẻ code cho students (copy / QR)
-5. Students nhập code → tạo ClassEnrollment
+1. Teacher opens Classes → "Create a new class"
+2. Enters: class name, HSK level, description
+3. System creates the Class with an auto-generated 8-char `enrollmentCode`
+4. Teacher shares the code with students (copy / QR)
+5. Students enter the code → a ClassEnrollment is created
 
 ---
 
-## UC-T-002: Tạo câu hỏi Listening
+## UC-T-002: Create a Listening question
 
 **Actor**: Teacher  
-**Precondition**: Đã đăng nhập, active
+**Precondition**: Logged in, active
 
 **Main Flow**:
-1. Teacher vào Question Bank → "Tạo câu hỏi"
-2. Chọn skill = `listening`, subType (vd: `multiple_choice_single`)
-3. Upload file audio (MP3/WAV, max 10MB → Supabase Storage)
-4. Nhập transcript, options, correct answer, explanation
-5. Chọn HSK level → Save
-6. Câu hỏi xuất hiện trong ngân hàng, sẵn sàng dùng trong Assignment
+1. Teacher opens the Question Bank → "Create question"
+2. Selects skill = `listening` and a subType (e.g. `multiple_choice_single`)
+3. Uploads an audio file (MP3/WAV, max 10MB → Supabase Storage)
+4. Enters the transcript, options, correct answer, and explanation
+5. Selects an HSK level → Save
+6. The question appears in the bank, ready to use in an Assignment
 
 ---
 
-## UC-T-003: Tạo Assignment và giao cho lớp
+## UC-T-003: Create an Assignment and give it to a class
 
 **Actor**: Teacher
 
 **Main Flow**:
-1. Teacher vào Assignments → "Tạo mới"
-2. Chọn type: `homework` hoặc `mock_test`
-3. Nếu mock_test: nhập timeLimitMinutes
-4. Chọn câu hỏi từ ngân hàng (filter theo skill, HSK level)
-5. Chọn lớp + dueDate → Publish
-6. System tạo Assignment, student nhận notification `new_assignment`
+1. Teacher opens Assignments → "Create new"
+2. Selects a type: `homework` or `mock_test`
+3. If mock_test: enters timeLimitMinutes
+4. Picks questions from the bank (filtered by skill, HSK level)
+5. Selects the class + dueDate → Publish
+6. System creates the Assignment; students receive a `new_assignment` notification
 
 ---
 
-## UC-T-004: Chấm bài Writing với AI
+## UC-T-004: Grade a Writing submission with AI
 
 **Actor**: Teacher  
-**Trigger**: Có submission mới cần chấm
+**Trigger**: A new submission needs grading
 
 **Main Flow**:
-1. Teacher vào Grading → filter "cần chấm"
-2. Mở submission → xem câu trả lời writing của student
-3. Click "AI Suggest" → system gọi Gemini API
-4. Gemini trả về: gợi ý điểm (0–10) + reasoning
-5. Teacher xem xét → nhập điểm cuối + feedback → Save
+1. Teacher opens Grading → filters to "needs grading"
+2. Opens the submission → reads the student's writing answer
+3. Clicks "AI Suggest" → the system calls the Gemini API
+4. Gemini returns: a suggested score (0–10) + reasoning
+5. Teacher reviews it → enters the final score + feedback → Save
 6. Attempt status: `submitted → graded`
-7. Student nhận notification `graded`
+7. The student receives a `graded` notification
 
 ---
 
-## UC-T-005: Log buổi học và submit để duyệt lương
+## UC-T-005: Log a class session and submit it for payroll approval
 
 **Actor**: Teacher
 
 **Main Flow**:
-1. Teacher vào Sessions → "Bắt đầu buổi học"
-2. Nhập: date, startTime, topic, notes
-3. Mark điểm danh từng student (present / absent_excused / absent_unexcused)
-4. Kết thúc → nhập actualEndTime
-5. Submit → session status = `completed_pending`
-6. Admin nhận notification, review → Approve / Reject (kèm lý do nếu reject)
-7. Teacher nhận notification `session_approved` hoặc `session_rejected`
+1. Teacher opens Sessions → "Start session"
+2. Enters: date, startTime, topic, notes
+3. Marks attendance for each student (present / absent_excused / absent_unexcused)
+4. Ends the session → enters actualEndTime
+5. Submits → session status = `completed_pending`
+6. The admin is notified, reviews it → Approve / Reject (with a reason if rejected)
+7. Teacher receives a `session_approved` or `session_rejected` notification
 
 ---
 
-## UC-T-006: Xem thống kê lớp (Class Analytics Dashboard)
+## UC-T-006: View class statistics (Class Analytics Dashboard)
 
 **Actor**: Teacher  
-**Precondition**: Lớp đã có ít nhất 1 assignment và 1 submission
+**Precondition**: The class has at least one assignment and one submission
 
 **Main Flow**:
-1. Teacher vào Classes → chọn lớp → tab "Thống kê"
-2. Xem dashboard gồm:
-   - Điểm trung bình từng assignment (biểu đồ theo thời gian)
-   - Phân bố điểm (histogram) của từng assignment
-   - Tỷ lệ nộp bài toàn lớp
-3. Xem danh sách học sinh yếu (điểm < ngưỡng threshold)
-4. Chọn 1 học sinh → xem skill breakdown: điểm theo Listening / Reading / Writing
+1. Teacher opens Classes → selects a class → the "Statistics" tab
+2. Views the dashboard, which shows:
+   - Average score per assignment (charted over time)
+   - Score distribution (histogram) per assignment
+   - Class-wide submission rate
+3. Reviews the list of struggling students (score below the threshold)
+4. Selects a student → views their skill breakdown: scores across Listening / Reading / Writing
 
-**Notes**: Dashboard gộp F6.1–F6.3 + F8.3 thành 1 view duy nhất.
+**Notes**: This dashboard merges F6.1–F6.3 and F8.3 into a single view.
 
 ---
 
-## UC-T-007: Tạo và quản lý Lesson trong lớp
+## UC-T-007: Create and manage Lessons in a class
 
 **Actor**: Teacher  
-**Precondition**: Đã tạo lớp, tài khoản active
+**Precondition**: A class exists, account is active
 
 **Main Flow**:
-1. Teacher vào Classes → chọn lớp → tab "Bài học"
-2. Click "Thêm lesson" → nhập tiêu đề, mô tả, upload tài liệu / link video
-3. System tạo Lesson gắn với lớp
-4. Teacher sắp xếp thứ tự các lesson (drag-and-drop hoặc nhập số thứ tự)
-5. Gắn Assignment vào Lesson: chọn assignment đã tạo → liên kết
-6. Students trong lớp thấy lesson theo đúng thứ tự đã thiết lập
+1. Teacher opens Classes → selects a class → the "Lessons" tab
+2. Clicks "Add lesson" → enters a title and description, uploads a document / video link
+3. System creates the Lesson attached to the class
+4. Teacher orders the lessons (drag-and-drop or by entering an index)
+5. Attaches an Assignment to a Lesson: picks an existing assignment → links it
+6. Students in the class see the lessons in the order that was set
 
-**Alternative**: Teacher chỉnh sửa / xóa lesson (trước khi học sinh làm bài gắn kèm)  
-**Note**: Cần chốt quan hệ Lesson ↔ Assignment (1:N hay M:N) và định nghĩa Lesson entity trước khi build.
+**Alternative**: Teacher edits / deletes a lesson (before students attempt any attached work)  
+**Note**: The Lesson ↔ Assignment relationship (1:N or M:N) and the Lesson entity definition must be settled before building.

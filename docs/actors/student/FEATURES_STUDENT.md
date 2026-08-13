@@ -10,12 +10,12 @@
 
 | # | Feature | Priority | Notes |
 |---|---------|----------|-------|
-| S-AUTH-1 | Đăng ký tài khoản (chờ admin duyệt) | 🔴 Must | status = pending |
-| S-AUTH-2 | Đăng nhập bằng email + password | 🔴 Must | JWT access + refresh token |
-| S-AUTH-3 | Đăng xuất | 🔴 Must | |
-| S-AUTH-4 | JWT Refresh Token tự động gia hạn | 🔴 Must | Silent re-auth |
-| S-AUTH-5 | Đổi mật khẩu | 🟡 Should | |
-| S-AUTH-6 | Cập nhật profile (nickname, HSK level mục tiêu) + avatar | 🟡 Should | Supabase Storage |
+| S-AUTH-1 | Register an account (awaits admin approval) | 🔴 Must | status = pending |
+| S-AUTH-2 | Log in with email + password | 🔴 Must | JWT access + refresh token |
+| S-AUTH-3 | Log out | 🔴 Must | |
+| S-AUTH-4 | Automatic JWT refresh token renewal | 🔴 Must | Silent re-auth |
+| S-AUTH-5 | Change password | 🟡 Should | |
+| S-AUTH-6 | Update profile (nickname, target HSK level) + avatar | 🟡 Should | Supabase Storage |
 
 ---
 
@@ -23,22 +23,22 @@
 
 | # | Feature | Priority | Notes |
 |---|---------|----------|-------|
-| S-CLS-1 | Tham gia lớp bằng enrollment code (8 ký tự) | 🔴 Must | Tạo ClassEnrollment record |
-| S-CLS-2 | Xem danh sách lớp đang tham gia | 🔴 Must | Tên lớp, giáo viên, HSK level |
-| S-CLS-3 | Xem thông tin lớp (teacher, HSK level, lịch) | 🟡 Should | |
-| S-CLS-4 | Rời khỏi lớp | 🟢 Could | status: dropped |
+| S-CLS-1 | Join a class with an enrollment code (8 characters) | 🔴 Must | Creates a ClassEnrollment record |
+| S-CLS-2 | View the list of joined classes | 🔴 Must | Class name, teacher, HSK level |
+| S-CLS-3 | View class information (teacher, HSK level, schedule) | 🟡 Should | |
+| S-CLS-4 | Leave a class | 🟢 Could | status: dropped |
 
 ---
 
 ## 📚 Lessons
 
-> **Note**: Lesson là core content của lớp. Entity mới — cần chốt định nghĩa (tài liệu/video/mô tả + quan hệ với assignment) trước khi build.
+> **Note**: Lessons are a class's core content. This is a new entity — its definition (document/video/description + its relationship to assignments) must be settled before building.
 
 | # | Feature | Priority | Notes |
 |---|---------|----------|-------|
-| S-LESSON-1 | Xem danh sách lesson trong lớp theo thứ tự | 🔴 Must | Ordered list, mỗi lesson kèm bài tập liên quan |
-| S-LESSON-2 | Xem chi tiết nội dung lesson | 🔴 Must | Tài liệu / video / mô tả |
-| S-LESSON-3 | Xem bài tập gắn với lesson | 🟡 Should | Link tới Assignment (nếu có) |
+| S-LESSON-1 | View the ordered lesson list for a class | 🔴 Must | Ordered list, each lesson with its related assignments |
+| S-LESSON-2 | View a lesson's content in detail | 🔴 Must | Document / video / description |
+| S-LESSON-3 | View assignments attached to a lesson | 🟡 Should | Links to an Assignment (if any) |
 
 ---
 
@@ -46,14 +46,14 @@
 
 | # | Feature | Priority | Notes |
 |---|---------|----------|-------|
-| S-ASGN-1 | Xem danh sách bài tập đã giao (theo lớp) | 🔴 Must | Trạng thái: chưa làm / đang làm / đã nộp / đã chấm |
-| S-ASGN-2 | Bắt đầu làm Assignment / Mock Test | 🔴 Must | Tạo Attempt record |
-| S-ASGN-3 | Auto-save đáp án mỗi 2 giây | 🔴 Must | Tránh mất dữ liệu khi mất mạng |
-| S-ASGN-4 | Đếm ngược thời gian (Mock Test) | 🔴 Must | timeLimitMinutes, tự nộp khi hết giờ |
-| S-ASGN-5 | Navigation câu hỏi qua sidebar | 🔴 Must | Đánh dấu: chưa làm / đã làm / flag |
-| S-ASGN-6 | Nộp bài | 🔴 Must | status: submitted — khoá lại, không sửa được nữa |
-| S-ASGN-7 | Xem kết quả sau khi được chấm | 🔴 Must | Tổng điểm + feedback từng câu (MCQ tự động, Writing chờ teacher) |
-| S-ASGN-8 | Review bài làm (xem đáp án đúng + nhận xét teacher) | 🟡 Should | Chỉ sau khi graded |
+| S-ASGN-1 | View assigned work (by class) | 🔴 Must | Status: not started / in progress / submitted / graded |
+| S-ASGN-2 | Start an Assignment / Mock Test | 🔴 Must | Creates an Attempt record |
+| S-ASGN-3 | Auto-save answers every 2 seconds | 🔴 Must | Avoids data loss on network drop |
+| S-ASGN-4 | Countdown timer (Mock Test) | 🔴 Must | timeLimitMinutes, auto-submits when time runs out |
+| S-ASGN-5 | Navigate questions via the sidebar | 🔴 Must | Marks: not answered / answered / flagged |
+| S-ASGN-6 | Submit | 🔴 Must | status: submitted — locked, no further edits |
+| S-ASGN-7 | View the result once graded | 🔴 Must | Total score + per-question feedback (MCQ automatic, Writing awaits the teacher) |
+| S-ASGN-8 | Review the submission (correct answers + teacher comments) | 🟡 Should | Only after grading |
 
 ---
 
@@ -61,39 +61,39 @@
 
 | # | Feature | Priority | Notes |
 |---|---------|----------|-------|
-| S-SRS-1 | Duyệt từ vựng theo HSK level (1–9) | 🔴 Must | MongoDB Flashcard collection |
-| S-SRS-2 | Bắt đầu phiên ôn tập | 🔴 Must | Lấy cards due theo nextReviewDate |
-| S-SRS-3 | Đánh giá: Again / Hard / Good / Easy | 🔴 Must | SM-2 Algorithm cập nhật easeFactor, nextReviewDate |
-| S-SRS-4 | Xem mặt trước → Flip → xem đáp án | 🔴 Must | hanzi, pinyin, nghĩa, ví dụ |
-| S-SRS-5 | Dashboard SRS stats (streak, cards due, retention rate) | 🟡 Should | |
-| S-SRS-6 | **Click vào từ/chữ Hán trong nội dung → lưu vào kho từ cá nhân** | 🟡 Should | Khả dụng từ Lesson, Reading passage, Flashcard browser → tạo `UserSavedWord` record |
-| S-SRS-7 | Xem & quản lý kho từ đã lưu | 🟡 Should | Danh sách từ đã save, xóa từ, bắt đầu ôn tập từ kho từ riêng |
+| S-SRS-1 | Browse vocabulary by HSK level (1–9) | 🔴 Must | MongoDB Flashcard collection |
+| S-SRS-2 | Start a review session | 🔴 Must | Fetches cards due by nextReviewDate |
+| S-SRS-3 | Rate: Again / Hard / Good / Easy | 🔴 Must | The SM-2 algorithm updates easeFactor and nextReviewDate |
+| S-SRS-4 | View the front → flip → see the answer | 🔴 Must | hanzi, pinyin, meaning, example |
+| S-SRS-5 | SRS stats dashboard (streak, cards due, retention rate) | 🟡 Should | |
+| S-SRS-6 | **Click a word/hanzi in any content → save it to a personal word bank** | 🟡 Should | Available from Lessons, reading passages, and the flashcard browser → creates a `UserSavedWord` record |
+| S-SRS-7 | View & manage the saved word bank | 🟡 Should | List of saved words, delete a word, start a review session from the personal word bank |
 
-> 📄 Chi tiết: SRS_ALGORITHM.md (docs/architecture/)
+> 📄 Details: SRS_ALGORITHM.md (docs/architecture/)
 
 ---
 
-## 🏋️ Skill Drill (Tự luyện tập)
+## 🏋️ Skill Drill (Self-practice)
 
-> **Note**: Hoàn toàn tách biệt khỏi bài tập do teacher giao — không tính điểm chính thức, xem đáp án ngay sau mỗi câu.
+> **Note**: Entirely separate from teacher-assigned work — no official grade, and the answer is revealed after each question.
 
 | # | Feature | Priority | Notes |
 |---|---------|----------|-------|
-| S-DRILL-1 | Chọn kỹ năng (đọc / nghe / viết) + HSK level + độ khó | 🟡 Should | Filter trước khi bắt đầu |
-| S-DRILL-2 | Làm bài luyện tập không tính điểm chính thức | 🟡 Should | Xem đáp án đúng ngay sau mỗi câu |
-| S-DRILL-3 | Xem kết quả phiên luyện tập (tóm tắt đúng/sai) | 🟢 Could | Không lưu vào grade record |
+| S-DRILL-1 | Pick a skill (reading / listening / writing) + HSK level + difficulty | 🟡 Should | Filters applied before starting |
+| S-DRILL-2 | Practise without an official grade | 🟡 Should | The correct answer is shown after each question |
+| S-DRILL-3 | View a practice session summary (correct/incorrect) | 🟢 Could | Not saved to the grade record |
 
 ---
 
 ## 🎮 Quiz Room (Live, Real-time)
 
-> **Note**: Cần WebSocket infrastructure. Cần chốt: ai tạo phòng (Teacher?), câu hỏi lấy từ đâu (question bank?).
+> **Note**: Requires WebSocket infrastructure. Still to be settled: who creates the room (Teacher?), and where the questions come from (the question bank?).
 
 | # | Feature | Priority | Notes |
 |---|---------|----------|-------|
-| S-QUIZ-1 | Nhập mã phòng để tham gia quiz room | 🟡 Should | Vào phòng chờ, thấy danh sách người chơi |
-| S-QUIZ-2 | Trả lời câu hỏi real-time (đồng thời với tất cả người chơi) | 🟡 Should | Đếm giờ từng câu; trả lời nhanh + đúng → điểm cao hơn |
-| S-QUIZ-3 | Xem bảng xếp hạng live trong phòng | 🟡 Should | Cập nhật rank sau mỗi câu; hiện rank cuối khi kết thúc |
+| S-QUIZ-1 | Enter a room code to join a quiz room | 🟡 Should | Enters the waiting room and sees the player list |
+| S-QUIZ-2 | Answer questions in real time (simultaneously with all players) | 🟡 Should | Per-question timer; faster + correct → higher score |
+| S-QUIZ-3 | View the live leaderboard in the room | 🟡 Should | Rank updates after each question; final rank shown at the end |
 
 ---
 
@@ -101,69 +101,69 @@
 
 | # | Feature | Priority | Notes |
 |---|---------|----------|-------|
-| S-ANL-1 | Heatmap kỹ năng × tuần (Listening / Reading / Writing) | 🔴 Must | |
-| S-ANL-2 | Progress chart điểm trung bình theo thời gian | 🔴 Must | |
-| S-ANL-3 | Xem điểm từng bài đã hoàn thành | 🔴 Must | |
-| S-ANL-4 | Leaderboard tổng (xếp hạng theo điểm / streak / retention) | 🟡 Should | Tổng hợp toàn bộ hoạt động học |
-| S-ANL-5 | So sánh với trung bình lớp | 🟢 Could | |
+| S-ANL-1 | Skill × week heatmap (Listening / Reading / Writing) | 🔴 Must | |
+| S-ANL-2 | Progress chart of average score over time | 🔴 Must | |
+| S-ANL-3 | View the score for each completed assignment | 🔴 Must | |
+| S-ANL-4 | Global leaderboard (ranked by score / streak / retention) | 🟡 Should | Aggregates all study activity |
+| S-ANL-5 | Compare against the class average | 🟢 Could | |
 
-> 📄 Chi tiết: ANALYTICS_FLOW.md
+> 📄 Details: ANALYTICS_FLOW.md
 
 ---
 
-## 🧾 Billing (Học phí)
+## 🧾 Billing (Tuition)
 
-> **Note**: Chỉ là phần xem — module tạo hoá đơn nằm ở phía Admin (A-INV-2). Cần chốt mô hình tính học phí (theo lớp / gói / tháng) trước khi build.
+> **Note**: View-only — invoice creation lives on the Admin side (A-INV-2). The tuition pricing model (per class / package / month) must be settled before building.
 
 | # | Feature | Priority | Notes |
 |---|---------|----------|-------|
-| S-BILL-1 | Xem danh sách hóa đơn học phí | 🔴 Must | status: unpaid / partially_paid / paid |
-| S-BILL-2 | Xem chi tiết hóa đơn (period, amount, payments) | 🟡 Should | |
-| S-BILL-3 | Nhận thông báo khi có hóa đơn mới | 🟡 Should | Notification trigger |
+| S-BILL-1 | View the list of tuition invoices | 🔴 Must | status: unpaid / partially_paid / paid |
+| S-BILL-2 | View invoice detail (period, amount, payments) | 🟡 Should | |
+| S-BILL-3 | Get notified when a new invoice is issued | 🟡 Should | Notification trigger |
 
-> 📄 Chi tiết: INVOICE_FLOW.md
+> 📄 Details: INVOICE_FLOW.md
 
 ---
 
 ## 🔔 Notifications Received
 
-| Loại thông báo | Trigger |
+| Notification type | Trigger |
 |----------------|---------|
-| Tài khoản được duyệt | Admin approve account |
-| Tài khoản bị khóa | Admin suspend account |
-| Bài tập mới được giao | Teacher tạo assignment |
-| Sắp đến hạn nộp bài | Deadline reminder (scheduler) |
-| Bài đã được chấm | Teacher hoàn tất grading |
-| Hóa đơn mới | Admin tạo StudentInvoice |
+| Account approved | Admin approves the account |
+| Account suspended | Admin suspends the account |
+| New assignment issued | Teacher creates an assignment |
+| Submission deadline approaching | Deadline reminder (scheduler) |
+| Work has been graded | Teacher finishes grading |
+| New invoice | Admin creates a StudentInvoice |
 
-> 📄 Chi tiết: NOTIFICATION_FLOW.md
+> 📄 Details: NOTIFICATION_FLOW.md
 
 ---
 
 ## 🗺️ User Journey
 
 ```
-Register → (wait admin approval) → Login
+Register → (wait for admin approval) → Login
   └─► Dashboard (assignments due, SRS cards due)
         ├─► Classes → Join via code → View class details
-        │     └─► Lessons → View lesson list → Xem nội dung + bài tập gắn kèm
+        │     └─► Lessons → View lesson list → View content + attached assignments
         ├─► Assignments → View list → Start attempt
         │     ├─► Auto-save + timer (mock test)
         │     ├─► Navigate questions via sidebar
         │     └─► Submit → await grading → View results + feedback
         ├─► SRS Flashcards → Browse HSK level → Study session
         │     └─► Rate: Again/Hard/Good/Easy → SM-2 schedules next review
-        ├─► Skill Drill → Chọn skill + HSK + độ khó → Luyện tập (không tính điểm)
-        ├─► Quiz Room → Nhập mã phòng → Chờ → Chơi real-time → Xem leaderboard
-        ├─► Progress → Heatmap + charts + scores + leaderboard tổng
+        ├─► Skill Drill → Pick skill + HSK + difficulty → Practise (ungraded)
+        ├─► Quiz Room → Enter room code → Wait → Play real-time → View leaderboard
+        ├─► Progress → Heatmap + charts + scores + global leaderboard
         └─► Billing → View invoices + payment history
 ```
 
 ---
 
-## 🔗 Liên quan
+## 🔗 Related
 
-| Tài liệu | Đường dẫn |
+| Document | Path |
 |---------|----------|
 | SRS Algorithm | docs/architecture/SRS_ALGORITHM.md |
 | Exam Engine | docs/architecture/EXAM_ENGINE.md |

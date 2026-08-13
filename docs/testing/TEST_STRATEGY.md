@@ -1,7 +1,7 @@
-# 🧪 TESTING_STRATEGY.md — Chiến lược Testing
+# 🧪 TESTING_STRATEGY.md — Testing Strategy
 
 > **Framework**: Jest (Unit + Integration) + Playwright (E2E)  
-> **Target coverage**: 70% cho services
+> **Target coverage**: 70% for services
 
 ---
 
@@ -124,7 +124,7 @@ describe('Auth Endpoints (e2e)', () => {
 
   beforeAll(async () => {
     const module = await Test.createTestingModule({
-      imports: [AppModule],  // Full app với real DB (test DB)
+      imports: [AppModule],  // Full app against a real DB (the test DB)
     }).compile();
     app = module.createNestApplication();
     await app.init();
@@ -190,6 +190,7 @@ test('Student completes an exam', async ({ page }) => {
 
   // 4. Answer MCQ question
   await page.click('[data-testid="option-A"]');
+  // 'Đã lưu' = "Saved" — asserts against Vietnamese UI copy, so it stays as-is
   await expect(page.locator('[data-testid="autosave-indicator"]')).toContainText('Đã lưu');
 
   // 5. Submit
@@ -216,12 +217,12 @@ test('Student completes an exam', async ({ page }) => {
 ## 5. Test Database Setup
 
 ```bash
-# Tạo test database riêng (không dùng production)
+# Create a dedicated test database (never use production)
 # .env.test
 DATABASE_URL="postgresql://postgres:postgres@localhost:5432/hsk_test"
 MONGODB_URI="mongodb://localhost:27017/hsk-test"
 
-# Reset và seed trước mỗi test suite
+# Reset and seed before each test suite
 beforeAll(async () => {
   await prisma.$executeRaw`TRUNCATE TABLE users, classes CASCADE`;
   await seedTestData(prisma);
