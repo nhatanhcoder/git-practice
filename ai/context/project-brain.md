@@ -7,7 +7,7 @@
 
 ## What is this?
 
-HSK Learning Platform — web app for Chinese language learning (HSK 1–6).
+HSK Learning Platform — web app for Chinese language learning (HSK 1–9).
 Stack: Next.js 14 (App Router) + NestJS monolith + PostgreSQL (Supabase) + MongoDB Atlas.
 Three actors: Admin, Teacher, Student.
 
@@ -24,7 +24,7 @@ Three actors: Admin, Teacher, Student.
 | Architecture decisions (ADR) | docs/shared/decisions/ |
 | Sprint plan + progress | docs/roadmap/SPRINT_PLAN.md |
 | Glossary | docs/shared/GLOSSARY.md |
-| **AI coding rules** (read before touching routes/DB/API) | ai/rules/coding-rules.md |
+| **AI coding rules** (read before touching routes/DB/API) | ai/rules/working-rules.md |
 | **Known bugs / technical debt** | ai/known-issues/KNOWN_ISSUES.md |
 | **Most recent session notes** | ai/context/HANDOFF.md |
 
@@ -43,5 +43,5 @@ Three actors: Admin, Teacher, Student.
 ## Current Status
 
 - Docs restructured, implementation not started
-- HSK level range: **1–6** (confirmed 2026-07-19, matches all entity specs — do not use HSK 1–9 from any stale source)
+- HSK level range: **1–9** (confirmed 2026-08-11, matches the HSK 3.0 standard and every spec in `docs/`: entity specs, `GLOSSARY.md`, `DATABASE_SCHEMA.md`, `CONVENTIONS.md`, `SPRINT_PLAN.md` — do not use HSK 1–6, that came from a mistaken revert in this file on 2026-07-27)
 - See docs/roadmap/SPRINT_PLAN.md for 10-sprint plan (S0–S9)

@@ -31,15 +31,32 @@
 
 ---
 
+## [2026-08-11] — Resolve HSK 1–6 vs 1–9 conflict — Claude Code
+
+**Done**:
+- **HSK level range confirmed = 1–9** (user-confirmed 2026-08-11). Reverted the incorrect 2026-07-27 change: `project-brain.md` and this file now say 1–9, matching all of `docs/`. No `docs/` files needed changing — they were already correct.
+- Fixed broken path references to `ai/rules/coding-rules.md` → the file is actually `ai/rules/working-rules.md` (fixed in `CLAUDE.md`, `AGENTS.md`, `project-brain.md`, and the 07-27 entry below).
+
+**Temporary decisions to preserve**:
+- None.
+
+**Blocker / needs follow-up**:
+- 3 untracked docs are still uncommitted: `docs/entities/postgres/ENTITY_AI_USAGE_LOG.md`, `docs/shared/decisions/005-server-authoritative-exam.md`, `006-external-cron-scheduler.md`. Neither is referenced from `docs/entities/_INDEX.md` / the ADR list yet — check before Sprint 3/4.
+
+**Next steps**:
+- Sprint 0 per `docs/roadmap/SPRINT_PLAN.md` — plan presented, awaiting approval. Still no code in the repo.
+
+---
+
 ## [2026-07-27] — AI context cleanup & translation to English — manual (Claude.ai)
 
 **Done**:
 - Translated all active `ai/` files and root `AGENTS.md` / `CLAUDE.md` to English
 - Fixed path mismatch: `HANDOFF.md` now lives at `ai/context/HANDOFF.md` (previously at `ai/HANDOFF.md`, which didn't match the path `AGENTS.md`/`CLAUDE.md` already pointed to)
 - Removed the stale reference to `ai/DECISIONS.md` in `AGENTS.md` (that file does not exist anywhere in the repo)
-- **Found and fixed a data conflict**: this file and `project-brain.md` said HSK level = 1–9; corrected back to **HSK 1–6** to match the confirmed decision and all entity specs. ⚠️ Please double-check this is correct — if HSK 1–9 was an intentional recent change, it needs to be re-applied everywhere consistently instead of reverted.
+- ~~**Found and fixed a data conflict**: this file and `project-brain.md` said HSK level = 1–9; corrected back to **HSK 1–6**.~~ ❌ **This revert was wrong — undone on 2026-08-11.** The premise ("matches all entity specs") was false: `docs/` says 1–9 in 13 places (all entity specs, `GLOSSARY.md`, `DATABASE_SCHEMA.md`, `CONVENTIONS.md`, `SPRINT_PLAN.md`), and 1–6 appeared *only* in the two `ai/context/` summary files. See the 2026-08-11 entry.
 - Moved `feature.md`, `feature-root.md`, `PROJECT_SUMMARY.md` into `archive/` (previous entry claimed this was already done, but the files were still at repo root)
-- Added a mandatory workflow rule to `ai/rules/coding-rules.md`: Analyze → Create a plan → Wait for approval → Begin work
+- Added a mandatory workflow rule to `ai/rules/working-rules.md`: Analyze → Create a plan → Wait for approval → Begin work
 
 **In progress**:
 - No code written yet — project is still at "docs done, code not started"
