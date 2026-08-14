@@ -133,6 +133,31 @@ git worktree add ../Real-codex   -b feat/s1-web-auth
 
 Point Claude Code at `../Real-claude` and Codex at `../Real-codex`.
 
+> ⚠️ **The `../` is not a style preference — it is the rule. A worktree must live OUTSIDE
+> the repository directory.**
+>
+> A worktree created *inside* the repo (e.g. `.claude/worktrees/<name>`) checks out a second
+> full copy of `docs/` and `ai/` on disk. Every doc then exists twice, and:
+>
+> - grep, file search and AI context all return **two versions of every file**, one of them stale
+> - an agent can silently read the outdated copy and "fix" something that was already fixed
+> - the worktree's `.git` file holds an absolute host path, so git commands run from any other
+>   environment (WSL, a mounted share, a container) fail with
+>   `fatal: not a git repository: .../worktrees/<name>`
+>
+> This happened on 2026-08-13: `.claude/worktrees/updatedocs-to-english` duplicated 88 markdown
+> files against 118 real ones, and its `ai/skills/*.md` were still the empty 0-byte versions.
+>
+> If a worktree already exists inside the repo:
+>
+> ```bash
+> git worktree remove .claude/worktrees/<name>     # or: git worktree prune
+> git worktree add ../Real-<name> <branch>          # recreate as a SIBLING
+> ```
+>
+> `.claude/` is gitignored, so an inside-repo worktree is never committed — it only ever
+> pollutes local search and agent context.
+
 **Branch naming:** `feat/s<sprint>-<lane>-<slice>` → `feat/s1-api-auth`, `feat/s1-web-auth`.
 
 **Rules:**

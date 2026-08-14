@@ -1,130 +1,42 @@
 ---
 page: Admin · Accounts
 route: /admin/users
-source_contract: ../pages/admin-pages/admin-users-list.md
+contract: ../../pages/admin-pages/admin-users-list.md
+requires: _DESIGN-SYSTEM.md
 status: ready-for-design
 last_updated: 2026-08-11
 ---
 
-# Design Spec — Admin · Accounts
+# Page Spec — Admin · Accounts
 
-> **Paste this entire file into Claude Design, together with the `ui-ux-pro-max` skill.**
-> It is deliberately self-contained: every token, string, and data shape needed is below.
-> Do not look for other files — there are none to find in that context.
-
----
-
-## 0. Build target
-
-A single self-contained HTML file (inline CSS + JS, no build step, no external assets
-except Google Fonts and inline SVG icons). Desktop-first at 1440px, responsive down to
-375px. Static mockup — no backend. All data hardcoded from §6.
+> **Paste this together with `_DESIGN-SYSTEM.md`.**
+> That file holds the tokens, layout shell, standard components, chart rules and global
+> do-NOTs. This file holds only what is specific to this page.
+>
+> **If you were not given `_DESIGN-SYSTEM.md`, stop and ask for it.** Do not invent
+> colours, fonts or spacing — this product has a locked design system.
 
 ---
 
-## 1. Product context
+## 1. Purpose
 
-**Product:** HSK Learning Platform — a Chinese-language teaching platform (HSK levels 1–9)
-used by an Admin, Teachers, and Students.
+the Admin's account-governance screen. The Admin finds any account and moves it between three states: `pending` → `active` → `suspended`.
 
-**This page:** the Admin's account-governance screen. The Admin finds any account and
-moves it between three states: `pending` → `active` → `suspended`.
+## 2. Access
 
-**Audience and tone:** this is an internal management tool used by administrative and
-accounting staff who handle tuition and teacher payroll. It must read as *precise and
-trustworthy*, not playful. High information density is wanted; visual flourish is not.
-The visual reference points are Linear and Stripe Dashboard.
+admin. No ownership rule — all users, all roles. On denial → `/login`.
 
-**Explicitly rejected directions:** purple/gradient "AI dashboard" styling, dark+neon
-themes, glassmorphism, oversized rounded corners, decorative illustrations, emoji as UI
-icons. These have been ruled out deliberately — do not reintroduce them.
+## 3. API mapping
 
----
+| Region / action | Method + path | Envelope | Errors |
+|---|---|---|---|
+| User table (paginated) | `GET /api/v1/admin/users?q=&role=&status=` | `data[]`, `meta` | — |
+| Approve | `PATCH /api/v1/admin/users/:id/approve` | `data.user` | `USER_ALREADY_APPROVED`, `USER_NOT_FOUND` |
+| Suspend | `PATCH /api/v1/admin/users/:id/suspend` | `data.user` | `USER_NOT_FOUND` |
+| Reactivate | `PATCH /api/v1/admin/users/:id/activate` | `data.user` | `USER_NOT_FOUND` |
+| Row click | → `/admin/users/[userId]` | — | — |
 
-## 2. Design tokens — use these exact values
-
-### Colour
-
-| Role | Hex | Use |
-|---|---|---|
-| Primary | `#0F172A` | Sidebar background, headings, primary button |
-| Primary hover | `#1E293B` | Primary hover |
-| Accent | `#2563EB` | Links, active nav, focus ring, secondary CTA |
-| Background | `#F8FAFC` | Page background |
-| Surface | `#FFFFFF` | Cards, table, modal |
-| Border | `#E2E8F0` | Card borders, table row dividers |
-| Text primary | `#0F172A` | Headings, key content |
-| Text secondary | `#475569` | Labels, captions, meta |
-
-### Status colours — mapped from enum, never chosen ad hoc
-
-| Meaning | Hex | Applies to |
-|---|---|---|
-| Success / Active | `#16A34A` | `status = active` |
-| Warning / Pending | `#D97706` | `status = pending` |
-| Danger / Suspended | `#DC2626` | `status = suspended` |
-| Info | `#0284C7` | (unused on this page) |
-| Neutral | `#64748B` | (unused on this page) |
-
-Badge styling: background = status colour at **15% opacity**, text = the status colour at
-full strength. Never a solid saturated fill.
-
-### Typography
-
-```
-@import url('https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700&family=Source+Sans+3:wght@400;500;600&display=swap');
-```
-
-- Headings → **Lexend** (400/500/600/700)
-- Body, tables, forms → **Source Sans 3** (400/500/600)
-- Both must render Vietnamese diacritics correctly — this is non-negotiable, all UI copy is Vietnamese
-- Numeric table columns use `font-variant-numeric: tabular-nums`
-
-### Spacing, radius, elevation
-
-| Token | Value |
-|---|---|
-| Base unit | `8px` (all spacing a multiple of 8; 4px only for very tight cases) |
-| Card padding | `20px` desktop, `16px` mobile |
-| Radius | `8px` cards/inputs, `6px` buttons/badges, `9999px` status pills |
-| Shadow | `shadow-sm` default; `shadow-md` only on hoverable cards |
-| Sidebar | `240px` expanded, `64px` icon-only collapsed |
-| Header | `56px`, sticky |
-| Table row | `40px` |
-
-### Breakpoints
-
-`375px` · `768px` (sidebar auto-collapses) · `1024px` · `1440px` (content max-width caps; tables must not stretch indefinitely)
-
-### Icons
-
-**Lucide only**, inline SVG, `stroke-width: 2`. Sizes: `16px` inline, `20px` button/table action, `24px` nav.
-Icons needed here: `users`, `layout-dashboard`, `receipt`, `wallet`, `activity`, `search`, `chevron-down`, `more-horizontal`, `check`, `ban`, `rotate-ccw`, `bell`, `inbox`, `alert-circle`.
-
----
-
-## 3. Layout shell
-
-```
-┌──────────────┬────────────────────────────────────────────┐
-│              │  Header 56px sticky                        │
-│  Sidebar     │  [Breadcrumb]            [bell] [avatar ▾] │
-│  240px       ├────────────────────────────────────────────┤
-│  #0F172A     │  Page title            [primary action]    │
-│              │  ┌──────────────────────────────────────┐  │
-│  Logo        │  │ Filter toolbar                       │  │
-│  ─ Tổng quan │  ├──────────────────────────────────────┤  │
-│  ─ Tài khoản◄│  │ Data table (sticky header)           │  │
-│  ─ Học phí   │  │                                      │  │
-│  ─ Lương     │  └──────────────────────────────────────┘  │
-│  ─ Giám sát  │                                            │
-└──────────────┴────────────────────────────────────────────┘
-```
-
-Sidebar nav items (Vietnamese, active item = **Tài khoản**):
-`Tổng quan` · `Tài khoản` · `Học phí` · `Lương` · `Giám sát`
-
-Breadcrumb: `Trang chủ / Tài khoản`
+Filters are URL params, so the view is deep-linkable and shareable.
 
 ---
 
@@ -287,27 +199,3 @@ Toast verb must match the button verb that produced it.
 - Do not use a dark theme, gradients, glassmorphism, or neon accents
 - Do not use placeholder text as a substitute for a field label
 - Do not render Ready only — Empty and Error are required deliverables
-
----
-
-## 11. Instructions for `ui-ux-pro-max`
-
-Use it for **layout, density, and table-interaction quality** on a data-dense B2B admin
-screen — spacing rhythm, scan-ability, toolbar composition, action-menu affordance,
-empty-state craft.
-
-**Do not run its design-system generator, and do not take its palette or font pairing.**
-This project has a locked design system, reproduced in §2 above. If a recommendation
-conflicts with §2 or §10, §2 and §10 win. Keep only structure and its anti-pattern advice.
-
----
-
-## 12. Deliverable
-
-One `.html` file:
-
-- All CSS in a single `<style>` block; all JS in a single `<script>` block
-- Google Fonts via `@import`; Lucide icons as inline SVG; no other network requests
-- The §7 state switcher wired and working
-- Renders correctly at 1440px, 1024px, 768px, 375px
-- Text contrast ≥ 4.5:1 everywhere (the §2 palette already satisfies this — do not deviate from it)

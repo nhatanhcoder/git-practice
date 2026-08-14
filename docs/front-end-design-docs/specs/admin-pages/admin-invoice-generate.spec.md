@@ -1,118 +1,43 @@
 ---
 page: Admin · Generate Invoices
 route: /admin/invoices/generate
-source_contract: ../pages/admin-pages/admin-invoice-generate.md
+contract: ../../pages/admin-pages/admin-invoice-generate.md
+requires: _DESIGN-SYSTEM.md
 status: ready-for-design
 last_updated: 2026-08-11
 ---
 
-# Design Spec — Admin · Generate Invoices
+# Page Spec — Admin · Generate Invoices
 
-> **Paste this entire file into Claude Design, together with the `ui-ux-pro-max` skill.**
-> Self-contained by design — every token, string and number needed is below.
-> Do not look for other files.
-
----
-
-## 0. Build target
-
-A single self-contained HTML file (inline CSS + JS, no build step). Desktop-first at
-1440px, responsive to 375px. Static mockup, all data hardcoded from §6.
+> **Paste this together with `_DESIGN-SYSTEM.md`.**
+> That file holds the tokens, layout shell, standard components, chart rules and global
+> do-NOTs. This file holds only what is specific to this page.
+>
+> **If you were not given `_DESIGN-SYSTEM.md`, stop and ask for it.** Do not invent
+> colours, fonts or spacing — this product has a locked design system.
 
 ---
 
-## 1. Product context
+## 1. Purpose
 
-**Product:** HSK Learning Platform — a Chinese-language teaching platform (HSK levels 1–9)
-with three roles: Admin, Teacher, Student.
+a three-step wizard that issues one month of tuition invoices for every eligible student in a single reviewed run. This is a long operation, so it is a full page, not a modal.
 
-**This page:** a three-step wizard that issues one month of tuition invoices for every eligible
-student in a single reviewed run. This is a long operation, so it is a full page, not a modal.
+## 2. Access
 
-**Audience and tone:** administrative and accounting staff handling tuition and teacher
-payroll, often on a large monitor all day. Precise and trustworthy, high information
-density, no decoration. Reference points: Linear, Stripe Dashboard.
+admin. No ownership rule. On denial → `/login`.
 
-**Explicitly rejected:** purple/gradient "AI dashboard" styling, dark+neon themes,
-glassmorphism, large rounded corners, decorative illustrations, emoji as icons, gauges
-and progress rings. Ruled out deliberately — do not reintroduce.
+## 3. API mapping
 
----
+| Region / action | Method + path | Envelope | Errors |
+|---|---|---|---|
+| Step 2 preview | ⛔ **no endpoint** — needs students with an active rate for the period, resolved amount, and an already-invoiced flag | — | — |
+| Step 3 run | ⛔ `POST /api/v1/admin/invoices/batch` **does not exist** | — | `TODO(error-code)` |
+| Fallback | `POST /api/v1/admin/invoices` (single student, loop client-side) | `data.invoice` | `TODO(error-code)` |
 
-## 2. Design tokens — use these exact values
+**Two blockers.** The batch endpoint is preferred — one transaction, one result set. The
+client-side loop is the fallback and is why `Partial` is a first-class state below.
 
-### Colour — interface
-
-| Role | Hex | Use |
-|---|---|---|
-| Primary | `#0F172A` | Sidebar, headings, primary button |
-| Primary hover | `#1E293B` | Primary hover |
-| Accent | `#2563EB` | Links, active nav, focus ring |
-| Background | `#F8FAFC` | Page background |
-| Surface | `#FFFFFF` | Cards, tables, modals |
-| Border | `#E2E8F0` | Card borders, row dividers |
-| Text primary | `#0F172A` | Headings, key values |
-| Text secondary | `#475569` | Labels, captions, meta |
-
-### Colour — status (map enum → hex; never choose one locally)
-
-| Meaning | Hex | Enum values |
-|---|---|---|
-| Success | `#16A34A` | `active`, `paid`, `approved`, `present` |
-| Warning | `#D97706` | `pending`, `partially_paid`, `unpaid`, `completed_pending`, `finalized` |
-| Danger | `#DC2626` | `suspended`, `rejected`, overdue invoice, `absent_unexcused` |
-| Info | `#0284C7` | `draft`, `scheduled`, `in_progress` |
-| Neutral | `#64748B` | `archived`, `void`, `dropped` |
-
-Badge styling: background = the status hex at **15% opacity**, text = the status hex at
-full strength. Never a solid saturated fill.
-
-### Typography
-
-```
-@import url('https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700&family=Source+Sans+3:wght@400;500;600&display=swap');
-```
-
-- Headings and large values → **Lexend**
-- Body, tables, forms → **Source Sans 3**
-- Must render Vietnamese diacritics — all UI copy is Vietnamese
-- All numeric columns use `font-variant-numeric: tabular-nums`
-
-### Spacing, radius, elevation
-
-| Token | Value |
-|---|---|
-| Base unit | `8px` (all spacing a multiple of 8) |
-| Card padding | `20px` desktop, `16px` mobile |
-| Radius | `8px` cards/inputs, `6px` buttons, `9999px` status pills |
-| Shadow | `shadow-sm`; `shadow-md` only on hoverable cards |
-| Sidebar | `240px`, background `#0F172A` |
-| Header | `56px`, sticky |
-| Table row | `40px` |
-
-### Breakpoints
-
-`375px` · `768px` (sidebar collapses to drawer) · `1024px` · `1440px` (content max-width caps)
-
-### Icons
-
-**Lucide only**, inline SVG, `stroke-width: 2`. Sizes `16px` inline, `20px` action, `24px` nav.
-
-### Currency & dates
-
-Vietnamese format: `.` thousands separator, `₫` suffix — `12500000` → `12.500.000 ₫`.
-Dates `dd/MM/yyyy`; datetimes `dd/MM/yyyy HH:mm`.
-
----
-
-## 3. Layout shell
-
-Sidebar `240px` (`#0F172A`) + sticky header `56px` + content area.
-Sidebar nav, active item = **Học phí**:
-`Tổng quan` · `Tài khoản` · `Học phí` · `Lương` · `Giám sát`
-
-Header: breadcrumb `Trang chủ / Học phí / Tạo hóa đơn` on the left; `bell` icon + avatar menu on the right.
-Below 768px the sidebar becomes a hamburger drawer.
+⛔ **No `INVOICE_*` error codes exist** in `API_ERROR_CODES.md` — the whole family is absent.
 
 ---
 
@@ -231,26 +156,3 @@ Switcher: `Step 1 · Step 2 · Step 3 · Running · Result: partial · Empty · 
 - Do not clear the selection on error
 - Do not allow editing a rate here — this screen reads rates, it does not set them
 - Do not add proration for mid-month joiners; out of scope by decision
-
----
-
-## 11. Instructions for `ui-ux-pro-max`
-
-Use it for **layout, density and interaction quality** on a data-dense B2B admin screen —
-spacing rhythm, scan-ability, toolbar and table composition, empty-state craft.
-
-**Do not run its design-system generator, and do not take its palette or font pairing.**
-This project has a locked design system, reproduced in §2. Where any suggestion conflicts
-with §2, §5 or §10, **§2/§5/§10 win**. Keep only structure and anti-pattern advice.
-
----
-
-## 12. Deliverable
-
-One `.html` file:
-
-- All CSS in one `<style>` block, all JS in one `<script>` block
-- Google Fonts via `@import`; Lucide icons as inline SVG; no other network requests
-- The §7 state switcher wired and working
-- Renders correctly at 1440px, 1024px, 768px, 375px
-- Text contrast ≥ 4.5:1 everywhere (the §2 palette satisfies this — do not deviate)
