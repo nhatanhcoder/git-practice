@@ -2,8 +2,8 @@
 feature: A-USER-1, A-USER-2, A-USER-3
 role: admin
 route: /admin/users
-status: contracted
-last_updated: 2026-08-11
+status: built
+last_updated: 2026-08-14
 ---
 
 # Page Contract — Admin · Accounts
