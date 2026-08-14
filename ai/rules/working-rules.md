@@ -12,9 +12,63 @@ For any task beyond a trivial one-line fix, follow this exact order:
 1. **Analyze** — Read the relevant docs (RBAC matrix, entity spec, ADRs, `ai/context/HANDOFF.md`, `ai/PROGRESS.md`) and the current code before writing anything.
 2. **Create a plan** — Write a short plan: what will change, which files/modules are affected, edge cases, and any open questions. Present this plan to the user.
 3. **Wait for approval** — Do NOT write or edit any code until the user explicitly approves the plan. If the user's request already contains enough detail that no reasonable person would need to ask more, state the plan briefly and proceed — but for anything touching DB schema, auth, RBAC, or payment, always wait for explicit approval regardless.
-4. **Begin work** — Implement only after approval. When done, update `ai/PROGRESS.md`, `ai/context/HANDOFF.md`, and `ai/known-issues/KNOWN_ISSUES.md` as needed.
+4. **Begin work** — Implement only after approval.
+5. **Record it** — see "Definition of Done" below. This step is not optional and not "as needed".
 
 Do not skip straight to writing code just because a request looks simple — step 1–2 still apply, they can just be quick.
+
+---
+
+## MANDATORY: Definition of Done
+
+A task is not done when the code runs. It is done when the next agent cannot be misled by it.
+
+**Run `pnpm check:docs` before opening the PR.** It is 7 mechanical checks over the docs,
+zero dependencies, under a second. CI runs the same thing and will block the merge, so
+finding it locally is strictly cheaper. See `multi-agent-workflow.md` §15.
+
+**Before claiming anything is finished:**
+
+1. **`ai/PROGRESS.md` reflects it.** Mark the item, or add it under `## Off-sprint / spike`
+   if it belongs to no sprint. State plainly what is mocked and what is unfinished.
+2. **New bugs go in `ai/known-issues/KNOWN_ISSUES.md`**, lane-prefixed (`WEB-004`, `API-002`).
+   A bug you noticed and did not write down is a bug you inflicted on the next session.
+3. **Doc status flags updated** — page contract `status:`, `docs/front-end-design-docs/pages/_INDEX.md` row, spec
+   frontmatter. A contract still reading `contracted` for a screen that exists sends the next
+   agent to rebuild it. This happened on 2026-08-13 and was caught a day later by accident.
+
+**Never mark `✅` for a screen backed by mock data.** Use `🔶` with a note. `✅` means a real
+user can complete the flow against a real API. Approving a user by mutating React state and
+losing it on refresh is not F1.3.
+
+### Marking mock / placeholder code
+
+Any value that stands in for something real carries a marker the next agent can grep:
+
+```ts
+// MOCK(F1.3): hardcoded until GET /api/v1/admin/users exists. Remove with the API wiring.
+const initialUsers: User[] = [ ... ];
+```
+
+Grep `MOCK(` before declaring a feature complete. Files under `src/lib/*-data.js` that exist
+only to fake an endpoint say so on line 1.
+
+### Build passing is not verification
+
+`next build` passed while the sticky-header bug (`KNOWN_ISSUES` WEB-001) shipped a header
+covering row 1. Compilation proves types, not correctness.
+
+For any UI change, before reporting done: **open the page and look at it** — screenshot it,
+read the screenshot. Check every state the contract lists (loading / empty / error / partial),
+not just the happy path. For any logic change: run the tests, and if none exist for the path
+you touched, write one.
+
+### Work outside the sprint plan
+
+Off-sprint work is the *most* important to record, not the least — it belongs to no checklist
+item, so if it is not written down it exists only in the human's memory. Log it under
+`## Off-sprint / spike` in `ai/PROGRESS.md` with: what was built, why it was off-sprint, what
+is mocked, and which sprint item it does **not** satisfy.
 
 ---
 
@@ -34,9 +88,31 @@ Before adding or changing any route or guard:
 
 ## API Rules
 
-- All responses follow the envelope format in `docs/api/API_CONVENTIONS.md`
-- Error codes come from `docs/api/API_ERROR_CODES.md` — never invent new codes
-- All DateTime = UTC ISO 8601
+- All responses follow the envelope format in `docs/api/API_CONVENTIONS.md` — **flat**:
+  `code` / `message` / `details` at the top level, no `success` flag, no nested `error` object
+- Error codes come from `docs/api/API_ERROR_CODES.md` — never invent new codes. Codes marked
+  *proposed, not agreed* there are not usable until a BE owner signs them off
+- All DateTime = **UTC ISO 8601 on the wire**. Formatting for display happens in the UI layer
+  and nowhere else. Never store a display-formatted date (`"09/08/2026"`) in a data module —
+  the two `/admin/users` screens disagree on this today and the detail screen will break on
+  first contact with the real API
+- An endpoint that appears in a FE contract but not in `docs/api/**` is **not** a licence to
+  invent it. Add it under `## Needs from the other lane` in `ai/PROGRESS.md` and mock behind
+  a `MOCK()` marker
+
+## Frontend Design Rules
+
+- Tokens come from `docs/front-end-design-docs/root-design-fe.md`. **Components never choose
+  their own colours.**
+- The enum-to-hex map lives in `apps/web/src/lib/status.ts` and is the **only** place a badge
+  colour is decided. Hardcoding a status colour in a CSS module violates this — the current
+  `users.module.css` does exactly that and is tracked as tech debt
+- Chart series use `#2563EB` + `#EA580C` (ADR 007). Never status colours for chart series, and
+  never a second y-axis
+- `taste-skill` / `design-taste-frontend` is for **public pages only** (landing, pricing,
+  login). Never dashboards or admin screens
+- `ui-ux-pro-max`: take layout and interaction patterns only. Never run `--design-system`,
+  never adopt its palette or fonts — two design systems in one app is the failure mode
 
 ## Auth Rules
 

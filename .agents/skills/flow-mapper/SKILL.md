@@ -1,13 +1,25 @@
 ---
-status: active
-owner: Nhật
-last_updated: 2026-08-11
-related:
-  - ai/skills/page-designer.md
-  - docs/shared/RBAC_MATRIX.md
-  - docs/flows/
-  - docs/front-end-design-docs/root-design-fe.md
+name: flow-mapper
+description: Turn one feature into a Page Contract before any screen is built - route,
+  RBAC, the 7 UI states, data shape, and the exact endpoint each action fires. Also
+  produces the per-role Flow Map showing how screens connect. Use this BEFORE
+  page-designer, always, for any new screen in this HSK platform. Do not design or code
+  a screen that has no contract.
 ---
+
+<!-- CANONICAL SOURCE. This file IS the skill; there is no copy elsewhere.
+     Antigravity discovers it here. AGENTS.md / CLAUDE.md point here.
+     Previously lived at ai/skills/flow-mapper.md - moved 2026-08-14, do not recreate that path.
+     Original metadata:
+       status: active
+       owner: Nhật
+       last_updated: 2026-08-11
+       related:
+         - ai/skills/page-designer.md
+         - docs/shared/RBAC_MATRIX.md
+         - docs/flows/
+         - docs/front-end-design-docs/root-design-fe.md
+-->
 
 # Skill: flow-mapper
 

@@ -12,10 +12,20 @@
 ---
 
 ## Sprint 0 — Foundation
-- ⬜ Turborepo + pnpm workspace, eslint, prettier, husky pre-commit
-- ⬜ NestJS app (`apps/api`) + Prisma + Mongoose + Swagger + Global Pipes/Filters
-- ⬜ Next.js app (`apps/web`) + Tailwind + shadcn/ui + Axios interceptors + Zustand skeleton
+_(verified against the repo 2026-08-14 — do not mark anything here without checking disk)_
+- 🔶 pnpm workspace ✅ / **`turbo.json` MISSING** — root `package.json` runs `turbo run dev`,
+      so `pnpm dev` and `pnpm build` fail at the repo root today / eslint ❌ / prettier ❌ /
+      husky ❌
+- ⬜ NestJS app (`apps/api`) + Prisma + Mongoose + Swagger + Global Pipes/Filters — `apps/api/` does not exist
+- 🔶 Next.js app (`apps/web`) ✅ Next 14 + TS + Tailwind scaffolded and building.
+      **Axios interceptors ❌, Zustand skeleton ❌, shadcn/ui ❌** — `axios`,
+      `@tanstack/react-query` and `zustand` are in `package.json` but **not imported by a
+      single file**
 - ⬜ Supabase PostgreSQL + MongoDB Atlas init, first migration + seed script
+- ⬜ `packages/types` — declared in `pnpm-workspace.yaml`, directory missing. Blocks the whole
+      contract-first mechanism (`multi-agent-workflow.md` §4)
+- ⬜ `.gitattributes` normalisation run (`git add --renormalize .`) — file added 2026-08-14,
+      **not yet applied**; ~118 files still show as modified with no content change
 - **DoD**: API runs on :3001 (Swagger `/api`), Web runs on :3000 and connects to API, CI passes lint+build
 
 ## Sprint 1 — Auth & Users
@@ -76,6 +86,51 @@
 
 ---
 
+## Tooling / guardrails
+
+- ✅ `.gitattributes` + `scripts/check-docs.mjs` + `.github/workflows/docs-check.yml`
+      (2026-08-14) — 7 doc invariants enforced in CI, each verified to fire against a
+      deliberately broken fixture and to clear afterwards. `pnpm check:docs` runs it locally.
+- ⬜ `git add --renormalize .` **not yet run** — until it is, CI's line-ending step fails
+      and ~118 files still show as modified (KNOWN_ISSUES GIT-001)
+- ⬜ husky pre-commit hook — deferred; CI covers the same ground and cannot be `--no-verify`'d
+
+---
+
+## Off-sprint / spike
+_(work done outside sprint order. Recorded so another agent does not rebuild it, and so
+nobody mistakes a mock for a finished feature. See `working-rules.md` § Definition of Done.)_
+
+- 🔶 **`/admin/users` + `/admin/users/[userId]`** — built 2026-08-13 by `claude` from
+  `docs/front-end-design-docs/specs/admin-pages/admin-users-list.spec.md` and
+  `admin-user-detail.spec.md`.
+
+  **Purpose: a spike to test whether the spec template survives contact with code.** Not an
+  attempt at F1.3. The template has never been validated, and finding a flaw now costs 13
+  spec rewrites instead of 39 after Teacher and Student are mapped.
+
+  Lane note: this is `apps/web/**`, the `codex` lane. The flip was not recorded at the time —
+  logged here retroactively (`multi-agent-workflow.md` §1).
+
+  **Fully mocked.** No API call anywhere: user rows are hardcoded in `page.tsx`,
+  detail data comes from `src/lib/user-detail-data.js`. Approve/suspend mutate React state
+  and are lost on refresh.
+
+  Known gaps against spec:
+  - no `src/lib/status.ts` — badge colours are hardcoded in `users.module.css`, violating
+    "one source decides badge colour" (`WEB-002`)
+  - the two screens disagree on date format: list stores ISO and formats for display, detail
+    stores pre-formatted strings. Detail breaks on the real API (`WEB-003`)
+  - `getUserDetailDataset()` only answers for ids `1` and `4`; the other 6 rows in the list
+    navigate to the not-found state
+  - the REVIEW-STATE switcher widget is dev scaffolding still shipped in the page
+
+  **Does NOT satisfy** Sprint 1 `F1.3 Account approval` or `F1.4 Profile management` — both
+  stay `⬜`. Next step is to fix the spec template from what this spike taught, *then* wire
+  the real API.
+
+---
+
 ## Freeform notes (add as needed)
 _(use this space for quick notes not yet clear enough to become their own checklist item)_
 
@@ -96,8 +151,14 @@ _(phát hiện khi map UI Admin — 2026-08-13)_
       teacher: classes+sessions)
 - [ ] (fe → be) `GET /admin/sessions/pending` cần nhúng giờ thực tế, chủ đề, ghi chú, **điểm danh**
 - [ ] (fe → be) `GET /admin/dashboard/stats` — chốt shape payload trước khi build
-- [ ] (be) **Thiếu toàn bộ nhóm `INVOICE_*` trong `docs/api/API_ERROR_CODES.md`** — mọi thao tác
-      hoá đơn đang phải dùng `TODO(error-code)`
+- [x] (be) ~~Thiếu toàn bộ nhóm `INVOICE_*`~~ — 2026-08-14: đã thêm `INVOICE_*`, `RATE_*`,
+      `SESSION_*`, `AI_*` vào `API_ERROR_CODES.md`, **đánh dấu *proposed, not agreed***.
+      Chưa dùng được cho tới khi BE owner duyệt
+- [x] (be) ~~Endpoint thiếu~~ — 2026-08-14: cả 7 endpoint đã được ghi vào `API_ADMIN.md`
+      § *Referenced by FE contracts, not yet defined*. **Ghi ra không phải là chốt** — vẫn
+      chặn, vẫn cần BE owner ký từng dòng
+- [ ] (be) **`packages/types` chưa tồn tại** — không có contract chung nào giữa hai lane.
+      Đây là việc mở khoá quan trọng nhất, phải là commit đầu tiên của session song song
 
 ## Quyết định nghiệp vụ chưa chốt (chặn build)
 

@@ -7,7 +7,8 @@
     "dev": "turbo run dev",
     "build": "turbo run build",
     "lint": "turbo run lint",
-    "type-check": "turbo run type-check"
+    "type-check": "turbo run type-check",
+    "check:docs": "node scripts/check-docs.mjs"
   },
   "devDependencies": {
     "prettier": "^3.9.6",

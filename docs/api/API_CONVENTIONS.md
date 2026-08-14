@@ -50,13 +50,18 @@ Response:
   "error": "Bad Request",
   "message": "Validation failed",
   "code": "VALIDATION_ERROR",
-  "details": [
-    { "field": "email", "message": "must be a valid email" }
-  ],
+  "details": {
+    "email": ["must be a valid email"]
+  },
   "timestamp": "2026-07-13T00:00:00Z",
   "path": "/api/v1/auth/register"
 }
 ```
+
+**This flat shape is canonical.** `code` / `message` / `details` sit at the top level —
+there is no `success` flag and no nested `error` object. `error` is the HTTP reason
+phrase (a string), not a container. `details` is `Record<fieldName, string[]>` and is
+present only on `VALIDATION_ERROR`.
 
 > Full error codes: [API_ERROR_CODES.md](./API_ERROR_CODES.md)
 

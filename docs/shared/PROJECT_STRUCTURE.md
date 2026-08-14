@@ -59,7 +59,6 @@ hsk-platform/
 │   ├── API_DOCUMENTATION.md
 │   ├── TECH_STACK.md
 │   ├── CONVENTIONS.md
-│   ├── TASK_BOARD.md
 │   ├── FILE_INDEX.md
 │   └── PROJECT_STRUCTURE.md
 │
@@ -477,7 +476,7 @@ hsk-platform/
 
 ## Mapping: File → Task ID
 
-Để dễ tìm task tương ứng trong [TASK_BOARD.md](./TASK_BOARD.md):
+Để dễ tìm task tương ứng trong [`ai/PROGRESS.md`](../../ai/PROGRESS.md) và [SPRINT_PLAN.md](../roadmap/SPRINT_PLAN.md):
 
 ### API Routes → Task IDs
 

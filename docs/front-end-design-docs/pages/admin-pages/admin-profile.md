@@ -28,7 +28,7 @@ Let the Admin change their own name, email, avatar and password.
 
 Blocked on: profile and password endpoints are not in API_ADMIN.md. They are shared
 across all roles and belong in `docs/api/API_AUTH.md` — confirm they exist there
-(`GET/PATCH /api/v1/auth/me`, `PATCH /api/v1/auth/password`, avatar upload) and
+(`GET/PATCH /api/v1/auth/me`, `POST /api/v1/auth/change-password`, avatar upload) and
 reference them rather than adding admin-specific routes.
 
 ## Regions

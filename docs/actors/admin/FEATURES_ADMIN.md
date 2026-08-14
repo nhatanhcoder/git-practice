@@ -23,7 +23,7 @@
 
 | # | Feature | Priority | Notes |
 |---|---------|----------|-------|
-| A-USER-1 | View a list of all users | 🔴 Must | Name, email, role, status, registration date, last_login_at (needs a new column in the schema, updated on every successful login) |
+| A-USER-1 | View a list of all users | 🔴 Must | Name, email, role, status, registration date, `lastLoginAt` (already defined in [ENTITY_USER.md](../../entities/postgres/ENTITY_USER.md) — no schema change needed; AuthService updates it on every successful login) |
 | A-USER-2 | Approve pending accounts (pending → active) | 🔴 Must | Trigger: account_approved notification (split into new_teacher_registration / new_student_registration) |
 | A-USER-3 | Suspend / unsuspend an account (active ↔ suspended) | 🔴 Must | Trigger: account_suspended notification |
 | A-USER-4 | View a user's detailed profile | 🟡 Should | Personal details, account status, class history (enrollment), submission history (attempts); session history left empty — depends on Sprint 5 |

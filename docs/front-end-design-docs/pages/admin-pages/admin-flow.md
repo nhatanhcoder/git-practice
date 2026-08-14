@@ -78,7 +78,7 @@ Dashboard never mutates. Every edge is navigation.
 /admin/tuition-rates  Tuition Rates        ⛔ GET /admin/tuition-rates
 │
 ├── "Thiết lập học phí" → Modal → Submit → Tuition Rates   POST /admin/tuition-rates
-└── Click Row           → History Drawer                   ⛔ GET .../:studentId
+└── Click Row           → History Drawer                   ⛔ GET /admin/tuition-rates?studentId=
 │
 │   (prerequisite: a student needs an active rate before invoicing)
 ▼
@@ -115,7 +115,7 @@ Dashboard never mutates. Every edge is navigation.
 /admin/pay-rates  Pay Rates                ⛔ GET /admin/pay-rates
 │
 ├── "Thiết lập mức lương" → Modal → Submit → Pay Rates   POST /admin/pay-rates
-└── Click Row             → History Drawer               ⛔ GET .../:teacherId
+└── Click Row             → History Drawer               ⛔ GET /admin/pay-rates?teacherId=
 │
 │   (prerequisite: a teacher needs a rate before a period means anything)
 ▼
@@ -159,7 +159,7 @@ Dashboard never mutates. Every edge is navigation.
 
 Header avatar ──► /admin/profile  My Profile
                   ├── Save profile    → toast → stays     PATCH /auth/me
-                  ├── Change password → toast → stays     PATCH /auth/password
+                  ├── Change password → toast → stays     POST /auth/change-password
                   └── Upload avatar   → optimistic        (Supabase Storage)
 ```
 

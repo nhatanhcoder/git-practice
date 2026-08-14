@@ -124,12 +124,11 @@ docs/
 
 | File | Contents |
 |------|---------|
-| [SPRINT_PLAN.md](roadmap/SPRINT_PLAN.md) | Overview of all sprints |
-| [SPRINT_1_AUTH_RBAC.md](roadmap/SPRINT_1_AUTH_RBAC.md) | Sprint 1 |
-| [SPRINT_2_CONTENT_SRS.md](roadmap/SPRINT_2_CONTENT_SRS.md) | Sprint 2 |
-| [SPRINT_3_PAYMENT_PAYROLL.md](roadmap/SPRINT_3_PAYMENT_PAYROLL.md) | Sprint 3 |
-| [SPRINT_4_VIDEO_GRADING.md](roadmap/SPRINT_4_VIDEO_GRADING.md) | Sprint 4 |
-| [SPRINT_5_TESTING_POLISH.md](roadmap/SPRINT_5_TESTING_POLISH.md) | Sprint 5 |
+| [SPRINT_PLAN.md](roadmap/SPRINT_PLAN.md) | **All sprints S0–S9** — tasks, features and Definition of Done for each one, in a single file |
+
+> There are no per-sprint files. The `SPRINT_1_AUTH_RBAC.md … SPRINT_5_TESTING_POLISH.md`
+> rows that used to sit here came from an abandoned 5-sprint plan; the live plan is S0–S9
+> inside `SPRINT_PLAN.md`. Sprint status per lane lives in [`ai/PROGRESS.md`](../ai/PROGRESS.md).
 
 ---
 

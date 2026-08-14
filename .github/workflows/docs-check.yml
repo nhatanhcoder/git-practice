@@ -1,0 +1,42 @@
+# Mechanical enforcement of the doc rules.
+#
+# Prose in AGENTS.md cannot make an agent obey — it can be skipped silently, and was.
+# This job cannot. It is the only layer in the stack that blocks a merge.
+#
+# Deliberately does NOT run pnpm install: scripts/check-docs.mjs has zero dependencies,
+# and the repo root cannot build yet (turbo.json missing — KNOWN_ISSUES BUILD-001).
+# Keep it that way, so doc enforcement never depends on the build being healthy.
+
+name: docs-check
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  check-docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Doc consistency (7 checks)
+        run: node scripts/check-docs.mjs
+
+      - name: Line endings are normalised
+        run: |
+          # .gitattributes pins every text file to LF. If a commit lands without
+          # renormalising, `git diff` here is non-empty and every later merge conflicts
+          # on every file. See multi-agent-workflow.md §14, KNOWN_ISSUES GIT-001.
+          git add --renormalize . >/dev/null 2>&1
+          if ! git diff --cached --quiet; then
+            echo "::error::Line endings are not normalised. Run: git add --renormalize . && git commit"
+            git diff --cached --stat
+            exit 1
+          fi
+          echo "Line endings OK."

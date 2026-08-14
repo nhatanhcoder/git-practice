@@ -1,0 +1,28 @@
+# Line endings — the anti-conflict rule.
+#
+# Without this file, one agent on Windows and another in WSL / a container produce
+# whole-file diffs on every markdown file, and every merge becomes a full-file conflict.
+# Measured 2026-08-14: 118 files showed as modified with zero content change.
+#
+# After adding or changing this file, run ONCE and commit the result:
+#     git add --renormalize .
+#     git commit -m "chore: normalise line endings"
+
+* text=auto eol=lf
+
+# Windows-only scripts must keep CRLF or cmd.exe mis-parses them
+*.bat  text eol=crlf
+*.cmd  text eol=crlf
+*.ps1  text eol=crlf
+
+# Never touched
+*.png  binary
+*.jpg  binary
+*.webp binary
+*.ico  binary
+*.woff binary
+*.woff2 binary
+*.pdf  binary
+
+# Lockfiles: keep diffs out of review
+pnpm-lock.yaml linguist-generated=true -diff

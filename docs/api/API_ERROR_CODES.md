@@ -16,7 +16,6 @@
 ```typescript
 // 200 OK / 201 Created
 {
-  "success": true,
   "data": { ... },          // Or an array [...]
   "meta": {                  // Paginated responses only
     "total": 100,
@@ -30,14 +29,16 @@
 ### Error Response
 
 ```typescript
-// 4xx / 5xx
+// 4xx / 5xx — flat envelope, canonical shape (see API_CONVENTIONS.md § Error Envelope)
 {
-  "success": false,
-  "error": {
-    "code": "USER_NOT_FOUND",     // Machine-readable error code
-    "message": "Không tìm thấy người dùng với ID này",  // Human-readable (Vietnamese UI copy)
-    "details": { ... }            // Optional: validation errors, etc.
-  }
+  "statusCode": 404,                                    // Mirrors the HTTP status
+  "error": "Not Found",                                 // HTTP reason phrase
+  "code": "USER_NOT_FOUND",                             // Machine-readable error code
+  "message": "Không tìm thấy người dùng với ID này",    // Human-readable (Vietnamese UI copy)
+  "details": { ... },                                   // Optional: validation errors, etc.
+  "timestamp": "2026-08-14T07:00:00Z",
+  "path": "/api/v1/admin/users/123"
+}
 }
 ```
 
@@ -140,6 +141,50 @@
 | `PAYROLL_PERIOD_NOT_FOUND` | 404 | Payroll period not found |
 | `PAYROLL_PERIOD_FINALIZED` | 409 | The payroll period is finalized and cannot be edited |
 
+### Session Review Errors (SESSION_*)
+
+| Code | HTTP | Description |
+|------|------|-------|
+| `SESSION_NOT_FOUND` | 404 | Class session not found |
+| `SESSION_ALREADY_REVIEWED` | 409 | Already approved or rejected — approval is one-way |
+| `SESSION_REJECT_REASON_REQUIRED` | 400 | Rejecting a session requires a reason |
+
+### Invoice Errors (INVOICE_*)
+
+> ⚠️ **Proposed, not agreed.** Blocked on the tuition model decision
+> (FEATURES_ADMIN A-INV-1). Confirm before Sprint 3.
+
+| Code | HTTP | Description |
+|------|------|-------|
+| `INVOICE_NOT_FOUND` | 404 | Invoice not found |
+| `INVOICE_ALREADY_VOID` | 409 | The invoice is already voided |
+| `INVOICE_ALREADY_PAID` | 409 | A fully paid invoice cannot be voided or re-issued |
+| `INVOICE_PERIOD_DUPLICATE` | 409 | An invoice already exists for this student + period |
+| `INVOICE_NO_TUITION_RATE` | 400 | No `StudentTuitionRate` is in effect for this student on the billing date |
+| `INVOICE_PAYMENT_EXCEEDS_TOTAL` | 400 | The recorded payment exceeds the outstanding balance |
+| `INVOICE_BATCH_PARTIAL_FAILURE` | 422 | Batch generation partly failed — `details` lists the failed student IDs |
+
+### Rate Errors (RATE_*)
+
+> ⚠️ **Proposed, not agreed.** Rates are append-only — see
+> [ADR 008](../shared/decisions/008-append-only-rates.md).
+
+| Code | HTTP | Description |
+|------|------|-------|
+| `RATE_NOT_FOUND` | 404 | No rate is in effect for this subject on the given date |
+| `RATE_EFFECTIVE_DATE_IN_PAST` | 400 | `effectiveFrom` may not precede the newest existing rate |
+| `RATE_IMMUTABLE` | 409 | An existing rate cannot be edited or deleted — add a new one instead |
+
+### AI / Gemini Errors (AI_*)
+
+> ⚠️ **Proposed, not agreed.** Blocked on the Gemini key model decision (UC-A-005).
+
+| Code | HTTP | Description |
+|------|------|-------|
+| `AI_QUOTA_EXCEEDED` | 429 | The Gemini quota for this key is exhausted |
+| `AI_KEY_INVALID` | 401 | The configured Gemini API key was rejected |
+| `AI_GRADING_FAILED` | 502 | Gemini returned an unusable grading response |
+
 ### Validation Errors (VALIDATION_*)
 
 | Code | HTTP | Description |
@@ -154,17 +199,21 @@
 // POST /auth/register with invalid data
 // Response 400:
 {
-  "success": false,
-  "error": {
-    "code": "VALIDATION_ERROR",
-    "message": "Dữ liệu không hợp lệ",
-    "details": {
-      "email": ["Email không đúng định dạng"],
-      "password": ["Mật khẩu phải có ít nhất 8 ký tự", "Phải có chữ hoa và số"],
-      "fullName": ["Tên không được để trống"]
-    }
-  }
+  "statusCode": 400,
+  "error": "Bad Request",
+  "code": "VALIDATION_ERROR",
+  "message": "Dữ liệu không hợp lệ",
+  "details": {
+    "email": ["Email không đúng định dạng"],
+    "password": ["Mật khẩu phải có ít nhất 8 ký tự", "Phải có chữ hoa và số"],
+    "fullName": ["Tên không được để trống"]
+  },
+  "timestamp": "2026-08-14T07:00:00Z",
+  "path": "/api/v1/auth/register"
 }
+
+> `details` is always `Record<fieldName, string[]>` — one entry per invalid field.
+> It is absent on non-validation errors.
 ```
 
 ---
@@ -201,8 +250,13 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     }
 
     response.status(status).json({
-      success: false,
-      error: { code, message, details }
+      statusCode: status,
+      error: HttpStatus[status] ?? 'Error',
+      code,
+      message,
+      details,
+      timestamp: new Date().toISOString(),
+      path: ctx.getRequest<Request>().url,
     });
   }
 }
@@ -229,7 +283,7 @@ throw new BusinessException('CLASS_ENROLL_CODE_INVALID', 'Mã tham gia lớp kh�
 ```typescript
 // apps/web/lib/api/error-handler.ts
 export function handleApiError(error: AxiosError) {
-  const apiError = error.response?.data?.error;
+  const apiError = error.response?.data;   // flat envelope — code/message/details at top level
 
   switch (apiError?.code) {
     case 'AUTH_TOKEN_EXPIRED':

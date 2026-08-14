@@ -1,12 +1,24 @@
 ---
-status: active
-owner: Nhật
-last_updated: 2026-08-11
-related:
-  - ai/skills/flow-mapper.md
-  - docs/front-end-design-docs/root-design-fe.md
-  - ai/rules/multi-agent-workflow.md
+name: page-designer
+description: Turn an existing Page Contract into a page spec - page description plus API
+  mapping - ready to paste into Claude Design alongside _DESIGN-SYSTEM.md to produce an
+  HTML mockup. Contains the effort ladder deciding when a screen is pure composition and
+  when to reach for ui-ux-pro-max or taste-skill. Requires a Page Contract from
+  flow-mapper first; do not run it on a feature that has none.
 ---
+
+<!-- CANONICAL SOURCE. This file IS the skill; there is no copy elsewhere.
+     Antigravity discovers it here. AGENTS.md / CLAUDE.md point here.
+     Previously lived at ai/skills/page-designer.md - moved 2026-08-14, do not recreate that path.
+     Original metadata:
+       status: active
+       owner: Nhật
+       last_updated: 2026-08-11
+       related:
+         - ai/skills/flow-mapper.md
+         - docs/front-end-design-docs/root-design-fe.md
+         - ai/rules/multi-agent-workflow.md
+-->
 
 # Skill: page-designer
 

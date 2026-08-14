@@ -135,7 +135,7 @@ export class ClassesController {
     @CurrentUser() user: JwtPayload,          // User from the JWT
   ): Promise<ApiResponse<ClassResponseDto>> {
     const result = await this.classesService.create(dto, user.sub);
-    return { success: true, data: result };
+    return { data: result };            // no `success` flag — see API_CONVENTIONS.md
   }
 }
 ```

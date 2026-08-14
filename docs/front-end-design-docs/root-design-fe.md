@@ -1,7 +1,7 @@
 ---
-status: draft
+status: active
 owner: Nhật
-last_updated: 2026-07-13
+last_updated: 2026-08-14
 related:
   - docs/actors/admin/
   - docs/actors/teacher/

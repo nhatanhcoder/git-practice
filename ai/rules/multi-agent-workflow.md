@@ -10,11 +10,30 @@
 
 ## 0. The one-paragraph version
 
-Two agents in one repo fail for exactly three reasons: (1) they edit the same file at
-the same time, (2) they both grab the same task, (3) they disagree about the API contract
-between backend and frontend. This document kills all three with: **static lane ownership**,
-**a claim protocol in `ai/PROGRESS.md`**, and **contract-first development**. Everything
-else here is detail.
+Agents in one repo fail for exactly four reasons: (1) they edit the same file at the same
+time, (2) they both grab the same task, (3) they disagree about the API contract between
+backend and frontend, (4) their environments disagree about line endings so every merge is
+a whole-file conflict. This document kills all four with: **static lane ownership**, **a
+claim protocol in `ai/PROGRESS.md`**, **contract-first development**, and **`.gitattributes`**.
+Everything else here is detail.
+
+> **§0.1 — Reality gate. Read before trusting anything below.**
+> Several mechanisms in this document describe infrastructure that **does not exist yet**.
+> Verified 2026-08-14 against the repo:
+>
+> | Mechanism | Depends on | State |
+> |---|---|---|
+> | §4 contract-first | `packages/types/` | ❌ missing — `pnpm-workspace.yaml` declares `packages/*`, the directory is not there |
+> | §7/§8 session files | `ai/context/sessions/` | ❌ missing — never created, never used |
+> | `pnpm dev` / `pnpm build` | `turbo.json` | ❌ missing — root `package.json` calls `turbo run dev`, which fails |
+> | lint/format gate | `eslint.config.mjs`, `.prettierrc` | ❌ missing |
+> | worktree setup (§12) | `.env.example` | ❌ missing |
+> | backend lane | `apps/api/` | ❌ missing — the whole lane has no code |
+>
+> **A rule that points at a missing file is worse than no rule**: an agent reads it, assumes
+> the mechanism is live, and skips the safeguard. Until a row above flips to ✅, treat that
+> section as *intent*, not procedure. Create the missing piece the first time you need it,
+> then update this table in the same commit.
 
 ---
 
@@ -34,6 +53,27 @@ against it. When a task is ambiguous, that is a Claude task by definition.
 
 > This mapping is a default, not a law. For a sprint that is 90% frontend, flip the lanes —
 > but write the flip into `ai/PROGRESS.md` at the top of the sprint so both agents see it.
+> **A lane flip that is not written down did not happen.** On 2026-08-13 `claude` built
+> `/admin/users` and `/admin/users/[userId]` — squarely inside `apps/web/**`, the `codex`
+> lane — with no flip recorded. That is the exact failure this table exists to prevent, and
+> it took one day to occur.
+
+### 1.1 Third agent — `antigravity`
+
+`antigravity` (Google Antigravity, IDE or CLI) is now installed on this repo. It has **no
+standing lane.** Treat it as a *borrowed* agent:
+
+- It may only work on an item that is **explicitly handed to it in `ai/PROGRESS.md`**, using
+  the same claim format: `🔶 (antigravity · 2026-08-14)`.
+- It **writes to whichever lane that item belongs to**, and only for the duration of that
+  item. It never holds a lane between items.
+- **It never merges to `main`** and never runs a merge window (§6). That stays with `claude`.
+- Its skill discovery is `.agents/skills/**` — see the ownership table in §2.
+
+Any further agent (Cursor, Copilot, Gemini CLI) follows the same borrowed-agent rule. Give it
+a lowercase ID and hand it items one at a time. **Do not give a fourth agent a standing lane
+without deleting one first** — lanes only prevent collisions while every path has exactly one
+owner.
 
 ---
 
@@ -50,11 +90,16 @@ against it. When a task is ambiguous, that is a Claude task by definition.
 | `packages/types/**` (shared API contract) | **claude writes, codex reads** | see §4 |
 | `docs/**`, `ai/rules/**`, `docs/shared/decisions/**` | claude | |
 | Root configs (`package.json`, `turbo.json`, `eslint.config.mjs`, `.env.example`) | **frozen** | see below |
+| `.gitattributes` | **frozen** | changing it re-normalises every file in the repo — merge window only |
+| `.agents/skills/**` | claude | **The canonical and only home for project skills.** Antigravity *reads* them here and never edits them — a skill that rewrites its own definition mid-session is unreviewable. `ai/skills/` was removed 2026-08-14; do not recreate it. |
 | `ai/PROGRESS.md` | shared, line-scoped | see §3 |
-| `ai/context/sessions/**` | one file per agent | see §5 |
+| `ai/context/sessions/**` | one file per agent | see §7 — **directory does not exist yet, create it on first use** |
+| `AGENTS.md`, `CLAUDE.md` | claude | the two must stay in sync — they share one body |
 
 **Frozen files.** Root configs and `pnpm-workspace.yaml` are edited by **one agent at a time,
-never during active parallel work**. If a lane needs a new dependency: add it to the
+never during active parallel work**. Note that as of 2026-08-14 most of them do not exist yet
+(§0.1) — the first agent to need one **creates it in its own commit, alone**, announces it
+under `## Frozen-file requests`, and does not bundle it with feature work. If a lane needs a new dependency: add it to the
 `## Needs from the other lane` block in `ai/PROGRESS.md` and keep going with a stub. Batch
 these and apply them in a merge window (§6).
 
@@ -102,6 +147,11 @@ Add these two blocks at the bottom of `ai/PROGRESS.md` and keep them current:
 ## 4. Contract-first — the rule that removes most coordination
 
 Backend and frontend do not negotiate at integration time. They negotiate **up front**, once.
+
+> ⚠️ **`packages/types/` does not exist yet** (§0.1). Until it does, this section describes
+> nothing real, and the two lanes have no shared contract at all — every field name is a
+> guess on both sides. Creating it is the single highest-value unblocking task in the repo,
+> and it must be `claude`'s first commit of any parallel session.
 
 For every feature slice, in this order:
 
@@ -158,7 +208,66 @@ Point Claude Code at `../Real-claude` and Codex at `../Real-codex`.
 > `.claude/` is gitignored, so an inside-repo worktree is never committed — it only ever
 > pollutes local search and agent context.
 
-**Branch naming:** `feat/s<sprint>-<lane>-<slice>` → `feat/s1-api-auth`, `feat/s1-web-auth`.
+### 5.1 Branch lifecycle — the full loop, including the part everyone forgets
+
+**Naming:** `feat/s<sprint>-<lane>-<slice>` → `feat/s1-api-auth`, `feat/s1-web-auth`.
+Non-feature work: `fix/`, `chore/`, `docs/` + the same slice suffix.
+Off-sprint work (§ working-rules "Definition of Done") uses `spike/<slice>`.
+
+One item = one branch = one PR. Never reuse a merged branch.
+
+```bash
+# 1. START — always from fresh main, never from another feature branch
+git fetch origin
+git switch -c feat/s1-web-auth origin/main
+
+# 2. CLAIM — before writing code (§3). Its own commit.
+#    edit ai/PROGRESS.md: ⬜ → 🔶 (codex · 2026-08-14)
+git commit -am "chore(progress): claim F1.2"
+git push -u origin feat/s1-web-auth      # push the claim immediately — it is how the
+                                          # other agent sees it
+
+# 3. WORK — small commits, conventional prefixes
+git commit -am "feat(web): login form + zod schema"
+
+# 4. STAY CURRENT — at least once per session, always before the PR
+git fetch origin && git rebase origin/main
+
+# 5. FINISH — release the claim in the same PR
+#    edit ai/PROGRESS.md: 🔶 → ✅   (or 🔶 + a mock note — never ✅ for mocked data)
+git commit -am "chore(progress): F1.2 done"
+git push
+
+# 6. PR — review by an agent that did NOT write it (§5 solo-dev fallback)
+gh pr create --fill
+
+# 7. MERGE — and delete the remote branch in the same breath
+gh pr merge --squash --delete-branch
+
+# 8. CLEAN UP LOCALLY — THE STEP THAT KEEPS GETTING SKIPPED
+git switch main && git pull
+git branch -d feat/s1-web-auth           # -d refuses if unmerged. Never force with -D
+                                          # unless you are deliberately discarding work
+git worktree remove ../Real-codex        # only if the worktree is done with (§12)
+git remote prune origin                  # drop refs to branches deleted server-side
+```
+
+**Why step 8 is a rule and not housekeeping.** A leftover branch holds a worktree lock, so
+`git worktree add` later fails with "already checked out". A leftover *remote* branch makes
+`git branch -a` unreadable, and the next agent cannot tell which lane is live. Both cost more
+to untangle later than the two seconds they cost now.
+
+**Audit, every merge window:**
+
+```bash
+git branch --merged main | grep -v "^\*\| main$"   # merged → safe to delete
+git branch -a --no-merged main                       # unmerged → someone must answer for each
+```
+
+> **Current debt (2026-08-14):** four branches violate this. Local
+> `update-fe-doc-flowmapper`, `worktree-updatedocs-to-english`; remote `ai-docs`,
+> `feature/order`, `feature/user`. None follow the naming convention. Delete the merged ones
+> and rename anything still live before the first parallel session.
 
 **Rules:**
 
@@ -168,6 +277,11 @@ Point Claude Code at `../Real-claude` and Codex at `../Real-codex`.
 - **Cross-review:** the agent that did *not* write the code reviews the PR. Claude reviews
   Codex's frontend PRs for contract/RBAC correctness; Codex reviews Claude's backend PRs for
   test coverage and obvious defects. A PR merged with zero review is a rule violation.
+- **Solo-dev fallback.** One human cannot self-review, and in practice this rule was already
+  being skipped — `git log` shows `main` advanced by direct `git merge`, not by PR. Rather
+  than keep a rule nobody follows, the minimum bar is: **open the PR, hand the diff to an
+  agent that did not write it, paste its findings into the PR, then merge.** Thirty seconds,
+  and it still catches contract drift. A review by the authoring agent does not count.
 - Prisma migrations merge to `main` **first**, alone, before any code depending on them.
 
 ---
@@ -210,7 +324,7 @@ progress updates to end-of-session is what causes duplicated work.
 
 ## 8. Session-file template
 
-`ai/context/sessions/2026-08-11-codex.md`:
+`ai/context/sessions/<YYYY-MM-DD>-<agent>.md`, e.g. the 2026-08-11 codex session:
 
 ```markdown
 ## [2026-08-11] — <slice worked on> — codex — branch `feat/s1-web-auth`
@@ -339,9 +453,17 @@ git worktree prune                   # clean up stale entries (deleted dirs)
 - If `git worktree add` fails with "already checked out", another worktree has that branch —
   run `git worktree list` and remove the stale one.
 
-### ⚠️ This repo is inside OneDrive
+### ⚠️ OneDrive — resolved, do not regress
 
-`C:\Users\nhata\OneDrive\Máy tính\Real` is a synced folder. OneDrive will try to sync `.git/`
+**The repo now lives at `D:\PersonalProject\Real`, outside OneDrive.** Worktrees go at
+`D:\PersonalProject\Real-claude`, `D:\PersonalProject\Real-codex`.
+
+Do not move it back, and check periodically that OneDrive has not re-synced a partial copy —
+it did exactly that once (see `KNOWN_ISSUES.md` DOC-002), leaving a third stale copy of
+`ai/` and `docs/` that greps and AI context both picked up.
+
+The original reason, kept because it explains why this is not negotiable:
+`C:\Users\nhata\OneDrive\Máy tính\Real` was a synced folder. OneDrive will try to sync `.git/`
 and `node_modules/` — this causes slow installs, file-lock errors mid-build, and can corrupt
 git index/lock files while an agent is writing them. Two worktrees doubles the exposure.
 
@@ -351,36 +473,105 @@ git index/lock files while an agent is writing them. Two worktrees doubles the e
 
 ---
 
-## 13. Known drift to resolve (as of 2026-08-11)
+## 13. Known drift — verified 2026-08-14
 
-`ai/PROGRESS.md` lists all of Sprint 0 as `⬜ Not started`, but the repo root already contains
-`turbo.json`, `pnpm-workspace.yaml`, `eslint.config.mjs`, `.prettierrc`, `.npmrc`,
-`.env.example` and a `packages/` directory. **Sprint 0 is partially done and the checklist is
-lying.** Before the first parallel session, one agent should verify Sprint 0 item by item
-against the actual repo and correct the marks — otherwise both agents will plan against a
-false baseline.
+Re-verify this section at the start of every parallel session and rewrite it. A stale drift
+list is how both agents end up planning against a false baseline.
 
-**Worse: none of it is committed.** `git status` on `main` shows ~38 changes, including the
-entire Sprint 0 scaffold as *untracked*: `package.json`, `turbo.json`, `pnpm-workspace.yaml`,
-`packages/`, `eslint.config.mjs`, `.prettierrc`, `.npmrc`, `.env.example`, `.gitignore` itself.
-`.idea/` is listed in the new `.gitignore` but is still **tracked** from an earlier commit, so
-it shows as modified forever.
+**Resolved since the 2026-08-11 version of this section:**
 
-Parallel work cannot start from here — a worktree branched off `main` would not contain the
-build setup at all. **Step 0, before any parallel session:**
+- Sprint 0 scaffold is committed. `main` is at `b67f089`, `package.json` /
+  `pnpm-workspace.yaml` / `pnpm-lock.yaml` are all tracked.
+- The inside-repo worktree is gone. `git worktree list` shows one entry, the main checkout.
+- `.claude/` is gitignored and absent from disk.
 
-```bash
-git rm -r --cached .idea            # stop tracking IDE files now that .gitignore covers them
-git add .gitignore                  # commit the ignore rules FIRST
-git commit -m "chore: add .gitignore, stop tracking .idea"
-git add package.json turbo.json pnpm-workspace.yaml packages/ \
-        eslint.config.mjs .prettierrc .prettierignore .npmrc .env.example
-git commit -m "chore(s0): turborepo + pnpm workspace + lint/format setup"
-git add docs/ ai/ AGENTS.md CLAUDE.md
-git commit -m "docs: update specs, ADRs 005/006, multi-agent workflow"
-git push origin main
+**Still open:**
+
+1. **Sprint 0 is marked `⬜` in `ai/PROGRESS.md` but is roughly half done.** `apps/web` exists
+   and builds; `apps/api`, `turbo.json`, eslint/prettier configs and the DB init do not.
+   The checklist is still lying, in the other direction from last time.
+2. **`turbo.json` is missing while root `package.json` runs `turbo run dev`.** `pnpm dev` and
+   `pnpm build` fail at the repo root today. Whoever starts Sprint 0 fixes this first.
+3. **`.idea/` is still tracked** even though `.gitignore` covers it, so it shows as modified
+   forever. Fix, once, in its own commit:
+   `git rm -r --cached .idea && git commit -m "chore: stop tracking .idea"`
+4. **~118 files show as modified with no content change** — line endings. See §14. Fix this
+   *before* any parallel session; a merge across two environments without it conflicts on
+   every file.
+5. **`.git/index.lock` cannot be removed by an agent** on this setup (permission denied from
+   WSL/containers). If git starts failing with "index.lock exists", the human deletes it from
+   Windows: `del ".git\index.lock"`.
+6. **Stale branches.** Local: `update-fe-doc-flowmapper`, `worktree-updatedocs-to-english`.
+   Remote: `ai-docs`, `feature/order`, `feature/user`. None match the `feat/s<sprint>-<lane>-<slice>`
+   convention in §5. Delete the merged ones; rename anything still live.
+
+---
+
+## 14. Line endings — do this before the first parallel session
+
+`.gitattributes` at the repo root pins every text file to LF in git. Without it, an agent on
+Windows and an agent in WSL or a container produce **whole-file diffs on every file**, and
+every merge is a whole-file conflict. This is not hypothetical: measured 2026-08-14, 118
+files were "modified" with zero content change.
+
+Run once, on Windows, with no other agent working:
+
+```
+git config core.autocrlf false
+git add --renormalize .
+git commit -m "chore: normalise line endings via .gitattributes"
 ```
 
-Check `.env.example` contains no real credentials before that push. There is also a leftover
-locked worktree at `.claude/worktrees/updatedocs-to-english` — `git worktree remove` it (or
-`git worktree prune`) once its branch is merged or abandoned.
+After that, `.gitattributes` is a **frozen file** (§2) — changing it re-normalises the whole
+repo, so it only ever changes inside a merge window.
+
+---
+
+## 15. Enforcement — what actually holds, and what only asks
+
+Nothing in this file makes an agent obey it. Prose is advisory: under context pressure every
+agent skips it, and the record shows they did — `working-rules.md` has required a
+`PROGRESS.md` update since it was written, and two screens shipped without one.
+
+So the rules that matter are mechanical:
+
+| Layer | Enforces | Bypass |
+|---|---|---|
+| This document, `AGENTS.md` | nothing | silent, free |
+| A skill's `description` | which skill loads | agent can still work by hand |
+| `pnpm check:docs` locally | 7 doc invariants | just don't run it |
+| **`.github/workflows/docs-check.yml`** | **the same 7, plus line endings** | **none — it blocks the merge** |
+
+`scripts/check-docs.mjs` (no dependencies, runs on bare node) checks:
+
+1. broken internal markdown links
+2. a rule referencing a file that does not exist — the §0.1 failure mode, now automated
+3. an endpoint used in a FE contract but absent from `docs/api/**`
+4. an error code used anywhere but never defined in `API_ERROR_CODES.md`
+5. envelope drift — any `success` flag, which the flat envelope forbids
+6. a page marked `built` in `_INDEX.md` with no `page.tsx`, or the reverse
+7. a skill with no `description`, or split across two files
+
+Six of the eighteen gaps found by hand on 2026-08-14 were of exactly these kinds. They are
+now found by a machine, on every PR, for free.
+
+**When you add a rule, ask whether it can be a check.** If it can, write the check — a rule
+that cannot be verified will be broken and nobody will notice. `ALLOW_MISSING` at the top of
+the script is the escape hatch for paths that legitimately do not exist yet; every entry
+there must also appear in §0.1, and gets deleted the moment the file is created.
+
+---
+
+## 16. When a rule here is wrong, fix the rule
+
+The failure mode this document keeps hitting is not agents breaking rules — it is **rules
+describing a repo that no longer exists**. Three of them were found stale on 2026-08-14
+(OneDrive path, Sprint 0 state, `packages/types`), and each one had already been read and
+trusted by an agent.
+
+So: **if you follow a rule here and reality does not match, stop and fix this file in the
+same commit.** Do not route around it, do not leave a note for later. An agent that silently
+works around a wrong rule leaves the next agent to hit the same wall — and the rule keeps
+looking authoritative.
+
+Specifically, update §0.1's table the moment you create one of the missing pieces.

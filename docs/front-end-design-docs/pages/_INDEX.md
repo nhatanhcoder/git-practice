@@ -1,7 +1,7 @@
 ---
 status: active
 owner: Nhật
-last_updated: 2026-08-11
+last_updated: 2026-08-14
 ---
 
 # Page Contracts — Index
@@ -9,7 +9,10 @@ last_updated: 2026-08-11
 > Produced by `ai/skills/flow-mapper.md`. One row per screen.
 > Contracts live in `<role>-pages/`; this index spans all roles and stays at `pages/` root.
 > **Check here first** — if a route already has a contract, reuse it; do not regenerate.
-> Status: `contracted` → `designed` → `built`.
+> Page status: `contracted` → `designed` → `built`.
+> This is the **page** axis. The matching `specs/**/*.spec.md` files carry their own
+> `status: ready-for-design`, which tracks the *spec document*, not the screen.
+> The two are deliberately independent — do not try to keep them in sync.
 
 ---
 
@@ -20,18 +23,18 @@ last_updated: 2026-08-11
 | Route | Feature | Contract | Status | Blocked on |
 |---|---|---|---|---|
 | `/admin` | A-DASH-1,2,4 | [admin-dashboard](./admin-pages/admin-dashboard.md) | contracted | stats payload shape |
-| `/admin/users` | A-USER-1,2,3 | [admin-users-list](./admin-pages/admin-users-list.md) | contracted | `last_login_at` column |
-| `/admin/users/[userId]` | A-USER-4 | [admin-user-detail](./admin-pages/admin-user-detail.md) | contracted | role-dependent history payload |
+| `/admin/users` | A-USER-1,2,3 | [admin-users-list](./admin-pages/admin-users-list.md) | built | — |
+| `/admin/users/[userId]` | A-USER-4 | [admin-user-detail](./admin-pages/admin-user-detail.md) | built | role-dependent history payload (mocked in `lib/user-detail-data.js`) |
 | `/admin/invoices` | A-INV-4 | [admin-invoice-list](./admin-pages/admin-invoice-list.md) | contracted | collection-summary endpoint |
 | `/admin/invoices/generate` | A-INV-2 | [admin-invoice-generate](./admin-pages/admin-invoice-generate.md) | contracted | preview + batch endpoints |
 | `/admin/invoices/[invoiceId]` | A-INV-3,5 | [admin-invoice-detail](./admin-pages/admin-invoice-detail.md) | contracted | embedded `payments[]` |
 | `/admin/tuition-rates` | A-INV-1 | [admin-tuition-rates](./admin-pages/admin-tuition-rates.md) | contracted | **billing model undecided** |
 | `/admin/payroll/sessions` | A-PAY-2,3 | [admin-session-review](./admin-pages/admin-session-review.md) | contracted | attendance summary in payload |
 | `/admin/payroll` | A-PAY-4,7 | [admin-payroll-list](./admin-pages/admin-payroll-list.md) | contracted | period boundary undecided |
-| `/admin/payroll/[periodId]` | A-PAY-5,6,7 | [admin-payroll-detail](./admin-pages/admin-payroll-detail.md) | contracted | **no `GET /payroll/:id`** |
+| `/admin/payroll/[periodId]` | A-PAY-5,6,7 | [admin-payroll-detail](./admin-pages/admin-payroll-detail.md) | contracted | **no `GET /admin/payroll/:id`** |
 | `/admin/pay-rates` | A-PAY-1 | [admin-pay-rates](./admin-pages/admin-pay-rates.md) | contracted | no list endpoint; unit basis undecided |
 | `/admin/monitoring` | A-DASH-3 | [admin-monitoring](./admin-pages/admin-monitoring.md) | contracted | **all of it** — see contract |
-| `/admin/profile` | A-AUTH-4,5,6 | [admin-profile](./admin-pages/admin-profile.md) | contracted | endpoints live in API_AUTH |
+| `/admin/profile` | A-AUTH-4,5,6 | [admin-profile](./admin-pages/admin-profile.md) | contracted | — (endpoints now defined in [API_AUTH.md](../../api/API_AUTH.md)) |
 
 ## Teacher
 _Not yet mapped._
@@ -98,10 +101,16 @@ in the UI. Both confirm modals must say so in words.
 
 Raise these under `## Needs from the other lane` in `ai/PROGRESS.md`:
 
+All of these are now written down under
+[`API_ADMIN.md` § Referenced by FE contracts, not yet defined](../../api/API_ADMIN.md)
+with a proposed shape, so the two lanes agree on *what is missing*. **None are agreed
+or implemented** — a BE owner still has to sign each one off:
+
 - `GET /api/v1/admin/payroll/:id` — period detail + per-session breakdown
 - `GET /api/v1/admin/pay-rates` — rate list + history
 - `GET /api/v1/admin/tuition-rates` — rate list + history
-- `POST /api/v1/admin/invoices/batch` — batch generation (or accept partial failure)
-- invoice preview endpoint for `/admin/invoices/generate` step 2
+- `POST /api/v1/admin/invoices/batch` — batch generation (partial-failure semantics undecided)
+- `POST /api/v1/admin/invoices/batch/preview` — dry run for `/admin/invoices/generate` step 2
 - `GET /api/v1/admin/monitoring/gemini`
-- `INVOICE_*` error codes — **the entire family is absent** from `API_ERROR_CODES.md`
+- `INVOICE_*`, `RATE_*`, `SESSION_*`, `AI_*` error codes — drafted in
+  [`API_ERROR_CODES.md`](../../api/API_ERROR_CODES.md), each marked *proposed, not agreed*

@@ -23,7 +23,7 @@ Register a new account. Status stays `pending` until an admin approves it.
 { "data": { "message": "Registration successful. Awaiting admin approval." } }
 ```
 
-**Errors**: `EMAIL_ALREADY_EXISTS` (409), `VALIDATION_ERROR` (400)
+**Errors**: `AUTH_EMAIL_EXISTS` (409), `VALIDATION_ERROR` (400)
 
 ---
 
@@ -45,7 +45,7 @@ Register a new account. Status stays `pending` until an admin approves it.
 ```
 Sets httpOnly cookie: `refresh_token` (7 days)
 
-**Errors**: `INVALID_CREDENTIALS` (401), `ACCOUNT_PENDING` (403), `ACCOUNT_SUSPENDED` (403)
+**Errors**: `AUTH_INVALID_CREDENTIALS` (401), `AUTH_ACCOUNT_PENDING` (403), `AUTH_ACCOUNT_SUSPENDED` (403)
 
 ---
 
@@ -55,7 +55,7 @@ Silent token refresh. Uses the `refresh_token` cookie.
 
 **Response 200**: `{ "data": { "accessToken": "eyJ..." } }`
 
-**Errors**: `INVALID_REFRESH_TOKEN` (401), `REFRESH_TOKEN_EXPIRED` (401)
+**Errors**: `AUTH_REFRESH_INVALID` (401), `AUTH_TOKEN_EXPIRED` (401)
 
 ---
 
@@ -76,10 +76,29 @@ Get the currently authenticated user's profile.
 
 ---
 
+## PATCH /api/v1/auth/me
+
+Update the authenticated user's own profile. Self-service for every role;
+an admin editing *another* user goes through `PATCH /api/v1/admin/users/:id/*`
+(approve / suspend / activate) — see [API_ADMIN.md](./API_ADMIN.md).
+
+**Body** (all fields optional):
+```json
+{ "fullName": "Nguyen Van A", "email": "user@example.com", "avatarUrl": "https://..." }
+```
+
+**Response 200**: `{ "data": { ...userProfile } }`
+
+**Errors**: `VALIDATION_ERROR` (400), `AUTH_EMAIL_EXISTS` (409), `USER_AVATAR_UPLOAD_FAILED` (500)
+
+---
+
 ## POST /api/v1/auth/change-password
 
 **Body**: `{ "currentPassword": "...", "newPassword": "..." }`  
 **Response**: 204 No Content
+
+**Errors**: `VALIDATION_ERROR` (400), `AUTH_INVALID_CREDENTIALS` (401)
 
 ---
 

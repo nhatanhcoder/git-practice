@@ -32,7 +32,7 @@ admin, **self only**. This screen never edits another account — `/admin/users/
 |---|---|---|---|
 | Load profile | `GET /api/v1/auth/me` | `data.user` | — |
 | Save profile | `PATCH /api/v1/auth/me` | `data.user` | `VALIDATION_ERROR`, `AUTH_EMAIL_EXISTS` |
-| Change password | `PATCH /api/v1/auth/password` | — | `VALIDATION_ERROR`, `AUTH_INVALID_CREDENTIALS` |
+| Change password | `POST /api/v1/auth/change-password` | — | `VALIDATION_ERROR`, `AUTH_INVALID_CREDENTIALS` |
 | Upload avatar | Supabase Storage | `data.avatarUrl` | `USER_AVATAR_UPLOAD_FAILED` |
 
 ⚠️ These are **shared auth endpoints, not admin-specific** — confirm they exist in
