@@ -294,3 +294,48 @@ pnpm install
 cd apps/api
 pnpm prisma generate
 ```
+
+---
+
+## Windows — bẫy đã gặp thật (2026-08-13)
+
+### Repo KHÔNG được nằm trong OneDrive
+
+Triệu chứng gặp phải khi để repo ở `C:\Users\<user>\OneDrive\Máy tính\Real`:
+
+- `create-next-app` báo **"The application path is not writable"** dù `mkdir` và ghi file
+  bình thường — Node `fs.access(W_OK)` đọc nhầm cờ ReadOnly mà OneDrive gắn lên thư mục
+- Thư mục vừa tạo (`apps/`, `web/`) **biến mất** ngay sau đó
+- pnpm dùng symlink nặng; OneDrive không hiểu symlink → `node_modules` hỏng khi sync
+- Đường dẫn `Máy tính` có ký tự non-ASCII, một số tool Node trên Windows xử lý không ổn
+
+**Cách làm đúng**: để repo ở ổ khác, ví dụ `D:\PersonalProject\Real`.
+
+### pnpm
+
+- Node 24 + npm 11 + pnpm 11.21.0
+- `corepack enable pnpm` cần quyền Admin nếu Node cài ở ổ khác (`D:\Application\nodejs`).
+  Không enable được vẫn chạy được — shim tự tải pnpm lần đầu
+- Tắt prompt tải: `COREPACK_ENABLE_DOWNLOAD_PROMPT=0`
+- **`pnpm-workspace.yaml` phải tồn tại TRƯỚC** khi chạy `pnpm add -Dw`, nếu không:
+  `--workspace-root may only be used inside a workspace`
+- `pnpm init` (v11) sinh `devEngines.packageManager.version: "^11.21.0"` — dấu `^` làm corepack
+  báo `Invalid package manager specification`. Bỏ dấu `^` hoặc xoá cả block
+- `create-next-app` cần thư mục **cha** tồn tại sẵn: `mkdir apps` trước khi tạo `apps/web`
+
+### Thứ tự setup đã kiểm chứng
+
+```powershell
+mkdir apps -Force
+# tạo pnpm-workspace.yaml + .npmrc + package.json (private: true)
+pnpm add -Dw turbo prettier
+pnpm create next-app@14.2.20 apps/web --ts --tailwind --app --src-dir --import-alias "@/*" --no-eslint
+cd apps\web ; pnpm add lucide-react clsx zustand axios @tanstack/react-query ; cd ..\..
+pnpm install
+```
+
+### Font tiếng Việt
+
+- `next/font/google` fetch lúc **build**, cần mạng. Máy không có mạng ra ngoài thì dùng
+  `@import` trong `globals.css`
+- **Bắt buộc `subsets: ['latin', 'vietnamese']`** — thiếu `vietnamese` là mất dấu toàn bộ UI

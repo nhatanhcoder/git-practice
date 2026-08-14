@@ -169,6 +169,26 @@ Dùng **Recharts**. Chọn loại chart theo bản chất dữ liệu, không ch
 | Heatmap kỹ năng học sinh theo tuần | Grid heatmap (không có sẵn trong Recharts — custom bằng div grid + màu theo cường độ) | |
 | Xu hướng điểm trung bình lớp theo thời gian | Line Chart nhiều series | Giới hạn ≤5 series để không rối |
 
+### 6.1 Bảng màu chuỗi dữ liệu (categorical) — ADR-007
+
+| Chuỗi | Hex |
+|---|---|
+| Series 1 | `#2563EB` |
+| Series 2 | `#EA580C` |
+
+Cặp này đã **được kiểm định**, không chọn bằng mắt: ΔE 31.3 (protanopia) · 34.6 (tritanopia)
+· 39.6 (thị lực bình thường) trên nền trắng.
+
+**Không dùng màu trạng thái ở mục 2.1 cho chuỗi chart.** Xanh-cho-doanh-thu / đỏ-cho-chi-lương
+là phản xạ thường gặp và sai ở đây — nó khiến một tháng lương bình thường trông như lỗi.
+
+Quy tắc bắt buộc cho mọi chart:
+
+- **Chỉ một trục y.** Hai đại lượng khác thang đo → hai chart, không bao giờ trục y thứ hai
+- ≥2 chuỗi → luôn có legend, kèm nhãn trực tiếp ở điểm cuối
+- 1 chuỗi → không cần legend, tiêu đề card đã gọi tên nó
+- Kỳ hiện tại chưa kết thúc → vẽ **nét đứt** kèm ghi chú, không vẽ nét liền
+
 Mọi chart phải có bảng dữ liệu ẩn (hoặc nút "Xem dạng bảng") cho khả năng tiếp cận — không chỉ dựa vào màu để truyền đạt thông tin.
 
 ---

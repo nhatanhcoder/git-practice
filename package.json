@@ -1,0 +1,16 @@
+{
+  "name": "hsk-platform",
+  "version": "0.0.0",
+  "private": true,
+  "license": "ISC",
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "type-check": "turbo run type-check"
+  },
+  "devDependencies": {
+    "prettier": "^3.9.6",
+    "turbo": "^2.10.9"
+  }
+}

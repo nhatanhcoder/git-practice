@@ -31,6 +31,43 @@
 
 ---
 
+## [2026-08-13] — FE design pipeline + scaffold Next.js — Claude Code
+
+**Done**:
+- `ai/skills/flow-mapper.md` + `ai/skills/page-designer.md` viết xong (trước đó là file rỗng 0 byte)
+- Admin: 13 Page Contract + `admin-flow.md` (UI flow + API map) + `pages/_INDEX.md`
+- Admin: 13 Design Spec + `specs/_DESIGN-SYSTEM.md` (phần dùng chung, paste 1 lần)
+- `AGENTS.md` / `CLAUDE.md` trỏ tới 2 skill; tạo lại `.gitignore` (trước đó không có)
+- ADR-007 (chart palette), ADR-008 (append-only rates)
+- Scaffold `apps/web`: Next 14 + TS + Tailwind + pnpm workspace, `pnpm install` chạy được
+
+**In progress**:
+- Chưa code màn nào. `apps/web` mới là scaffold mặc định của create-next-app
+- File token (`tailwind.config.ts`, `globals.css`, `lib/status.ts`, `components/`,
+  `app/admin/layout.tsx`) **chưa ghi** — phải ghi trước khi code `/admin/users`
+
+**Temporary decisions to preserve**:
+- Spec = mô tả page + API mapping. Token/component chuẩn nằm ở `specs/_DESIGN-SYSTEM.md`,
+  page spec **không lặp lại**. Lý do: Claude Design không đọc được repo, chỉ thấy file được paste
+- `ui-ux-pro-max`: chỉ lấy layout/interaction, **không chạy `--design-system`**, không lấy
+  palette/font của nó
+- `taste-skill`: chỉ dùng cho trang public, không dùng cho dashboard đã đăng nhập
+
+**Blocker / needs follow-up**:
+- `.git/index.lock` còn kẹt; worktree nằm **trong** repo tại `.claude/worktrees/` làm 88 file
+  .md bị nhân đôi (bản sao đã cũ). Phải `git worktree remove` rồi tạo lại **ngoài** repo
+- OneDrive đã sync lại một bản copy ở `C:\Users\nhata\OneDrive\Máy tính\Real` — nguồn trùng
+  thứ ba, nên xoá
+- API thiếu + 5 quyết định nghiệp vụ chưa chốt → xem `## Needs from the other lane` trong `ai/PROGRESS.md`
+
+**Next steps**:
+1. Dọn git lock + worktree
+2. Ghi file token vào `apps/web`
+3. Code `/admin/users` cho chạy được, rồi **sửa lại template spec** theo cái học được
+4. Sau đó mới map Teacher + Student (sai template lúc 13 file thì sửa 13, để tới 39 thì sửa 39)
+
+---
+
 ## [2026-08-11] — Resolve HSK 1–6 vs 1–9 conflict — Claude Code
 
 **Done**:

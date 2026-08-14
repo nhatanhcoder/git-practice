@@ -1,0 +1,19 @@
+# deps & build
+node_modules/
+.next/
+dist/
+.turbo/
+
+# env
+.env
+.env.local
+.env.*.local
+
+# AI agent scratch — worktrees must NEVER live inside the repo (see ai/rules/multi-agent-workflow.md §5)
+.claude/
+.idea/
+
+# os / logs
+*.log
+.DS_Store
+Thumbs.db

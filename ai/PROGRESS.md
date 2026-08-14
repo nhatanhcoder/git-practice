@@ -78,3 +78,31 @@
 
 ## Freeform notes (add as needed)
 _(use this space for quick notes not yet clear enough to become their own checklist item)_
+
+---
+
+## Needs from the other lane
+_(phát hiện khi map UI Admin — 2026-08-13)_
+
+- [ ] (fe → be) **`GET /api/v1/admin/payroll/:id`** — không tồn tại. Chặn toàn bộ màn
+      `/admin/payroll/[periodId]`. Dữ liệu đã được `calculatePeriodAmount` tính sẵn
+      (`FLOW_PAYROLL_CYCLE` §3) nhưng không có endpoint để lấy
+- [ ] (fe → be) `GET /api/v1/admin/pay-rates` + `GET /api/v1/admin/tuition-rates` — hiện chỉ có POST,
+      không lấy được danh sách/lịch sử (ADR-008 yêu cầu hiển thị lịch sử)
+- [ ] (fe → be) `POST /api/v1/admin/invoices/batch` + endpoint preview cho `/admin/invoices/generate`
+- [ ] (fe → be) `GET /api/v1/admin/monitoring/gemini`
+- [ ] (fe → be) `GET /admin/invoices` cần `meta.summary` (đã thu n/total, tổng thu, còn nợ)
+- [ ] (fe → be) `GET /admin/users/:id` cần nhúng lịch sử theo role (student: enrollments+attempts,
+      teacher: classes+sessions)
+- [ ] (fe → be) `GET /admin/sessions/pending` cần nhúng giờ thực tế, chủ đề, ghi chú, **điểm danh**
+- [ ] (fe → be) `GET /admin/dashboard/stats` — chốt shape payload trước khi build
+- [ ] (be) **Thiếu toàn bộ nhóm `INVOICE_*` trong `docs/api/API_ERROR_CODES.md`** — mọi thao tác
+      hoá đơn đang phải dùng `TODO(error-code)`
+
+## Quyết định nghiệp vụ chưa chốt (chặn build)
+
+- [ ] Mô hình học phí: theo lớp / gói / tháng (`FEATURES_ADMIN` A-INV-1) → chặn `/admin/tuition-rates`
+- [ ] Đơn vị tính lương (`A-PAY-1`) → chặn `/admin/pay-rates`
+- [ ] Ranh giới kỳ lương — có phải tháng dương lịch? (`A-PAY-4`)
+- [ ] Gemini API key: dùng chung hay mỗi teacher một key (`UC-A-005`) → chặn `/admin/monitoring`
+- [ ] Từ chối đăng ký: xoá account hay giữ `pending` (`UC-A-001` Alternative) → chặn `/admin/users`
