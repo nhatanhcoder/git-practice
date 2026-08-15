@@ -4,6 +4,7 @@ route: /admin/profile
 contract: ../../pages/admin-pages/admin-profile.md
 requires: _DESIGN-SYSTEM.md
 status: built
+design_baseline: v1
 last_updated: 2026-08-11
 ---
 

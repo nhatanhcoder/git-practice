@@ -31,6 +31,66 @@
 
 ---
 
+## [2026-08-14] — Doc consistency sweep + mechanical rule enforcement — Claude (Cowork)
+
+**Done**:
+- **Docs**: fixed the response-envelope contradiction (`API_ERROR_CODES.md` said
+  `{success, error:{}}`, everything else said flat — flat wins, see below). Fixed 6 wrong
+  `AUTH_*` code names in `API_AUTH.md`, added `PATCH /auth/me`. Wrote the 7 missing admin
+  endpoints into `API_ADMIN.md` under *Referenced by FE contracts, not yet defined*, and
+  added the `INVOICE_* / RATE_* / SESSION_* / AI_*` code families — **all marked *proposed,
+  not agreed***. Fixed 6 broken links. `root-design-fe.md` draft → active.
+- **Rules**: `multi-agent-workflow.md` gained §0.1 (reality gate — a table of mechanisms that
+  point at files which do not exist), §1.1 (`antigravity` as a borrowed agent with no standing
+  lane), §5.1 (full branch lifecycle **including deleting the branch**), §14 (line endings),
+  §15 (enforcement layers), §16. `working-rules.md` gained `## The flow` (8 steps + which file
+  owns which), a Definition of Done, the `MOCK()` marker convention, and a **cheap** verify
+  rule — 3 machine commands + exactly 2 screenshots, one pass, no fix-and-re-screenshot loop.
+- **Enforcement**: `.gitattributes` (LF), `scripts/check-docs.mjs` (8 checks), and
+  `.github/workflows/docs-check.yml`. Every check was verified against a deliberately broken
+  fixture and then cleared — they are known to fire, not just known to pass.
+- **Skills**: `ai/skills/*.md` moved into `.agents/skills/<name>/SKILL.md` with real
+  `description` frontmatter. `ai/skills/` is gone — check 7 fails if it comes back.
+  Installed `design-taste-frontend` (Leonxlnx/taste-skill, commit `e988add`) verbatim.
+- `/admin/profile` was built by an agent during this session — mocked, `MOCK(A-AUTH-4)`
+  markers present, and it created `apps/web/src/lib/status.ts`.
+
+**In progress**:
+- Branch `chore/agent-flow-docs` — created, **changes not yet committed**.
+
+**Temporary decisions to preserve**:
+- **Error envelope is FLAT**: `{statusCode, error, code, message, details, timestamp, path}`.
+  No `success` flag, no nested `error` object. `error` is the HTTP reason phrase, a string.
+  `details` is `Record<field, string[]>` and only appears on `VALIDATION_ERROR`.
+- **Password endpoint is `POST /api/v1/auth/change-password`** (API_AUTH won over the 3 FE
+  specs, which were changed to match). Profile edit is `PATCH /api/v1/auth/me`.
+- **`taste-skill` scope**: the real criterion is *"does this screen take tokens from
+  `root-design-fe.md`?"* — if yes, never use it. "Authenticated" was the wrong proxy;
+  `/login` is public and may use it.
+- Everything added to `API_ADMIN.md` / `API_ERROR_CODES.md` this session is **proposed, not
+  agreed**. Writing a gap down is not closing it.
+
+**Blocker / needs follow-up**:
+- `git add --renormalize .` **not yet run** — until it is, CI's line-ending step fails.
+- `.git/index.lock` cannot be deleted by an agent through the device mount; the human must
+  `del ".git\index.lock"` from Windows. Close the JetBrains IDE during bulk git work.
+- Still missing, and rules depend on them: `packages/types/` (no shared FE/BE contract at
+  all), `turbo.json` (root `pnpm build` fails — use `pnpm --filter web build`),
+  eslint/prettier configs, `.env.example`, `apps/api/`.
+- The same 5 business decisions still block invoicing, payroll and monitoring.
+
+**Next steps**:
+1. Commit + push `chore/agent-flow-docs`, open the first real PR, let CI run on it.
+2. `WEB-003` — the two `/admin/users` screens disagree on date format; the detail screen
+   will break on the real API. `WEB-002` — `status.ts` now exists but `users.module.css`
+   still hardcodes badge colours.
+3. **Fix the spec template from what 3 built screens taught**, then map Teacher + Student.
+   Contract and spec currently duplicate purpose / access / two-forms / out-of-scope — 4
+   places to drift. The contract's Data table is empty while the spec holds the API mapping.
+   13 files to fix now, 39 if this waits.
+
+---
+
 ## [2026-08-13] — FE design pipeline + scaffold Next.js — Claude Code
 
 **Done**:

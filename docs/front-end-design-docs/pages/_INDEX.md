@@ -20,21 +20,26 @@ last_updated: 2026-08-14
 
 **▶ [Admin UI Flow + API Map](./admin-pages/admin-flow.md)** — screen-to-screen traversal, every action mapped to its endpoint. Read this first; the table below is the per-screen detail.
 
-| Route | Feature | Contract | Status | Blocked on |
-|---|---|---|---|---|
-| `/admin` | A-DASH-1,2,4 | [admin-dashboard](./admin-pages/admin-dashboard.md) | contracted | stats payload shape |
-| `/admin/users` | A-USER-1,2,3 | [admin-users-list](./admin-pages/admin-users-list.md) | built | — |
-| `/admin/users/[userId]` | A-USER-4 | [admin-user-detail](./admin-pages/admin-user-detail.md) | built | role-dependent history payload (mocked in `lib/user-detail-data.js`) |
-| `/admin/invoices` | A-INV-4 | [admin-invoice-list](./admin-pages/admin-invoice-list.md) | contracted | collection-summary endpoint |
-| `/admin/invoices/generate` | A-INV-2 | [admin-invoice-generate](./admin-pages/admin-invoice-generate.md) | contracted | preview + batch endpoints |
-| `/admin/invoices/[invoiceId]` | A-INV-3,5 | [admin-invoice-detail](./admin-pages/admin-invoice-detail.md) | contracted | embedded `payments[]` |
-| `/admin/tuition-rates` | A-INV-1 | [admin-tuition-rates](./admin-pages/admin-tuition-rates.md) | contracted | **billing model undecided** |
-| `/admin/payroll/sessions` | A-PAY-2,3 | [admin-session-review](./admin-pages/admin-session-review.md) | contracted | attendance summary in payload |
-| `/admin/payroll` | A-PAY-4,7 | [admin-payroll-list](./admin-pages/admin-payroll-list.md) | contracted | period boundary undecided |
-| `/admin/payroll/[periodId]` | A-PAY-5,6,7 | [admin-payroll-detail](./admin-pages/admin-payroll-detail.md) | contracted | **no `GET /admin/payroll/:id`** |
-| `/admin/pay-rates` | A-PAY-1 | [admin-pay-rates](./admin-pages/admin-pay-rates.md) | contracted | no list endpoint; unit basis undecided |
-| `/admin/monitoring` | A-DASH-3 | [admin-monitoring](./admin-pages/admin-monitoring.md) | contracted | **all of it** — see contract |
-| `/admin/profile` | A-AUTH-4,5,6 | [admin-profile](./admin-pages/admin-profile.md) | built | — (endpoints defined in [API_AUTH.md](../../api/API_AUTH.md)) |
+> **Design column** = the design baseline the *shipped code* follows. Current baseline is in
+> `root-design-fe.md` frontmatter (`design_baseline`). A version lower than that means the
+> screen still looks like an older design — fine, update it later. `—` means not built yet,
+> so there is nothing to be behind. Only `/design-promote <screen>` changes this column.
+
+| Route | Feature | Contract | Status | Design | Blocked on |
+|---|---|---|---|---|---|
+| `/admin` | A-DASH-1,2,4 | [admin-dashboard](./admin-pages/admin-dashboard.md) | contracted | — | stats payload shape |
+| `/admin/users` | A-USER-1,2,3 | [admin-users-list](./admin-pages/admin-users-list.md) | built | v1 | — |
+| `/admin/users/[userId]` | A-USER-4 | [admin-user-detail](./admin-pages/admin-user-detail.md) | built | v1 | role-dependent history payload (mocked in `lib/user-detail-data.js`) |
+| `/admin/invoices` | A-INV-4 | [admin-invoice-list](./admin-pages/admin-invoice-list.md) | contracted | — | collection-summary endpoint |
+| `/admin/invoices/generate` | A-INV-2 | [admin-invoice-generate](./admin-pages/admin-invoice-generate.md) | contracted | — | preview + batch endpoints |
+| `/admin/invoices/[invoiceId]` | A-INV-3,5 | [admin-invoice-detail](./admin-pages/admin-invoice-detail.md) | contracted | — | embedded `payments[]` |
+| `/admin/tuition-rates` | A-INV-1 | [admin-tuition-rates](./admin-pages/admin-tuition-rates.md) | contracted | — | **billing model undecided** |
+| `/admin/payroll/sessions` | A-PAY-2,3 | [admin-session-review](./admin-pages/admin-session-review.md) | contracted | — | attendance summary in payload |
+| `/admin/payroll` | A-PAY-4,7 | [admin-payroll-list](./admin-pages/admin-payroll-list.md) | contracted | — | period boundary undecided |
+| `/admin/payroll/[periodId]` | A-PAY-5,6,7 | [admin-payroll-detail](./admin-pages/admin-payroll-detail.md) | contracted | — | **no `GET /admin/payroll/:id`** |
+| `/admin/pay-rates` | A-PAY-1 | [admin-pay-rates](./admin-pages/admin-pay-rates.md) | contracted | — | no list endpoint; unit basis undecided |
+| `/admin/monitoring` | A-DASH-3 | [admin-monitoring](./admin-pages/admin-monitoring.md) | contracted | — | **all of it** — see contract |
+| `/admin/profile` | A-AUTH-4,5,6 | [admin-profile](./admin-pages/admin-profile.md) | built | v1 | — (endpoints defined in [API_AUTH.md](../../api/API_AUTH.md)) |
 
 ## Teacher
 _Not yet mapped._

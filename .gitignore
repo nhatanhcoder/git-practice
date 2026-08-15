@@ -18,3 +18,16 @@ dist/
 .DS_Store
 Thumbs.db
 node_modules
+
+# Vendored AI skill — NOT in git (3.7MB, 89 files).
+# Every clone / worktree must install it manually, once:
+#     npx ui-ux-pro-max-cli init --ai universal
+# Requires Python 3 on PATH. See AGENTS.md § Where skills live.
+.agents/skills/ui-ux-pro-max/
+.agents/skills/banner-design/
+.agents/skills/brand/
+.agents/skills/design-promote/
+.agents/skills/design-system/
+.agents/skills/design/
+.agents/skills/slides/
+.agents/skills/ui-styling/
