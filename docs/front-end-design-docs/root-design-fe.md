@@ -1,11 +1,43 @@
 ---
 status: active
 owner: Nhật
-last_updated: 2026-08-14
+last_updated: 2026-08-15
+design_baseline: v1
+baseline_updated: 2026-08-15
 related:
   - docs/actors/admin/
   - docs/actors/teacher/
   - docs/shared/RBAC_MATRIX.md
+---
+
+## Baseline version — read this before using any token below
+
+`design_baseline` in the frontmatter is the **current** version of this design system.
+Every spec of a screen that has shipped carries its own `design_baseline:` — the version
+that screen's code actually follows.
+
+- Spec version **==** this file → screen is current.
+- Spec version **<** this file → screen is behind. It still works; it just does not look
+  like the newest design yet. Update it when convenient, not urgently.
+- A screen with `status: built` and **no** `design_baseline:` → built before versioning
+  existed. Treat as behind.
+
+Find every screen that is behind:
+
+```bash
+grep -rn "design_baseline:" docs/front-end-design-docs/specs/
+```
+
+Only `/design-promote <screen>` bumps the version here
+(`.agents/skills/design-promote/SKILL.md`). Never edit `design_baseline` by hand, and never
+bump it in the same commit as feature code.
+
+### Baseline history
+
+| Version | Date | What changed | Promoted from |
+|---|---|---|---|
+| v1 | 2026-08-15 | Initial baseline — the tokens below as first written | (pre-versioning) |
+
 ---
 
 # Root Design FE — HSK Learning Platform

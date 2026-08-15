@@ -4,6 +4,7 @@ route: /admin/users
 contract: ../../pages/admin-pages/admin-users-list.md
 requires: _DESIGN-SYSTEM.md
 status: ready-for-design
+design_baseline: v1
 last_updated: 2026-08-11
 ---
 
