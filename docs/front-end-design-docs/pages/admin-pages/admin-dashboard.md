@@ -2,8 +2,9 @@
 feature: A-DASH-1, A-DASH-2, A-DASH-4
 role: admin
 route: /admin
-status: contracted
-last_updated: 2026-08-11
+status: built
+design_baseline: v1
+last_updated: 2026-08-15
 ---
 
 # Page Contract — Admin · Dashboard

@@ -3,8 +3,9 @@ page: Admin · Dashboard
 route: /admin
 contract: ../../pages/admin-pages/admin-dashboard.md
 requires: _DESIGN-SYSTEM.md
-status: ready-for-design
-last_updated: 2026-08-11
+status: built
+design_baseline: v1
+last_updated: 2026-08-15
 ---
 
 # Page Spec — Admin · Dashboard

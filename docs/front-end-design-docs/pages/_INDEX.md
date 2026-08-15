@@ -27,7 +27,7 @@ last_updated: 2026-08-14
 
 | Route | Feature | Contract | Status | Design | Blocked on |
 |---|---|---|---|---|---|
-| `/admin` | A-DASH-1,2,4 | [admin-dashboard](./admin-pages/admin-dashboard.md) | contracted | — | stats payload shape |
+| `/admin` | A-DASH-1,2,4 | [admin-dashboard](./admin-pages/admin-dashboard.md) | built | v1 | — |
 | `/admin/users` | A-USER-1,2,3 | [admin-users-list](./admin-pages/admin-users-list.md) | built | v1 | — |
 | `/admin/users/[userId]` | A-USER-4 | [admin-user-detail](./admin-pages/admin-user-detail.md) | built | v1 | role-dependent history payload (mocked in `lib/user-detail-data.js`) |
 | `/admin/invoices` | A-INV-4 | [admin-invoice-list](./admin-pages/admin-invoice-list.md) | contracted | — | collection-summary endpoint |
