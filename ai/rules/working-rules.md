@@ -5,6 +5,37 @@
 
 ---
 
+## The flow
+
+One task, start to finish. No single file holds all eight steps — the table below says which
+file owns which, so you edit one place and not four.
+
+```
+1  Read AGENTS.md            -> 5 always-loaded files, ~6k tokens
+2  git switch -c feat/...    -> branch from fresh origin/main
+3  Claim in ai/PROGRESS.md   -> ⬜ becomes 🔶 (agent · date), commit that line ALONE
+4  Analyze -> Plan -> STOP   -> wait for the human's approval
+5  Read contract + spec + _DESIGN-SYSTEM -> write code
+6  Verify                    -> 3 machine commands + 2 screenshots, one pass
+7  Record                    -> PROGRESS · KNOWN_ISSUES · contract/spec/_INDEX status
+8  PR -> review -> merge -> delete branch (local AND remote)
+```
+
+| To change | Edit |
+|---|---|
+| Steps 4, 6, 7 — work order, approval gate, Definition of Done, mock/date/token rules | **this file** |
+| Steps 2, 3, 8 — lanes, claiming, branch lifecycle, merge windows, worktrees | `ai/rules/multi-agent-workflow.md` |
+| Step 1 — what loads at startup, skill precedence | `AGENTS.md` **and** `CLAUDE.md` — two files, one shared body, **edit both** (check 8 fails if they drift) |
+| Step 5 — the contract and spec templates themselves | `.agents/skills/flow-mapper/SKILL.md`, `.agents/skills/page-designer/SKILL.md` |
+| Which rules a machine enforces | `scripts/check-docs.mjs` |
+| Per-screen status | `docs/front-end-design-docs/pages/_INDEX.md` |
+
+**Changing a rule without changing its check leaves the rule unenforced.** If a new rule can
+be expressed as a check, add it to `scripts/check-docs.mjs` in the same commit — see
+`multi-agent-workflow.md` §15.
+
+---
+
 ## MANDATORY: Workflow Order for Every Task
 
 For any task beyond a trivial one-line fix, follow this exact order:
@@ -53,15 +84,36 @@ const initialUsers: User[] = [ ... ];
 Grep `MOCK(` before declaring a feature complete. Files under `src/lib/*-data.js` that exist
 only to fake an endpoint say so on line 1.
 
-### Build passing is not verification
+### Verify — one pass, then stop
 
 `next build` passed while the sticky-header bug (`KNOWN_ISSUES` WEB-001) shipped a header
-covering row 1. Compilation proves types, not correctness.
+covering row 1. Compilation proves types, not correctness. But verification must stay cheap,
+so it is split by who is good at what.
 
-For any UI change, before reporting done: **open the page and look at it** — screenshot it,
-read the screenshot. Check every state the contract lists (loading / empty / error / partial),
-not just the happy path. For any logic change: run the tests, and if none exist for the path
-you touched, write one.
+**Machines first — these are near-free, always run all three and paste the real output:**
+
+```
+pnpm --filter web build          # NOT `pnpm build` — no turbo.json yet (BUILD-001)
+node --test apps/web/scripts/*.test.mjs
+pnpm check:docs
+```
+
+"Build passed" without the output pasted does not count as having run it.
+
+**Then exactly two screenshots: desktop and 375px, Ready state only.** Read them, report
+what you see. That is the whole visual pass.
+
+**Do not screenshot every state.** Every admin page ships a REVIEW-STATE switcher
+(`WEB-004`) — list the states you did *not* look at so the human flips through them in the
+browser in ten seconds. Screenshots are the single most expensive thing an agent does; two
+is the budget.
+
+**One pass, then stop.** If something looks wrong, say what is wrong and stop. Do not start a
+fix → re-screenshot → fix loop without asking — that loop, not the checking itself, is what
+burns a session.
+
+For a logic change with no UI: the three machine commands are the whole verification. Write a
+test for the path you touched if none exists.
 
 ### Work outside the sprint plan
 
