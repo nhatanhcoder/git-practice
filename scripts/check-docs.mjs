@@ -140,6 +140,31 @@ if (existsSync(SKILLS)) {
 if (existsSync(join(ROOT, 'ai/skills')) && readdirSync(join(ROOT, 'ai/skills')).length)
   fail('skill-broken', 'ai/skills/ was removed 2026-08-14 — skills live only in .agents/skills/');
 
+/* 8 — AGENTS.md and CLAUDE.md share one body ----------------------------- */
+const MARKER = 'Project context lives in';
+const bodyOf = (f) => {
+  if (!existsSync(f)) return null;
+  const t = read(f).replace(/\r\n/g, '\n');
+  const i = t.indexOf(MARKER);
+  return i === -1 ? null : t.slice(i).trim();
+};
+{
+  const a = bodyOf('AGENTS.md');
+  const b = bodyOf('CLAUDE.md');
+  if (a === null || b === null) {
+    fail('agents-claude-drift', `AGENTS.md / CLAUDE.md missing, or neither contains "${MARKER}"`);
+  } else if (a !== b) {
+    const la = a.split('\n'), lb = b.split('\n');
+    const n = Math.max(la.length, lb.length);
+    let first = null;
+    for (let i = 0; i < n; i++) if (la[i] !== lb[i]) { first = i; break; }
+    fail('agents-claude-drift',
+      `bodies differ from line ${first + 1} of the shared section — edit BOTH files\n` +
+      `      AGENTS.md: ${JSON.stringify((la[first] ?? '<end of file>').slice(0, 80))}\n` +
+      `      CLAUDE.md: ${JSON.stringify((lb[first] ?? '<end of file>').slice(0, 80))}`);
+  }
+}
+
 /* report ----------------------------------------------------------------- */
 const byCheck = {};
 for (const { check, msg } of failures) (byCheck[check] ??= []).push(msg);
@@ -151,9 +176,10 @@ const NAMES = {
   'envelope-drift': 'Response envelope drift (`success` flag)',
   'status-drift': 'Page status disagrees with the code on disk',
   'skill-broken': 'Skill is unloadable or split across files',
+  'agents-claude-drift': 'AGENTS.md and CLAUDE.md have drifted apart',
 };
 if (!failures.length) {
-  console.log('check-docs: all 7 checks passed.');
+  console.log('check-docs: all 8 checks passed.');
   process.exit(0);
 }
 for (const [check, msgs] of Object.entries(byCheck)) {
