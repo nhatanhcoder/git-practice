@@ -28,6 +28,12 @@ _(verified against the repo 2026-08-14 — do not mark anything here without che
       **not yet applied**; ~118 files still show as modified with no content change
 - **DoD**: API runs on :3001 (Swagger `/api`), Web runs on :3000 and connects to API, CI passes lint+build
 
+## Lane note
+
+- **apps/web/** (`/admin/dashboard` and this screen) built by **antigravity** on
+  2026-08-15 despite the codex default lane (`multi-agent-workflow.md` §1). Flip recorded
+  here so the parallel-agent protocol is not silently violated again.
+
 ## Sprint 1 — Auth & Users
 - ⬜ F1.1 Account registration (status `pending`, bcrypt cost 12)
 - ⬜ F1.2 Login (JWT access 15min + refresh 7d, rate limit 5 attempts/15min)
@@ -101,6 +107,24 @@ _(verified against the repo 2026-08-14 — do not mark anything here without che
 _(work done outside sprint order. Recorded so another agent does not rebuild it, and so
 nobody mistakes a mock for a finished feature. See `working-rules.md` § Definition of Done.)_
 
+- 🔶 **`/admin/dashboard`** — built 2026-08-15 by `antigravity` from
+  `docs/front-end-design-docs/specs/admin-pages/admin-dashboard.spec.md` and
+  `pages/admin-pages/admin-dashboard.md`.
+
+  **Lane note**: `apps/web/**` is the `codex` lane. Flip recorded in the Lane note above.
+
+  **Fully mocked.** No API call: `GET /api/v1/admin/dashboard/stats` does not exist in
+  `docs/api/API_ADMIN.md` (spec + contract both say "Confirm this shape before build").
+  Dashboard counters, queues and the 6-month series are hardcoded mock data; chart is a
+  hand-written inline SVG line chart (no Recharts dependency, matching the self-contained
+  HTML deliverable convention from the first screens).
+
+  Known gaps against spec:
+  - stats payload shape unconfirmed (spec §3 ⛔) — blocks wiring the real API
+  - KPI tiles link to routes whose pages are not yet built (contract is navigation-only)
+
+  **Does NOT satisfy any contracted dashboard feature beyond this single screen.**
+
 - 🔶 **`/admin/users` + `/admin/users/[userId]`** — built 2026-08-13 by `claude` from
   `docs/front-end-design-docs/specs/admin-pages/admin-users-list.spec.md` and
   `admin-user-detail.spec.md`.
@@ -133,8 +157,6 @@ nobody mistakes a mock for a finished feature. See `working-rules.md` § Definit
 
 ## Freeform notes (add as needed)
 _(use this space for quick notes not yet clear enough to become their own checklist item)_
-
----
 
 ## Needs from the other lane
 _(phát hiện khi map UI Admin — 2026-08-13)_
