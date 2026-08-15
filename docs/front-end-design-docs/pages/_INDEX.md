@@ -34,7 +34,7 @@ last_updated: 2026-08-14
 | `/admin/payroll/[periodId]` | A-PAY-5,6,7 | [admin-payroll-detail](./admin-pages/admin-payroll-detail.md) | contracted | **no `GET /admin/payroll/:id`** |
 | `/admin/pay-rates` | A-PAY-1 | [admin-pay-rates](./admin-pages/admin-pay-rates.md) | contracted | no list endpoint; unit basis undecided |
 | `/admin/monitoring` | A-DASH-3 | [admin-monitoring](./admin-pages/admin-monitoring.md) | contracted | **all of it** — see contract |
-| `/admin/profile` | A-AUTH-4,5,6 | [admin-profile](./admin-pages/admin-profile.md) | contracted | — (endpoints now defined in [API_AUTH.md](../../api/API_AUTH.md)) |
+| `/admin/profile` | A-AUTH-4,5,6 | [admin-profile](./admin-pages/admin-profile.md) | built | — (endpoints defined in [API_AUTH.md](../../api/API_AUTH.md)) |
 
 ## Teacher
 _Not yet mapped._

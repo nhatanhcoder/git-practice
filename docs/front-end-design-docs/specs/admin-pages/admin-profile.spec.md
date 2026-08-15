@@ -3,7 +3,7 @@ page: Admin · My Profile
 route: /admin/profile
 contract: ../../pages/admin-pages/admin-profile.md
 requires: _DESIGN-SYSTEM.md
-status: ready-for-design
+status: built
 last_updated: 2026-08-11
 ---
 
