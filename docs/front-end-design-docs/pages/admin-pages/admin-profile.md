@@ -2,7 +2,7 @@
 feature: A-AUTH-4, A-AUTH-5, A-AUTH-6
 role: admin
 route: /admin/profile
-status: contracted
+status: built
 last_updated: 2026-08-11
 ---
 
