@@ -15,11 +15,37 @@ file owns which, so you edit one place and not four.
 2  git switch -c feat/...    -> branch from fresh origin/main
 3  Claim in ai/PROGRESS.md   -> ⬜ becomes 🔶 (agent · date), commit that line ALONE
 4  Analyze -> Plan -> STOP   -> wait for the human's approval
-5  Read contract + spec + _DESIGN-SYSTEM -> write code
+5  Read contract + spec + _DESIGN-SYSTEM -> write code   <──┐
 6  Verify                    -> 3 machine commands + 2 screenshots, one pass
+      │                                                     │
+      └── human dislikes the UI? ───────────────────────────┘  loop 5–6, no doc changes
 7  Record                    -> PROGRESS · KNOWN_ISSUES · contract/spec/_INDEX status
-8  PR -> review -> merge -> delete branch (local AND remote)
+8  PR -> review -> merge -> delete branch (local AND remote)   ← THE AGENT'S TASK ENDS HERE
+
+────────────────────────────────────────────────────────────────────────────
+   /design-promote <screen>   ← HUMAN-TRIGGERED, NOT PART OF THE TASK ABOVE
 ```
+
+**Never run `/design-promote` yourself.** It is not step 9 of your task — your task ended at
+step 8. The human runs it, after the merge, possibly days later, and often **not at all**
+(if the screen already matched the baseline, nothing needs promoting). An agent that runs it
+unprompted rewrites the design system on its own authority.
+
+Step 6 is a **loop**, not a gate you pass once. The human may send you back to step 5 any
+number of times. Nothing in `docs/front-end-design-docs/` changes during that loop —
+`root-design-fe.md` and `_DESIGN-SYSTEM.md` stay untouched until promote.
+
+**Step 7 vs promote — who writes which field**, so two commits never fight over one row:
+
+| Field | Written at step 7 (agent) | Written by `/design-promote` (human) |
+|---|---|---|
+| `_INDEX.md` **Status** column | ✅ `contracted` → `built` | never |
+| `_INDEX.md` **Design** column | ✅ stamp the **current** version | ✅ set to the **new** version |
+| spec `design_baseline:` | ✅ stamp the **current** version | ✅ bump to the **new** version |
+| `root-design-fe.md` tokens + `design_baseline` | ❌ **never** | ✅ only here |
+
+At step 7 you copy the version that already exists in `root-design-fe.md`. You never invent
+or increment one.
 
 | To change | Edit |
 |---|---|
@@ -27,6 +53,7 @@ file owns which, so you edit one place and not four.
 | Steps 2, 3, 8 — lanes, claiming, branch lifecycle, merge windows, worktrees | `ai/rules/multi-agent-workflow.md` |
 | Step 1 — what loads at startup, skill precedence | `AGENTS.md` **and** `CLAUDE.md` — two files, one shared body, **edit both** (check 8 fails if they drift) |
 | Step 5 — the contract and spec templates themselves | `.agents/skills/flow-mapper/SKILL.md`, `.agents/skills/page-designer/SKILL.md` |
+| The promote step — versioning, catch-up prompts, what the human runs after merge | `.agents/skills/design-promote/SKILL.md` |
 | Which rules a machine enforces | `scripts/check-docs.mjs` |
 | Per-screen status | `docs/front-end-design-docs/pages/_INDEX.md` |
 
@@ -161,10 +188,60 @@ Before adding or changing any route or guard:
   `users.module.css` does exactly that and is tracked as tech debt
 - Chart series use `#2563EB` + `#EA580C` (ADR 007). Never status colours for chart series, and
   never a second y-axis
-- `taste-skill` / `design-taste-frontend` is for **public pages only** (landing, pricing,
-  login). Never dashboards or admin screens
-- `ui-ux-pro-max`: take layout and interaction patterns only. Never run `--design-system`,
-  never adopt its palette or fonts — two design systems in one app is the failure mode
+- Any design skill (`design-taste-frontend`, `ui-ux-pro-max`, …) may be used on **any**
+  screen, dashboards included — see `## Skill Rules`. What is still forbidden is a skill's
+  palette leaking into shipped code without passing through the promote step below
+
+### FE iterate — the design baseline only moves when the human says so
+
+The FE gets rewritten as many times as it takes. Iterate freely, use whatever skill helps,
+show the result. **While iterating, never touch `root-design-fe.md` or `_DESIGN-SYSTEM.md`.**
+
+A new design becomes the baseline only on the explicit command, run **after the code is
+pushed**:
+
+```
+/design-promote <screen>        # e.g. /design-promote admin-profile
+```
+
+See `.agents/skills/design-promote/SKILL.md`. Praise is not the command. "Looks good",
+"đẹp đấy", "ok tiếp đi" all mean *keep iterating*. Until `/design-promote` runs, the
+screen on disk is a draft and the token files still describe the old baseline.
+
+This is what keeps one design system: a skill may propose any palette it likes, but nothing
+enters `root-design-fe.md` except through a promote commit the human triggered.
+
+**Baseline version.** `root-design-fe.md` frontmatter carries `design_baseline: vN` — the
+current design. Every built screen's spec carries its own `design_baseline:` — the version
+that screen's code actually follows. Build a new screen at the current version and stamp it.
+A screen below the current version is **behind, not broken** — it looks older, that is all;
+catch it up when convenient, one commit per screen, never mixed with feature work.
+
+```bash
+grep -rn "design_baseline:" docs/front-end-design-docs/specs/   # who is behind
+```
+
+Only `/design-promote` bumps the root version. Never edit `design_baseline` by hand.
+
+## Skill Rules
+
+**Agents use skills freely. No permission needed, no announcement needed.** A skill is a
+tool, not an architecture decision — the thing that needs approval is the *plan*, not which
+skill you opened to write it.
+
+- Project skills live at `.agents/skills/<name>/SKILL.md`. That path **is** the skill.
+- Tool-level packs (`superpowers`, `ui-ux-pro-max`) install via `/plugin` and **never** drop
+  files into this repo. A skill that insists on its own directory in the repo (`spec-kit`,
+  which writes `specs/`) is not installed here — it collides with the existing pipeline.
+- **Using a skill is free; installing one into `.agents/skills/` needs approval.** Adding a
+  file to the repo is a repo change like any other.
+- Precedence for **UI screens**: if a skill proposes its own planning flow, this project's
+  pipeline wins — `flow-mapper → Page Contract → page-designer → spec → mockup → code`.
+  Skills supply layout, interaction and craft *inside* that pipeline; they do not replace it.
+- A skill's palette, fonts or tokens never land in shipped code directly. They arrive via
+  `/design-promote` (above) or not at all.
+- Say in the PR description which skills shaped the result. "Layout came from ui-ux-pro-max"
+  is something the next agent needs.
 
 ## Auth Rules
 
