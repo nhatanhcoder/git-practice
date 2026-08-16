@@ -47,6 +47,10 @@
   9. `/admin/monitoring` (`feat/s1-web-monitoring`) — System resources strip, 4 services health cards (PostgreSQL, Redis, Gemini AI, R2), audit log stream with JSON inspector.
   10. `/admin` (`feat/s1-web-dashboard`) — Main command center dashboard, 4 KPI tiles, actionable attention required list, module overview cards, activity feed.
 - **Interactivity & Cross-Navigation**: Wired all sidebar links, topbar breadcrumbs, profile shortcuts, KPI metric cards, module overview cards, activity table rows, and secondary action buttons across all admin screens so users can seamlessly navigate between any screen by clicking interactive elements.
+- **Admin Users Cross-Page Interactivity (`/admin/users` & `/admin/users/[userId]`)**:
+  - Added title-bar quick action buttons to `/admin/invoices` and `/admin/payroll`.
+  - Added role-based dropdown action menu items in the user list for students (Học phí, Mức học phí) and teachers (Kỳ lương, Duyệt buổi học, Mức lương GV).
+  - Wired student & teacher detail pages with contextual navigation buttons, clickable invoice history rows pointing to `/admin/invoices/[invoiceId]`, tuition rates linking to `/admin/tuition-rates`, and session links to `/admin/payroll/sessions`.
 - **Verification**: Batch desktop screenshots captured across all 10 pages in Ready state at 1280x800. Logged `WEB-005` in `KNOWN_ISSUES.md` (page metadata static title).
 
 **Temporary decisions to preserve**:
