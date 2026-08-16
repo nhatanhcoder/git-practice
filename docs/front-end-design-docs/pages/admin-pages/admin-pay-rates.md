@@ -2,8 +2,9 @@
 feature: A-PAY-1
 role: admin
 route: /admin/pay-rates
-status: contracted
-last_updated: 2026-08-11
+status: built
+design_baseline: v2
+last_updated: 2026-08-16
 ---
 
 # Page Contract — Admin · Teacher Pay Rates
