@@ -32,7 +32,7 @@ last_updated: 2026-08-14
 | `/admin/users/[userId]` | A-USER-4 | [admin-user-detail](./admin-pages/admin-user-detail.md) | built | v1 | role-dependent history payload (mocked in `lib/user-detail-data.js`) |
 | `/admin/invoices` | A-INV-4 | [admin-invoice-list](./admin-pages/admin-invoice-list.md) | built | v2 | collection-summary endpoint |
 | `/admin/invoices/generate` | A-INV-2 | [admin-invoice-generate](./admin-pages/admin-invoice-generate.md) | contracted | — | preview + batch endpoints |
-| `/admin/invoices/[invoiceId]` | A-INV-3,5 | [admin-invoice-detail](./admin-pages/admin-invoice-detail.md) | contracted | — | embedded `payments[]` |
+| `/admin/invoices/[invoiceId]` | A-INV-3,5 | [admin-invoice-detail](./admin-pages/admin-invoice-detail.md) | built | v2 | embedded `payments[]` |
 | `/admin/tuition-rates` | A-INV-1 | [admin-tuition-rates](./admin-pages/admin-tuition-rates.md) | contracted | — | **billing model undecided** |
 | `/admin/payroll/sessions` | A-PAY-2,3 | [admin-session-review](./admin-pages/admin-session-review.md) | contracted | — | attendance summary in payload |
 | `/admin/payroll` | A-PAY-4,7 | [admin-payroll-list](./admin-pages/admin-payroll-list.md) | contracted | — | period boundary undecided |
