@@ -31,6 +31,33 @@
 
 ---
 
+## [2026-08-16] — /build-screen finish admin area (all 10 screens) — Antigravity
+
+**Done**:
+- **Phase 0 probe**: Explored 3 style variants for admin payroll in `scratch/payroll-variant-{a,b,c}.html`, captured screenshots, batched 5 foundational business decisions with user approval.
+- **Phase 1 complete**: Built all 10 admin screens in sequence, verified each with `pnpm --filter web build` (exit code 0), updated contracts + specs to `status: built`, `design_baseline: v2`, and updated `docs/front-end-design-docs/pages/_INDEX.md`:
+  1. `/admin/invoices` (`feat/s1-web-invoices`) — KPI tiles, filter toolbar, responsive table, mobile cards.
+  2. `/admin/invoices/[invoiceId]` (`feat/s1-web-invoice-detail`) — Header card, action bar, payment history, payment record & void modals.
+  3. `/admin/invoices/generate` (`feat/s1-web-invoice-generate`) — 3-step wizard with connected stepper, preview selection table, retry batch actions.
+  4. `/admin/payroll/sessions` (`feat/s1-web-payroll-sessions`) — Pending sessions review table, 520px slide-over review drawer, reject modal with required reason, empty success state.
+  5. `/admin/payroll` (`feat/s1-web-payroll`) — Payroll periods ledger, status filtering, create period modal with preview & warning link.
+  6. `/admin/payroll/[periodId]` (`feat/s1-web-payroll-detail`) — Period header with metrics, finalize & mark paid modals, collapsible teacher breakdown tables.
+  7. `/admin/pay-rates` (`feat/s1-web-pay-rates`) — Default rate card, per-teacher rates table, append-only history timeline, edit rate modal.
+  8. `/admin/tuition-rates` (`feat/s1-web-tuition-rates`) — HSK 1–6 tuition rates table, append-only rate history timeline, rate adjust modal.
+  9. `/admin/monitoring` (`feat/s1-web-monitoring`) — System resources strip, 4 services health cards (PostgreSQL, Redis, Gemini AI, R2), audit log stream with JSON inspector.
+  10. `/admin` (`feat/s1-web-dashboard`) — Main command center dashboard, 4 KPI tiles, actionable attention required list, module overview cards, activity feed.
+- **Verification**: Batch desktop screenshots captured across all 10 pages in Ready state at 1280x800. Logged `WEB-005` in `KNOWN_ISSUES.md` (page metadata static title).
+
+**Temporary decisions to preserve**:
+- Business decisions 1–5 (flat tuition per month, dual-mode pay rate basis, monthly payroll cycle, single shared Gemini key, soft rejection of registrations).
+- All mock data markers `// MOCK(...)` and `// ASSUMPTION(...)` in page files.
+
+**Next steps**:
+- Human review of built admin screens.
+- Run `/design-promote <screen>` if baseline tokens are promoted.
+
+---
+
 ## [2026-08-14] — Doc consistency sweep + mechanical rule enforcement — Claude (Cowork)
 
 **Done**:
