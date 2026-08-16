@@ -229,6 +229,20 @@ is wired. Decide the convention now — all 13 admin screens will have one.
 
 ---
 
+### [WEB-005] Page metadata title static across admin routes
+
+**Severity**: Low
+**Status**: Open
+
+**Description**: All 10 newly built admin screens are client components without individual
+exported `metadata` or dynamic document title setters, resulting in the fallback title
+"Tài khoản | HSK Learning Platform" persisting across all routes.
+
+**Fix Plan**: Add `export const metadata: Metadata` in page / layout wrappers or use
+`<title>` tags per admin screen.
+
+---
+
 ## Technical Debt
 
 ### [DEBT-001] No cross-DB transactions
