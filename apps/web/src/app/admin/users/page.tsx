@@ -22,6 +22,7 @@ import {
   WalletCards,
   X,
 } from "lucide-react";
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { nextStatus } from "../../../lib/user-status.js";
@@ -124,11 +125,11 @@ export default function AdminUsersPage() {
       <aside className={`${styles.sidebar} ${mobileNav ? styles.sidebarOpen : ""}`}>
         <div className={styles.brand}><span className={styles.brandMark}>学</span><span>HSK Platform</span><button className={styles.closeNav} onClick={() => setMobileNav(false)} aria-label="Đóng menu"><X size={20} /></button></div>
         <nav className={styles.nav} aria-label="Điều hướng quản trị">
-          <a href="#"><LayoutDashboard size={20} />Tổng quan</a>
-          <a className={styles.navActive} href="/admin/users"><Users size={20} />Tài khoản</a>
-          <a href="#"><CircleDollarSign size={20} />Học phí</a>
-          <a href="#"><WalletCards size={20} />Lương</a>
-          <a href="#"><ShieldCheck size={20} />Giám sát</a>
+          <Link className={styles.navItem} href="/admin"><LayoutDashboard size={20} /><span>Tổng quan</span></Link>
+          <Link className={`${styles.navItem} ${styles.navActive}`} href="/admin/users"><Users size={20} /><span>Tài khoản</span></Link>
+          <Link className={styles.navItem} href="/admin/invoices"><CircleDollarSign size={20} /><span>Học phí</span></Link>
+          <Link className={styles.navItem} href="/admin/payroll"><WalletCards size={20} /><span>Lương</span></Link>
+          <Link className={styles.navItem} href="/admin/monitoring"><ShieldCheck size={20} /><span>Giám sát</span></Link>
         </nav>
         <div className={styles.sidebarFooter}><BookOpen size={18} /><div><strong>HSK 1–9</strong><span>Nền tảng học tập</span></div></div>
       </aside>
@@ -136,8 +137,8 @@ export default function AdminUsersPage() {
 
       <div className={styles.mainColumn}>
         <header className={styles.topbar}>
-          <div className={styles.breadcrumb}><button className={styles.menuButton} onClick={() => setMobileNav(true)} aria-label="Mở menu"><Menu size={20} /></button><span>Quản trị</span><ChevronRight size={15} /><strong>Tài khoản</strong></div>
-          <div className={styles.headerActions}><button className={styles.iconButton} aria-label="Thông báo"><Bell size={19} /><span className={styles.notificationDot} /></button><div className={styles.headerDivider} /><button className={styles.profileButton}><span className={`${styles.avatar} ${styles.slate}`}>AT</span><span><strong>Anh Tuấn</strong><small>Quản trị viên</small></span><ChevronDown size={16} /></button></div>
+          <div className={styles.breadcrumb}><button className={styles.menuButton} onClick={() => setMobileNav(true)} aria-label="Mở menu"><Menu size={20} /></button><Link href="/admin">Quản trị</Link><ChevronRight size={15} /><strong>Tài khoản</strong></div>
+          <div className={styles.headerActions}><button className={styles.iconButton} aria-label="Thông báo"><Bell size={19} /><span className={styles.notificationDot} /></button><div className={styles.headerDivider} /><Link className={styles.profileButton} href="/admin/profile"><span className={`${styles.avatar} ${styles.slate}`}>AT</span><span><strong>Anh Tuấn</strong><small>Quản trị viên</small></span><ChevronDown size={16} /></Link></div>
         </header>
 
         <main className={styles.content}>

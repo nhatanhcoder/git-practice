@@ -268,9 +268,17 @@ export default function AdminPayRatesPage() {
               <h1>Đơn giá dạy giáo viên</h1>
               <p className={styles.subtitle}>Thiết lập mức lương mặc định và mức chi trả riêng theo từng giáo viên.</p>
             </div>
-            <button className={styles.secondaryBtn} onClick={() => openEditModal(null)}>
-              Chỉnh sửa mức mặc định
-            </button>
+            <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+              <Link className={styles.secondaryBtn} href="/admin/payroll">
+                Danh sách kỳ lương
+              </Link>
+              <Link className={styles.secondaryBtn} href="/admin/payroll/sessions">
+                Duyệt buổi học
+              </Link>
+              <button className={styles.secondaryBtn} onClick={() => openEditModal(null)}>
+                Chỉnh sửa mức mặc định
+              </button>
+            </div>
           </div>
 
           {/* Default Rate Card */}

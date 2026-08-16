@@ -50,6 +50,7 @@ interface DashboardEvent {
   title: string;
   subtitle: string;
   time: string;
+  href: string;
 }
 
 const initialEvents: DashboardEvent[] = [
@@ -61,6 +62,7 @@ const initialEvents: DashboardEvent[] = [
     title: "Đỗ Hải Yến đã nộp báo cáo buổi học HSK 3 — Nhóm B",
     subtitle: "Thời lượng: 75 phút • 5/6 học viên có mặt",
     time: "15 phút trước",
+    href: "/admin/payroll/sessions",
   },
   {
     id: "e2",
@@ -70,6 +72,7 @@ const initialEvents: DashboardEvent[] = [
     title: "Nguyễn Văn A thanh toán học phí hóa đơn INV-2608-001",
     subtitle: "Số tiền: 1.500.000 ₫ qua Chuyển khoản VietQR",
     time: "1 giờ trước",
+    href: "/admin/invoices/1",
   },
   {
     id: "e3",
@@ -79,6 +82,7 @@ const initialEvents: DashboardEvent[] = [
     title: "Đã tạo kỳ lương nháp Tháng 8/2026 (PER-2608)",
     subtitle: "Tổng hợp 18 buổi học đã duyệt • 2 giáo viên",
     time: "2 giờ trước",
+    href: "/admin/payroll/1",
   },
   {
     id: "e4",
@@ -88,6 +92,7 @@ const initialEvents: DashboardEvent[] = [
     title: "Cập nhật biểu học phí cấp độ HSK 3",
     subtitle: "Điều chỉnh mức niêm yết: 1.800.000 ₫ / tháng",
     time: "Hôm qua",
+    href: "/admin/tuition-rates",
   },
   {
     id: "e5",
@@ -97,6 +102,7 @@ const initialEvents: DashboardEvent[] = [
     title: "Tác vụ bảo trì tự động: Sao lưu PostgreSQL thành công",
     subtitle: "Kích thước sao lưu: 142 MB • Lưu trữ an toàn R2",
     time: "Hôm qua",
+    href: "/admin/monitoring",
   },
 ];
 
@@ -217,7 +223,7 @@ export default function AdminDashboardPage() {
 
           {/* Primary KPI Metrics Grid */}
           <section className={styles.kpiGrid} aria-label="Chỉ số hiệu quả">
-            <article className={styles.kpiCard}>
+            <Link className={styles.kpiCard} href="/admin/invoices">
               <div className={styles.kpiTop}>
                 <span>Doanh thu tháng (8/2026)</span>
                 <CircleDollarSign size={18} color="#16A34A" />
@@ -229,9 +235,9 @@ export default function AdminDashboardPage() {
               <span className={styles.kpiFoot}>
                 <strong style={{ color: "#16A34A" }}>+12%</strong> so với tháng 7 (Mục tiêu 120M)
               </span>
-            </article>
+            </Link>
 
-            <article className={styles.kpiCard}>
+            <Link className={styles.kpiCard} href="/admin/payroll">
               <div className={styles.kpiTop}>
                 <span>Chi phí lương (7/2026)</span>
                 <WalletCards size={18} color="#2563EB" />
@@ -241,9 +247,9 @@ export default function AdminDashboardPage() {
                 <div className={styles.kpiProgressFill} style={{ width: reviewState === "empty" ? "0%" : "100%", backgroundColor: "#2563EB" }} />
               </div>
               <span className={styles.kpiFoot}>18 buổi học • 2 giáo viên</span>
-            </article>
+            </Link>
 
-            <article className={styles.kpiCard}>
+            <Link className={styles.kpiCard} href="/admin/users">
               <div className={styles.kpiTop}>
                 <span>Học viên hoạt động</span>
                 <Users size={18} color="#7C3AED" />
@@ -253,9 +259,9 @@ export default function AdminDashboardPage() {
                 <div className={styles.kpiProgressFill} style={{ width: reviewState === "empty" ? "0%" : "74%", backgroundColor: "#7C3AED" }} />
               </div>
               <span className={styles.kpiFoot}>Phân bổ trên 6 cấp độ HSK 1–6</span>
-            </article>
+            </Link>
 
-            <article className={styles.kpiCard}>
+            <Link className={styles.kpiCard} href="/admin/payroll/sessions">
               <div className={styles.kpiTop}>
                 <span>Buổi học chờ duyệt</span>
                 <Clock size={18} color="#D97706" />
@@ -265,7 +271,7 @@ export default function AdminDashboardPage() {
                 <div className={styles.kpiProgressFill} style={{ width: reviewState === "empty" ? "0%" : "62%", backgroundColor: "#D97706" }} />
               </div>
               <span className={styles.kpiFoot}>Cần duyệt trước khi chốt kỳ lương</span>
-            </article>
+            </Link>
           </section>
 
           {/* Actionable Attention Required Card */}
@@ -359,7 +365,12 @@ export default function AdminDashboardPage() {
                 {initialEvents.map((evt) => {
                   const IconComp = evt.icon;
                   return (
-                    <tr key={evt.id}>
+                    <tr
+                      key={evt.id}
+                      onClick={() => router.push(evt.href)}
+                      tabIndex={0}
+                      onKeyDown={(e) => e.key === "Enter" && router.push(evt.href)}
+                    >
                       <td style={{ width: "44px", paddingRight: "0" }}>
                         <div className={styles.eventIcon} style={{ backgroundColor: evt.iconBg, color: evt.iconColor }}>
                           <IconComp size={16} />

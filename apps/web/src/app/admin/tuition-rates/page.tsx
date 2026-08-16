@@ -313,7 +313,12 @@ export default function AdminTuitionRatesPage() {
               <h1>Đơn giá học phí theo trình độ</h1>
               <p className={styles.subtitle}>Thiết lập mức học phí trọn gói hàng tháng theo từng cấp độ HSK 1 – HSK 6.</p>
             </div>
-            <span className={styles.totalStudentsBadge}>{totalStudents} học viên đang theo học</span>
+            <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+              <Link className={styles.secondaryBtn} href="/admin/invoices">
+                <span>Danh sách hóa đơn</span>
+              </Link>
+              <span className={styles.totalStudentsBadge}>{totalStudents} học viên đang theo học</span>
+            </div>
           </div>
 
           {/* Error Banner */}

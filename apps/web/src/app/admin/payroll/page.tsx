@@ -241,6 +241,12 @@ export default function AdminPayrollPage() {
                 <option value="Phạm Thị Lan">Phạm Thị Lan</option>
                 <option value="Đỗ Hải Yến">Đỗ Hải Yến</option>
               </select>
+              <Link className={styles.secondaryButton} href="/admin/payroll/sessions">
+                <span>Duyệt buổi học</span>
+              </Link>
+              <Link className={styles.secondaryButton} href="/admin/pay-rates">
+                <span>Mức lương GV</span>
+              </Link>
               <button className={styles.primaryButton} onClick={() => setShowCreateModal(true)}>
                 <Plus size={16} />
                 <span>Tạo kỳ lương</span>

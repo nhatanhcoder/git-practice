@@ -190,6 +190,9 @@ export default function AdminInvoicesPage() {
                 <option value="07/2026">Tháng 07/2026</option>
                 <option value="06/2026">Tháng 06/2026</option>
               </select>
+              <Link className={styles.secondaryButton} href="/admin/tuition-rates">
+                <span>Mức học phí</span>
+              </Link>
               <Link className={styles.primaryButton} href={`/admin/invoices/generate?period=${selectedPeriod}`}>
                 <Plus size={16} />
                 <span>Tạo hóa đơn tháng…</span>

@@ -240,6 +240,31 @@
   margin-top: 4px;
 }
 
+.titleActions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.secondaryButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background-color: #FFFFFF;
+  color: #0F172A;
+  border: 1px solid #CBD5E1;
+  padding: 6px 14px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  text-decoration: none;
+  transition: background-color 0.15s;
+}
+
+.secondaryButton:hover {
+  background-color: #F8FAFC;
+}
+
 .queueBadge {
   background-color: #EEF2FF;
   color: #2563EB;

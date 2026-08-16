@@ -295,6 +295,16 @@
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+  text-decoration: none;
+  color: inherit;
+  transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+  cursor: pointer;
+}
+
+.kpiCard:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.08);
+  border-color: #CBD5E1;
 }
 
 .kpiTop {
@@ -490,6 +500,15 @@
   padding: 12px 20px;
   border-bottom: 1px solid #E2E8F0;
   vertical-align: middle;
+}
+
+.activityTable tbody tr {
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+
+.activityTable tbody tr:hover {
+  background-color: #F8FAFC;
 }
 
 .activityTable tbody tr:last-child td {

@@ -249,7 +249,12 @@ export default function AdminSessionReviewPage() {
               <h1>Buổi học chờ duyệt</h1>
               <p className={styles.subtitle}>Kiểm tra thời lượng thực tế và điểm danh của giáo viên trước khi tính lương.</p>
             </div>
-            {!isEmpty && <span className={styles.queueBadge}>{filteredSessions.length} buổi</span>}
+            <div className={styles.titleActions}>
+              <Link className={styles.secondaryButton} href="/admin/payroll">
+                <span>Danh sách kỳ lương</span>
+              </Link>
+              {!isEmpty && <span className={styles.queueBadge}>{filteredSessions.length} buổi</span>}
+            </div>
           </div>
 
           {/* Filter Toolbar */}

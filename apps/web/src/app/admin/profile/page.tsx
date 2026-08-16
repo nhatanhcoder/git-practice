@@ -230,25 +230,25 @@ export default function AdminProfilePage() {
           </button>
         </div>
         <nav className={styles.nav} aria-label="Điều hướng quản trị">
-          <Link href="#">
+          <Link className={styles.navItem} href="/admin">
             <LayoutDashboard size={20} />
-            Tổng quan
+            <span>Tổng quan</span>
           </Link>
-          <Link href="/admin/users">
+          <Link className={styles.navItem} href="/admin/users">
             <Users size={20} />
-            Tài khoản
+            <span>Tài khoản</span>
           </Link>
-          <Link href="#">
+          <Link className={styles.navItem} href="/admin/invoices">
             <CircleDollarSign size={20} />
-            Học phí
+            <span>Học phí</span>
           </Link>
-          <Link href="#">
+          <Link className={styles.navItem} href="/admin/payroll">
             <WalletCards size={20} />
-            Lương
+            <span>Lương</span>
           </Link>
-          <Link href="#">
+          <Link className={styles.navItem} href="/admin/monitoring">
             <ShieldCheck size={20} />
-            Giám sát
+            <span>Giám sát</span>
           </Link>
         </nav>
         <div className={styles.sidebarFooter}>
@@ -279,7 +279,7 @@ export default function AdminProfilePage() {
             >
               <Menu size={20} />
             </button>
-            <Link href="/admin/users">Quản trị</Link>
+            <Link href="/admin">Quản trị</Link>
             <ChevronRight size={15} />
             <strong>Hồ sơ của tôi</strong>
           </div>
