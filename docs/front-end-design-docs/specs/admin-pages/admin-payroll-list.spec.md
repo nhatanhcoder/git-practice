@@ -3,8 +3,9 @@ page: Admin · Payroll Periods
 route: /admin/payroll
 contract: ../../pages/admin-pages/admin-payroll-list.md
 requires: _DESIGN-SYSTEM.md
-status: ready-for-design
-last_updated: 2026-08-11
+status: built
+design_baseline: v2
+last_updated: 2026-08-16
 ---
 
 # Page Spec — Admin · Payroll Periods
