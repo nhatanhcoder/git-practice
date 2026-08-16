@@ -2,8 +2,9 @@
 feature: A-PAY-2, A-PAY-3
 role: admin
 route: /admin/payroll/sessions
-status: contracted
-last_updated: 2026-08-11
+status: built
+design_baseline: v2
+last_updated: 2026-08-16
 ---
 
 # Page Contract — Admin · Session Review
