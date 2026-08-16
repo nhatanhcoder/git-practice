@@ -129,6 +129,9 @@ nobody mistakes a mock for a finished feature. See `working-rules.md` § Definit
   stay `⬜`. Next step is to fix the spec template from what this spike taught, *then* wire
   the real API.
 
+- 🔶 **`/admin/invoices`** (antigravity · 2026-08-16) — Building tuition billing list screen (A-INV-4). Fully mocked, baseline v2.
+
+
 ---
 
 ## Freeform notes (add as needed)
