@@ -131,6 +131,7 @@ nobody mistakes a mock for a finished feature. See `working-rules.md` § Definit
 
 - 🔶 **`/admin/invoices`** (antigravity · 2026-08-16) — Building tuition billing list screen (A-INV-4). Fully mocked, baseline v2.
 - 🔶 **`/admin/invoices/[invoiceId]`** (antigravity · 2026-08-16) — Building invoice detail & reconciliation screen (A-INV-3,5). Fully mocked, baseline v2.
+- 🔶 **`/admin/invoices/generate`** (antigravity · 2026-08-16) — Building batch invoice generation wizard (A-INV-2). Fully mocked, baseline v2.
 
 
 ---
