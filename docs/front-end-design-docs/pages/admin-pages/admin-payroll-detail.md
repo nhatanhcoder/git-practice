@@ -2,8 +2,9 @@
 feature: A-PAY-5, A-PAY-6, A-PAY-7
 role: admin
 route: /admin/payroll/[periodId]
-status: contracted
-last_updated: 2026-08-11
+status: built
+design_baseline: v2
+last_updated: 2026-08-16
 ---
 
 # Page Contract — Admin · Payroll Period Detail
