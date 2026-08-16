@@ -138,6 +138,7 @@ nobody mistakes a mock for a finished feature. See `working-rules.md` § Definit
 - 🔶 **`/admin/pay-rates`** (antigravity · 2026-08-16) — Building teacher pay rates management screen (A-PAY-1). Fully mocked, baseline v2.
 - 🔶 **`/admin/tuition-rates`** (antigravity · 2026-08-16) — Building tuition rates by HSK level screen (A-INV-1). Fully mocked, baseline v2.
 - 🔶 **`/admin/monitoring`** (antigravity · 2026-08-16) — Building system monitoring & logs dashboard (A-DASH-3). Fully mocked, baseline v2.
+- 🔶 **`/admin`** (antigravity · 2026-08-16) — Building admin dashboard command center (A-DASH-1,2,4). Fully mocked, baseline v2.
 
 
 ---
