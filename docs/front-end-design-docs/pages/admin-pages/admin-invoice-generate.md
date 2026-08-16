@@ -2,8 +2,9 @@
 feature: A-INV-2
 role: admin
 route: /admin/invoices/generate
-status: contracted
-last_updated: 2026-08-11
+status: built
+design_baseline: v2
+last_updated: 2026-08-16
 ---
 
 # Page Contract — Admin · Generate Monthly Invoices
