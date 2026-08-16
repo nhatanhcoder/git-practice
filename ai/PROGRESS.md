@@ -130,6 +130,7 @@ nobody mistakes a mock for a finished feature. See `working-rules.md` § Definit
   the real API.
 
 - 🔶 **`/admin/invoices`** (antigravity · 2026-08-16) — Building tuition billing list screen (A-INV-4). Fully mocked, baseline v2.
+- 🔶 **`/admin/invoices/[invoiceId]`** (antigravity · 2026-08-16) — Building invoice detail & reconciliation screen (A-INV-3,5). Fully mocked, baseline v2.
 
 
 ---
