@@ -3,8 +3,9 @@ page: Admin · System Monitoring
 route: /admin/monitoring
 contract: ../../pages/admin-pages/admin-monitoring.md
 requires: _DESIGN-SYSTEM.md
-status: ready-for-design
-last_updated: 2026-08-11
+status: built
+design_baseline: v2
+last_updated: 2026-08-16
 ---
 
 # Page Spec — Admin · System Monitoring
