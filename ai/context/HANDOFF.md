@@ -46,6 +46,7 @@
   8. `/admin/tuition-rates` (`feat/s1-web-tuition-rates`) — HSK 1–6 tuition rates table, append-only rate history timeline, rate adjust modal.
   9. `/admin/monitoring` (`feat/s1-web-monitoring`) — System resources strip, 4 services health cards (PostgreSQL, Redis, Gemini AI, R2), audit log stream with JSON inspector.
   10. `/admin` (`feat/s1-web-dashboard`) — Main command center dashboard, 4 KPI tiles, actionable attention required list, module overview cards, activity feed.
+- **Interactivity & Cross-Navigation**: Wired all sidebar links, topbar breadcrumbs, profile shortcuts, KPI metric cards, module overview cards, activity table rows, and secondary action buttons across all admin screens so users can seamlessly navigate between any screen by clicking interactive elements.
 - **Verification**: Batch desktop screenshots captured across all 10 pages in Ready state at 1280x800. Logged `WEB-005` in `KNOWN_ISSUES.md` (page metadata static title).
 
 **Temporary decisions to preserve**:
