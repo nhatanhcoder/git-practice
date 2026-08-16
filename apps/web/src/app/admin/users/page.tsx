@@ -142,7 +142,24 @@ export default function AdminUsersPage() {
         </header>
 
         <main className={styles.content}>
-          <div className={styles.titleRow}><div><p className={styles.eyebrow}>QUẢN TRỊ NGƯỜI DÙNG</p><h1>Tài khoản</h1><p className={styles.subtitle}>Quản lý quyền truy cập và trạng thái tài khoản trên hệ thống.</p></div><span className={styles.resultCount}>{displayUsers.length} tài khoản</span></div>
+          <div className={styles.titleRow}>
+            <div>
+              <p className={styles.eyebrow}>QUẢN TRỊ NGƯỜI DÙNG</p>
+              <h1>Tài khoản</h1>
+              <p className={styles.subtitle}>Quản lý quyền truy cập và trạng thái tài khoản trên hệ thống.</p>
+            </div>
+            <div style={{ display: "flex", gap: "10px", alignItems: "center", flexWrap: "wrap" }}>
+              <Link className={styles.secondaryBtn} href="/admin/invoices">
+                <CircleDollarSign size={15} />
+                <span>Học phí</span>
+              </Link>
+              <Link className={styles.secondaryBtn} href="/admin/payroll">
+                <WalletCards size={15} />
+                <span>Lương GV</span>
+              </Link>
+              <span className={styles.resultCount}>{displayUsers.length} tài khoản</span>
+            </div>
+          </div>
 
           <section className={styles.filterCard} aria-label="Bộ lọc tài khoản">
             <label className={styles.searchField}><Search size={18} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Tìm theo tên hoặc email" /></label>
@@ -155,8 +172,8 @@ export default function AdminUsersPage() {
 
           <section className={styles.tableCard}>
             {reviewState === "loading" ? <LoadingRows /> : displayUsers.length === 0 ? <EmptyState filtered={hasFilters} onClear={clearFilters} /> : <>
-              <div className={styles.tableWrap}><table><thead><tr><th>Người dùng</th><th>Vai trò</th><th>Trạng thái</th><th><button onClick={() => setSort("createdAt")}>Ngày đăng ký <ChevronsUpDown size={14} /></button></th><th><button onClick={() => setSort("lastLoginAt")}>Đăng nhập gần nhất <ChevronsUpDown size={14} /></button></th><th><span className="sr-only">Thao tác</span></th></tr></thead><tbody>{displayUsers.map((user) => <UserRow key={user.id} user={user} active={activeMenu === user.id} onToggle={() => setActiveMenu(activeMenu === user.id ? null : user.id)} onAction={() => openAction(user)} onOpen={() => router.push(`/admin/users/${user.id}`)} />)}</tbody></table></div>
-              <div className={styles.mobileList}>{displayUsers.map((user) => <UserCard key={user.id} user={user} onAction={() => openAction(user)} />)}</div>
+              <div className={styles.tableWrap}><table><thead><tr><th>Người dùng</th><th>Vai trò</th><th>Trạng thái</th><th><button onClick={() => setSort("createdAt")}>Ngày đăng ký <ChevronsUpDown size={14} /></button></th><th><button onClick={() => setSort("lastLoginAt")}>Đăng nhập gần nhất <ChevronsUpDown size={14} /></button></th><th><span className="sr-only">Thao tác</span></th></tr></thead><tbody>{displayUsers.map((user) => <UserRow key={user.id} user={user} active={activeMenu === user.id} onToggle={() => setActiveMenu(activeMenu === user.id ? null : user.id)} onAction={() => openAction(user)} onOpen={() => router.push(`/admin/users/${user.id}`)} onNavigate={(path) => router.push(path)} />)}</tbody></table></div>
+              <div className={styles.mobileList}>{displayUsers.map((user) => <UserCard key={user.id} user={user} onAction={() => openAction(user)} onOpen={() => router.push(`/admin/users/${user.id}`)} />)}</div>
               <div className={styles.pagination}><span>Hiển thị 1–{displayUsers.length} trong {displayUsers.length}</span><div><button disabled aria-label="Trang trước"><ChevronLeft size={17} /></button><button className={styles.currentPage}>1</button><button disabled aria-label="Trang sau"><ChevronRight size={17} /></button></div></div>
             </>}
           </section>
@@ -170,12 +187,12 @@ export default function AdminUsersPage() {
   );
 }
 
-function UserRow({ user, active, onToggle, onAction, onOpen }: { user: User; active: boolean; onToggle: () => void; onAction: () => void; onOpen: () => void }) {
-  return <tr tabIndex={0} onClick={onOpen} onKeyDown={(event) => { if (event.key === "Enter") onOpen(); }}><td><div className={styles.userCell}><span className={`${styles.avatar} ${styles[user.avatarTone]}`}>{user.initials}</span><span><strong>{user.nickname}</strong><small>{user.email}</small></span></div></td><td>{roleLabels[user.role]}</td><td><StatusPill status={user.status} /></td><td className={styles.numeric}>{formatDate(user.createdAt)}</td><td className={styles.numeric}>{formatDate(user.lastLoginAt, true)}</td><td className={styles.actionCell}><button className={styles.moreButton} onClick={(event) => { event.stopPropagation(); onToggle(); }} aria-label={`Thao tác cho ${user.nickname}`}><MoreHorizontal size={19} /></button>{active && <div className={styles.actionMenu} onClick={(event) => event.stopPropagation()}><button className={user.status === "active" ? styles.dangerAction : ""} onClick={onAction}>{actionLabels[actionFor(user.status)]}</button><button onClick={onOpen}>Xem chi tiết</button></div>}</td></tr>;
+function UserRow({ user, active, onToggle, onAction, onOpen, onNavigate }: { user: User; active: boolean; onToggle: () => void; onAction: () => void; onOpen: () => void; onNavigate: (path: string) => void }) {
+  return <tr tabIndex={0} onClick={onOpen} onKeyDown={(event) => { if (event.key === "Enter") onOpen(); }} style={{ cursor: "pointer" }}><td><div className={styles.userCell}><span className={`${styles.avatar} ${styles[user.avatarTone]}`}>{user.initials}</span><span><strong>{user.nickname}</strong><small>{user.email}</small></span></div></td><td>{roleLabels[user.role]}</td><td><StatusPill status={user.status} /></td><td className={styles.numeric}>{formatDate(user.createdAt)}</td><td className={styles.numeric}>{formatDate(user.lastLoginAt, true)}</td><td className={styles.actionCell}><button className={styles.moreButton} onClick={(event) => { event.stopPropagation(); onToggle(); }} aria-label={`Thao tác cho ${user.nickname}`}><MoreHorizontal size={19} /></button>{active && <div className={styles.actionMenu} onClick={(event) => event.stopPropagation()}><button onClick={onOpen}>Xem chi tiết</button>{user.role === "student" && <><button onClick={() => onNavigate("/admin/invoices")}>Hóa đơn học phí</button><button onClick={() => onNavigate("/admin/tuition-rates")}>Mức học phí</button></>}{user.role === "teacher" && <><button onClick={() => onNavigate("/admin/payroll")}>Kỳ lương</button><button onClick={() => onNavigate("/admin/payroll/sessions")}>Duyệt buổi học</button><button onClick={() => onNavigate("/admin/pay-rates")}>Mức lương GV</button></>}<button className={user.status === "active" ? styles.dangerAction : ""} onClick={onAction}>{actionLabels[actionFor(user.status)]}</button></div>}</td></tr>;
 }
 
-function UserCard({ user, onAction }: { user: User; onAction: () => void }) {
-  return <article className={styles.userCard}><div className={styles.cardHeader}><div className={styles.userCell}><span className={`${styles.avatar} ${styles[user.avatarTone]}`}>{user.initials}</span><span><strong>{user.nickname}</strong><small>{user.email}</small></span></div><StatusPill status={user.status} /></div><dl><div><dt>Vai trò</dt><dd>{roleLabels[user.role]}</dd></div><div><dt>Ngày đăng ký</dt><dd>{formatDate(user.createdAt)}</dd></div><div><dt>Đăng nhập gần nhất</dt><dd>{formatDate(user.lastLoginAt, true)}</dd></div></dl><button className={user.status === "active" ? styles.cardDangerButton : styles.cardActionButton} onClick={onAction}>{actionLabels[actionFor(user.status)]}</button></article>;
+function UserCard({ user, onAction, onOpen }: { user: User; onAction: () => void; onOpen: () => void }) {
+  return <article className={styles.userCard}><div className={styles.cardHeader}><div className={styles.userCell}><span className={`${styles.avatar} ${styles[user.avatarTone]}`}>{user.initials}</span><span><strong>{user.nickname}</strong><small>{user.email}</small></span></div><StatusPill status={user.status} /></div><dl><div><dt>Vai trò</dt><dd>{roleLabels[user.role]}</dd></div><div><dt>Ngày đăng ký</dt><dd>{formatDate(user.createdAt)}</dd></div><div><dt>Đăng nhập gần nhất</dt><dd>{formatDate(user.lastLoginAt, true)}</dd></div></dl><div style={{ display: "flex", gap: "8px", marginTop: "10px" }}><button className={styles.cardActionButton} onClick={onOpen}>Xem chi tiết</button><button className={user.status === "active" ? styles.cardDangerButton : styles.cardActionButton} onClick={onAction}>{actionLabels[actionFor(user.status)]}</button></div></article>;
 }
 
 function StatusPill({ status }: { status: UserStatus }) { return <span className={`${styles.statusPill} ${styles[status]}`}><i />{statusLabels[status]}</span>; }

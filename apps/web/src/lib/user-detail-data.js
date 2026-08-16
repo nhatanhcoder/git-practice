@@ -10,7 +10,13 @@ const studentDataset = {
     initials: "MA",
     hskLevelGoal: 4,
   },
-  enrollments: [],
+  invoices: [
+    { code: "INV-2608-001", period: "08/2026", amount: "1.500.000 ₫", status: "paid", invoiceId: "1" },
+    { code: "INV-2607-001", period: "07/2026", amount: "1.500.000 ₫", status: "paid", invoiceId: "1" },
+  ],
+  enrollments: [
+    { level: "HSK 3 — Nhóm A", status: "active", rate: "1.500.000 ₫ / tháng" },
+  ],
   attempts: [],
 };
 
