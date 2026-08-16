@@ -21,16 +21,15 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
+import { avatarToneFor } from "../../../../lib/formatters";
+import { getStatusColor } from "../../../../lib/status";
 import { getStudentDataset, getTeacherDataset, getUserDetailDataset } from "../../../../lib/user-detail-data.js";
 import { nextStatus } from "../../../../lib/user-status.js";
-import baseStyles from "../users.module.css";
-import detailStyles from "./detail.module.css";
-
-const styles = { ...baseStyles, ...detailStyles };
+import styles from "./detail.module.css";
 
 type UserStatus = "pending" | "active" | "suspended";
 type Action = "approve" | "suspend" | "activate";
-type ReviewState = "student" | "teacher" | "loading" | "empty" | "partial" | "error";
+type ReviewState = "student" | "teacher" | "loading" | "empty" | "partial" | "error" | "forbidden";
 type DetailUser = {
   id: string;
   nickname: string;
@@ -72,6 +71,7 @@ export default function AdminUserDetailPage({ params }: { params: { userId: stri
     setReviewState(state);
     if (state === "teacher") setUser(getTeacherDataset().user as DetailUser);
     if (["student", "empty", "partial"].includes(state)) setUser(getStudentDataset().user as DetailUser);
+    if (state === "forbidden") setToast("AUTH_INSUFFICIENT_ROLE: Quyền truy cập bị từ chối.");
   }
 
   function confirm() {
@@ -90,7 +90,9 @@ export default function AdminUserDetailPage({ params }: { params: { userId: stri
       <div className={styles.mainColumn}>
         <AdminHeader openMenu={() => setMobileNav(true)} />
         <main className={`${styles.content} ${styles.detailContent}`}>
-          {reviewState === "error" ? (
+          {reviewState === "forbidden" ? (
+            <Forbidden />
+          ) : reviewState === "error" ? (
             <NotFound />
           ) : reviewState === "loading" ? (
             <DetailLoading />
@@ -101,7 +103,13 @@ export default function AdminUserDetailPage({ params }: { params: { userId: stri
                 <span>Quay lại danh sách tài khoản</span>
               </Link>
               <section className={styles.profileCard}>
-                <div className={`${styles.detailAvatar} ${user.role === "student" ? styles.blue : styles.amber}`}>
+                <div
+                  className={styles.detailAvatar}
+                  style={{
+                    backgroundColor: avatarToneFor(user.nickname).bg,
+                    color: avatarToneFor(user.nickname).text,
+                  }}
+                >
                   {user.initials}
                 </div>
                 <div className={styles.profileHeading}>
@@ -191,7 +199,7 @@ export default function AdminUserDetailPage({ params }: { params: { userId: stri
       </div>
       <div className={`${styles.stateSwitcher} ${styles.detailSwitcher}`}>
         <span>REVIEW STATE</span>
-        {(["student", "teacher", "loading", "empty", "partial", "error"] as ReviewState[]).map((state) => (
+        {(["student", "teacher", "loading", "empty", "partial", "error", "forbidden"] as ReviewState[]).map((state) => (
           <button
             key={state}
             className={reviewState === state ? styles.stateActive : ""}
@@ -284,8 +292,8 @@ function AdminHeader({ openMenu }: { openMenu: () => void }) {
         </button>
         <div className={styles.headerDivider} />
         <Link className={styles.profileButton} href="/admin/profile">
-          <span className={`${styles.avatar} ${styles.slate}`}>AT</span>
-          <span>
+          <span className={styles.headerAvatar}>AT</span>
+          <span className={styles.profileText}>
             <strong>Anh Tuấn</strong>
             <small>Quản trị viên</small>
           </span>
@@ -297,11 +305,23 @@ function AdminHeader({ openMenu }: { openMenu: () => void }) {
 }
 
 function StatusPill({ status }: { status: UserStatus }) {
+  const theme = getStatusColor(status);
   return (
-    <span className={`${styles.statusPill} ${styles[status]}`}>
+    <span className={styles.statusPill} style={{ backgroundColor: theme.bg, color: theme.text }}>
       <i />
       {statusLabels[status]}
     </span>
+  );
+}
+
+function Forbidden() {
+  return (
+    <div className={styles.notFound}>
+      <span><ShieldCheck size={30} /></span>
+      <h1>Không có quyền truy cập</h1>
+      <p>Tài khoản hiện tại không được phép xem hồ sơ người dùng.</p>
+      <Link href="/admin">Quay lại tổng quan</Link>
+    </div>
   );
 }
 
