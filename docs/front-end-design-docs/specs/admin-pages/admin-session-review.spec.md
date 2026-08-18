@@ -1,10 +1,11 @@
 ---
-page: Admin · Session Review
+page: Admin · Session Review Queue
 route: /admin/payroll/sessions
 contract: ../../pages/admin-pages/admin-session-review.md
 requires: _DESIGN-SYSTEM.md
-status: ready-for-design
-last_updated: 2026-08-11
+status: built
+design_baseline: v2
+last_updated: 2026-08-16
 ---
 
 # Page Spec — Admin · Session Review

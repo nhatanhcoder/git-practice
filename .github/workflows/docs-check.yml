@@ -25,7 +25,7 @@ jobs:
         with:
           node-version: 22
 
-      - name: Doc consistency (7 checks)
+      - name: Doc consistency (8 checks)
         run: node scripts/check-docs.mjs
 
       - name: Line endings are normalised

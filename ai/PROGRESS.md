@@ -89,7 +89,7 @@ _(verified against the repo 2026-08-14 — do not mark anything here without che
 ## Tooling / guardrails
 
 - ✅ `.gitattributes` + `scripts/check-docs.mjs` + `.github/workflows/docs-check.yml`
-      (2026-08-14) — 7 doc invariants enforced in CI, each verified to fire against a
+      (2026-08-14) — 8 doc invariants enforced in CI, each verified to fire against a
       deliberately broken fixture and to clear afterwards. `pnpm check:docs` runs it locally.
 - ⬜ `git add --renormalize .` **not yet run** — until it is, CI's line-ending step fails
       and ~118 files still show as modified (KNOWN_ISSUES GIT-001)
@@ -100,6 +100,10 @@ _(verified against the repo 2026-08-14 — do not mark anything here without che
 ## Off-sprint / spike
 _(work done outside sprint order. Recorded so another agent does not rebuild it, and so
 nobody mistakes a mock for a finished feature. See `working-rules.md` § Definition of Done.)_
+
+- ✅ **Doc-check clean-clone parity** — 2026-08-18. `check-docs.mjs` now ignores locally
+  installed, Git-ignored vendored skills consistently in local and CI runs. The project-owned
+  `design-promote` skill is tracked. Added a regression test; no feature behavior changed.
 
 - 🔶 **`/admin/users` + `/admin/users/[userId]`** — built 2026-08-13 by `claude` from
   `docs/front-end-design-docs/specs/admin-pages/admin-users-list.spec.md` and
@@ -128,6 +132,18 @@ nobody mistakes a mock for a finished feature. See `working-rules.md` § Definit
   **Does NOT satisfy** Sprint 1 `F1.3 Account approval` or `F1.4 Profile management` — both
   stay `⬜`. Next step is to fix the spec template from what this spike taught, *then* wire
   the real API.
+
+- 🔶 **`/admin/invoices`** (antigravity · 2026-08-16) — Building tuition billing list screen (A-INV-4). Fully mocked, baseline v2.
+- 🔶 **`/admin/invoices/[invoiceId]`** (antigravity · 2026-08-16) — Building invoice detail & reconciliation screen (A-INV-3,5). Fully mocked, baseline v2.
+- 🔶 **`/admin/invoices/generate`** (antigravity · 2026-08-16) — Building batch invoice generation wizard (A-INV-2). Fully mocked, baseline v2.
+- 🔶 **`/admin/payroll/sessions`** (antigravity · 2026-08-16) — Building session review queue screen (A-PAY-2,3). Fully mocked, baseline v2.
+- 🔶 **`/admin/payroll`** (antigravity · 2026-08-16) — Building payroll periods ledger screen (A-PAY-4,7). Fully mocked, baseline v2.
+- 🔶 **`/admin/payroll/[periodId]`** (antigravity · 2026-08-16) — Building payroll period detail screen (A-PAY-5,6,7). Fully mocked, baseline v2.
+- 🔶 **`/admin/pay-rates`** (antigravity · 2026-08-16) — Building teacher pay rates management screen (A-PAY-1). Fully mocked, baseline v2.
+- 🔶 **`/admin/tuition-rates`** (antigravity · 2026-08-16) — Building tuition rates by HSK level screen (A-INV-1). Fully mocked, baseline v2.
+- 🔶 **`/admin/monitoring`** (antigravity · 2026-08-16) — Building system monitoring & logs dashboard (A-DASH-3). Fully mocked, baseline v2.
+- 🔶 **`/admin`** (antigravity · 2026-08-16) — Building admin dashboard command center (A-DASH-1,2,4). Fully mocked, baseline v2.
+
 
 ---
 

@@ -540,7 +540,7 @@ So the rules that matter are mechanical:
 | This document, `AGENTS.md` | nothing | silent, free |
 | A skill's `description` | which skill loads | agent can still work by hand |
 | `pnpm check:docs` locally | 7 doc invariants | just don't run it |
-| **`.github/workflows/docs-check.yml`** | **the same 7, plus line endings** | **none — it blocks the merge** |
+| **`.github/workflows/docs-check.yml`** | **the same 8, plus line endings** | **none — it blocks the merge** |
 
 `scripts/check-docs.mjs` (no dependencies, runs on bare node) checks:
 
