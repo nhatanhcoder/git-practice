@@ -89,7 +89,7 @@ _(verified against the repo 2026-08-14 — do not mark anything here without che
 ## Tooling / guardrails
 
 - ✅ `.gitattributes` + `scripts/check-docs.mjs` + `.github/workflows/docs-check.yml`
-      (2026-08-14) — 7 doc invariants enforced in CI, each verified to fire against a
+      (2026-08-14) — 8 doc invariants enforced in CI, each verified to fire against a
       deliberately broken fixture and to clear afterwards. `pnpm check:docs` runs it locally.
 - ⬜ `git add --renormalize .` **not yet run** — until it is, CI's line-ending step fails
       and ~118 files still show as modified (KNOWN_ISSUES GIT-001)
@@ -100,6 +100,10 @@ _(verified against the repo 2026-08-14 — do not mark anything here without che
 ## Off-sprint / spike
 _(work done outside sprint order. Recorded so another agent does not rebuild it, and so
 nobody mistakes a mock for a finished feature. See `working-rules.md` § Definition of Done.)_
+
+- ✅ **Doc-check clean-clone parity** — 2026-08-18. `check-docs.mjs` now ignores locally
+  installed, Git-ignored vendored skills consistently in local and CI runs. The project-owned
+  `design-promote` skill is tracked. Added a regression test; no feature behavior changed.
 
 - 🔶 **`/admin/users` + `/admin/users/[userId]`** — built 2026-08-13 by `claude` from
   `docs/front-end-design-docs/specs/admin-pages/admin-users-list.spec.md` and

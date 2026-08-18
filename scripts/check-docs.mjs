@@ -46,6 +46,24 @@ const mdFiles = allFiles.filter((f) => f.endsWith('.md'));
 const read = (f) => readFileSync(f, 'utf8');
 const rel = (f) => relative(ROOT, f).replace(/\\/g, '/');
 
+// Some tool-provided skills are installed locally but intentionally ignored by Git.
+// They must not make local checks disagree with a clean CI checkout.
+const ignoredSkillDirs = new Set(
+  existsSync(join(ROOT, '.gitignore'))
+    ? readFileSync(join(ROOT, '.gitignore'), 'utf8')
+        .split(/\r?\n/)
+        .map((line) => line.trim())
+        .filter((line) => /^\.agents\/skills\/[^/]+\/$/.test(line))
+        .map((line) => line.slice(0, -1))
+    : [],
+);
+const isIgnoredSkillPath = (path) => {
+  const normalized = path.replace(/\\/g, '/');
+  return [...ignoredSkillDirs].some(
+    (dir) => normalized === dir || normalized.startsWith(`${dir}/`),
+  );
+};
+
 /* 1 — broken internal markdown links ------------------------------------ */
 for (const f of mdFiles) {
   for (const m of read(f).matchAll(/\[[^\]]*\]\(([^)\s#]+)(?:#[^)]*)?\)/g)) {
@@ -63,6 +81,7 @@ for (const rf of RULE_FILES.filter(existsSync)) {
   for (const m of read(rf).matchAll(/`([a-zA-Z0-9_.@/-]+\.(?:md|ts|tsx|js|mjs|json|yaml|yml|prisma|css))`/g)) {
     const p = m[1];
     if (!p.includes('/') || p.startsWith('<') || ALLOW_MISSING.has(p)) continue;
+    if (isIgnoredSkillPath(p)) continue;
     if (/^(src|app|packages|apps\/api|prisma)\//.test(p)) continue;
     if (!existsSync(join(ROOT, p))) fail('rule-points-nowhere', `${rf} -> \`${p}\``);
   }
@@ -128,6 +147,7 @@ if (existsSync(INDEX)) {
 const SKILLS = '.agents/skills';
 if (existsSync(SKILLS)) {
   for (const d of readdirSync(join(ROOT, SKILLS))) {
+    if (ignoredSkillDirs.has(`${SKILLS}/${d}`)) continue;
     const p = join(ROOT, SKILLS, d, 'SKILL.md');
     if (!existsSync(p)) { fail('skill-broken', `${SKILLS}/${d}/ has no SKILL.md`); continue; }
     const t = read(p);
