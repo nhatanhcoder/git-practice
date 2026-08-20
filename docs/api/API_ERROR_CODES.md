@@ -185,6 +185,32 @@
 | `AI_KEY_INVALID` | 401 | The configured Gemini API key was rejected |
 | `AI_GRADING_FAILED` | 502 | Gemini returned an unusable grading response |
 
+### Fallback Errors — phát ra bởi Global Exception Filter
+
+> ⚠️ Hai mã này **đã được `GlobalExceptionFilter` ở §5 phát ra từ đầu** nhưng chưa bao giờ
+> được đăng ký ở §3. `pnpm check:docs` phát hiện 2026-08-19 khi các module spec tham chiếu tới
+> chúng. Đăng ký ở đây để registry khớp với code mẫu — **không phải** để khuyến khích dùng.
+
+| Code | HTTP | Description |
+|------|------|-------|
+| `DUPLICATE_ENTRY` | 409 | Prisma P2002 (vi phạm unique) rơi tới global filter |
+| `INTERNAL_SERVER_ERROR` | 500 | Lỗi không được ánh xạ — nhánh mặc định của filter |
+
+**Đây là mã của tầng cuối, không phải mã nghiệp vụ.** Service **phải** bắt lỗi và ném lại mã
+cụ thể trước khi nó rơi tới filter. Ví dụ: `register` bắt P2002 và ném `AUTH_EMAIL_EXISTS`
+(409) — nếu để lọt thành `DUPLICATE_ENTRY`, frontend nhận một `code` nó không có nhánh xử lý
+và rơi vào toast mặc định. `DUPLICATE_ENTRY` xuất hiện trong log production = có một nhánh
+lỗi ai đó quên ánh xạ.
+
+### Đề xuất, chưa được duyệt (proposed, not agreed)
+
+> ⚠️ **Chưa dùng được.** Cần BE owner ký từng dòng. Ghi ra không phải là chốt.
+
+| Code | HTTP | Description | Cần cho |
+|------|------|-------------|---------|
+| `TOO_MANY_REQUESTS` | 429 | Vượt rate limit | `API_CONVENTIONS.md` chưa có mục rate limit nào — phải viết trước |
+| `PAYROLL_PERIOD_DUPLICATE` | 409 | Đã tồn tại kỳ lương cho teacher này trong khoảng ngày đó | `POST /admin/payroll` — hiện `PAYROLL_PERIOD_FINALIZED` đang gánh 3 ngữ nghĩa khác nhau |
+
 ### Validation Errors (VALIDATION_*)
 
 | Code | HTTP | Description |

@@ -269,7 +269,7 @@ Cái bẫy thứ hai: bcrypt cost 12 mất khoảng 200–300ms. Băm **bên tro
 
 ## 8. Idempotency & concurrency
 
-**`register`** — không idempotent theo thiết kế; hàng rào duy nhất là `UNIQUE(email)` ở DB (chuẩn hoá lowercase trước khi ghi, hoặc unique index trên `lower(email)`). Hai request cùng email chạy song song: một cái INSERT thắng, cái kia dính vi phạm unique. **Bắt buộc bắt lỗi P2002 ngay trong AuthService và ném lại `AUTH_EMAIL_EXISTS`** — không được để nó rơi xuống global exception filter, vì filter đó ánh xạ P2002 thành `DUPLICATE_ENTRY`, một mã **không có trong API_ERROR_CODES.md** (§9, §16). Cấm mẫu "SELECT xem email tồn tại chưa → INSERT" nếu không có unique constraint đỡ phía sau: hai request có thể cùng vượt qua bước SELECT.
+**`register`** — không idempotent theo thiết kế; hàng rào duy nhất là `UNIQUE(email)` ở DB (chuẩn hoá lowercase trước khi ghi, hoặc unique index trên `lower(email)`). Hai request cùng email chạy song song: một cái INSERT thắng, cái kia dính vi phạm unique. **Bắt buộc bắt lỗi P2002 ngay trong AuthService và ném lại `AUTH_EMAIL_EXISTS`** — không được để nó rơi xuống global exception filter, vì filter đó ánh xạ P2002 thành **DUPLICATE_ENTRY**, một mã **không có trong API_ERROR_CODES.md** (§9, §16). Cấm mẫu "SELECT xem email tồn tại chưa → INSERT" nếu không có unique constraint đỡ phía sau: hai request có thể cùng vượt qua bước SELECT.
 
 **`login`** — hai login song song của cùng user là hợp lệ và tạo **hai family độc lập** (hai thiết bị). Không có khoá, không có giới hạn số phiên (⚠️ không giới hạn số phiên đồng thời → §16). `lastLoginAt` ghi đè theo thứ tự commit — lệch vài mili giây là chấp nhận được.
 
@@ -332,8 +332,8 @@ Cách thứ ba, có thể **kết hợp với A**: **single-flight** — request
 | logout: mọi tình huống | 204 | — | không có nhánh lỗi (INV-AUTH-16) |
 
 **Ba điểm phải chú ý**:
-1. **REPLAY không có mã riêng và điều đó là cố ý.** Trả một mã riêng (kiểu `AUTH_TOKEN_REUSED`) sẽ báo cho kẻ tấn công biết hệ thống đã phát hiện ra hắn và token nào đã bị dùng. Phân biệt replay với các nhánh khác chỉ được làm ở **log/metric** (§14), không ở response.
-2. **P2002 phải được bắt trong service.** Global filter ánh xạ P2002 → `DUPLICATE_ENTRY`, mã này không nằm trong bất kỳ nhóm nào của API_ERROR_CODES.md, nên nếu để lọt, FE sẽ nhận một `code` mà nó không có nhánh xử lý và rơi vào toast mặc định.
+1. **REPLAY không có mã riêng và điều đó là cố ý.** Trả một mã riêng (kiểu AUTH_TOKEN_REUSED — cố ý **không** đăng ký mã này) sẽ báo cho kẻ tấn công biết hệ thống đã phát hiện ra hắn và token nào đã bị dùng. Phân biệt replay với các nhánh khác chỉ được làm ở **log/metric** (§14), không ở response.
+2. **P2002 phải được bắt trong service.** Global filter ánh xạ P2002 → **DUPLICATE_ENTRY**, mã này không nằm trong bất kỳ nhóm nào của API_ERROR_CODES.md, nên nếu để lọt, FE sẽ nhận một `code` mà nó không có nhánh xử lý và rơi vào toast mặc định.
 3. **`AUTH_INSUFFICIENT_ROLE` không dùng ở module này** — không endpoint nào giới hạn theo role.
 
 ## 10. Side effect & notification
@@ -476,7 +476,7 @@ Ba cột `familyId`/`replacedById`/`revokedReason` **không có trong bất kỳ
 | INV-AUTH-01 | integration | Serialize response của cả 7 endpoint (cả nhánh thành công lẫn 400/401/403/409) thành chuỗi → assert không chứa khoá `passwordHash` và không chứa chuỗi hash của seed. Giải mã payload JWT → assert không có `passwordHash`. Bắt log trong lúc chạy → assert không chứa hash |
 | INV-AUTH-02 | DB thật | Sau register, đọc thẳng `passwordHash` từ DB → assert tiền tố bcrypt và **cost = 12**; assert giá trị ≠ mật khẩu thô; login bằng đúng mật khẩu → 200 |
 | INV-AUTH-03 | integration | register với `role='admin'` → 400; với `status='active'` thêm vào body → field bị loại, DB vẫn `pending`; mọi register hợp lệ → DB `status='pending'` |
-| INV-AUTH-04 | DB thật (concurrency) | Bắn 2 register song song cùng email → đúng 1 bản ghi `User`, 1 request 201 và 1 request **409 `AUTH_EMAIL_EXISTS`** (không phải 500, không phải `DUPLICATE_ENTRY`). Lặp với `A@x.com` vs `a@x.com` |
+| INV-AUTH-04 | DB thật (concurrency) | Bắn 2 register song song cùng email → đúng 1 bản ghi `User`, 1 request 201 và 1 request **409 `AUTH_EMAIL_EXISTS`** (không phải 500, không phải **DUPLICATE_ENTRY**). Lặp với `A@x.com` vs `a@x.com` |
 | INV-AUTH-05 | integration + DB thật | Login user `pending` (mật khẩu đúng) → 403 `AUTH_ACCOUNT_PENDING`; `suspended` → 403 `AUTH_ACCOUNT_SUSPENDED`. Assert: không có `Set-Cookie`, không có `accessToken`, `COUNT(RefreshToken)` không tăng, `lastLoginAt` không đổi |
 | INV-AUTH-06 | integration | So sánh **từng byte** response của (email không tồn tại) và (email tồn tại + mật khẩu sai): cùng `statusCode`, `error`, `code`, `message`, không `details`. Thêm test thời gian: chạy N lần mỗi nhánh, assert phân phối thời gian không tách rời (không có nhánh nhanh hơn một ngưỡng) |
 | INV-AUTH-07 | integration | Sai mật khẩu trên tài khoản `pending` → `AUTH_INVALID_CREDENTIALS` (**không** `AUTH_ACCOUNT_PENDING`); lặp cho `suspended` |
@@ -498,7 +498,7 @@ Ba cột `familyId`/`replacedById`/`revokedReason` **không có trong bất kỳ
 | INV-AUTH-23 | integration | Mọi nhánh lỗi của 7 endpoint: response có đủ `statusCode`/`error`/`code`/`message`/`timestamp`/`path`, **không** có `success`, `error` là chuỗi không phải object; `details` chỉ xuất hiện ở `VALIDATION_ERROR` và có dạng `Record<field, string[]>` |
 | INV-AUTH-24 | integration | Mọi DateTime trong `GET /auth/me` khớp regex ISO 8601 UTC (kết thúc `Z`); user seed chưa đăng nhập → `lastLoginAt === null` |
 
-Bổ sung ngoài invariant gate (không thay thế các dòng trên): test P2002 ở register **không** rò `DUPLICATE_ENTRY` ra ngoài; test cookie có `Path` đúng cho cả lúc set và lúc xoá; test upload avatar thất bại → 500 `USER_AVATAR_UPLOAD_FAILED` và `avatarUrl` trong DB không đổi.
+Bổ sung ngoài invariant gate (không thay thế các dòng trên): test P2002 ở register **không** rò **DUPLICATE_ENTRY** ra ngoài; test cookie có `Path` đúng cho cả lúc set và lúc xoá; test upload avatar thất bại → 500 `USER_AVATAR_UPLOAD_FAILED` và `avatarUrl` trong DB không đổi.
 
 ## 16. Chưa chốt
 

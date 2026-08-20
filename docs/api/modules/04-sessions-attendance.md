@@ -320,7 +320,7 @@ Cân nhắc partial index nếu bảng lớn: `CREATE INDEX ... ON "ClassSession
 - **Không trả ra**: `User.passwordHash`, `User.email`, `User.lastLoginAt`, `User.bio`, `User.hskLevelGoal`. Response chỉ chứa `teacherId` + tên hiển thị. Dùng Prisma `select` tường minh, không `include: { teacher: true }` trần.
 - **Không trả** `payrollPeriodId` trong list pending: session pending luôn NULL, để lộ chỉ tạo nhiễu contract.
 - `rejectionReason` là văn bản admin tự nhập, hiển thị lại cho teacher → escape phía FE; BE chặn độ dài (2000) và strip control character.
-- **Rate limit đề xuất** (chưa có mục nào trong API_CONVENTIONS.md nói về rate limit → Q-SES-9): `GET pending` 60 req/phút/admin; `PATCH approve|reject` 30 req/phút/admin. Vượt → 429 `TOO_MANY_REQUESTS` — ⚠ mã này chưa có trong registry, phải chốt trước khi bật.
+- **Rate limit đề xuất** (chưa có mục nào trong API_CONVENTIONS.md nói về rate limit → Q-SES-9): `GET pending` 60 req/phút/admin; `PATCH approve|reject` 30 req/phút/admin. Vượt → 429 `TOO_MANY_REQUESTS` — ⚠ đã ghi vào registry § *proposed, not agreed* (2026-08-19), **chưa dùng được** cho tới khi BE owner duyệt.
 - **Audit bắt buộc**: mọi approve/reject ghi `actorId`, `sessionId`, `from`, `to`, `rejectionReason`, `at`, `ip`. Bất biến, không xoá.
 - IDOR: không có nguy cơ theo tenant vì admin toàn quyền; nhưng `:id` phải validate uuid trước khi query để tránh lỗi Prisma lộ chi tiết.
 
@@ -382,7 +382,7 @@ Quy ước cột "Loại": `svc` = unit service (mock repo) · `int` = integrati
 | Q-SES-6 | Notification có cần realtime (WS/push) không? Nếu có thì phải tách outbox và §7 đổi. | §7, §10 | BE lead | Sprint 4 |
 | Q-SES-7 | `ClassSession` không lưu thời điểm nộp (`submittedAt`). Dùng `updatedAt` làm xấp xỉ sẽ sai ngay khi có bất kỳ UPDATE nào khác. Có thêm cột không? | DTO §3.1, metric `session_pending_age_seconds` | BE lead | trước Sprint 3 |
 | Q-SES-8 | Không có ENTITY doc nào cho bảng audit, nhưng INV-SESSION-15 và §13 đều yêu cầu. Bảng tên gì, schema ra sao, ai sở hữu? | INV-SESSION-15, migration §12 | BE lead | trước Sprint 3 |
-| Q-SES-9 | `API_CONVENTIONS.md` không có mục rate limit và registry không có mã 429 (`TOO_MANY_REQUESTS`). §13 đang đề xuất. | §13 | BE lead | Sprint 4 |
+| Q-SES-9 | `API_CONVENTIONS.md` không có mục rate limit và mã 429 (`TOO_MANY_REQUESTS`) mới chỉ ở trạng thái *proposed*. §13 đang đề xuất. | §13 | BE lead | Sprint 4 |
 | **C1** | `User.nickname` (ENTITY_USER) vs `fullName` (API_AUTH register/PATCH). `teacherName` trong DTO §3.1 đọc field nào? | Contract FE của list pending | BE lead | trước khi khoá contract |
 | **C4** | `Class.hskLevel` ghi 1–9 ở ENTITY, 1–6 ở GLOSSARY/DATABASE_SCHEMA (tracked: DOC-004). | Validate + hiển thị `hskLevel` §3.1 | PO | không chặn code |
 

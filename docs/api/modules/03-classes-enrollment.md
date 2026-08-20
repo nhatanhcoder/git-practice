@@ -118,14 +118,15 @@ Hai transition dấu hỏi chưa có quy định ở bất kỳ tài liệu nào
 
 | Nhánh lỗi | HTTP | code | Trạng thái |
 |---|---|---|---|
-| Mã ghi danh không tồn tại | 404 | `CLASS_CODE_INVALID` | ⛔ chưa có trong registry |
-| Lớp đã archive | 409 | `CLASS_ARCHIVED` | ⛔ chưa có |
-| Đã ghi danh rồi | 409 | `CLASS_ALREADY_ENROLLED` | ⛔ chưa có |
+| Mã ghi danh không tồn tại | 404 | `CLASS_ENROLL_CODE_INVALID` | ✅ có |
+| Lớp đã archive | 400 | `CLASS_ALREADY_ARCHIVED` | ✅ có (registry ghi HTTP 400) |
+| Đã ghi danh rồi | 409 | `CLASS_ALREADY_ENROLLED` | ✅ có |
 | Không phải chủ lớp | 403 | `AUTH_INSUFFICIENT_ROLE` | ✅ có |
 | Validate sai | 400 | `VALIDATION_ERROR` | ✅ có |
 
-Ba mã `CLASS_*` chưa tồn tại trong `API_ERROR_CODES.md`. **Không bịa** — phải bổ sung và
-được duyệt trước khi dùng.
+Cả ba mã **đã tồn tại** trong `API_ERROR_CODES.md` § Class Errors. Bản spec đầu tiên viết sai
+tên (CLASS_CODE_INVALID, CLASS_ARCHIVED — hai mã không tồn tại) — `pnpm check:docs` bắt được, đã sửa 2026-08-19.
+Đây đúng là loại lỗi mà check tồn tại để chặn: bịa tên mới trong khi mã đúng đã có sẵn.
 
 ## 10. Side effect & notification
 
@@ -186,7 +187,7 @@ Log: tạo lớp, ghi danh thành công/thất bại, số lần dò mã sai the
 | **SCOPE-02**: ba transition `scheduled → in_progress → completed_pending` không có endpoint ở đâu | Notification `session_submitted_for_review` không có nơi phát sinh | - | cùng SCOPE-01 |
 | Un-archive lớp có cho phép không? | state machine | - | khi làm module |
 | Join lại sau `dropped`: UPDATE về `active` hay chặn? | INV-CLASS-05, unique constraint | - | khi làm module |
-| 3 mã lỗi `CLASS_*` chưa có trong registry | mục 9 | - | trước khi code |
+
 | `hskLevel` của Class ghi 1–9, GLOSSARY nói 1–6 (DOC-004) | validate | - | trước migration |
 
 ### Hai phương án cho SCOPE-01

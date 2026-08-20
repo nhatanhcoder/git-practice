@@ -647,14 +647,14 @@ Mọi thao tác chạm nhiều hàng invoice trong một transaction (batch phư
 | `GET /admin/tuition-rates` cho student chưa có mức, khi endpoint yêu cầu một mức cụ thể | 404 | `RATE_NOT_FOUND` | ⚠ **proposed, not agreed** |
 | `effectiveFrom <= MAX(effectiveFrom)` hiện có | 400 | `RATE_EFFECTIVE_DATE_IN_PAST` | ⚠ **proposed, not agreed** |
 | Ai đó thêm route sửa/xoá rate | 409 | `RATE_IMMUTABLE` | ⚠ **proposed, not agreed** — hiện không route nào cần dùng |
-| **Trùng `(paymentMethod, transactionReference)`** — ghi trùng một giao dịch ngân hàng | 409 | ⛔ **CẦN BỔ SUNG** | ⛔ **không có mã nào.** `INVOICE_PERIOD_DUPLICATE` sai ngữ nghĩa (đây là trùng giao dịch, không phải trùng kỳ). `DUPLICATE_ENTRY` chỉ xuất hiện trong đoạn code `GlobalExceptionFilter` ở §5, **không có trong bảng registry §3** |
+| **Trùng `(paymentMethod, transactionReference)`** — ghi trùng một giao dịch ngân hàng | 409 | ⛔ **CẦN BỔ SUNG** | ⛔ **không có mã nào.** `INVOICE_PERIOD_DUPLICATE` sai ngữ nghĩa (đây là trùng giao dịch, không phải trùng kỳ). **DUPLICATE_ENTRY** chỉ xuất hiện trong đoạn code `GlobalExceptionFilter` ở §5, **không có trong bảng registry §3** |
 | **`Idempotency-Key` trùng, `requestHash` khác** | 422 | ⛔ **CẦN BỔ SUNG** | ⛔ không có mã; `API_CONVENTIONS.md` không có mục idempotency (Q-BILL-4) |
 | **Hoá đơn chồng lấn kỳ** (nếu bật EXCLUDE constraint) | 409 | ⛔ **CẦN BỔ SUNG** | ⛔ không có mã (Q-BILL-14) |
 | **Void hoá đơn đang có `paidAmount > 0`** (nếu chốt là chặn — Q-BILL-5) | 409 | ⛔ **CẦN BỔ SUNG** | ⛔ không có mã. Hiện spec cho phép, nên chưa cần — nhưng nếu Q-BILL-5 chốt "chặn" thì bắt buộc có |
 | **`totalAmount` ghi đè khác rate** (nếu chốt là cấm — Q-BILL-7) | 400 | ⛔ **CẦN BỔ SUNG** | ⛔ không có mã |
 | **`paymentMethod` ngoài whitelist** (nếu chốt whitelist — Q-BILL-13) | 400 | `VALIDATION_ERROR` với `details.paymentMethod` | ✅ dùng được (không cần mã mới) |
 | Vượt rate limit | 429 | ⛔ **CẦN BỔ SUNG** | ⛔ registry không có mã 429 nào (Q-BILL-17) |
-| Lỗi không lường trước | 500 | `INTERNAL_SERVER_ERROR` | ⚠ chỉ xuất hiện trong code mẫu §5, không có trong registry §3 |
+| Lỗi không lường trước | 500 | **INTERNAL_SERVER_ERROR** | ⚠ chỉ xuất hiện trong code mẫu §5, không có trong registry §3 |
 
 **Tổng kết mã lỗi của module**: **11 nhánh** phải dùng mã thuộc nhóm `INVOICE_*`/`RATE_*` — tất cả đều **chưa được duyệt**; **5 nhánh** ⛔ **không có mã nào** kể cả trong bảng proposed. Nếu tới lúc code vẫn chưa chốt: dùng đúng HTTP status + `VALIDATION_ERROR` hoặc mã gần nghĩa nhất, ghi `TODO(error-code)` có mã theo dõi (đúng cách FE đang làm: `admin-tuition-rates.md` ghi thẳng `TODO(error-code)` trong bảng Actions), và **không khoá contract FE** cho các nhánh đó.
 

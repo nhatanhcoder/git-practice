@@ -131,10 +131,18 @@ Quyết định 5 kéo theo migration: `User.status` hiện **không có** `reje
 
 Các nhánh lỗi dưới đây **chưa có mã hợp lệ** trong `API_ERROR_CODES.md`:
 
+> Cập nhật 2026-08-19 sau khi `pnpm check:docs` bắt 15 vi phạm. Đã sửa 3 loại:
+> **(a)** spec bịa tên trong khi mã đúng đã có — CLASS_CODE_INVALID → `CLASS_ENROLL_CODE_INVALID`,
+> CLASS_ARCHIVED → `CLASS_ALREADY_ARCHIVED`;
+> **(b)** `DUPLICATE_ENTRY` + `INTERNAL_SERVER_ERROR` — filter mẫu ở §5 vẫn phát ra từ đầu
+> nhưng registry §3 chưa bao giờ đăng ký, nay đã thêm mục *Fallback Errors*;
+> **(c)** `TOO_MANY_REQUESTS` + `PAYROLL_PERIOD_DUPLICATE` — thêm vào mục *proposed, not agreed*.
+
+Còn thiếu, chưa có mã hợp lệ:
+
 ```
-payroll   trùng kỳ · kỳ chồng lấn · per_hour thiếu actualStart/End · xung đột idempotency key
+payroll   kỳ chồng lấn · per_hour thiếu actualStart/End · xung đột idempotency key
           (PAYROLL_PERIOD_FINALIZED đang gánh 3 ngữ nghĩa khác nhau)
-classes   CLASS_CODE_INVALID · CLASS_ARCHIVED · CLASS_ALREADY_ENROLLED
 users     chuyển trạng thái sai ở suspend/activate
 billing   toàn nhóm INVOICE_* và RATE_* đang là *proposed, not agreed*
 ```
