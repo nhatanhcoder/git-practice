@@ -93,6 +93,16 @@ _(verified against the repo 2026-08-14 — do not mark anything here without che
       deliberately broken fixture and to clear afterwards. `pnpm check:docs` runs it locally.
 - ⬜ `git add --renormalize .` **not yet run** — until it is, CI's line-ending step fails
       and ~118 files still show as modified (KNOWN_ISSUES GIT-001)
+- ✅ **Bước 7 (Record) giờ được enforce bằng máy** — 2026-08-19.
+  `working-rules.md` § The flow thêm bảng **Hai loại task**: task docs/spec/rule cũng phải làm
+  bước 7, không chỉ task build màn. DoD thêm mục 4 (session file) và mục 5 (index của bộ doc).
+  `.github/workflows/docs-check.yml` thêm step **Record step was not skipped**: PR đổi ≥50 dòng
+  trong `docs/ apps/ prisma/ packages/ .agents/skills/` mà không đụng `ai/PROGRESS.md` hoặc
+  không có file dưới `ai/context/sessions/` → **fail, chặn merge**.
+  Lý do: session 2026-08-19 viết 8 module spec (~3.900 dòng) và không ghi PROGRESS dòng nào.
+- ✅ **Khôi phục rule fast-verify** — 2026-08-19. Bản "Verify — FAST by default" từng viết ở
+  branch `chore/fast-verify-rule` rồi **mất khi chuyển branch vì chưa commit**. Đã viết lại,
+  kèm ghi chú để lần sau nhận ra nếu nó biến mất nữa.
 - ⬜ husky pre-commit hook — deferred; CI covers the same ground and cannot be `--no-verify`'d
 
 ---
@@ -176,10 +186,66 @@ _(phát hiện khi map UI Admin — 2026-08-13)_
 - [ ] (be) **`packages/types` chưa tồn tại** — không có contract chung nào giữa hai lane.
       Đây là việc mở khoá quan trọng nhất, phải là commit đầu tiên của session song song
 
-## Quyết định nghiệp vụ chưa chốt (chặn build)
+## Quyết định nghiệp vụ
 
-- [ ] Mô hình học phí: theo lớp / gói / tháng (`FEATURES_ADMIN` A-INV-1) → chặn `/admin/tuition-rates`
-- [ ] Đơn vị tính lương (`A-PAY-1`) → chặn `/admin/pay-rates`
-- [ ] Ranh giới kỳ lương — có phải tháng dương lịch? (`A-PAY-4`)
-- [ ] Gemini API key: dùng chung hay mỗi teacher một key (`UC-A-005`) → chặn `/admin/monitoring`
-- [ ] Từ chối đăng ký: xoá account hay giữ `pending` (`UC-A-001` Alternative) → chặn `/admin/users`
+> ⚠️ **Doc drift đã phát hiện 2026-08-19.** Năm quyết định dưới đây **đã được người dùng
+> duyệt ngày 2026-08-16** (ghi trong `ai/context/HANDOFF.md` § 2026-08-16, mục *Temporary
+> decisions to preserve*) nhưng file này vẫn ghi là chưa chốt suốt 3 ngày. Đã sửa.
+>
+> **Chúng vẫn chưa phải ADR.** Một dòng trong HANDOFF không phải quyết định kiến trúc có
+> hiệu lực — HANDOFF là nơi ghi thứ *tạm thời và dễ quên*. Trước khi code backend đụng
+> schema, cả năm phải thành ADR trong `docs/shared/decisions/`.
+
+| # | Quyết định | Chốt ngày 16/08 là | ADR |
+|---|---|---|---|
+| 1 | Mô hình học phí (`A-INV-1`) | **flat theo tháng, mỗi học sinh một mức** — khớp `billingCycle: monthly` trong entity | ⬜ cần ADR-013 |
+| 2 | Đơn vị tính lương (`A-PAY-1`) | **dual-mode**: `per_session` + `per_hour`. **Không** thêm `fixed_monthly` | ⬜ cần ADR-012 |
+| 3 | Ranh giới kỳ lương (`A-PAY-4`) | **tháng dương lịch** | ⬜ cần ADR-012 — còn thiếu timezone, biên đóng/mở, chống chồng lấn |
+| 4 | Gemini API key (`UC-A-005`) | **một key dùng chung của nền tảng**, không BYOK | ⬜ cần ADR-014 |
+| 5 | Từ chối đăng ký (`UC-A-001`) | **soft rejection** — giữ bản ghi, không hard delete | ⬜ cần ADR-011 — `User.status` hiện **không có** state `rejected`, cần migration |
+
+### Vẫn chưa chốt — chặn backend
+
+- [ ] **Biểu diễn tiền** — chưa từng được hỏi. Entity đang `Decimal(10,2)`/`Decimal(12,2)`,
+      mà VND không có đơn vị phụ. Cần chốt rounding, arithmetic, JSON serialization.
+      Prisma `Decimal` **không được** lọt thẳng ra API response. → chặn module 05, 06
+- [ ] **SCOPE-01 — phạm vi Classes/Enrollment**: làm đầy đủ hay tối thiểu đủ cho Sessions?
+      `Class` + `ClassEnrollment` không có endpoint nào trong `API_ADMIN.md`, mà
+      Sessions/Attendance và Payroll phụ thuộc chúng. → chặn module 03, 04, 05.
+      Hai phương án + đề xuất: `docs/api/modules/03-classes-enrollment.md` §16
+- [ ] **C2 — hai công thức đọc rate mâu thuẫn nhau** (xem `API-002` trong KNOWN_ISSUES).
+      → chặn mọi phép tính tiền
+
+---
+
+## Backend — module spec
+
+_(spec viết 2026-08-19, `docs/api/modules/`. Chưa có dòng code backend nào.
+`apps/api` chưa tồn tại, `packages/` vẫn rỗng.)_
+
+| # | Module | Spec | Status | INV | Chặn bởi |
+|---|---|---|---|---|---|
+| 1 | Auth | `01-auth.md` | ✅ accepted | 24 | — |
+| 2 | Users | `02-users.md` | 🔶 proposed | 18 | C1 · C3 (cần migration `rejected`) |
+| 3 | Classes+Enrollment | `03-classes-enrollment.md` | ⛔ deferred | 8 | **SCOPE-01** |
+| 4 | Sessions+Attendance | `04-sessions-attendance.md` | 🔶 proposed | 16 | SCOPE-01 |
+| 5 | Payroll+PayRates | `05-payroll.md` | 🔶 proposed | 33 | tiền · C2 · timezone kỳ lương |
+| 6 | Billing | `06-billing.md` | 🔶 proposed | 34 | tiền · C2 |
+| 7 | Notifications | `07-notifications.md` | 🔶 proposed | 21 | chưa có endpoint nào định nghĩa |
+| 8 | Dashboard | `08-dashboard.md` | ⛔ deferred | 14 | làm cuối, theo thiết kế |
+
+**168 invariant**, mỗi cái có dòng test tương ứng ở mục 15 của module — invariant gate thay
+cho coverage %.
+
+**Chỉ Auth đủ điều kiện code ngay.**
+
+### Backend — chưa bắt đầu
+
+- ⬜ ADR-009 risk-based testing · ADR-010 tiền · ADR-011 vòng đời tài khoản ·
+  ADR-012 payroll · ADR-013 học phí · ADR-014 Gemini key
+- ⬜ `packages/types` — transport contract (OpenAPI/Zod). Nest DTO implement nó,
+  **không** sinh types từ Nest DTO
+- ⬜ `turbo.json` (BUILD-001) — có 2 app rồi, không hoãn thêm được
+- ⬜ Phase 1 hạ tầng: envelope interceptor · exception filter · error enum ·
+  Prisma + migration `User` · Swagger `/api` · `/health` + `/ready` · CI + migration rehearsal
+- ⬜ Phase 2: module Auth

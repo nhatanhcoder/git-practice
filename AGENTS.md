@@ -28,6 +28,7 @@ for.
 | `.agents/skills/page-designer/SKILL.md` | Building a page from an existing Page Contract. Holds the effort ladder — when a screen is pure composition vs. when to reach for `ui-ux-pro-max` / `taste-skill`. |
 | `.agents/skills/ui-ux-pro-max/SKILL.md` | Layout, interaction, typography, colour reasoning, chart types, a11y checks. Vendored (3.7MB, Python + CSV data) so **all three agents** see it, not just Claude. Needs Python 3 on PATH. Take layout and craft from it; its palette never ships — see § Skill precedence. |
 | `.agents/skills/design-promote/SKILL.md` | The human ran `/design-promote <screen>`. Do not open this file otherwise — it is not a step in your task. |
+| `docs/api/modules/_INDEX.md` | **Thiết kế backend.** 8 module spec cho phần Admin, template 16 mục, 168 invariant. Đọc `_INDEX.md` trước rồi mở đúng module đang làm. Chỉ `01-auth` ở trạng thái `accepted`. |
 | `ai/rules/multi-agent-workflow.md` | **Another agent (Codex / a second Claude / Antigravity) is working in parallel.** Lane ownership, task claiming, contract-first, git worktrees, who updates which doc. |
 | `docs/roadmap/SPRINT_PLAN.md` | Planning, estimating, or asking what belongs in which sprint (S0–S9). |
 | `ai/AI_CHAT_LOG.md` | Looking for a decision that came out of chat brainstorming (Claude.ai, ChatGPT, Gemini) outside a coding agent. |
