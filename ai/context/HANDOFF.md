@@ -31,6 +31,52 @@
 
 ---
 
+## [2026-08-19] — Backend module specs cho toàn bộ Admin — Claude (Cowork)
+
+**Done**:
+- **8 module spec** trong `docs/api/modules/` (~3.900 dòng), theo template 16 mục cố định:
+  `01-auth` (accepted) · `02-users` · `03-classes-enrollment` (deferred) ·
+  `04-sessions-attendance` · `05-payroll` · `06-billing` · `07-notifications` ·
+  `08-dashboard` (deferred). Cộng `_INDEX.md` + `_TEMPLATE.md`.
+- **168 invariant** đánh số (INV-<MODULE>-NN), mỗi cái có dòng tương ứng ở mục 15 test matrix
+  của module đó. Đây là **invariant gate** — thay cho coverage %.
+- `docs/BACKEND_PLAN.md` — kế hoạch backend tự đứng một mình, viết cho người chưa biết gì về
+  project. Đã qua 3 vòng phản biện.
+- `PR_BODY.md` ở root — nội dung PR cho `docs/BACKEND_PLAN.md`, **chưa tạo PR**.
+
+**Temporary decisions to preserve**:
+- **Chỉ `01-auth` ở trạng thái `accepted`.** 7 module còn lại `proposed`/`deferred`, chờ ADR.
+- Spec **ghi lại mâu thuẫn** trong tài liệu nguồn thay vì tự chọn một bên. Chỗ nào entity và
+  API bất đồng, mục 16 của module ghi nguyên trạng + cái nó chặn.
+- Không module nào tự bịa mã lỗi. Nhánh lỗi thiếu mã đánh ⛔ ở mục 9.
+- Ranh giới module đi theo **transaction boundary**, không theo bảng — nên
+  rate+invoice+payment chung một module `06-billing`.
+
+**Blocker / needs follow-up**:
+- ⚠️ **Doc drift đã sửa**: 5 quyết định nghiệp vụ được duyệt ở entry 2026-08-16 nhưng
+  `ai/PROGRESS.md` vẫn ghi "chưa chốt" suốt 3 ngày. Đã cập nhật PROGRESS.
+  **Cả 5 vẫn chưa phải ADR** — một dòng trong HANDOFF không phải quyết định kiến trúc có
+  hiệu lực. Cần ADR-011 → ADR-014 trước khi code đụng schema.
+- **Biểu diễn tiền chưa từng được hỏi.** Không nằm trong 5 quyết định kia. Entity đang
+  `Decimal(10,2)`/`(12,2)` mà VND không có đơn vị phụ. Chặn module 05 và 06.
+- **SCOPE-01 chưa quyết** — Classes/Enrollment không có endpoint nào, mà Sessions và Payroll
+  phụ thuộc. Hai phương án + đề xuất ở `03-classes-enrollment.md` §16.
+- 5 issue mới ghi vào `KNOWN_ISSUES.md`: `API-002` (hai công thức đọc rate → hai số tiền),
+  `API-003` (kỳ payroll draft không huỷ được), `API-004` (`/admin/sessions/pending` vĩnh viễn
+  rỗng), `DOC-005` (thiếu state `rejected`), `DOC-006` (`nickname` vs `fullName`),
+  `DOC-007` (mã lỗi không rõ cái nào dùng được).
+- `device_bash` phía máy người dùng chết giữa session ("workspace failed to start") → **không
+  chạy được git**. Nhánh, commit, push, PR đều phải làm tay. Lệnh nằm trong tin nhắn chat.
+
+**Next steps**:
+1. Viết **ADR-011 → ADR-014** từ 5 quyết định đã duyệt 16/08, để chúng có hiệu lực thật.
+2. Trả lời **biểu diễn tiền** (ADR-010) và **SCOPE-01** — hai thứ chặn nhiều nhất.
+3. Chốt `API-002` — không viết dòng code tính tiền nào trước khi xong.
+4. `01-auth.md` đủ điều kiện code ngay: Phase 1 hạ tầng (`turbo.json`, envelope interceptor,
+   error enum, Prisma + migration `User`, Swagger) rồi Phase 2 Auth.
+
+---
+
 ## [2026-08-16] — /build-screen finish admin area (all 10 screens) — Antigravity
 
 **Done**:
@@ -176,36 +222,3 @@
 - Sprint 0 per `docs/roadmap/SPRINT_PLAN.md` — plan presented, awaiting approval. Still no code in the repo.
 
 ---
-
-## [2026-07-27] — AI context cleanup & translation to English — manual (Claude.ai)
-
-**Done**:
-- Translated all active `ai/` files and root `AGENTS.md` / `CLAUDE.md` to English
-- Fixed path mismatch: `HANDOFF.md` now lives at `ai/context/HANDOFF.md` (previously at `ai/HANDOFF.md`, which didn't match the path `AGENTS.md`/`CLAUDE.md` already pointed to)
-- Removed the stale reference to `ai/DECISIONS.md` in `AGENTS.md` (that file does not exist anywhere in the repo)
-- ~~**Found and fixed a data conflict**: this file and `project-brain.md` said HSK level = 1–9; corrected back to **HSK 1–6**.~~ ❌ **This revert was wrong — undone on 2026-08-11.** The premise ("matches all entity specs") was false: `docs/` says 1–9 in 13 places (all entity specs, `GLOSSARY.md`, `DATABASE_SCHEMA.md`, `CONVENTIONS.md`, `SPRINT_PLAN.md`), and 1–6 appeared *only* in the two `ai/context/` summary files. See the 2026-08-11 entry.
-- Moved `feature.md`, `feature-root.md`, `PROJECT_SUMMARY.md` into `archive/` (previous entry claimed this was already done, but the files were still at repo root)
-- Added a mandatory workflow rule to `ai/rules/working-rules.md`: Analyze → Create a plan → Wait for approval → Begin work
-
-**In progress**:
-- No code written yet — project is still at "docs done, code not started"
-
-**Next steps**:
-- Confirm the HSK 1–6 vs 1–9 conflict resolution above
-- Start Sprint 0 per `docs/roadmap/SPRINT_PLAN.md`
-
----
-
-## [2026-07-19] — Set up entry point for AI agents — manual
-
-**Done**:
-- Added `CLAUDE.md` + `AGENTS.md` at root, pointing to `ai/context/project-brain.md` (project-brain.md already existed but wasn't in the location Claude Code/Antigravity auto-discover)
-- Archived 3 stale files (`feature.md`, `feature-root.md`, `PROJECT_SUMMARY.md`) into `archive/` *(note: this step was not actually completed — see 2026-07-27 entry above)*
-- Confirmed HSK level = **1–6**, matching all of `docs/entities/`, `GLOSSARY.md`, `DATABASE_SCHEMA.md` — no changes needed
-- Added missing links to `ai/rules/`, `ai/known-issues/` in the Key Docs table in `project-brain.md`
-
-**In progress**:
-- No code written yet — project is at "docs done, code not started" (matches project-brain.md)
-
-**Next steps**:
-- Start Sprint 0 per `docs/roadmap/SPRINT_PLAN.md`
