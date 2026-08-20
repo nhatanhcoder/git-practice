@@ -1,6 +1,6 @@
 # 🔌 API Admin
 
-> Endpoints dành riêng cho role Admin.  
+> Endpoints reserved for the Admin role.  
 > Conventions: [API_CONVENTIONS.md](./API_CONVENTIONS.md)  
 > Permissions: [PERMISSIONS_ADMIN.md](../actors/admin/PERMISSIONS_ADMIN.md)
 
@@ -78,7 +78,7 @@ Both rate endpoints are read-only history views over append-only tables
 
 ---
 
-## Liên quan
+## Related
 
 - [FEATURES_ADMIN.md](../actors/admin/FEATURES_ADMIN.md)
 - [FLOW_PAYROLL_CYCLE.md](../flows/FLOW_PAYROLL_CYCLE.md)

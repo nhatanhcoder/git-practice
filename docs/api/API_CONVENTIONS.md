@@ -1,6 +1,6 @@
 # 🔌 API Conventions
 
-> Áp dụng cho **tất cả** endpoints. Đọc file này trước khi đọc bất kỳ API_*.md nào.
+> Applies to **all** endpoints. Read this file before reading any API_*.md file.
 
 ---
 
@@ -10,7 +10,7 @@
 Authorization: Bearer <access_token>
 ```
 
-Refresh token được gửi tự động qua httpOnly cookie `refresh_token`.
+The refresh token is sent automatically via the httpOnly cookie `refresh_token`.
 
 ---
 
@@ -77,8 +77,8 @@ present only on `VALIDATION_ERROR`.
 
 ## Timezone
 
-- Tất cả DateTime fields: **UTC ISO 8601** (e.g., `2026-07-13T07:00:00Z`)
-- Frontend chịu trách nhiệm convert sang timezone local của user
+- All DateTime fields: **UTC ISO 8601** (e.g., `2026-07-13T07:00:00Z`)
+- The frontend is responsible for converting to the user's local timezone
 
 ---
 

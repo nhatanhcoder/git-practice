@@ -1,64 +1,88 @@
 ---
 module: Notifications
 status: proposed
-blocked_by: KHÔNG endpoint nào của module được định nghĩa ở bất kỳ API_*.md nào (§2) · không có mã lỗi `NOTIFICATION_*` nào trong API_ERROR_CODES.md (§9) · DEBT-002 polling 60s (§16)
+blocked_by: NO endpoint of this module is defined in any API_*.md (§2) · no `NOTIFICATION_*` error code exists in API_ERROR_CODES.md (§9) · DEBT-002 60s polling (§16)
 owner: -
 last_updated: 2026-08-19
 ---
 
-## 0. Tóm tắt
+## 0. Summary
 
-Module sở hữu bảng `Notification` và **hộp thư của từng người dùng**: liệt kê thông báo của chính mình, đánh dấu đã đọc, đếm số chưa đọc. Ranh giới quan trọng nhất: module này **không quyết định khi nào có thông báo** — nó bị các module khác gọi (Auth, Users, Sessions, Billing, Assignments, Grading, Scheduler) để ghi bản ghi vào hộp thư. Nó là *đích đến*, không phải *nguồn phát*. Module không sở hữu văn bản hiển thị, không sở hữu kênh gửi (hiện chỉ có polling — DEBT-002), không xoá gì, và không có endpoint tạo thông báo cho client.
+The module owns the `Notification` table and **each user's mailbox**: listing one's own
+notifications, marking them read, counting unread ones. The most important boundary: this module
+**does not decide when a notification happens** — it is called by other modules (Auth, Users,
+Sessions, Billing, Assignments, Grading, Scheduler) to write records into the mailbox. It is the
+*destination*, not the *source*. The module owns no display text, no delivery channel (currently
+polling only — DEBT-002), deletes nothing, and has no client-facing endpoint to create
+notifications.
 
-## 1. Bảng chạm tới
+## 1. Tables touched
 
-| Bảng | Đọc/Ghi | Ghi chú |
+| Table | Read/Write | Notes |
 |---|---|---|
-| `Notification` | Đọc + Ghi | Đọc: chỉ hàng có `userId = actor.id`. Ghi qua endpoint: **chỉ** `isRead`, `readAt`. Ghi qua service nội bộ (do module khác gọi): INSERT. **Không UPDATE** `type`/`referenceId`/`referenceType`/`payload`/`userId`/`createdAt`, **không DELETE** |
-| `User` | Đọc | Chỉ để phân giải người nhận khi fan-out (ví dụ `WHERE role='admin' AND status='active'`). Việc đọc này do **module gọi** thực hiện, không phải module này. Endpoint đọc hộp thư **không join `User`** (người nhận luôn là chính actor) |
+| `Notification` | Read + Write | Read: only rows with `userId = actor.id`. Write via endpoint: **only** `isRead`, `readAt`. Write via internal service (called by other modules): INSERT. **No UPDATE** of `type`/`referenceId`/`referenceType`/`payload`/`userId`/`createdAt`, **no DELETE** |
+| `User` | Read | Only to resolve recipients on fan-out (e.g. `WHERE role='admin' AND status='active'`). This read is done by the **calling module**, not this one. Mailbox-read endpoints **do not join `User`** (the recipient is always the actor) |
 
-Module **không** chạm: `Class`, `ClassSession`, `StudentInvoice`, `PayrollPeriod`… Thông báo chỉ giữ `referenceId` + `referenceType` dạng chuỗi, **không có FK** tới các bảng đó — nên không thể join để hiển thị chi tiết, và cũng không thể phát hiện tham chiếu chết (bản ghi đích đã bị xoá/void). Đây là hệ quả của thiết kế trong ENTITY_NOTIFICATION.md, ghi nhận ở §16.
+The module **does not touch**: `Class`, `ClassSession`, `StudentInvoice`, `PayrollPeriod`…
+Notifications only hold `referenceId` + `referenceType` as strings, **no FK** to those tables —
+so no join for detail display, and no way to detect dead references (target record deleted/voided).
+This is a consequence of the design in ENTITY_NOTIFICATION.md, recorded in §16.
 
 ## 2. Endpoints
 
-**Đây là điểm phải đọc trước tiên: không endpoint nào dưới đây tồn tại trong tài liệu.**
+**This is the first thing to read: none of the endpoints below exist in any document.**
 
-| Method | Path | Role | Mô tả | Trạng thái |
+| Method | Path | Role | Description | Status |
 |---|---|---|---|---|
-| GET | `/api/v1/notifications` | authenticated (mọi role) | Danh sách thông báo **của chính mình**, phân trang, mới nhất trước | ⛔ **proposed — chưa định nghĩa ở bất kỳ đâu** |
-| PATCH | `/api/v1/notifications/:id/read` | authenticated (mọi role) | Đánh dấu **một** thông báo của mình là đã đọc | ⛔ **proposed — chưa định nghĩa ở bất kỳ đâu** |
-| PATCH | `/api/v1/notifications/read-all` | authenticated (mọi role) | Đánh dấu **toàn bộ** thông báo chưa đọc của mình là đã đọc | ⛔ **proposed — chưa định nghĩa ở bất kỳ đâu** |
-| GET | `/api/v1/notifications/unread-count` | authenticated (mọi role) | Số thông báo chưa đọc của mình (badge đỏ trên chuông) | ⛔ **proposed — chưa định nghĩa ở bất kỳ đâu** |
+| GET | `/api/v1/notifications` | authenticated (any role) | List **one's own** notifications, paginated, newest first | ⛔ **proposed — not defined anywhere** |
+| PATCH | `/api/v1/notifications/:id/read` | authenticated (any role) | Mark **one** of one's notifications as read | ⛔ **proposed — not defined anywhere** |
+| PATCH | `/api/v1/notifications/read-all` | authenticated (any role) | Mark **all** of one's unread notifications as read | ⛔ **proposed — not defined anywhere** |
+| GET | `/api/v1/notifications/unread-count` | authenticated (any role) | One's unread count (red badge on the bell) | ⛔ **proposed — not defined anywhere** |
 
-**"Chưa định nghĩa ở bất kỳ đâu" nghĩa là gì, kiểm chứng được**:
-- `API_ADMIN.md` liệt kê 4 nhóm endpoint (users, payroll, invoicing, dashboard) — **không nhóm nào là notification**.
-- `API_ADMIN.md` còn có hẳn một mục "⛔ Referenced by FE contracts, not yet defined" với **7 dòng** (payroll/:id, pay-rates, tuition-rates, invoices/summary, invoices/batch, invoices/batch/preview, monitoring/gemini) — **không dòng nào là notification**. Tức là notification thậm chí không nằm trong danh sách "biết là còn thiếu".
-- `API_AUTH.md` không có. `API_CONVENTIONS.md`, `API_ERROR_CODES.md` không nhắc tới.
-- `front-end-design-docs/pages/_INDEX.md` liệt kê 13 route admin — **không có route notification nào**, dù `root-design-fe.md` §4.6 mô tả chuông + badge + dropdown "5–6 gần nhất" + link **"Xem tất cả"**. Link "Xem tất cả" trỏ đi đâu thì không có trang nào nhận.
-- Bảng `Notification` thì ngược lại: **đã có full spec** (`ENTITY_NOTIFICATION.md`), và **4 module khác đã cam kết ghi vào nó** (spec 02 §10 INV-USERS-13, spec 04 §10, spec 01 §10, ENTITY_STUDENT_INVOICE "On creation → triggers `new_invoice`").
+**What "not defined anywhere" means, verifiably**:
+- `API_ADMIN.md` lists 4 endpoint groups (users, payroll, invoicing, dashboard) — **no notification group**.
+- `API_ADMIN.md` even has a "⛔ Referenced by FE contracts, not yet defined" section with **7 rows**
+  (payroll/:id, pay-rates, tuition-rates, invoices/summary, invoices/batch, invoices/batch/preview,
+  monitoring/gemini) — **no notification row**. So notifications aren't even on the "known to be
+  missing" list.
+- `API_AUTH.md` has none. `API_CONVENTIONS.md`, `API_ERROR_CODES.md` don't mention it.
+- `front-end-design-docs/pages/_INDEX.md` lists 13 admin routes — **no notification route**, even
+  though `root-design-fe.md` §4.6 describes the bell + badge + "5–6 most recent" dropdown + a
+  "**View all**" link. No page exists to receive the "View all" link.
+- The `Notification` table is the opposite: **already fully specced** (`ENTITY_NOTIFICATION.md`),
+  and **4 other modules have committed to writing to it** (spec 02 §10 INV-USERS-13, spec 04 §10,
+  spec 01 §10, ENTITY_STUDENT_INVOICE "On creation → triggers `new_invoice`").
 
-Hệ quả trực tiếp: **hệ thống đang có phía ghi mà không có phía đọc.** Dữ liệu sẽ được sinh ra từ Sprint 1 (register → `new_teacher_registration`) và không ai đọc được cho tới khi 4 endpoint trên được duyệt. 4 dòng trong bảng này được suy ra từ yêu cầu UI ở `root-design-fe.md` §4.6 + business rule "Unread count computed from `isRead = false`" của ENTITY_NOTIFICATION.md — **không phải** từ một hợp đồng API đã thống nhất. Chúng phải được một BE owner ký trước khi code.
+Direct consequence: **the system today has a write side with no read side.** Data will be
+produced from Sprint 1 (register → `new_teacher_registration`) and nothing can read it until the
+4 endpoints above are approved. The 4 rows in the table are derived from the UI requirements in
+`root-design-fe.md` §4.6 + the business rule "Unread count computed from `isRead = false`" of
+ENTITY_NOTIFICATION.md — **not** from an agreed API contract. They need a BE owner's sign-off
+before coding.
 
-Không đề xuất: `POST /notifications` (client không bao giờ được tự tạo — RBAC: `Notification · create (system)` = ❌ cho teacher/student), `DELETE /notifications/:id` (append-only), `PATCH /notifications/:id/unread` (§6 là cổng một chiều).
+Not proposed: `POST /notifications` (a client must never create its own — RBAC:
+`Notification · create (system)` = ❌ for teacher/student), `DELETE /notifications/:id`
+(append-only), `PATCH /notifications/:id/unread` (§6 is a one-way gate).
 
 ## 3. DTO
 
 ### Request
 
-**GET /notifications** — query params (tất cả optional):
+**GET /notifications** — query params (all optional):
 
-| Field | Kiểu | Bắt buộc | Ràng buộc validate |
+| Field | Type | Required | Validation constraint |
 |---|---|---|---|
-| `page` | int | không | ≥ 1, mặc định `1` (API_CONVENTIONS.md) |
-| `limit` | int | không | ≥ 1, mặc định `20`, trần đề xuất `50` — dropdown chuông chỉ cần `limit=6` (⚠️ trần là **proposed**, API_CONVENTIONS không quy định) |
-| `isRead` | boolean | không | **proposed**. Không gửi = lấy cả đọc lẫn chưa đọc. `false` = chỉ chưa đọc |
-| `type` | enum string | không | **proposed**. ∈ 11 giá trị enum của ENTITY_NOTIFICATION.md. Giá trị ngoài enum → `VALIDATION_ERROR`, không im lặng bỏ qua |
+| `page` | int | no | ≥ 1, default `1` (API_CONVENTIONS.md) |
+| `limit` | int | no | ≥ 1, default `20`, proposed cap `50` — the bell dropdown only needs `limit=6` (⚠️ cap is **proposed**, API_CONVENTIONS doesn't prescribe) |
+| `isRead` | boolean | no | **proposed**. Not sent = both read and unread. `false` = unread only |
+| `type` | enum string | no | **proposed**. ∈ the 11 enum values of ENTITY_NOTIFICATION.md. Out-of-enum value → `VALIDATION_ERROR`, not silently ignored |
 
-**PATCH /notifications/:id/read** — path param `id` (uuid, sai định dạng → `VALIDATION_ERROR`). Không body.
+**PATCH /notifications/:id/read** — path param `id` (uuid, malformed → `VALIDATION_ERROR`). No body.
 
-**PATCH /notifications/read-all** — không param, không body. (Cân nhắc `?type=` để "đọc hết nhóm này" — **không đề xuất** cho v1, thêm bề mặt mà UI chưa cần.)
+**PATCH /notifications/read-all** — no params, no body. (Consider `?type=` for "read this whole
+group" — **not proposed** for v1; adds surface the UI doesn't need yet.)
 
-**GET /notifications/unread-count** — không tham số.
+**GET /notifications/unread-count** — no parameters.
 
 ### Response
 
@@ -71,338 +95,478 @@ Không đề xuất: `POST /notifications` (client không bao giờ được t�
 
 `NotificationItem`:
 
-| Field | Kiểu | Nullable | Ghi chú |
+| Field | Type | Nullable | Notes |
 |---|---|---|---|
 | `id` | uuid | no | |
-| `type` | enum (11 giá trị) | no | Danh sách đầy đủ ở §10 |
-| `referenceId` | string | yes | ID của thực thể được nhắc tới |
-| `referenceType` | string | yes | ∈ `assignment` \| `attempt` \| `invoice` \| `session`. ⚠️ **không có giá trị `user`** → 4 type `account_*`/`*_registration` buộc phải để `null` |
+| `type` | enum (11 values) | no | Full list in §10 |
+| `referenceId` | string | yes | ID of the referenced entity |
+| `referenceType` | string | yes | ∈ `assignment` \| `attempt` \| `invoice` \| `session`. ⚠️ **no `user` value** → the 4 `account_*`/`*_registration` types must use `null` |
 | `isRead` | bool | no | |
-| `readAt` | DateTime UTC ISO 8601 | yes | `null` khi `isRead=false` |
-| `payload` | object (jsonb) | yes | Dữ liệu phụ, ví dụ `{ "rejectionReason": "..." }` |
-| `createdAt` | DateTime UTC ISO 8601 | no | Khoá sắp xếp chính |
+| `readAt` | DateTime UTC ISO 8601 | yes | `null` when `isRead=false` |
+| `payload` | object (jsonb) | yes | Extra data, e.g. `{ "rejectionReason": "..." }` |
+| `createdAt` | DateTime UTC ISO 8601 | no | Primary sort key |
 
-**Không có `message`, không có `title`, không có `senderId`.** ENTITY_NOTIFICATION.md không định nghĩa cột nào chứa văn bản hiển thị ⇒ **văn bản thông báo không có nguồn trong DB**; FE phải tự dựng câu chữ từ `type` + `payload` + `referenceId`. Đây là mâu thuẫn với `PROJECT_KNOWLEDGE.md` mục 15 (bản đó có `message`, `data`, `recipientId`, `senderId`) → §16. Spec này bám ENTITY_NOTIFICATION.md + `_FACTS.md`, là nguồn đã xác minh.
+**No `message`, no `title`, no `senderId`.** ENTITY_NOTIFICATION.md defines no column holding
+display text ⇒ **notification text has no source in the DB**; FE must build the sentence itself
+from `type` + `payload` + `referenceId`. This contradicts `PROJECT_KNOWLEDGE.md` section 15 (that
+one has `message`, `data`, `recipientId`, `senderId`) → §16. This spec follows
+ENTITY_NOTIFICATION.md + `_FACTS.md`, the verified sources.
 
-**PATCH /notifications/:id/read** → `200` — `{ "data": NotificationItem }` (trả bản ghi sau khi cập nhật, để FE cập nhật đúng `readAt` mà không phải gọi lại list). ⚠️ Shape này là **proposed**; `204` cũng hợp lệ theo API_CONVENTIONS nhưng làm FE mất giá trị `readAt`.
+**PATCH /notifications/:id/read** → `200` — `{ "data": NotificationItem }` (returns the record
+after update, so FE can update `readAt` without re-fetching the list). ⚠️ This shape is
+**proposed**; `204` is also valid per API_CONVENTIONS but leaves FE without the `readAt` value.
 
-**PATCH /notifications/read-all** → `200` — `{ "data": { "updated": 7 } }`. ⚠️ **proposed**. `204` sẽ đơn giản hơn nhưng mất số lượng đã đánh dấu, mà FE cần con số đó để cập nhật badge ngay không cần gọi lại `unread-count`.
+**PATCH /notifications/read-all** → `200` — `{ "data": { "updated": 7 } }`. ⚠️ **proposed**.
+`204` would be simpler but loses the marked count, which FE needs to update the badge without
+re-calling `unread-count`.
 
-**GET /notifications/unread-count** → `200` — `{ "data": { "unreadCount": 3 } }`. ⚠️ Tên field **proposed**. Không dùng `meta` cho con số này (`meta` theo API_CONVENTIONS.md dành riêng cho phân trang).
+**GET /notifications/unread-count** → `200` — `{ "data": { "unreadCount": 3 } }`. ⚠️ Field name
+**proposed**. Don't use `meta` for this number (`meta` per API_CONVENTIONS.md is reserved for
+pagination).
 
-## 4. Rule nghiệp vụ (invariant)
+## 4. Business rules (invariants)
 
-| ID | Phát biểu |
+| ID | Statement |
 |---|---|
-| **INV-NOTIF-01** | `Notification` là **append-only**: không endpoint nào, không job nào xoá một hàng đã tạo. Số hàng của một user chỉ tăng theo thời gian. |
-| **INV-NOTIF-02** | Sau khi tạo, các field nội dung (`userId`, `type`, `referenceId`, `referenceType`, `payload`, `createdAt`) là **bất biến**; đường ghi duy nhất còn lại là cặp `isRead`/`readAt`. |
-| **INV-NOTIF-03** | `isRead` là **cổng một chiều**: `false → true`. Không tồn tại endpoint, tham số hay đường nghiệp vụ nào đưa `true` về `false`. |
-| **INV-NOTIF-04** | `readAt` khác `null` **khi và chỉ khi** `isRead = true`, và được đặt đúng một lần tại lần chuyển trạng thái đầu tiên; đánh dấu đọc lần thứ hai **không** làm `readAt` nhảy. |
-| **INV-NOTIF-05** | Mọi truy vấn của mọi endpoint đều bị ràng `userId = actor.id` ở tầng repository; không tham số nào (query, path, body, header) cho phép đọc hoặc sửa hộp thư của người khác. |
-| **INV-NOTIF-06** | `unreadCount` **luôn bằng** số phần tử mà `GET /notifications?isRead=false` báo cáo (`meta.total`) tại cùng thời điểm — hai endpoint suy ra từ **cùng một** điều kiện `userId = me AND isRead = false`, không có hai định nghĩa "chưa đọc". |
-| **INV-NOTIF-07** | Sau khi `PATCH /notifications/read-all` trả về, mọi thông báo **tồn tại tại thời điểm câu lệnh chạy** của user đó đều có `isRead = true`; thông báo sinh ra sau đó vẫn `false` và đó là hành vi đúng, không phải lỗi. |
-| **INV-NOTIF-08** | Không có đường nào để client tạo `Notification`: không endpoint POST, và service tạo chỉ được gọi từ tầng server bởi module nghiệp vụ. Teacher/Student không bao giờ tạo được thông báo cho người khác. |
-| **INV-NOTIF-09** | `type` luôn thuộc đúng 11 giá trị enum của ENTITY_NOTIFICATION.md; không giá trị nào ngoài danh sách được ghi xuống DB (đặc biệt: **không có** `payroll_*`, `password_changed`, `account_activated`, `invoice_paid`). |
-| **INV-NOTIF-10** | `referenceType` ∈ `{assignment, attempt, invoice, session}` hoặc `null`; không ghi giá trị tự chế. Khi `referenceType = null` thì FE không được suy ra deep-link từ `referenceId`. |
-| **INV-NOTIF-11** | Mỗi hàng thuộc về **đúng một** người nhận (`userId` NOT NULL, FK hợp lệ); không có hàng "phát cho tất cả". Gửi cho N admin = **N hàng** riêng biệt. |
-| **INV-NOTIF-12** | Một sự kiện nghiệp vụ sinh **tối đa một** thông báo cho **mỗi** người nhận: thao tác lặp lại hoặc retry của cùng một sự kiện không tạo hàng thứ hai. |
-| **INV-NOTIF-13** | Việc INSERT thông báo và hành động nghiệp vụ sinh ra nó nằm trong **cùng một transaction**: không tồn tại "đã duyệt tài khoản nhưng không có thông báo", cũng không tồn tại "có thông báo cho việc chưa xảy ra". |
-| **INV-NOTIF-14** | `payload` chỉ mang dữ liệu bổ trợ để hiển thị; không hành vi hệ thống nào (định tuyến, phân quyền, đếm) phụ thuộc vào nội dung `payload`. Deep-link chỉ dùng `referenceId` + `referenceType`. |
-| **INV-NOTIF-15** | `payload` không bao giờ chứa dữ liệu nhạy cảm: không `passwordHash`, không token, không mật khẩu, không khoá API. |
-| **INV-NOTIF-16** | Danh sách sắp xếp `createdAt DESC` với tie-breaker `id` ⇒ thứ tự toàn phần và ổn định: duyệt hết các trang cho ra mỗi hàng đúng một lần, không trùng, không sót. |
-| **INV-NOTIF-17** | `meta.total` là số hàng thoả điều kiện **trước** phân trang; `meta.totalPages = ceil(total / limit)`; `data.length ≤ limit`. |
-| **INV-NOTIF-18** | Mọi DateTime trả ra là UTC ISO 8601; `readAt = null` (không phải chuỗi rỗng) khi chưa đọc. |
+| **INV-NOTIF-01** | `Notification` is **append-only**: no endpoint, no job deletes an existing row. A user's row count only grows over time. |
+| **INV-NOTIF-02** | After creation, the content fields (`userId`, `type`, `referenceId`, `referenceType`, `payload`, `createdAt`) are **immutable**; the only remaining write path is the `isRead`/`readAt` pair. |
+| **INV-NOTIF-03** | `isRead` is a **one-way gate**: `false → true`. No endpoint, parameter, or business path moves `true` back to `false`. |
+| **INV-NOTIF-04** | `readAt` is non-null **if and only if** `isRead = true`, and is set exactly once at the first transition; a second read-marking **does not** move `readAt`. |
+| **INV-NOTIF-05** | Every query of every endpoint is constrained by `userId = actor.id` at the repository layer; no parameter (query, path, body, header) allows reading or modifying someone else's mailbox. |
+| **INV-NOTIF-06** | `unreadCount` **always equals** the count `GET /notifications?isRead=false` reports (`meta.total`) at the same instant — the two endpoints derive from **the same** `userId = me AND isRead = false` condition; there are no two definitions of "unread". |
+| **INV-NOTIF-07** | After `PATCH /notifications/read-all` returns, every notification **existing at the time the statement ran** for that user has `isRead = true`; notifications created afterwards remain `false` and that is correct behavior, not a bug. |
+| **INV-NOTIF-08** | No path lets a client create a `Notification`: no POST endpoint, and the create service is only callable server-side by business modules. Teacher/Student can never create a notification for anyone. |
+| **INV-NOTIF-09** | `type` always belongs to exactly the 11 enum values of ENTITY_NOTIFICATION.md; no value outside the list is ever written to the DB (in particular **no** `payroll_*`, `password_changed`, `account_activated`, `invoice_paid`). |
+| **INV-NOTIF-10** | `referenceType` ∈ `{assignment, attempt, invoice, session}` or `null`; no invented value is written. When `referenceType = null`, FE must not infer a deep-link from `referenceId`. |
+| **INV-NOTIF-11** | Each row belongs to **exactly one** recipient (`userId` NOT NULL, valid FK); no "broadcast to all" row. Sending to N admins = **N separate rows**. |
+| **INV-NOTIF-12** | A business event produces **at most one** notification per **each** recipient: a repeated or retried operation of the same event creates no second row. |
+| **INV-NOTIF-13** | The notification INSERT and the business action producing it are in **the same transaction**: no "account approved but no notification" and no "notification for something that never happened". |
+| **INV-NOTIF-14** | `payload` only carries auxiliary display data; no system behavior (routing, authorization, counting) depends on `payload` content. Deep-links use only `referenceId` + `referenceType`. |
+| **INV-NOTIF-15** | `payload` never contains sensitive data: no `passwordHash`, no tokens, no passwords, no API keys. |
+| **INV-NOTIF-16** | List sorted `createdAt DESC` with `id` tie-breaker ⇒ total and stable order: walking all pages yields each row exactly once — no duplicates, no gaps. |
+| **INV-NOTIF-17** | `meta.total` is the row count matching the conditions **before** pagination; `meta.totalPages = ceil(total / limit)`; `data.length ≤ limit`. |
+| **INV-NOTIF-18** | Every DateTime returned is UTC ISO 8601; `readAt = null` (not empty string) when unread. |
 
 ## 5. Ownership / RBAC
 
-RBAC_MATRIX.md có đúng hai dòng liên quan:
+RBAC_MATRIX.md has exactly two relevant rows:
 
 | Resource | Action | Admin | Teacher | Student |
 |---|---|---|---|---|
 | Notification | read own | ✅ | 🔒 | 🔒 |
 | Notification | create (system) | ✅ (system) | ❌ | ❌ |
 
-⚠️ **Dòng đầu tự mâu thuẫn**: nhãn hành động là "read **own**" nhưng ô Admin là ✅ = "Full access (own + others)" theo chú giải của chính tài liệu đó. Đọc theo nghĩa đen thì admin được đọc hộp thư người khác. Spec này **chọn cách diễn giải hẹp** — admin chỉ đọc hộp thư của chính mình (INV-NOTIF-05) — vì (a) không có endpoint nào nhận `userId` của người khác, (b) thông báo chứa dữ liệu nghiệp vụ của người khác (số tiền hoá đơn, lý do từ chối buổi dạy), (c) mở rộng quyền sau này là thay đổi tương thích ngược, thu hẹp quyền thì không. Ghi lệch vào §16, không tự sửa RBAC_MATRIX.
+⚠️ **The first row contradicts itself**: the action label is "read **own**" but the Admin cell is
+✅ = "Full access (own + others)" per that document's own legend. Read literally, admin can read
+anyone's mailbox. This spec **picks the narrow reading** — admin only reads their own mailbox
+(INV-NOTIF-05) — because (a) no endpoint accepts someone else's `userId`, (b) notifications carry
+other people's business data (invoice amounts, session rejection reasons), (c) widening rights
+later is backward compatible while narrowing them isn't. The discrepancy is recorded in §16;
+RBAC_MATRIX is not self-corrected.
 
-Kiểm hai tầng:
+Two-layer check:
 
-| Tầng | Điều kiện | Sai thì |
+| Layer | Condition | On failure |
 |---|---|---|
-| Guard | Token hợp lệ, chưa hết hạn | `401 AUTH_TOKEN_INVALID` / `AUTH_TOKEN_EXPIRED` |
-| Service (bắt buộc) | `actor.status === 'active'` (đọc từ DB — spec 01 §5) | `403 AUTH_ACCOUNT_SUSPENDED` |
-| Repository (bắt buộc, không bỏ) | **Mọi** câu truy vấn có `WHERE "userId" = :actorId` — kể cả khi đã có `id` trong path | xem dưới |
-| Service | Bản ghi `:id` tồn tại **và** thuộc actor | 404 (⚠️ chưa có mã lỗi — §9) |
+| Guard | Valid, unexpired token | `401 AUTH_TOKEN_INVALID` / `AUTH_TOKEN_EXPIRED` |
+| Service (mandatory) | `actor.status === 'active'` (read from DB — spec 01 §5) | `403 AUTH_ACCOUNT_SUSPENDED` |
+| Repository (mandatory, non-negotiable) | **Every** query has `WHERE "userId" = :actorId` — even when `id` is already in the path | see below |
+| Service | The `:id` record exists **and** belongs to the actor | 404 (⚠️ no error code yet — §9) |
 
-**Ràng `userId` phải nằm ở repository, không phải ở service.** Nếu để service tự nhớ thêm điều kiện, chỉ cần một hàm quên là rò toàn bộ hộp thư người khác. Cách an toàn: hàm repository **không nhận** tham số `userId` tuỳ chọn — nó luôn bắt buộc.
+**The `userId` constraint must live in the repository, not the service.** If the service is left
+to remember to add the condition, one forgotten function leaks everyone's mailbox. Safe approach:
+the repository function **does not accept** an optional `userId` parameter — it is always
+mandatory.
 
-**Bản ghi của người khác trả 404, không trả 403.** Trả 403 xác nhận "id này có tồn tại, chỉ là không phải của bạn" — đủ để dò sự tồn tại của thông báo người khác. 404 không tiết lộ gì. (⚠️ Cùng lúc đó, hiện **không có mã lỗi nào** cho 404 ở module này — §9.)
+**Someone else's record returns 404, not 403.** Returning 403 confirms "this id exists, it's
+just not yours" — enough to probe for the existence of others' notifications. 404 reveals
+nothing. (⚠️ Meanwhile, **no error code exists** for 404 in this module — §9.)
 
 ## 6. State machine
 
-Module không có state machine nghiệp vụ phức tạp; nó có đúng **một cổng một chiều**, và điều đáng nói nằm ở những chuyển đổi **không tồn tại**.
+The module has no complex business state machine; it has exactly **one one-way gate**, and the
+notable part is the transitions that **don't exist**.
 
 ```
-   Sự kiện nghiệp vụ ở module khác
+   Business event in another module
    (approve user / reject session / create invoice / register / ...)
-              │  INSERT trong CÙNG transaction với hành động đó (§7)
+              │  INSERT in the SAME transaction as that action (§7)
               ▼
       ┌───────────────────────┐
       │  unread               │   isRead = false, readAt = null
       └───────────┬───────────┘
                   │  PATCH /notifications/:id/read
-                  │  PATCH /notifications/read-all   (hàng loạt, cùng một cổng)
+                  │  PATCH /notifications/read-all   (batch, same gate)
                   ▼
       ┌───────────────────────┐
-      │  read                 │   isRead = true,  readAt = <lần đầu tiên>   [KẾT THÚC]
+      │  read                 │   isRead = true,  readAt = <first time>   [END]
       └───────────────────────┘
 
-      ✗ read → unread        : không có endpoint, không có tham số  (INV-NOTIF-03)
-      ✗ * → deleted          : không có DELETE, không có soft-delete, không có archive (INV-NOTIF-01)
-      ✗ * → sửa nội dung      : type/referenceId/referenceType/payload bất biến (INV-NOTIF-02)
+      ✗ read → unread        : no endpoint, no parameter  (INV-NOTIF-03)
+      ✗ * → deleted          : no DELETE, no soft-delete, no archive (INV-NOTIF-01)
+      ✗ * → edit content     : type/referenceId/referenceType/payload immutable (INV-NOTIF-02)
 ```
 
-| Từ | Đến | Hành động | Hợp lệ? |
+| From | To | Action | Valid? |
 |---|---|---|---|
-| — | `unread` | module khác gọi service tạo | ✅ đường tạo **duy nhất** |
-| `unread` | `read` | `PATCH /:id/read` | ✅ đặt `readAt = now()` |
-| `unread` | `read` | `PATCH /read-all` | ✅ đặt `readAt = now()` cho mọi hàng chưa đọc |
-| `read` | `read` | `PATCH /:id/read` lần hai | ✅ **no-op thành công** — không đổi `readAt`, không lỗi (§8) |
-| `read` | `unread` | — | ❌ không tồn tại |
-| bất kỳ | *xoá* | — | ❌ không tồn tại |
-| — | `read` | tạo mới đã đọc sẵn | ❌ mọi thông báo sinh ra ở trạng thái chưa đọc |
+| — | `unread` | another module calls the create service | ✅ the **only** creation path |
+| `unread` | `read` | `PATCH /:id/read` | ✅ sets `readAt = now()` |
+| `unread` | `read` | `PATCH /read-all` | ✅ sets `readAt = now()` for every unread row |
+| `read` | `read` | `PATCH /:id/read` second time | ✅ **successful no-op** — `readAt` unchanged, no error (§8) |
+| `read` | `unread` | — | ❌ doesn't exist |
+| any | *deleted* | — | ❌ doesn't exist |
+| — | `read` | created already-read | ❌ every notification is born unread |
 
-**Hệ quả của việc chỉ có một cổng một chiều và không có xoá**: hộp thư chỉ dài ra mãi. Một giáo viên dạy 3 buổi/tuần nhận ~150 thông báo `session_approved`/năm; admin nhận thêm mỗi lượt đăng ký và mỗi buổi chờ duyệt. Không có lưu trữ (archive), không có hết hạn (expiry), không có chính sách giữ (retention) trong bất kỳ tài liệu nào ⇒ trang "Xem tất cả" sẽ phân trang trên tập tăng vô hạn. Ghi nhận ở §16.
+**Consequence of having only a one-way gate and no deletion**: mailboxes only ever grow. A
+teacher teaching 3 sessions/week receives ~150 `session_approved` notifications/year; admins get
+one per registration and one per pending session. No archive, no expiry, no retention policy in
+any document ⇒ the "View all" page will paginate over an ever-growing set. Recorded in §16.
 
 ## 7. Transaction boundary
 
-Đây là quyết định thiết kế lớn nhất của module, và nó ảnh hưởng tới **mọi** module gọi tới nó.
+This is the module's biggest design decision, and it affects **every** module that calls it.
 
-**Câu hỏi**: hàng `Notification` được INSERT trong cùng transaction với hành động nghiệp vụ sinh ra nó, hay sau khi hành động đó đã commit?
+**Question**: is the `Notification` row INSERTed in the same transaction as the business action
+that produces it, or after that action commits?
 
-| | **A. Cùng transaction** | **B. Ngoài transaction (sau commit)** |
+| | **A. Same transaction** | **B. Outside transaction (after commit)** |
 |---|---|---|
-| Tính nhất quán | Tuyệt đối: có hành động ⇔ có thông báo | Có thể lệch: hành động đã commit, tiến trình chết trước khi ghi thông báo ⇒ **mất thông báo vĩnh viễn, không ai biết** |
-| Rủi ro cho nghiệp vụ | Lỗi khi ghi thông báo làm **rollback hành động nghiệp vụ**: admin bấm "Duyệt" thất bại chỉ vì bug ở phần thông báo | Nghiệp vụ an toàn: thông báo hỏng không ảnh hưởng việc duyệt |
-| Thời gian giữ transaction | Dài hơn; fan-out cho N admin nằm trong transaction, giữ khoá hàng lâu hơn | Ngắn nhất |
-| Khả năng thử lại | Không cần: hoặc cả hai, hoặc không cái nào | Cần hàng đợi retry riêng, nếu không thì mất là mất |
-| Phát hiện khi hỏng | Ngay lập tức (request lỗi) | **Im lặng** — người dùng chỉ phát hiện khi thắc mắc "sao tôi không được báo" |
+| Consistency | Absolute: action exists ⇔ notification exists | Can drift: action committed, process dies before writing the notification ⇒ **notification permanently lost, nobody knows** |
+| Business risk | A notification-write error **rolls back the business action**: admin's "Approve" click fails just because of a notification bug | Business is safe: a broken notification doesn't affect approval |
+| Transaction hold time | Longer; fan-out to N admins sits inside the transaction, holding row locks longer | Shortest |
+| Retryability | Not needed: either both happen or neither | Needs a separate retry queue, otherwise a loss stays lost |
+| Failure detection | Immediate (request errors) | **Silent** — users only notice when they ask "why wasn't I told" |
 
-**Đề xuất: outbox (transactional outbox), và ở phạm vi hiện tại nó rút gọn thành A.**
+**Recommendation: outbox (transactional outbox), which at current scope collapses into A.**
 
-Lý do rút gọn: kênh phát hiện tại là **polling — client đọc thẳng bảng `Notification`** (DEBT-002). Nghĩa là **bản thân hàng trong bảng chính là outbox**: ghi được hàng = giao được thông báo. Không có bước gửi ra ngoài nào cần thử lại. Vì vậy quy tắc cụ thể cho hôm nay:
+Why the collapse: the current delivery channel is **polling — clients read the `Notification`
+table directly** (DEBT-002). That means **the table row itself IS the outbox**: writing the row =
+delivering the notification. There is no outbound send step that needs retrying. So today's
+specific rules:
 
-1. **INSERT `Notification` nằm trong cùng transaction với UPDATE/INSERT nghiệp vụ.** (Đã được cam kết ở spec 02 §7 INV-USERS-14 và spec 04 §10 — spec này xác nhận quy tắc chung, không phá lệ.)
-2. **Mọi thứ rời khỏi DB nằm ngoài transaction, chạy sau commit**: push, email, webhook, WebSocket khi có (tương lai). Không bao giờ gọi HTTP bên trong transaction.
-3. **Service tạo thông báo không tự mở transaction** — nó **nhận** handle transaction của module gọi. Nếu nó tự mở, ta rơi thẳng vào phương án B mà không ai nhận ra.
-4. **Giảm rủi ro của A** (rollback nghiệp vụ vì thông báo): giữ bước INSERT tầm thường — không gọi mạng, không đọc thêm bảng, không tính toán; validate `type`/`referenceType` **trước** khi mở transaction; fan-out bằng **một** câu insert nhiều dòng, không vòng lặp. Khi INSERT chỉ có thể hỏng vì DB hỏng, thì "rollback vì thông báo" trở thành tình huống mà rollback đúng là điều ta muốn.
+1. **INSERT `Notification` sits in the same transaction as the business UPDATE/INSERT.** (Already
+   committed to in spec 02 §7 INV-USERS-14 and spec 04 §10 — this spec confirms the general rule,
+   doesn't break it.)
+2. **Everything leaving the DB sits outside the transaction, running after commit**: push, email,
+   webhook, WebSocket when it exists (future). Never call HTTP inside a transaction.
+3. **The notification-create service does not open its own transaction** — it **receives** the
+   transaction handle from the calling module. If it opens its own, we fall straight into option B
+   without anyone noticing.
+4. **Reduce A's risk** (business rollback caused by the notification): keep the INSERT step
+   trivial — no network, no extra table reads, no computation; validate `type`/`referenceType`
+   **before** opening the transaction; fan-out with **one** multi-row insert, not a loop. When an
+   INSERT can only fail because the DB is broken, "rollback due to notification" becomes a
+   situation where rollback is exactly what we want.
 
-**Khi nào phải nâng lên outbox thật** (bảng `NotificationOutbox` riêng + worker): ngay khi xuất hiện kênh gửi ra ngoài (email/push/WebSocket ở Sprint 6 nếu DEBT-002 được xử lý), hoặc khi fan-out đủ lớn để việc INSERT làm transaction nghiệp vụ chậm đáng kể. Lúc đó: INSERT hàng outbox trong transaction (giữ nguyên tính nguyên tử), worker đọc và gửi ngoài transaction với ngữ nghĩa **at-least-once** + khoá chống trùng (§8) — vì at-least-once cộng với việc gửi trùng là chấp nhận được, còn mất thông báo thì không.
+**When to upgrade to a real outbox** (separate `NotificationOutbox` table + worker): as soon as
+an outbound channel appears (email/push/WebSocket in Sprint 6 if DEBT-002 is addressed), or when
+fan-out grows large enough that the INSERT measurably slows the business transaction. Then:
+INSERT the outbox row inside the transaction (keeping atomicity), worker reads and sends outside
+the transaction with **at-least-once** semantics + anti-duplicate lock (§8) — because
+at-least-once plus duplicate sends is acceptable, while a lost notification is not.
 
-**Mức isolation**: `READ COMMITTED` đủ cho mọi luồng.
-- `PATCH /:id/read`: một câu UPDATE có điều kiện, **không cần** transaction tường minh.
-- `PATCH /read-all`: **một câu** `UPDATE ... WHERE "userId" = :me AND "isRead" = false` — một câu lệnh đơn đã là nguyên tử; không được thay bằng "SELECT danh sách rồi UPDATE từng cái" (vừa N+1 vừa mở cửa cho đua).
-- `GET`: chỉ đọc. `unread-count` và list nếu được gọi trong cùng một màn hình vẫn là hai request độc lập ⇒ **có thể lệch nhau vài giây** một cách hợp lệ; INV-NOTIF-06 phát biểu "tại cùng thời điểm", không đòi hai request khác nhau phải khớp tuyệt đối.
+**Isolation level**: `READ COMMITTED` suffices for all flows.
+- `PATCH /:id/read`: one conditional UPDATE, **no** explicit transaction needed.
+- `PATCH /read-all`: **one** `UPDATE ... WHERE "userId" = :me AND "isRead" = false` — a single
+  statement is already atomic; never replace it with "SELECT the list then UPDATE each one"
+  (that's both N+1 and opens a race).
+- `GET`: read-only. `unread-count` and the list called from the same screen are still two
+  independent requests ⇒ **they may legitimately differ by a few seconds**; INV-NOTIF-06 says "at
+  the same instant", it doesn't demand two different requests match absolutely.
 
 ## 8. Idempotency & concurrency
 
-**`PATCH /:id/read` — idempotent theo thiết kế.** Dùng guarded UPDATE:
+**`PATCH /:id/read` — idempotent by design.** Guarded UPDATE:
 
 ```
 UPDATE "Notification" SET "isRead" = true, "readAt" = now()
 WHERE id = :id AND "userId" = :me AND "isRead" = false
 ```
 
-- `rowCount = 1` ⇒ vừa chuyển trạng thái.
-- `rowCount = 0` ⇒ hoặc đã đọc rồi, hoặc không tồn tại/không phải của mình. Phải SELECT lại để phân biệt: nếu tồn tại và của mình ⇒ trả **200 với bản ghi hiện tại** (no-op thành công, `readAt` **không** bị ghi đè — INV-NOTIF-04); nếu không ⇒ 404.
-- **Không trả 409 khi đã đọc.** Khác với module Users (approve lần hai = 409 vì admin cần biết ai xử lý trước), ở đây bấm hai lần vào một thông báo là thao tác bình thường của người dùng bình thường (click, mở tab, click lại). Lỗi ở đây là phiền toái vô cớ.
+- `rowCount = 1` ⇒ just transitioned.
+- `rowCount = 0` ⇒ either already read, or doesn't exist/isn't yours. Re-SELECT to distinguish:
+  exists and yours ⇒ return **200 with the current record** (successful no-op, `readAt` **not**
+  overwritten — INV-NOTIF-04); otherwise ⇒ 404.
+- **No 409 when already read.** Unlike the Users module (second approve = 409 because admin needs
+  to know someone handled it first), here clicking a notification twice is normal user behavior
+  (click, open tab, click again). Erroring on that is gratuitous annoyance.
 
-**Hai request `read` đồng thời trên cùng `:id`**: chỉ một câu UPDATE thấy `isRead = false`, nên chỉ một cái đặt `readAt`; cái kia `rowCount = 0` → no-op. Không có khoá nào cần thêm.
+**Two concurrent `read` requests on the same `:id`**: only one UPDATE sees `isRead = false`, so
+only one sets `readAt`; the other gets `rowCount = 0` → no-op. No extra locking needed.
 
-**`PATCH /read-all` chạy đồng thời với một thông báo mới đang được tạo**: câu UPDATE chỉ tác động lên các hàng đã nhìn thấy trong snapshot của nó. Thông báo commit sau đó **vẫn chưa đọc**, và badge có thể hiện `1` ngay sau khi người dùng bấm "Đánh dấu tất cả đã đọc". Đây là hành vi **đúng** (INV-NOTIF-07), không phải lỗi cần vá — cố "vá" bằng cách khoá bảng hoặc quét lại sẽ chặn luồng nghiệp vụ chỉ để làm đẹp badge.
+**`PATCH /read-all` running concurrently with a new notification being created**: the UPDATE only
+affects rows visible in its snapshot. A notification committing afterwards **stays unread**, and
+the badge may show `1` right after the user clicked "Mark all as read". This is **correct**
+behavior (INV-NOTIF-07), not a bug to patch — "fixing" it by table locks or re-scans blocks
+business flow just to prettify a badge.
 
-**`read-all` gọi hai lần liên tiếp**: lần hai trả `{ "updated": 0 }` — idempotent, không lỗi.
+**`read-all` called twice in a row**: the second returns `{ "updated": 0 }` — idempotent, no
+error.
 
-**Chống trùng khi tạo (INV-NOTIF-12)**: hiện **không có ràng buộc nào ở DB** ngăn hai hàng giống hệt nhau. Ba nguồn sinh trùng: (a) module gọi bị retry ở tầng HTTP, (b) người dùng bấm nút hai lần, (c) worker outbox at-least-once trong tương lai. Bảo vệ hiện có: các module gọi đều dùng guarded UPDATE nên lần thứ hai không tới được bước INSERT (spec 02 §8 INV-USERS-15) — **tính không trùng đang được bảo đảm bởi module gọi, không phải bởi module này**. Đề xuất bổ sung hàng rào tại chỗ: unique **một phần** trên `(userId, type, referenceId)` cho các type gắn với một sự kiện **một lần** (`account_approved`, `session_approved`, `session_rejected`, `new_invoice`, `new_teacher_registration`, `new_student_registration`) — và **loại trừ** các type lặp lại hợp lệ (`deadline_reminder` phát lại được, `graded` có thể phát lại khi chấm lại, `new_assignment` mỗi assignment một lần nên vẫn an toàn). Là **proposed**, cần chốt danh sách type trước khi viết migration → §16.
+**Duplicate prevention on create (INV-NOTIF-12)**: currently **no DB constraint** prevents two
+identical rows. Three duplicate sources: (a) the calling module retried at the HTTP layer,
+(b) user double-clicking a button, (c) a future at-least-once outbox worker. Current protection:
+all calling modules use guarded UPDATEs so the second attempt never reaches the INSERT step
+(spec 02 §8 INV-USERS-15) — **uniqueness is currently guaranteed by the caller, not by this
+module**. Proposed addition of a local barrier: a **partial** unique on `(userId, type,
+referenceId)` for the types tied to a **one-time** event (`account_approved`, `session_approved`,
+`session_rejected`, `new_invoice`, `new_teacher_registration`, `new_student_registration`) —
+**excluding** the legitimately repeatable types (`deadline_reminder` re-fires, `graded` re-fires
+on regrade, `new_assignment` fires once per assignment so it stays safe). This is **proposed**;
+the type list must be locked before writing the migration → §16.
 
-**Không dùng `Idempotency-Key`**: API_CONVENTIONS.md không định nghĩa header này.
+**No `Idempotency-Key`**: API_CONVENTIONS.md doesn't define this header.
 
-## 9. Error → mã lỗi
+## 9. Error → code mapping
 
-| Nhánh lỗi | HTTP | code | Trạng thái code |
+| Error branch | HTTP | code | Code status |
 |---|---|---|---|
-| Không có token / token hỏng | 401 | `AUTH_TOKEN_INVALID` | có trong API_ERROR_CODES.md (⚠️ không có trong `_FACTS.md` — spec 01 §16) |
-| Access token hết hạn | 401 | `AUTH_TOKEN_EXPIRED` | có |
-| Actor đang `suspended` | 403 | `AUTH_ACCOUNT_SUSPENDED` | có |
-| `:id` sai định dạng uuid, `page`/`limit`/`type`/`isRead` sai | 400 | `VALIDATION_ERROR` | có |
-| **`:id` không tồn tại, hoặc thuộc user khác** | 404 | ⛔ **không có mã nào** | **API_ERROR_CODES.md không có nhóm `NOTIFICATION_*`.** Không bịa mã → §16 |
+| No token / broken token | 401 | `AUTH_TOKEN_INVALID` | in API_ERROR_CODES.md (⚠️ not in `_FACTS.md` — spec 01 §16) |
+| Access token expired | 401 | `AUTH_TOKEN_EXPIRED` | exists |
+| Actor currently `suspended` | 403 | `AUTH_ACCOUNT_SUSPENDED` | exists |
+| `:id` malformed uuid; `page`/`limit`/`type`/`isRead` invalid | 400 | `VALIDATION_ERROR` | exists |
+| **`:id` doesn't exist, or belongs to another user** | 404 | ⛔ **no code** | **API_ERROR_CODES.md has no `NOTIFICATION_*` group.** Don't invent → §16 |
 
-**Đây là module duy nhất trong hệ thống không có một mã lỗi nào của riêng nó.** Registry có 10 nhóm (`AUTH_*`, `USER_*`, `CLASS_*`, `QUESTION_*`, `ASSIGNMENT_*`, `ATTEMPT_*`, `FLASHCARD_*`, `PAYROLL_*`, `SESSION_*`, `INVOICE_*`, `RATE_*`, `AI_*`, `VALIDATION_*`) — không nhóm nào cho notification. Hệ quả cụ thể: nhánh 404 (chiếm phần lớn nhánh lỗi của module) **chưa code được đúng hợp đồng**, và test chỉ khoá được HTTP status chứ chưa khoá được `code`. Đây là dấu hiệu bổ sung cho kết luận ở §2 — module này chưa từng được thiết kế ở phía API.
+**This is the only module in the system with not a single error code of its own.** The registry
+has 10 groups (`AUTH_*`, `USER_*`, `CLASS_*`, `QUESTION_*`, `ASSIGNMENT_*`, `ATTEMPT_*`,
+`FLASHCARD_*`, `PAYROLL_*`, `SESSION_*`, `INVOICE_*`, `RATE_*`, `AI_*`, `VALIDATION_*`) — none
+for notifications. Concrete consequence: the 404 branch (the bulk of this module's error
+branches) **can't be coded to a correct contract yet**, and tests can only lock the HTTP status,
+not the `code`. This is additional evidence for the §2 conclusion — this module was never
+designed on the API side.
 
-Ghi chú: `AUTH_INSUFFICIENT_ROLE` **không** dùng ở đây (mọi role đều được đọc hộp thư của mình; giới hạn là quyền sở hữu, không phải role).
+Note: `AUTH_INSUFFICIENT_ROLE` is **not** used here (every role reads its own mailbox; the
+constraint is ownership, not role).
 
-## 10. Side effect & notification
+## 10. Side effects & notifications
 
-Đảo chiều so với các module khác: **module này không sinh side effect nào — nó CHÍNH LÀ side effect của module khác.** Nó không gửi mail, không gọi webhook, không đụng bảng nghiệp vụ nào.
+Reversed versus other modules: **this module produces no side effects — it IS another module's
+side effect.** No mail, no webhook, no business table touched.
 
-### 10.1 Bảng đầy đủ: ai sinh, type gì, gửi cho ai
+### 10.1 Full table: who produces, which type, sent to whom
 
-Nguồn: `ENTITY_NOTIFICATION.md` § Notification Types (11 type) + business rule của các entity liên quan.
+Source: `ENTITY_NOTIFICATION.md` § Notification Types (11 types) + business rules of the related
+entities.
 
-| # | `type` | Module / hành động sinh ra | Người nhận (`userId`) | `referenceId` / `referenceType` | `payload` | Trạng thái đường sinh |
+| # | `type` | Module / producing action | Recipient (`userId`) | `referenceId` / `referenceType` | `payload` | Producer path status |
 |---|---|---|---|---|---|---|
-| 1 | `account_approved` | **Users** — `PATCH /admin/users/:id/approve` | user vừa được duyệt (teacher hoặc student) | `user.id` / ⚠️ `null` (enum không có `user`) | — | ✅ endpoint defined; spec 02 §10 |
-| 2 | `account_suspended` | **Users** — `PATCH /admin/users/:id/suspend` | user vừa bị khoá | `user.id` / ⚠️ `null` | ⚠️ ứng viên chứa lý do khoá (FE bắt nhập, `User` không có cột lưu) — chưa chốt, spec 02 §16 | ✅ endpoint defined |
-| 3 | `new_teacher_registration` | **Auth** — `POST /auth/register` với `role='teacher'` | **mọi** admin (fan-out N hàng) | `user.id` mới / ⚠️ `null` | — | ✅ endpoint defined; spec 01 §10 |
-| 4 | `new_student_registration` | **Auth** — `POST /auth/register` với `role='student'` | **mọi** admin (fan-out N hàng) | `user.id` mới / ⚠️ `null` | — | ✅ endpoint defined |
-| 5 | `new_invoice` | **Billing** — `POST /admin/invoices` (ENTITY_STUDENT_INVOICE: "On creation → triggers `new_invoice`") | `invoice.studentId` | `invoice.id` / `invoice` | ⚠️ chưa chốt (số tiền? hạn nộp? — §16) | ⚠️ endpoint defined nhưng nhóm `INVOICE_*` và mô hình học phí đang *proposed* |
-| 6 | `session_submitted_for_review` | **Sessions (lane Teacher)** — teacher nộp buổi dạy (`→ completed_pending`) | Admin — ⚠️ **một admin nào? tất cả?** chưa chốt | `session.id` / `session` | — | ⛔ **chưa có endpoint nào** cho teacher nộp buổi dạy (spec 04 SCOPE-02) |
+| 1 | `account_approved` | **Users** — `PATCH /admin/users/:id/approve` | the user just approved (teacher or student) | `user.id` / ⚠️ `null` (enum has no `user`) | — | ✅ endpoint defined; spec 02 §10 |
+| 2 | `account_suspended` | **Users** — `PATCH /admin/users/:id/suspend` | the user just locked | `user.id` / ⚠️ `null` | ⚠️ candidate holds the lock reason (FE forces input, `User` has no storage column) — not locked, spec 02 §16 | ✅ endpoint defined |
+| 3 | `new_teacher_registration` | **Auth** — `POST /auth/register` with `role='teacher'` | **every** admin (fan-out of N rows) | new `user.id` / ⚠️ `null` | — | ✅ endpoint defined; spec 01 §10 |
+| 4 | `new_student_registration` | **Auth** — `POST /auth/register` with `role='student'` | **every** admin (fan-out of N rows) | new `user.id` / ⚠️ `null` | — | ✅ endpoint defined |
+| 5 | `new_invoice` | **Billing** — `POST /admin/invoices` (ENTITY_STUDENT_INVOICE: "On creation → triggers `new_invoice`") | `invoice.studentId` | `invoice.id` / `invoice` | ⚠️ not locked (amount? due date? — §16) | ⚠️ endpoint defined but the `INVOICE_*` group and the tuition model are *proposed* |
+| 6 | `session_submitted_for_review` | **Sessions (Teacher lane)** — teacher submits a session (`→ completed_pending`) | Admin — ⚠️ **which admin? all?** not locked | `session.id` / `session` | — | ⛔ **no endpoint exists** for teacher submission (spec 04 SCOPE-02) |
 | 7 | `session_approved` | **Sessions** — `PATCH /admin/sessions/:id/approve` | `session.teacherId` | `session.id` / `session` | — | ✅ endpoint defined; spec 04 §10 |
-| 8 | `session_rejected` | **Sessions** — `PATCH /admin/sessions/:id/reject` | `session.teacherId` | `session.id` / `session` | `{ "rejectionReason": "<nguyên văn>" }` | ✅ endpoint defined; spec 04 §10 |
-| 9 | `new_assignment` | **Assignments (lane Teacher)** — teacher xuất bản assignment | **mọi** student đang `active` trong lớp (fan-out theo sĩ số) | `assignment.id` / `assignment` | — | ⛔ chưa có `API_TEACHER.md`, chưa có endpoint |
-| 10 | `deadline_reminder` | **Scheduler** — cron chạy tại `dueDate − 24h` | student chưa nộp bài của assignment đó | `assignment.id` / `assignment` | — | ⛔ **không module nào sở hữu scheduler**; không có tài liệu về cron, về việc lọc "chưa nộp", hay về chống gửi trùng |
-| 11 | `graded` | **Grading (lane Teacher)** — teacher hoàn tất chấm | `attempt.studentId` | `attempt.id` / `attempt` | — | ⛔ chưa có endpoint (T-GRADE-*, Sprint 4) |
+| 8 | `session_rejected` | **Sessions** — `PATCH /admin/sessions/:id/reject` | `session.teacherId` | `session.id` / `session` | `{ "rejectionReason": "<verbatim>" }` | ✅ endpoint defined; spec 04 §10 |
+| 9 | `new_assignment` | **Assignments (Teacher lane)** — teacher publishes an assignment | **every** `active` student in the class (fan-out by class size) | `assignment.id` / `assignment` | — | ⛔ no `API_TEACHER.md`, no endpoint |
+| 10 | `deadline_reminder` | **Scheduler** — cron fires at `dueDate − 24h` | students who haven't submitted that assignment | `assignment.id` / `assignment` | — | ⛔ **no module owns the scheduler**; no doc on cron, on the "not submitted" filter, or on duplicate-send prevention |
+| 11 | `graded` | **Grading (Teacher lane)** — teacher finishes grading | `attempt.studentId` | `attempt.id` / `attempt` | — | ⛔ no endpoint yet (T-GRADE-*, Sprint 4) |
 
-**Đọc bảng này theo chiều thời gian**: 5/11 type có đường sinh đã định nghĩa (1,2,3,4,7,8 — thực tế 6/11), còn lại phụ thuộc các lane chưa có tài liệu API. Nghĩa là ngay cả khi 4 endpoint ở §2 được duyệt và code xong, hộp thư của **student** gần như trống (chỉ có `account_approved`/`account_suspended`/`new_invoice`), vì 3 type dành cho student (`new_assignment`, `deadline_reminder`, `graded`) đều chưa có nguồn.
+**Read this table over time**: 6 of 11 types have a defined producer path (1,2,3,4,7,8), the rest
+depend on lanes with no API docs. Meaning: even if the 4 endpoints in §2 get approved and coded,
+the **student** mailbox is almost empty (only `account_approved`/`account_suspended`/
+`new_invoice`), because the 3 student-facing types (`new_assignment`, `deadline_reminder`,
+`graded`) all lack a source.
 
-### 10.2 Những việc **không** sinh thông báo (đã kiểm, không phải bỏ sót)
+### 10.2 Actions that **don't** produce notifications (checked, not an omission)
 
-| Hành động | Vì sao không có |
+| Action | Why none |
 |---|---|
-| `PATCH /admin/users/:id/activate` (mở khoá) | Enum không có type nào cho việc mở khoá — user bị khoá nhầm rồi được mở lại **không được báo** (spec 02 INV-USERS-13) |
-| Đổi mật khẩu, đổi email (`/auth/*`) | Không có type; không có tín hiệu bảo mật nào cho chủ tài khoản (spec 01 §10) |
-| Chốt/chi trả kỳ lương (`payroll/:id/finalize`, `/pay`) | Không có `payroll_*` — giáo viên không được báo khi lương được chốt hay đã trả (spec 05 §10, Q-PAY-8) |
-| Đặt/đổi mức lương, mức học phí (`pay-rates`, `tuition-rates`) | Không có type; cộng với RBAC `TeacherPayRate read = ❌` cho teacher ⇒ giáo viên **không có đường nào** biết mức lương của mình đã đổi |
-| Ghi nhận thanh toán, huỷ hoá đơn (`invoices/:id/payments`, `/void`) | Không có type — học sinh không được báo khi hoá đơn đã được ghi nhận trả hay bị huỷ |
-| Học sinh tham gia/rời lớp | Không có type — giáo viên không được báo có học sinh mới |
+| `PATCH /admin/users/:id/activate` (unlock) | The enum has no type for unlocking — a wrongly-locked user being unlocked **gets no notice** (spec 02 INV-USERS-13) |
+| Password/email change (`/auth/*`) | No type; no security signal to the account owner (spec 01 §10) |
+| Finalize/pay payroll period (`payroll/:id/finalize`, `/pay`) | No `payroll_*` — teachers aren't told when payroll is finalized or paid (spec 05 §10, Q-PAY-8) |
+| Set/change pay rate, tuition rate (`pay-rates`, `tuition-rates`) | No type; plus RBAC `TeacherPayRate read = ❌` for teachers ⇒ teachers **have no way** to know their rate changed |
+| Record payment, void invoice (`invoices/:id/payments`, `/void`) | No type — students aren't told when a payment is recorded or an invoice voided |
+| Student joins/leaves class | No type — teachers aren't told about new students |
 
-⚠️ `PROJECT_KNOWLEDGE.md` mục 15 có thêm `grading_required`, `weak_student_alert`, `payroll_finalized`, `invoice_created` — **không** nằm trong enum của ENTITY_NOTIFICATION.md. Spec bám ENTITY_NOTIFICATION.md; chênh lệch ghi ở §16.
+⚠️ `PROJECT_KNOWLEDGE.md` section 15 additionally lists `grading_required`, `weak_student_alert`,
+`payroll_finalized`, `invoice_created` — **not** in ENTITY_NOTIFICATION.md's enum. The spec
+follows ENTITY_NOTIFICATION.md; the difference is recorded in §16.
 
-### 10.3 Giao diện được gọi (contract cho module khác)
+### 10.3 The interface called (contract for other modules)
 
-- Module gọi **truyền handle transaction của mình vào**; service tạo thông báo không tự mở transaction (§7).
-- Module gọi chịu trách nhiệm phân giải danh sách người nhận (ví dụ truy vấn admin `active`); module này chỉ ghi.
-- Fan-out: **một** câu insert nhiều dòng cho N người nhận, không vòng lặp (§11).
-- Module gọi **không** được đọc/sửa hàng `Notification` đã tạo, kể cả của chính sự kiện mình sinh ra.
+- The calling module **passes its transaction handle in**; the create service does not open its
+  own transaction (§7).
+- The calling module is responsible for resolving the recipient list (e.g. querying active
+  admins); this module only writes.
+- Fan-out: **one** multi-row insert for N recipients, no loop (§11).
+- The calling module **must not** read/modify created `Notification` rows, even for its own
+  events.
 
 ## 11. Index & query
 
 ```
-Notification: INDEX ("userId", "createdAt" DESC, id)                    -- list + phân trang ổn định (INV-NOTIF-16)
-Notification: INDEX ("userId") WHERE "isRead" = false   [partial]       -- unread-count + list?isRead=false  ← đường nóng nhất
-Notification: INDEX ("userId", type, "createdAt" DESC)   [proposed]     -- chỉ khi filter ?type= được chốt
+Notification: INDEX ("userId", "createdAt" DESC, id)                    -- list + stable pagination (INV-NOTIF-16)
+Notification: INDEX ("userId") WHERE "isRead" = false   [partial]       -- unread-count + list?isRead=false  ← hottest path
+Notification: INDEX ("userId", type, "createdAt" DESC)   [proposed]     -- only if the ?type= filter gets locked
 Notification: UNIQUE ("userId", type, "referenceId")     [proposed,
-              một phần theo danh sách type ở §8]                        -- chống trùng INV-NOTIF-12
+              partial per the type list in §8]                        -- anti-duplicate INV-NOTIF-12
 ```
 
-**`unread-count` là truy vấn có tần suất cao nhất toàn hệ thống, và điều đó là do polling.** DEBT-002 quy định nhịp 60 giây ⇒ mỗi người dùng đang mở tab tạo **1 request/phút, vĩnh viễn, kể cả khi không thao tác gì**. 100 người online = ~1,7 req/s liên tục chỉ để hiển thị một con số; 500 người = ~8,3 req/s. So sánh: toàn bộ nghiệp vụ admin (duyệt, chấm, ghi nhận thanh toán) là vài chục request mỗi giờ. Vì vậy:
+**`unread-count` is the highest-frequency query in the whole system, and that's because of
+polling.** DEBT-002 sets a 60-second cadence ⇒ every user with an open tab produces
+**1 request/minute, forever, even when idle**. 100 online users = ~1.7 req/s continuously just to
+display a number; 500 users = ~8.3 req/s. Compare: all admin business (approvals, grading,
+payment recording) is tens of requests per hour. Therefore:
 
-- `unread-count` **bắt buộc** dùng **partial index** `WHERE "isRead" = false`. Index này chỉ chứa các hàng chưa đọc — tập luôn nhỏ (vài hàng/người), trong khi bảng tổng tăng vô hạn (§6). Không có nó, `COUNT(*)` phải quét toàn bộ lịch sử của user.
-- Truy vấn phải là `COUNT` ở DB. Cấm `findMany(...).length`.
-- Nếu sau này vẫn nặng: cache đếm theo user với TTL ngắn (< nhịp polling) hoặc cột đếm phi chuẩn hoá — **cả hai đều làm INV-NOTIF-06 chỉ còn đúng "sau cùng"**, nên phải phát biểu lại invariant kèm độ trễ trước khi làm. Không tối ưu trước khi đo.
-- Nếu FE gọi cả `unread-count` và `GET /notifications?limit=6` mỗi chu kỳ thì đó là **2 request/phút/người** — cân nhắc bỏ hẳn `unread-count` và lấy con số từ `meta.total` của `?isRead=false&limit=6` (một request thay hai). Là lựa chọn thiết kế API cần chốt → §16.
+- `unread-count` **must** use the **partial index** `WHERE "isRead" = false`. The index only
+  holds unread rows — a set that's always small (a few rows/person) while the full table grows
+  unbounded (§6). Without it, `COUNT(*)` scans the user's entire history.
+- The query must be a DB `COUNT`. `findMany(...).length` is forbidden.
+- If it's still heavy later: per-user cached counter with a short TTL (< polling cadence) or a
+  denormalized count column — **both make INV-NOTIF-06 only "eventually" true**, so the invariant
+  must be restated with its lag before doing either. Don't optimize before measuring.
+- If FE calls both `unread-count` and `GET /notifications?limit=6` every cycle, that's
+  **2 requests/min/person** — consider dropping `unread-count` entirely and taking the number from
+  `meta.total` of `?isRead=false&limit=6` (one request instead of two). That's an API design
+  choice to lock → §16.
 
-**N+1 — nguy cơ và cách tránh**:
-1. **Không join `User`.** Người nhận luôn là actor; không cần lấy tên người nhận. Nếu FE muốn hiện "**Admin Tuấn** đã duyệt buổi dạy của bạn" thì cần tên **người gây ra sự kiện** — mà `Notification` **không có `senderId`** (§3). Lấy được tên đó chỉ bằng cách join sang bảng nghiệp vụ theo `referenceId`, mà `referenceId` là `varchar` không có FK ⇒ không join được kiểu quan hệ ⇒ sẽ thành **một query cho mỗi thông báo**. Cách duy nhất đúng: **denormalize tên vào `payload`** lúc tạo. Đây là lý do kỹ thuật để `payload` tồn tại, và cần chốt ở §16 cùng với câu hỏi "văn bản thông báo nằm ở đâu".
-2. **Không giải chi tiết `referenceId` theo từng hàng.** 20 thông báo thuộc 4 loại khác nhau ⇒ nếu resolve từng cái thì 20 query vào 4 bảng khác nhau. Nếu buộc phải có, gom theo `referenceType` rồi `WHERE id IN (...)` — mỗi loại một query. Đề xuất v1: **không resolve gì cả**, FE deep-link bằng `referenceType` + `referenceId`.
-3. `meta.total` bằng `COUNT` riêng với cùng mệnh đề `WHERE`.
+**N+1 — risks and avoidance**:
+1. **Don't join `User`.** The recipient is always the actor; no need to fetch the recipient's
+   name. If FE wants to show "**Admin Tuấn** approved your session", it needs the name of the
+   **event triggerer** — and `Notification` has **no `senderId`** (§3). Getting that name requires
+   joining the business table by `referenceId`, but `referenceId` is a `varchar` with no FK ⇒ no
+   relational join ⇒ it becomes **one query per notification**. The only correct way:
+   **denormalize the name into `payload`** at creation time. This is the technical reason
+   `payload` exists, and it needs locking in §16 together with the "where does notification text
+   live" question.
+2. **Don't resolve `referenceId` details per row.** 20 notifications across 4 types ⇒ resolving
+   each one is 20 queries into 4 different tables. If it's mandatory, group by `referenceType`
+   then `WHERE id IN (...)` — one query per type. v1 proposal: **resolve nothing**, FE deep-links
+   via `referenceType` + `referenceId`.
+3. `meta.total` via a separate `COUNT` with the same `WHERE` clause.
 
-**Tăng trưởng bảng**: append-only + fan-out (mỗi lượt đăng ký sinh N hàng cho N admin; mỗi assignment sinh N hàng cho N học sinh) ⇒ đây sẽ là một trong hai bảng lớn nhất hệ thống cùng với `RefreshToken`. Chưa có chính sách giữ dữ liệu → §16. Khi cần: phân vùng theo `createdAt` hoặc chuyển hàng đã đọc quá cũ sang bảng lưu trữ — **không xoá** (INV-NOTIF-01).
+**Table growth**: append-only + fan-out (every registration spawns N rows for N admins; every
+assignment spawns N rows for N students) ⇒ this will be one of the two largest tables in the
+system alongside `RefreshToken`. No retention policy yet → §16. When needed: partition by
+`createdAt` or move old read rows to an archive table — **never delete** (INV-NOTIF-01).
 
 ## 12. Migration & seed
 
-**Migration tạo bảng `Notification`** theo đúng ENTITY_NOTIFICATION.md: `id` uuid PK · `userId` uuid NOT NULL FK → `User` · `type` enum (11 giá trị, tạo kiểu enum ở Postgres) · `referenceId` varchar NULL · `referenceType` varchar NULL · `isRead` bool NOT NULL DEFAULT false · `readAt` DateTime NULL · `payload` jsonb NULL · `createdAt`/`updatedAt` DateTime NOT NULL.
+**Migration creating the `Notification` table** exactly per ENTITY_NOTIFICATION.md: `id` uuid PK ·
+`userId` uuid NOT NULL FK → `User` · `type` enum (11 values; create the Postgres enum type) ·
+`referenceId` varchar NULL · `referenceType` varchar NULL · `isRead` bool NOT NULL DEFAULT false ·
+`readAt` DateTime NULL · `payload` jsonb NULL · `createdAt`/`updatedAt` DateTime NOT NULL.
 
-Ràng buộc và index kèm theo:
-- FK `userId` — `ON DELETE CASCADE` (chưa có đường xoá user nên chưa kích hoạt trong thực tế, nhưng phải khai báo dứt khoát).
-- CHECK `("isRead" = false AND "readAt" IS NULL) OR ("isRead" = true AND "readAt" IS NOT NULL)` — biến INV-NOTIF-04 thành ràng buộc DB thay vì lời hứa của tầng ứng dụng. **Đề xuất, chưa có trong tài liệu.**
-- CHECK `referenceType IN ('assignment','attempt','invoice','session') OR referenceType IS NULL` — khoá INV-NOTIF-10 ở tầng DB. **Đề xuất.**
-- Hai index ở §11 (index chính + partial index cho chưa đọc).
-- Unique một phần chống trùng: **proposed**, chờ chốt danh sách type (§8).
+Constraints and indexes included:
+- FK `userId` — `ON DELETE CASCADE` (no user-deletion path exists so it never fires in practice,
+  but it must be declared definitively).
+- CHECK `("isRead" = false AND "readAt" IS NULL) OR ("isRead" = true AND "readAt" IS NOT NULL)` —
+  turns INV-NOTIF-04 into a DB constraint instead of an app-layer promise. **Proposed, not in any
+  doc.**
+- CHECK `referenceType IN ('assignment','attempt','invoice','session') OR referenceType IS NULL` —
+  locks INV-NOTIF-10 at the DB layer. **Proposed.**
+- The two indexes in §11 (main index + partial index for unread).
+- Partial unique anti-duplicate: **proposed**, awaiting the type-list decision (§8).
 
-**Thứ tự migration**: bảng này phải có **trước** khi module Auth và Users chạy được, vì register và approve đều INSERT vào nó trong cùng transaction (§7). Tức là dù bản thân module Notifications ở trạng thái `proposed`, **bảng của nó là phụ thuộc cứng của Sprint 1**.
+**Migration order**: this table must exist **before** the Auth and Users modules can run, because
+register and approve both INSERT into it in the same transaction (§7). So even though the
+Notifications module itself is `proposed`, **its table is a hard dependency of Sprint 1**.
 
 **Seed**:
-- Mỗi role (admin/teacher/student) một hộp thư có: ≥1 hàng chưa đọc, ≥1 hàng đã đọc (`readAt` khác `createdAt`), để kiểm `unreadCount` và filter.
-- 1 hàng `session_rejected` có `payload = { rejectionReason: ... }` — kiểm đường đọc jsonb.
-- 1 hàng `account_approved` có `referenceType = null` — **bắt buộc**, để FE chứng minh xử lý được deep-link rỗng (§3).
-- ≥ 25 hàng cho một user để kiểm phân trang và tie-breaker, trong đó có vài hàng **cùng `createdAt`** (INV-NOTIF-16).
-- 2 admin + 1 lượt register trong seed để chứng minh fan-out ra 2 hàng.
-- Hộp thư **rỗng** cho ít nhất một user (empty state của FE, `unreadCount = 0`, `total = 0`).
+- One mailbox per role (admin/teacher/student) with: ≥1 unread row, ≥1 read row (`readAt` differs
+  from `createdAt`), to exercise `unreadCount` and the filter.
+- 1 `session_rejected` row with `payload = { rejectionReason: ... }` — exercises the jsonb read
+  path.
+- 1 `account_approved` row with `referenceType = null` — **mandatory**, so FE can prove it handles
+  empty deep-links (§3).
+- ≥ 25 rows for one user to test pagination and tie-breaker, including several rows with **the
+  same `createdAt`** (INV-NOTIF-16).
+- 2 admins + 1 register in the seed to prove fan-out produces 2 rows.
+- An **empty** mailbox for at least one user (FE empty state, `unreadCount = 0`, `total = 0`).
 
 ## 13. Security & rate limit
 
-**Ranh giới bảo mật của module là đúng một điều kiện WHERE.** Thông báo mang dữ liệu nghiệp vụ của người khác: `new_invoice` gắn với hoá đơn của một học sinh cụ thể, `session_rejected` chứa nguyên văn lý do admin từ chối buổi dạy của một giáo viên, `new_*_registration` tiết lộ có ai vừa đăng ký. Quên `WHERE "userId" = :me` ở **một** hàm là rò toàn bộ hộp thư của toàn hệ thống qua một endpoint mà không ai coi là nhạy cảm. Vì vậy §5 yêu cầu ràng buộc đó nằm ở repository và là tham số **bắt buộc**, và §15 test nó như một invariant chứ không phải như một tiện ích.
+**The module's security boundary is exactly one WHERE clause.** Notifications carry other
+people's business data: `new_invoice` ties to one student's invoice, `session_rejected` contains
+the verbatim reason an admin rejected one teacher's session, `new_*_registration` reveals someone
+just signed up. Forgetting `WHERE "userId" = :me` in **one** function leaks the whole system's
+mailboxes through an endpoint nobody considers sensitive. Hence §5 puts that constraint in the
+repository as a **mandatory** parameter, and §15 tests it as an invariant, not a convenience.
 
-| Chủ đề | Quy tắc |
+| Topic | Rule |
 |---|---|
-| Dữ liệu không được ra ngoài | `payload` không chứa `passwordHash`, token, mật khẩu, khoá API (INV-NOTIF-15). Cân nhắc kỹ trước khi đưa số tiền/thông tin cá nhân vào `payload` — nó sẽ nằm trong DB không mã hoá và trong mọi log request |
-| Không rò sự tồn tại | Bản ghi của người khác trả **404**, không phải 403 (§5) |
-| Rate limit | Polling 60s là hành vi bình thường, nhưng client hỏng (hoặc kẻ xấu) có thể gọi `unread-count` liên tục. Đề xuất giới hạn **theo user**, khoảng 60 req/phút cho nhóm endpoint này — đủ rộng cho polling + thao tác thật, đủ hẹp để chặn vòng lặp lỗi. ⚠️ **proposed**, không có tài liệu; và **chưa có mã lỗi cho 429** (spec 01 §16) |
-| Ghi | Không có endpoint tạo/xoá cho client (INV-NOTIF-08, INV-NOTIF-01) ⇒ bề mặt ghi của module chỉ là một cờ boolean một chiều — bề mặt tấn công nhỏ nhất có thể |
-| Audit | Không có bảng `AuditLog`. Nhưng bảng `Notification` **append-only** nên bản thân nó là dấu vết mờ của các sự kiện nghiệp vụ ("đã có ai đó được duyệt lúc t"). Không được coi đây là thay thế cho audit thật: nó không ghi **ai** gây ra sự kiện (không có `senderId`) |
+| Data never exposed | `payload` contains no `passwordHash`, tokens, passwords, API keys (INV-NOTIF-15). Think hard before putting amounts/personal data into `payload` — it will sit unencrypted in the DB and in every request log |
+| No existence leak | Someone else's record returns **404**, not 403 (§5) |
+| Rate limit | 60s polling is normal behavior, but a broken (or malicious) client can hammer `unread-count`. Proposed **per-user** limit, ~60 req/min for this endpoint group — wide enough for polling + real actions, tight enough to stop an error loop. ⚠️ **proposed**, no doc; and **no 429 error code** (spec 01 §16) |
+| Write surface | No create/delete endpoint for clients (INV-NOTIF-08, INV-NOTIF-01) ⇒ the module's write surface is a single one-way boolean — the smallest possible attack surface |
+| Audit | No `AuditLog` table. But the `Notification` table is **append-only**, so it is itself a faint trace of business events ("someone was approved at t"). Not a substitute for real audit: it doesn't record **who** caused the event (no `senderId`) |
 
 ## 14. Observability
 
-**Log**:
-- Tạo thông báo: `type`, `userId` người nhận, `referenceType`/`referenceId`, module gọi. Mức debug/info. Fan-out ghi **một dòng cho cả lô** kèm số lượng, không mỗi người nhận một dòng.
-- Fan-out bất thường (số người nhận vượt ngưỡng, ví dụ > 50) — mức warn: dấu hiệu vòng lặp sai hoặc lớp học khổng lồ.
-- Truy cập 404 ở `PATCH /:id/read` — mức info kèm `actorId`: một user gặp nhiều 404 liên tiếp có thể đang dò id của người khác.
-- **Không** log toàn bộ `payload` vào log dùng chung (có thể chứa lý do từ chối, số tiền).
+**Logs**:
+- Notification creation: `type`, recipient `userId`, `referenceType`/`referenceId`, calling
+  module. Debug/info level. Fan-out logs **one line for the whole batch** with the count, not one
+  line per recipient.
+- Abnormal fan-out (recipient count over a threshold, e.g. > 50) — warn level: sign of a wrong
+  loop or a gigantic class.
+- 404s on `PATCH /:id/read` — info level with `actorId`: a user hitting many 404s in a row may be
+  probing others' ids.
+- **Never** log the full `payload` into shared logs (may contain rejection reasons, amounts).
 
-**Đo**:
-- **QPS và p95 của `unread-count`** — đây là đường nóng (§11); ngưỡng mong đợi p95 < 10ms nhờ partial index. Vượt ngưỡng = index sai hoặc bảng đã cần chính sách lưu trữ.
-- Số thông báo tạo mỗi ngày, **tách theo `type`** — dùng để phát hiện type nào không bao giờ được sinh (đường sinh chưa có, §10.1) và type nào sinh quá nhiều.
-- **Độ trễ đọc**: phân phối `readAt − createdAt`. Nếu p50 lớn hơn nhiều so với 60s thì badge không có tác dụng thúc đẩy hành động.
-- **Tỉ lệ không bao giờ đọc**: số hàng `isRead = false` và `createdAt` cũ hơn 7 ngày. Cao = thông báo đang bị phớt lờ (vấn đề sản phẩm, không phải kỹ thuật).
-- Kích thước bảng và tốc độ tăng (§11) — đầu vào cho quyết định retention ở §16.
-- **Độ trễ giao hàng thực tế = thời gian ghi hàng + tối đa 60 giây polling.** Con số 60 giây này là hằng số của DEBT-002; mọi cam kết SLA về "báo ngay" đều sai cho tới khi có realtime.
+**Measure**:
+- **QPS and p95 of `unread-count`** — the hot path (§11); expected p95 < 10ms thanks to the
+  partial index. Over threshold = wrong index or the table already needs a retention policy.
+- Daily notification count **split by `type`** — detects types never produced (no producer path,
+  §10.1) and types produced too much.
+- **Read latency**: distribution of `readAt − createdAt`. If p50 vastly exceeds 60s, the badge
+  isn't driving action.
+- **Never-read ratio**: rows with `isRead = false` and `createdAt` older than 7 days. High =
+  notifications being ignored (a product problem, not technical).
+- Table size and growth rate (§11) — input for the retention decision in §16.
+- **Actual delivery latency = row write time + up to 60s polling.** The 60 seconds is the constant
+  of DEBT-002; every SLA claim of "instant notification" is wrong until realtime arrives.
 
 ## 15. Test matrix
 
-Đây là **invariant gate**: mọi INV ở §4 phải có ít nhất một dòng ở đây. Thiếu một dòng = không merge.
+This is the **invariant gate**: every INV in §4 must have at least one row here. A missing row =
+no merge.
 
-| INV | Loại test | Mô tả |
+| INV | Test type | Description |
 |---|---|---|
-| INV-NOTIF-01 | integration | Duyệt toàn bộ route đã đăng ký của app → assert không có route `DELETE /notifications*`. Chạy toàn bộ bộ test rồi assert `COUNT(Notification)` chỉ tăng, chưa từng giảm |
-| INV-NOTIF-02 | DB thật | Snapshot hàng trước/sau `PATCH /:id/read` và `/read-all` → chỉ `isRead`, `readAt`, `updatedAt` đổi; `userId`/`type`/`referenceId`/`referenceType`/`payload`/`createdAt` giữ nguyên từng byte |
-| INV-NOTIF-03 | integration | Không tồn tại endpoint/tham số nào đưa `isRead` về `false`: thử `PATCH /:id/read` với body `{isRead:false}` → body bị bỏ qua, DB vẫn `true` |
-| INV-NOTIF-04 | DB thật | Đánh dấu đọc → `readAt` khác null và gần `now()`. Gọi lại sau 2 giây → 200, `readAt` **không đổi**. Assert ràng buộc CHECK: thử UPDATE thẳng DB `isRead=true, readAt=null` → vi phạm constraint |
-| INV-NOTIF-05 | DB thật | Seed hộp thư cho user A và user B. Bằng token của A: `GET /notifications` → không phần tử nào có `userId` của B (đối chiếu trực tiếp trên DB); `PATCH /:idCủaB/read` → 404 **và** hàng của B trong DB **không đổi**; `PATCH /read-all` bằng token A → hàng của B vẫn `isRead=false`; `GET /unread-count` bằng token A ≠ tổng của cả hệ thống |
-| INV-NOTIF-06 | DB thật | Với nhiều bộ dữ liệu (0 / 1 / 25 chưa đọc, lẫn đã đọc): `unreadCount` == `meta.total` của `?isRead=false` == `COUNT` chạy thẳng trên DB. Lặp lại **sau** mỗi thao tác đánh dấu đọc |
-| INV-NOTIF-07 | DB thật (concurrency) | Seed 10 chưa đọc → gọi `read-all` → `updated=10`, `unreadCount=0`, mọi hàng `isRead=true`. Biến thể đua: trong lúc `read-all` chạy, tạo thêm 1 thông báo mới → assert thông báo mới **vẫn chưa đọc** và không có lỗi nào. Gọi `read-all` lần hai → `updated=0` |
-| INV-NOTIF-08 | integration | Duyệt route đã đăng ký → không có `POST /notifications`. Thử `POST` → 404/405. Assert service tạo không được gắn vào controller nào |
-| INV-NOTIF-09 | DB thật | Sau khi chạy toàn bộ bộ test tích hợp của mọi module: `SELECT DISTINCT type FROM "Notification"` ⊆ đúng 11 giá trị enum. Thử tạo với type tự chế qua service → bị enum của DB từ chối |
-| INV-NOTIF-10 | DB thật | `SELECT DISTINCT "referenceType"` ⊆ `{assignment, attempt, invoice, session, NULL}`. Thông báo `account_approved` → `referenceType IS NULL` và response không gợi ý deep-link |
-| INV-NOTIF-11 | DB thật | Register khi có 2 admin → **đúng 2** hàng, mỗi hàng một `userId` khác nhau, cùng `type`, cùng `referenceId`; không có hàng nào `userId IS NULL` |
-| INV-NOTIF-12 | DB thật (concurrency) | Bắn 2 request approve song song cùng `:userId` → đúng **1** hàng `account_approved`. Gọi lại approve lần hai (tuần tự) → không sinh hàng thứ hai. Lặp cho reject session và tạo invoice |
-| INV-NOTIF-13 | DB thật | Ép INSERT `Notification` thất bại (mock/constraint) trong luồng approve → assert `User.status` **vẫn là giá trị cũ** (rollback) và không có hàng notification mồ côi. Chiều ngược lại: ép UPDATE nghiệp vụ thất bại → không có thông báo nào được ghi |
-| INV-NOTIF-14 | integration | Tạo hai thông báo cùng `type`/`referenceId` khác `payload` (một cái `payload=null`) → mọi hành vi endpoint (list, đếm, đánh dấu đọc, deep-link) giống hệt nhau; `payload=null` không gây lỗi ở bất kỳ đâu |
-| INV-NOTIF-15 | integration | Serialize mọi `payload` trong DB sau bộ test → assert không chứa khoá `passwordHash`/`token`/`password` và không chứa chuỗi hash của seed |
-| INV-NOTIF-16 | DB thật | Seed 25 hàng trong đó có nhiều hàng **cùng `createdAt`** → duyệt hết các trang, gom `id` → tập gom == tập seed, không trùng, không sót. Lặp với `limit=6` (kích thước dropdown chuông) |
-| INV-NOTIF-17 | DB thật | Seed 42 hàng, `limit=20` → `total=42`, `totalPages=3`, `data.length=20`; trang 3 có 2 phần tử; khi bật `?isRead=false` thì `total` phản ánh tập đã lọc, không phải tổng hộp thư |
-| INV-NOTIF-18 | integration | Mọi DateTime khớp regex ISO 8601 UTC (kết thúc `Z`); hàng chưa đọc → `readAt === null` (không phải chuỗi rỗng, không phải epoch 0) |
+| INV-NOTIF-01 | integration | Walk every registered route of the app → assert no `DELETE /notifications*` route. Run the whole test suite then assert `COUNT(Notification)` only ever grows, never shrinks |
+| INV-NOTIF-02 | real DB | Snapshot the row before/after `PATCH /:id/read` and `/read-all` → only `isRead`, `readAt`, `updatedAt` change; `userId`/`type`/`referenceId`/`referenceType`/`payload`/`createdAt` stay byte-identical |
+| INV-NOTIF-03 | integration | No endpoint/parameter returns `isRead` to `false`: try `PATCH /:id/read` with body `{isRead:false}` → body ignored, DB stays `true` |
+| INV-NOTIF-04 | real DB | Mark read → `readAt` non-null and near `now()`. Call again 2s later → 200, `readAt` **unchanged**. Assert the CHECK constraint: try a direct DB UPDATE `isRead=true, readAt=null` → constraint violation |
+| INV-NOTIF-05 | real DB | Seed mailboxes for user A and user B. With A's token: `GET /notifications` → no element has B's `userId` (verified directly against the DB); `PATCH /:idOfB/read` → 404 **and** B's row in the DB **unchanged**; `PATCH /read-all` with A's token → B's rows stay `isRead=false`; `GET /unread-count` with A's token ≠ the whole system's total |
+| INV-NOTIF-06 | real DB | Across several datasets (0 / 1 / 25 unread, mixed with read): `unreadCount` == `meta.total` of `?isRead=false` == `COUNT` run directly on the DB. Repeat **after** each read-marking operation |
+| INV-NOTIF-07 | real DB (concurrency) | Seed 10 unread → call `read-all` → `updated=10`, `unreadCount=0`, every row `isRead=true`. Race variant: while `read-all` runs, create 1 new notification → assert the new one **stays unread** and no error. Call `read-all` a second time → `updated=0` |
+| INV-NOTIF-08 | integration | Walk registered routes → no `POST /notifications`. Try `POST` → 404/405. Assert the create service is wired to no controller |
+| INV-NOTIF-09 | real DB | After running all modules' integration suites: `SELECT DISTINCT type FROM "Notification"` ⊆ exactly the 11 enum values. Try creating with a made-up type via the service → rejected by the DB enum |
+| INV-NOTIF-10 | real DB | `SELECT DISTINCT "referenceType"` ⊆ `{assignment, attempt, invoice, session, NULL}`. An `account_approved` notification → `referenceType IS NULL` and the response suggests no deep-link |
+| INV-NOTIF-11 | real DB | Register with 2 admins present → **exactly 2** rows, each with a different `userId`, same `type`, same `referenceId`; no row with `userId IS NULL` |
+| INV-NOTIF-12 | real DB (concurrency) | Fire 2 concurrent approve requests on the same `:userId` → exactly **1** `account_approved` row. Call approve a second time (sequential) → no second row. Repeat for session reject and invoice creation |
+| INV-NOTIF-13 | real DB | Force the `Notification` INSERT to fail (mock/constraint) in the approve flow → assert `User.status` **is still the old value** (rollback) and no orphan notification row. Reverse: force the business UPDATE to fail → no notification written |
+| INV-NOTIF-14 | integration | Create two notifications with the same `type`/`referenceId` but different `payload` (one `payload=null`) → all endpoint behavior (list, count, read-marking, deep-link) is identical; `payload=null` causes no error anywhere |
+| INV-NOTIF-15 | integration | Serialize every `payload` in the DB after the full suite → assert no `passwordHash`/`token`/`password` keys and no seed hash strings |
+| INV-NOTIF-16 | real DB | Seed 25 rows with several **sharing `createdAt`** → walk all pages, collect `id`s → collected set == seeded set, no duplicates, no gaps. Repeat with `limit=6` (bell-dropdown size) |
+| INV-NOTIF-17 | real DB | Seed 42 rows, `limit=20` → `total=42`, `totalPages=3`, `data.length=20`; page 3 has 2 elements; with `?isRead=false` on, `total` reflects the filtered set, not the whole mailbox |
+| INV-NOTIF-18 | integration | Every DateTime matches the ISO 8601 UTC regex (ends with `Z`); an unread row → `readAt === null` (not empty string, not epoch 0) |
 
-Bổ sung ngoài invariant gate: test envelope lỗi đúng shape phẳng của API_CONVENTIONS.md; test hộp thư rỗng → `data: []`, `total: 0`, `unreadCount: 0` (không phải 404, không phải null); test `limit` vượt trần → `VALIDATION_ERROR` chứ không im lặng cắt.
+Beyond the invariant gate: test the error envelope has the flat shape of API_CONVENTIONS.md;
+test the empty mailbox → `data: []`, `total: 0`, `unreadCount: 0` (not 404, not null); test
+`limit` above the cap → `VALIDATION_ERROR` rather than silently truncating.
 
-## 16. Chưa chốt
+## 16. Unresolved
 
-| Câu hỏi | Chặn gì | Owner | Cần quyết trước |
+| Question | What it blocks | Owner | Decide by |
 |---|---|---|---|
-| **⛔ Cả 4 endpoint chưa được định nghĩa ở bất kỳ tài liệu API nào** (§2). Chúng cũng không nằm trong danh sách 7 dòng "not yet defined" của API_ADMIN.md, tức là chưa từng được ghi nhận là còn thiếu | Chặn **toàn bộ** module: không có hợp đồng thì FE không nối được chuông ở header (`root-design-fe.md` §4.6) và dữ liệu do Auth/Users/Sessions/Billing sinh ra **không ai đọc được**. Đồng thời chặn cả link "Xem tất cả" — không có route notification nào trong `pages/_INDEX.md` | - | trước Sprint 2 (dữ liệu bắt đầu sinh từ Sprint 1) |
-| **⛔ Không có mã lỗi `NOTIFICATION_*` nào** trong API_ERROR_CODES.md (§9) | Chặn nhánh 404 (chiếm phần lớn nhánh lỗi của module); test chỉ khoá được HTTP status, không khoá được `code`; FE không có nhánh xử lý riêng | - | cùng lúc với dòng trên |
-| **DEBT-002 — thông báo là polling 60 giây, không realtime.** Trạng thái: *Won't Fix (Sprint 6 scope)*, severity Low. Không có WebSocket, không có SSE, không có push | (a) Độ trễ giao hàng tối đa 60s + jitter — mọi cam kết "báo ngay" đều sai; (b) `unread-count` trở thành truy vấn có tần suất cao nhất hệ thống (§11) và định hình toàn bộ chiến lược index; (c) badge có thể lệch tới 60s sau khi người dùng thao tác ở tab khác; (d) nếu Sprint 6 bật realtime thì §7 phải nâng lên outbox thật, §11 và §14 phải viết lại. **Không** thiết kế module như thể realtime sắp có | - | ghi nhận; xem lại ở Sprint 6 |
-| **Văn bản thông báo nằm ở đâu?** ENTITY_NOTIFICATION.md **không có cột `message`/`title`**; `PROJECT_KNOWLEDGE.md` mục 15 lại có `message`, `data`, `recipientId`, `senderId` — hai mô hình khác nhau cho cùng một bảng | Chặn DTO §3 và toàn bộ hiển thị: hoặc FE tự dựng câu từ `type`+`payload` (khoá i18n ở FE, BE không đổi được câu chữ khi không deploy FE), hoặc thêm cột (migration + đổi mọi chỗ ghi). Cũng chặn câu hỏi `senderId` ngay dưới | - | trước khi code list |
-| **Không có `senderId`** — không biết **ai** gây ra sự kiện | "Admin nào đã duyệt", "giáo viên nào đã nộp" không suy ra được. Muốn hiện tên người gây sự kiện thì buộc phải denormalize vào `payload` lúc tạo (§11), tức là quyết định này khoá luôn shape của `payload` cho nhiều type | - | cùng lúc với dòng trên |
-| **`referenceType` không có giá trị `user`** (enum chỉ `assignment`/`attempt`/`invoice`/`session`) | Chặn deep-link của 4 type: `account_approved`, `account_suspended`, `new_teacher_registration`, `new_student_registration` — đúng những type mà admin cần bấm để nhảy sang `/admin/users/[id]`. Tạm để `null` (§10.1), tức là chuông của admin có mục không bấm được | - | trước khi code deep-link |
-| **RBAC mâu thuẫn cho admin**: dòng "Notification · read own" nhưng ô Admin là ✅ (= own + others) | Chặn phát biểu INV-NOTIF-05. Spec đang chọn cách hẹp (admin chỉ đọc của mình); nếu chốt cách rộng thì phải thêm endpoint nhận `userId`, thêm test rò rỉ, và §13 phải viết lại | - | trước khi code |
-| **Fan-out cho admin: gửi cho tất cả admin hay một admin?** Áp cho `new_teacher_registration`, `new_student_registration`, `session_submitted_for_review` | Chặn §10.1: với 3 admin thì mỗi lượt đăng ký sinh 3 hàng và **cả 3 người cùng thấy cùng một việc cần làm** — không có cơ chế "đã có người xử lý" nên 2 người sẽ bấm duyệt và 1 người nhận 409 (spec 02 §8). Chặn cả ước lượng kích thước bảng | - | trước khi code register |
-| **Không có chính sách giữ dữ liệu / lưu trữ.** Append-only, không xoá, không hết hạn (§6) | Bảng tăng vô hạn; trang "Xem tất cả" phân trang trên tập tăng mãi; chưa biết khi nào cần phân vùng hoặc bảng lưu trữ | - | trước go-live |
-| **Danh sách type được phép chống trùng bằng UNIQUE** (§8) — `deadline_reminder` và `graded` có thể lặp hợp lệ, các type khác thì không | Chặn migration của unique một phần; không có nó thì INV-NOTIF-12 chỉ được bảo đảm gián tiếp bởi guarded UPDATE của module gọi | - | trước migration |
-| **Shape response của `read-all` và `unread-count`** (`{updated}` / `{unreadCount}`), và có nên **bỏ hẳn** `unread-count` để lấy `meta.total` từ list (§11) | Chặn hợp đồng FE; ảnh hưởng trực tiếp số request/phút/người của polling | - | trước khi code |
-| **`PATCH /:id/read` trả 200 kèm bản ghi hay 204?** | Chặn DTO §3; 204 làm FE mất `readAt` và phải gọi lại list | - | trước khi code |
-| **Ai sở hữu scheduler cho `deadline_reminder`?** Không tài liệu nào định nghĩa cron, cách lọc "student chưa nộp", hay cách chống gửi trùng khi job chạy lại | Chặn 1/11 type; cũng là type duy nhất không do hành động người dùng sinh ra ⇒ cần hạ tầng khác hẳn (job runner, khoá chống chạy song song) | - | trước Sprint 4 |
-| **6/11 type chưa có đường sinh** (§10.1: `new_assignment`, `deadline_reminder`, `graded`, `session_submitted_for_review` + phụ thuộc của `new_invoice`) | Hộp thư của **student** gần như trống ở giai đoạn đầu; nếu FE thiết kế dropdown giả định có đủ loại thông báo thì sẽ phải làm lại empty state | - | trước khi thiết kế UI chuông |
-| **`payload` của `new_invoice` và `account_suspended` chứa gì?** (số tiền/hạn nộp; lý do khoá — FE bắt nhập nhưng `User` không có cột lưu, spec 02 §16) | Chặn §10.1 và INV-NOTIF-15 (đưa số tiền vào `payload` là đưa dữ liệu tài chính vào jsonb không mã hoá) | - | trước khi code Billing/suspend |
-| **Rate limit cho nhóm endpoint polling** và mã lỗi 429 | Chặn §13; hiện không giới hạn, một client lỗi có thể lặp vô hạn `unread-count` | - | trước go-live |
+| **⛔ All 4 endpoints are undefined in every API document** (§2). They aren't even in API_ADMIN.md's 7-row "not yet defined" list — i.e. never recorded as missing | Blocks the **entire** module: without a contract FE can't wire the header bell (`root-design-fe.md` §4.6), and the data Auth/Users/Sessions/Billing produce is **unreadable by anyone**. Also blocks the "View all" link — no notification route exists in `pages/_INDEX.md` | - | before Sprint 2 (data starts being produced in Sprint 1) |
+| **⛔ No `NOTIFICATION_*` error code in API_ERROR_CODES.md** (§9) | Blocks the 404 branch (the bulk of the module's error branches); tests can only lock the HTTP status, not `code`; FE has no dedicated handling branch | - | together with the row above |
+| **DEBT-002 — notifications are 60s polling, not realtime.** Status: *Won't Fix (Sprint 6 scope)*, severity Low. No WebSocket, no SSE, no push | (a) Max delivery latency 60s + jitter — every "instant alert" promise is wrong; (b) `unread-count` becomes the system's highest-frequency query (§11) and shapes the whole index strategy; (c) the badge can lag up to 60s after a user acts in another tab; (d) if Sprint 6 enables realtime, §7 must upgrade to a real outbox and §11/§14 must be rewritten. **Do not** design the module as if realtime is imminent | - | acknowledged; revisit at Sprint 6 |
+| **Where does notification text live?** ENTITY_NOTIFICATION.md has **no `message`/`title` column**; `PROJECT_KNOWLEDGE.md` section 15 has `message`, `data`, `recipientId`, `senderId` — two different models for the same table | Blocks §3 DTO and all display: either FE builds sentences from `type`+`payload` (i18n keys on FE; BE can't change wording without an FE deploy), or add a column (migration + change every write site). Also blocks the `senderId` question right below | - | before coding the list |
+| **No `senderId`** — unknown **who** caused the event | "Which admin approved", "which teacher submitted" can't be derived. Showing the triggerer's name forces denormalizing into `payload` at creation (§11), so this decision locks the `payload` shape for many types | - | together with the row above |
+| **`referenceType` has no `user` value** (enum only `assignment`/`attempt`/`invoice`/`session`) | Blocks deep-linking of 4 types: `account_approved`, `account_suspended`, `new_teacher_registration`, `new_student_registration` — exactly the types admins need to click through to `/admin/users/[id]`. Temporarily `null` (§10.1), i.e. the admin bell has items that can't be clicked | - | before coding deep-links |
+| **RBAC contradicts for admin**: "Notification · read own" row but Admin cell ✅ (= own + others) | Blocks asserting INV-NOTIF-05. The spec currently picks the narrow reading (admin reads only theirs); if the wide reading is locked, an endpoint accepting `userId` must be added, leak tests added, and §13 rewritten | - | before coding |
+| **Admin fan-out: all admins or one admin?** Applies to `new_teacher_registration`, `new_student_registration`, `session_submitted_for_review` | Blocks §10.1: with 3 admins, every registration spawns 3 rows and **all 3 see the same todo item** — no "already handled" mechanism, so 2 people click approve and 1 gets a 409 (spec 02 §8). Also blocks table-size estimates | - | before coding register |
+| **No retention/archive policy.** Append-only, no delete, no expiry (§6) | The table grows unbounded; "View all" paginates over an ever-growing set; unknown when partitioning or an archive table is needed | - | before go-live |
+| **Which types get UNIQUE anti-duplicate protection** (§8) — `deadline_reminder` and `graded` can legitimately repeat, the rest can't | Blocks the partial-unique migration; without it INV-NOTIF-12 is only indirectly guaranteed by the callers' guarded UPDATEs | - | before migration |
+| **Response shape of `read-all` and `unread-count`** (`{updated}` / `{unreadCount}`), and whether to **drop** `unread-count` for `meta.total` from the list (§11) | Blocks the FE contract; directly affects per-person polling requests/min | - | before coding |
+| **`PATCH /:id/read` returns 200 with the record or 204?** | Blocks §3 DTO; 204 loses `readAt` on FE and forces a list refetch | - | before coding |
+| **Who owns the scheduler for `deadline_reminder`?** No document defines the cron, the "student hasn't submitted" filter, or duplicate prevention on job re-runs | Blocks 1 of 11 types; also the only type not produced by a user action ⇒ needs different infrastructure (job runner, anti-parallel-run lock) | - | before Sprint 4 |
+| **6 of 11 types have no producer path** (§10.1: `new_assignment`, `deadline_reminder`, `graded`, `session_submitted_for_review` + `new_invoice`'s dependencies) | The **student** mailbox is almost empty in the early phase; if FE designs the dropdown assuming all kinds of notifications exist, the empty state must be redone | - | before designing the bell UI |
+| **What's in the `payload` of `new_invoice` and `account_suspended`?** (amount/due date; lock reason — FE forces input but `User` has no storage column, spec 02 §16) | Blocks §10.1 and INV-NOTIF-15 (putting amounts into `payload` is putting financial data into unencrypted jsonb) | - | before coding Billing/suspend |
+| **Rate limit for the polling endpoint group** and the 429 error code | Blocks §13; currently unlimited — a broken client can loop `unread-count` forever | - | before go-live |
 
-*(C1 chạm module này gián tiếp: nếu chốt đổi `nickname → fullName` thì `payload` nào có denormalize tên người dùng phải đổi theo. C2/C3/C4 không chạm.)*
+*(C1 touches this module indirectly: if `nickname → fullName` is locked, any `payload`
+denormalizing a user name must change. C2/C3/C4 don't touch.)*

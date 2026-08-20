@@ -3,41 +3,50 @@
 ---
 module: payroll
 status: proposed
-blocked_by: C2 (ADR-008 append-only vs ENTITY_TEACHER_PAY_RATE "set effectiveTo on current") — CHẶN §4 · Q-PAY-1 (ranh giới kỳ lương + timezone) · nhóm mã lỗi RATE_* *proposed, not agreed* · thiếu mã lỗi cho trùng kỳ · phụ thuộc spec 04 (SCOPE-01/02)
+blocked_by: C2 (ADR-008 append-only vs ENTITY_TEACHER_PAY_RATE "set effectiveTo on current") — BLOCKS §4 · Q-PAY-1 (payroll period boundary + timezone) · RATE_* error-code group *proposed, not agreed* · missing error code for duplicate period · depends on spec 04 (SCOPE-01/02)
 owner: -
 last_updated: 2026-08-19
 ---
 
-## 0. Tóm tắt
+## 0. Summary
 
-Module chịu trách nhiệm: đặt mức lương giáo viên (`TeacherPayRate`, append-only) và chốt lương theo kỳ (`PayrollPeriod`: gom session đã duyệt → tính tiền → finalize → đánh dấu đã trả). Ranh giới bắt đầu ở `ClassSession.status = 'approved'` (do spec 04 tạo ra) và kết thúc ở `PayrollPeriod.status = 'paid'`. Module này là nơi **duy nhất** được ghi `ClassSession.payrollPeriodId`. Module này KHÔNG duyệt session, KHÔNG sửa `ClassSession.status`, KHÔNG đụng học phí học viên (`StudentInvoice`, thuộc module billing).
+The module is responsible for: setting teacher pay rates (`TeacherPayRate`, append-only) and
+finalizing payroll per period (`PayrollPeriod`: collect approved sessions → compute money →
+finalize → mark paid). The boundary starts at `ClassSession.status = 'approved'` (produced by
+spec 04) and ends at `PayrollPeriod.status = 'paid'`. This module is the **only** place allowed to
+write `ClassSession.payrollPeriodId`. This module does NOT approve sessions, does NOT change
+`ClassSession.status`, and does NOT touch student tuition (`StudentInvoice`, owned by the billing
+module).
 
-## 1. Bảng chạm tới
+## 1. Tables touched
 
-| Bảng | Đọc/Ghi | Ghi chú |
+| Table | Read/Write | Notes |
 |---|---|---|
-| `TeacherPayRate` | Đọc + INSERT | **Chỉ INSERT.** Không UPDATE, không DELETE (ADR-008) — ⚠ C2 |
-| `PayrollPeriod` | Đọc + Ghi | Ghi `status`, `totalSessions`, `totalAmount`, `paidAt` |
-| `ClassSession` | Đọc + Ghi **1 field** | Chỉ ghi `payrollPeriodId`. Không ghi `status` và không ghi field nào khác |
-| `User` | Đọc | Kiểm `role = 'teacher'`; tên hiển thị. ⚠ C1 |
-| `Notification` | — | **Không ghi.** Không có notification type nào cho payroll trong ENTITY_NOTIFICATION (Q-PAY-8) |
-| `SessionAttendance` | — | Không chạm. Điểm danh không ảnh hưởng tiền lương giáo viên |
+| `TeacherPayRate` | Read + INSERT | **INSERT only.** No UPDATE, no DELETE (ADR-008) — ⚠ C2 |
+| `PayrollPeriod` | Read + Write | Writes `status`, `totalSessions`, `totalAmount`, `paidAt` |
+| `ClassSession` | Read + Write **1 field** | Only writes `payrollPeriodId`. Never writes `status` or any other field |
+| `User` | Read | Checks `role = 'teacher'`; display name. ⚠ C1 |
+| `Notification` | — | **No write.** No notification type for payroll in ENTITY_NOTIFICATION (Q-PAY-8) |
+| `SessionAttendance` | — | Not touched. Attendance doesn't affect teacher pay |
 
 ## 2. Endpoints
 
-| Method | Path | Role | Mô tả | Trạng thái |
+| Method | Path | Role | Description | Status |
 |---|---|---|---|---|
-| POST | `/api/v1/admin/pay-rates` | admin | Tạo mức lương mới cho teacher (append) | **defined** (API_ADMIN.md) |
-| GET | `/api/v1/admin/pay-rates` | admin | List mức lương hiện hành + lịch sử | **PROPOSED** — "shape is proposed, not agreed"; blocked on "pay-rate unit basis undecided" |
-| POST | `/api/v1/admin/payroll` | admin | Tạo `PayrollPeriod` (draft) + gom + tính tiền | **defined** |
-| GET | `/api/v1/admin/payroll` | admin | List kỳ lương, phân trang | **defined** |
-| GET | `/api/v1/admin/payroll/:id` | admin | Chi tiết kỳ + breakdown từng session | **PROPOSED** — blocked on "period boundary undecided"; FE `/admin/payroll/[periodId]` phụ thuộc hoàn toàn ("the whole finalize path") |
-| PATCH | `/api/v1/admin/payroll/:id/finalize` | admin | `draft → finalized` — cổng một chiều | **defined** |
+| POST | `/api/v1/admin/pay-rates` | admin | Create a new rate for a teacher (append) | **defined** (API_ADMIN.md) |
+| GET | `/api/v1/admin/pay-rates` | admin | List current rates + history | **PROPOSED** — "shape is proposed, not agreed"; blocked on "pay-rate unit basis undecided" |
+| POST | `/api/v1/admin/payroll` | admin | Create `PayrollPeriod` (draft) + collect + compute | **defined** |
+| GET | `/api/v1/admin/payroll` | admin | List payroll periods, paginated | **defined** |
+| GET | `/api/v1/admin/payroll/:id` | admin | Period detail + per-session breakdown | **PROPOSED** — blocked on "period boundary undecided"; FE `/admin/payroll/[periodId]` fully depends ("the whole finalize path") |
+| PATCH | `/api/v1/admin/payroll/:id/finalize` | admin | `draft → finalized` — one-way gate | **defined** |
 | PATCH | `/api/v1/admin/payroll/:id/pay` | admin | `finalized → paid` | **defined** |
 
-Không tồn tại và **không được thêm**: `PATCH /admin/pay-rates/:id`, `DELETE /admin/pay-rates/:id`, `DELETE /admin/payroll/:id`, `PATCH /admin/payroll/:id` (sửa số tiền), endpoint bỏ gán session khỏi kỳ.
+Doesn't exist and **must not be added**: `PATCH /admin/pay-rates/:id`, `DELETE /admin/pay-rates/:id`,
+`DELETE /admin/payroll/:id`, `PATCH /admin/payroll/:id` (editing amounts), endpoint to unassign a
+session from a period.
 
-Teacher đọc kỳ lương của mình: RBAC_MATRIX ghi `PayrollPeriod read own = 🔒 Teacher`, nhưng **không có route nào** hiện thực hoá (không có `API_TEACHER.md`) → Q-PAY-7.
+Teacher reading their own payroll: RBAC_MATRIX says `PayrollPeriod read own = 🔒 Teacher`, but
+**no route** implements it (no `API_TEACHER.md`) → Q-PAY-7.
 
 ## 3. DTO
 
@@ -45,14 +54,15 @@ Teacher đọc kỳ lương của mình: RBAC_MATRIX ghi `PayrollPeriod read own
 
 **Request**
 
-| Field | Kiểu | Bắt buộc | Ràng buộc |
+| Field | Type | Required | Constraint |
 |---|---|---|---|
-| `teacherId` | uuid | **có** | Tồn tại; `User.role = 'teacher'`; `User.status = 'active'` |
-| `rateType` | enum | **có** | `per_session` \| `per_hour`. Không có giá trị nào khác (Q-PAY-9 về `fixed_monthly`) |
-| `rateAmount` | Decimal(10,2) | **có** | `> 0`; gửi dạng **string** để tránh mất chính xác float (vd `"250000.00"`); tối đa 2 chữ số thập phân; đơn vị **VND** |
-| `effectiveFrom` | Date `YYYY-MM-DD` | **có** | Phải **lớn hơn hẳn** `effectiveFrom` của bản ghi mới nhất hiện có của teacher đó (INV-PAYROLL-16) |
+| `teacherId` | uuid | **yes** | Exists; `User.role = 'teacher'`; `User.status = 'active'` |
+| `rateType` | enum | **yes** | `per_session` \| `per_hour`. No other value (Q-PAY-9 on `fixed_monthly`) |
+| `rateAmount` | Decimal(10,2) | **yes** | `> 0`; send as **string** to avoid float precision loss (e.g. `"250000.00"`); max 2 decimal places; unit **VND** |
+| `effectiveFrom` | Date `YYYY-MM-DD` | **yes** | Must be **strictly greater than** the current latest `effectiveFrom` of that teacher (INV-PAYROLL-16) |
 
-**Không nhận**: `effectiveTo` (⚠ C2 — nếu C2 kết luận theo ENTITY thì DTO này phải đổi), `id`, `createdAt`.
+**Not accepted**: `effectiveTo` (⚠ C2 — if C2 resolves per the ENTITY doc, this DTO must change),
+`id`, `createdAt`.
 
 **Response 201**
 
@@ -62,11 +72,14 @@ Teacher đọc kỳ lương của mình: RBAC_MATRIX ghi `PayrollPeriod read own
             "effectiveTo": null, "createdAt": "2026-08-19T09:00:00Z" } }
 ```
 
-`effectiveTo` trả về luôn `null` theo ADR-008. Giữ field trong response chỉ vì cột tồn tại trong schema; ⚠ C2.
+`effectiveTo` always returns `null` per ADR-008. The field stays in the response only because the
+column exists in the schema; ⚠ C2.
 
 ### 3.2 `GET /admin/pay-rates` *(PROPOSED)*
 
-**Request (query)**: `page` (int ≥1, default 1) · `limit` (int 1..100, default 20) · `teacherId` (uuid, optional — có thì trả toàn bộ lịch sử của teacher đó) · `activeOnly` (bool, default `true` — chỉ trả mức đang hiệu lực hôm nay).
+**Request (query)**: `page` (int ≥1, default 1) · `limit` (int 1..100, default 20) ·
+`teacherId` (uuid, optional — when present returns that teacher's full history) · `activeOnly`
+(bool, default `true` — only the rate in effect today).
 
 **Response 200**
 
@@ -81,19 +94,21 @@ Teacher đọc kỳ lương của mình: RBAC_MATRIX ghi `PayrollPeriod read own
 }
 ```
 
-`current` = `null` khi teacher chưa có mức nào (dòng cần hành động, FE sắp lên đầu). Khi truyền `teacherId` + `activeOnly=false` thì trả mảng lịch sử đầy đủ sắp xếp `effectiveFrom DESC`, mỗi phần tử thêm `isCurrent: boolean` (dẫn xuất, không lưu cột).
+`current` = `null` when the teacher has no rate yet (a row requiring action; FE sorts it to the
+top). With `teacherId` + `activeOnly=false`, return the full history sorted `effectiveFrom DESC`,
+each element adding `isCurrent: boolean` (derived, not a stored column).
 
 ### 3.3 `POST /admin/payroll`
 
 **Request**
 
-| Field | Kiểu | Bắt buộc | Ràng buộc |
+| Field | Type | Required | Constraint |
 |---|---|---|---|
-| `teacherId` | uuid | **có** | Tồn tại; `role = 'teacher'` |
-| `periodStart` | Date `YYYY-MM-DD` | **có** | Ngày lịch, không giờ, không timezone |
-| `periodEnd` | Date `YYYY-MM-DD` | **có** | `>= periodStart`; độ dài kỳ ≤ 366 ngày |
+| `teacherId` | uuid | **yes** | Exists; `role = 'teacher'` |
+| `periodStart` | Date `YYYY-MM-DD` | **yes** | Calendar date, no time, no timezone |
+| `periodEnd` | Date `YYYY-MM-DD` | **yes** | `>= periodStart`; period length ≤ 366 days |
 
-**Header đề xuất**: `Idempotency-Key: <uuid>` (§8; chưa có trong API_CONVENTIONS.md → Q-PAY-5).
+**Proposed header**: `Idempotency-Key: <uuid>` (§8; not in API_CONVENTIONS.md yet → Q-PAY-5).
 
 **Response 201**
 
@@ -106,11 +121,14 @@ Teacher đọc kỳ lương của mình: RBAC_MATRIX ghi `PayrollPeriod read own
 
 ### 3.4 `GET /admin/payroll`
 
-**Request (query)**: `page` · `limit` · `teacherId` (uuid) · `status` (`draft`|`finalized`|`paid`) · `periodFrom` / `periodTo` (Date, lọc theo `periodStart`) · `sort` (`periodStart_desc` default | `periodStart_asc`).
+**Request (query)**: `page` · `limit` · `teacherId` (uuid) · `status` (`draft`|`finalized`|`paid`) ·
+`periodFrom` / `periodTo` (Date, filter on `periodStart`) · `sort` (`periodStart_desc` default |
+`periodStart_asc`).
 
-**Response 200**: `{ "data": [ <object như 3.3 nhưng không có breakdown> ], "meta": {...} }`.
+**Response 200**: `{ "data": [ <object as in 3.3 but without breakdown> ], "meta": {...} }`.
 
-`totalSessions` và `totalAmount` đọc thẳng từ cột đã lưu — **không** JOIN đếm lại (§11).
+`totalSessions` and `totalAmount` are read straight from the stored columns — **no** JOIN
+re-counting (§11).
 
 ### 3.5 `GET /admin/payroll/:id` *(PROPOSED)*
 
@@ -135,83 +153,92 @@ Teacher đọc kỳ lương của mình: RBAC_MATRIX ghi `PayrollPeriod read own
 }
 ```
 
-`sessions[].hours`, `appliedRate*`, `amount` là **dẫn xuất tính lại lúc đọc**, không có cột trong DB. Hệ quả nghiêm trọng: sau khi kỳ đã `finalized`, breakdown được tính lại từ `TeacherPayRate` hiện có — nếu ai đó chèn được một rate lùi vào quá khứ thì `Σ sessions[].amount` sẽ lệch `totalAmount` đã chốt. Đây chính là lý do INV-PAYROLL-16 cấm chèn lùi. Phương án bền hơn (lưu snapshot dòng breakdown) → Q-PAY-4.
+`sessions[].hours`, `appliedRate*`, `amount` are **derived — recomputed at read time**, no DB
+columns. Serious consequence: after a period is `finalized`, the breakdown is recomputed from the
+current `TeacherPayRate` — if anyone backdates a rate, `Σ sessions[].amount` will drift from the
+locked `totalAmount`. This is exactly why INV-PAYROLL-16 forbids backdating. A more robust option
+(storing a breakdown-line snapshot) → Q-PAY-4.
 
-### 3.6 `PATCH /admin/payroll/:id/finalize` và `/pay`
+### 3.6 `PATCH /admin/payroll/:id/finalize` and `/pay`
 
-**Request**: body rỗng `{}`. Không nhận field nào — đặc biệt không nhận `totalAmount`, `paidAt`, `status`.
+**Request**: empty body `{}`. No field accepted — especially not `totalAmount`, `paidAt`, `status`.
 
 **Response 200**: `{ "data": { "id", "status", "totalSessions", "totalAmount", "paidAt", "updatedAt" } }`.
 
-## 4. Rule nghiệp vụ (invariant)
+## 4. Business rules (invariants)
 
-### 4.1 Chọn mức lương áp dụng — điểm chốt của toàn module
+### 4.1 Choosing the applicable rate — the module's keystone
 
-| ID | Phát biểu |
+| ID | Statement |
 |---|---|
-| **INV-PAYROLL-01** | Mức áp dụng cho **một session** là bản ghi `TeacherPayRate` của `teacherId` đó có hiệu lực **tại thời điểm session diễn ra**, chọn bằng đúng câu: `WHERE teacherId = :teacherId AND effectiveFrom <= :sessionDate ORDER BY effectiveFrom DESC LIMIT 1`. `:sessionDate` = `ClassSession.scheduledDate`. **CẤM** dùng: mức hiện tại (`effectiveTo IS NULL`), mức tại ngày tạo payroll, mức tại `periodEnd`, mức tại `now()`. |
-| **INV-PAYROLL-02** | Hệ quả bắt buộc của INV-PAYROLL-01: **một `PayrollPeriod` có thể chứa nhiều mức khác nhau.** Đổi rate giữa kỳ → session trước ngày đổi tính mức cũ, session từ ngày đổi trở đi tính mức mới. Không có chuyện áp một mức duy nhất cho cả kỳ. |
-| **INV-PAYROLL-03** | Mức áp dụng cho một session được xác định **một lần theo `scheduledDate`** và không phụ thuộc thứ tự xử lý, không phụ thuộc thời điểm chạy. Chạy lại phép tính trên cùng tập dữ liệu luôn ra cùng con số (tính xác định). |
-| **INV-PAYROLL-04** | `rateType` áp dụng cũng lấy từ chính bản ghi được chọn ở INV-PAYROLL-01 — không lấy từ bản ghi mới nhất. Một kỳ có thể trộn cả `per_session` lẫn `per_hour` nếu teacher đổi hình thức tính giữa kỳ. |
+| **INV-PAYROLL-01** | The rate applied to **a session** is that `teacherId`'s `TeacherPayRate` record in effect **at the time the session took place**, selected by exactly this query: `WHERE teacherId = :teacherId AND effectiveFrom <= :sessionDate ORDER BY effectiveFrom DESC LIMIT 1`. `:sessionDate` = `ClassSession.scheduledDate`. **FORBIDDEN**: the current rate (`effectiveTo IS NULL`), the rate at payroll creation date, the rate at `periodEnd`, the rate at `now()`. |
+| **INV-PAYROLL-02** | Mandatory consequence of INV-PAYROLL-01: **one `PayrollPeriod` can contain several different rates.** Rate change mid-period → sessions before the change use the old rate, sessions from the change date onward use the new one. No single-rate-for-the-whole-period. |
+| **INV-PAYROLL-03** | The rate applied to a session is determined **once by `scheduledDate`** and doesn't depend on processing order or run time. Re-running the computation on the same dataset always produces the same number (deterministic). |
+| **INV-PAYROLL-04** | The applied `rateType` also comes from the very record selected in INV-PAYROLL-01 — not from the newest record. One period may mix both `per_session` and `per_hour` if the teacher switched basis mid-period. |
 
-### 4.2 Công thức tiền
+### 4.2 Money formulas
 
-| ID | Phát biểu |
+| ID | Statement |
 |---|---|
-| **INV-PAYROLL-05** | `rateType = 'per_session'` → `amount(session) = rate.rateAmount`. Số session, không quan tâm thời lượng. |
-| **INV-PAYROLL-06** | `rateType = 'per_hour'` → `amount(session) = rate.rateAmount × hours(session)`, với `hours(session) = (actualEnd − actualStart)` quy ra **giờ thập phân**. **CẤM** dùng `scheduledStart`/`scheduledEnd` — đó là giờ dự kiến, không phải giờ thật. |
-| **INV-PAYROLL-07** | `hours` tính ở độ phân giải **phút**: `hours = floor((actualEnd − actualStart) / 60s) / 60`, làm tròn xuống phút gần nhất, biểu diễn Decimal 4 chữ số thập phân. Bỏ phần giây. |
-| **INV-PAYROLL-08** | Làm tròn tiền: `amount(session)` làm tròn **HALF_UP về 2 chữ số thập phân tại từng session**, rồi mới cộng. **CẤM** cộng trước rồi làm tròn sau. Lý do: `totalAmount` phải khớp chính xác tổng các dòng hiển thị trên `/admin/payroll/[periodId]` — lệch một đồng giữa tổng và breakdown là bug kế toán, không phải bug hiển thị. |
-| **INV-PAYROLL-09** | `totalAmount = Σ amount(session)` trên tập gom, kiểu `Decimal(12,2)`, luôn `>= 0`. |
-| **INV-PAYROLL-10** | `totalSessions = COUNT(session)` trên tập gom — **đếm số session**, kể cả khi `rateType = 'per_hour'`. Không phải số giờ. |
-| **INV-PAYROLL-11** | Toàn bộ đường tính tiền dùng Decimal end-to-end (Prisma `Decimal` ↔ `numeric` của PostgreSQL). **CẤM** `Number`, `parseFloat`, `+`, `*` của JS ở bất kỳ khâu nào, kể cả khâu serialize. Tiền ra JSON dưới dạng **string**. |
+| **INV-PAYROLL-05** | `rateType = 'per_session'` → `amount(session) = rate.rateAmount`. Per session, regardless of duration. |
+| **INV-PAYROLL-06** | `rateType = 'per_hour'` → `amount(session) = rate.rateAmount × hours(session)`, with `hours(session) = (actualEnd − actualStart)` converted to **decimal hours**. **FORBIDDEN** to use `scheduledStart`/`scheduledEnd` — those are expected times, not real ones. |
+| **INV-PAYROLL-07** | `hours` computed at **minute** resolution: `hours = floor((actualEnd − actualStart) / 60s) / 60`, rounding down to the nearest minute, represented as Decimal with 4 decimal places. Seconds are dropped. |
+| **INV-PAYROLL-08** | Money rounding: `amount(session)` rounds **HALF_UP to 2 decimal places per session**, then sums. **FORBIDDEN** to sum first and round later. Reason: `totalAmount` must match exactly the sum of the breakdown lines shown on `/admin/payroll/[periodId]` — a one-cent drift between total and breakdown is an accounting bug, not a display bug. |
+| **INV-PAYROLL-09** | `totalAmount = Σ amount(session)` over the collected set, type `Decimal(12,2)`, always `>= 0`. |
+| **INV-PAYROLL-10** | `totalSessions = COUNT(session)` over the collected set — **counts sessions**, even when `rateType = 'per_hour'`. Not hours. |
+| **INV-PAYROLL-11** | The entire money path uses Decimal end-to-end (Prisma `Decimal` ↔ PostgreSQL `numeric`). **FORBIDDEN**: JS `Number`, `parseFloat`, `+`, `*` at any stage, including serialization. Money leaves JSON as **string**. |
 
-### 4.3 Tập session được gom
+### 4.3 The collected session set
 
-| ID | Phát biểu |
+| ID | Statement |
 |---|---|
-| **INV-PAYROLL-12** | Session `s` được gom vào `PayrollPeriod(teacherId, periodStart, periodEnd)` **khi và chỉ khi** cả 4 điều kiện đồng thời đúng: `s.teacherId = :teacherId` **và** `s.status = 'approved'` **và** `s.payrollPeriodId IS NULL` **và** `s.scheduledDate BETWEEN :periodStart AND :periodEnd` (biên **đóng hai đầu** — đề xuất, Q-PAY-1). |
-| **INV-PAYROLL-13** | Session chưa `approved` không bao giờ được gom. `status = 'approved'` phải nằm trong mệnh đề WHERE của cả câu SELECT lẫn câu UPDATE, không chỉ kiểm ở tầng ứng dụng. |
-| **INV-PAYROLL-14** | Mỗi `ClassSession` thuộc **tối đa một** `PayrollPeriod`. `payrollPeriodId` là gán-một-lần: đã NOT NULL thì không bao giờ bị ghi đè, kể cả khi kỳ cũ bị bỏ. Điều kiện `payrollPeriodId IS NULL` phải nằm trong WHERE của câu UPDATE gán. |
-| **INV-PAYROLL-15** | Không có session nào bị tính tiền hai lần: `SELECT payrollPeriodId, COUNT(*) FROM ClassSession WHERE payrollPeriodId IS NOT NULL GROUP BY id HAVING COUNT(*) > 1` luôn rỗng (bảo đảm bởi INV-PAYROLL-14 + khoá chính). |
-| **INV-PAYROLL-16** | Nếu **bất kỳ** session nào trong tập gom không tìm được mức áp dụng theo INV-PAYROLL-01 → **toàn bộ request thất bại**, không tạo `PayrollPeriod` nào, không gán `payrollPeriodId` nào. All-or-nothing. **CẤM** tính 0 đồng, **CẤM** bỏ qua session đó. |
-| **INV-PAYROLL-17** | `per_hour` mà `actualStart IS NULL` hoặc `actualEnd IS NULL` → không tính được `hours` → request thất bại toàn phần (cùng cơ chế INV-PAYROLL-16). Liên quan Q-SES-3 của spec 04. |
-| **INV-PAYROLL-18** | Sau commit: `totalSessions = COUNT(ClassSession WHERE payrollPeriodId = period.id)`. Đây là bất biến kiểm chứng được bằng một câu query đối chiếu, dùng làm assertion trong test và trong job giám sát. |
+| **INV-PAYROLL-12** | Session `s` is collected into `PayrollPeriod(teacherId, periodStart, periodEnd)` **if and only if** all 4 conditions hold simultaneously: `s.teacherId = :teacherId` **and** `s.status = 'approved'` **and** `s.payrollPeriodId IS NULL` **and** `s.scheduledDate BETWEEN :periodStart AND :periodEnd` (boundary **closed at both ends** — proposed, Q-PAY-1). |
+| **INV-PAYROLL-13** | A session not yet `approved` is never collected. `status = 'approved'` must be in the WHERE clause of both the SELECT and the UPDATE, not just checked in the application layer. |
+| **INV-PAYROLL-14** | Each `ClassSession` belongs to **at most one** `PayrollPeriod`. `payrollPeriodId` is assign-once: once NOT NULL it is never overwritten, even if the period is dropped. The `payrollPeriodId IS NULL` condition must be in the WHERE of the assigning UPDATE. |
+| **INV-PAYROLL-15** | No session is ever paid twice: `SELECT payrollPeriodId, COUNT(*) FROM ClassSession WHERE payrollPeriodId IS NOT NULL GROUP BY id HAVING COUNT(*) > 1` is always empty (guaranteed by INV-PAYROLL-14 + primary key). |
+| **INV-PAYROLL-16** | If **any** session in the collected set has no applicable rate per INV-PAYROLL-01 → **the whole request fails**: no `PayrollPeriod` created, no `payrollPeriodId` assigned. All-or-nothing. **FORBIDDEN** to compute 0 VND, **FORBIDDEN** to skip that session. |
+| **INV-PAYROLL-17** | `per_hour` with `actualStart IS NULL` or `actualEnd IS NULL` → `hours` can't be computed → the request fails entirely (same mechanism as INV-PAYROLL-16). Related to Q-SES-3 of spec 04. |
+| **INV-PAYROLL-18** | After commit: `totalSessions = COUNT(ClassSession WHERE payrollPeriodId = period.id)`. This is a verifiable invariant via one cross-check query, used as an assertion in tests and in the monitoring job. |
 
-### 4.4 Vòng đời kỳ lương
+### 4.4 Payroll period lifecycle
 
-| ID | Phát biểu |
+| ID | Statement |
 |---|---|
-| **INV-PAYROLL-19** | Chuyển trạng thái hợp lệ **chỉ có hai**: `draft → finalized`, `finalized → paid`. Mọi chuyển đổi khác bị từ chối, bao gồm `finalized → draft`, `paid → finalized`, `draft → paid` (nhảy cóc), và tự-chuyển. |
-| **INV-PAYROLL-20** | `finalized` là **cổng một chiều**: kỳ đã `finalized` thì `totalAmount`, `totalSessions`, `periodStart`, `periodEnd`, `teacherId` và tập session thuộc kỳ đều bất biến vĩnh viễn. Không endpoint nào sửa được. |
-| **INV-PAYROLL-21** | Kỳ ở `finalized` hoặc `paid` → mọi `ClassSession` có `payrollPeriodId` trỏ tới kỳ đó bị khoá ghi hoàn toàn (khớp INV-SESSION-03 của spec 04). |
-| **INV-PAYROLL-22** | `paidAt IS NULL` khi `status ∈ {draft, finalized}`; `paidAt IS NOT NULL` khi `status = 'paid'`; giá trị được set **đúng một lần** tại thời điểm chuyển sang `paid` và không bao giờ bị ghi đè. |
-| **INV-PAYROLL-23** | Không có endpoint xoá kỳ lương. Kỳ tạo nhầm ở `draft` hiện **không có đường huỷ** — xem Q-PAY-6. |
+| **INV-PAYROLL-19** | The only valid transitions are **two**: `draft → finalized`, `finalized → paid`. Everything else is rejected, including `finalized → draft`, `paid → finalized`, `draft → paid` (skipping), and self-transitions. |
+| **INV-PAYROLL-20** | `finalized` is a **one-way gate**: once `finalized`, `totalAmount`, `totalSessions`, `periodStart`, `periodEnd`, `teacherId` and the period's session set are permanently immutable. No endpoint can change them. |
+| **INV-PAYROLL-21** | A period in `finalized` or `paid` → every `ClassSession` with `payrollPeriodId` pointing to it is fully write-locked (matching spec 04's INV-SESSION-03). |
+| **INV-PAYROLL-22** | `paidAt IS NULL` when `status ∈ {draft, finalized}`; `paidAt IS NOT NULL` when `status = 'paid'`; the value is set **exactly once** at the moment of transition to `paid` and never overwritten. |
+| **INV-PAYROLL-23** | No endpoint deletes a payroll period. A mistakenly created `draft` period currently has **no cancellation path** — see Q-PAY-6. |
 
-### 4.5 Ràng buộc trùng lặp & rate
+### 4.5 Duplicate & rate constraints
 
-| ID | Phát biểu |
+| ID | Statement |
 |---|---|
-| **INV-PAYROLL-24** | Tồn tại **tối đa một** `PayrollPeriod` cho mỗi bộ `(teacherId, periodStart, periodEnd)`. Bảo đảm bằng **UNIQUE constraint ở DB**, không chỉ bằng kiểm tra ở service. |
-| **INV-PAYROLL-25** | Hai `PayrollPeriod` của **cùng teacher** không được chồng lấn khoảng ngày. UNIQUE ở INV-PAYROLL-24 **không đủ**: `2026-07-01..07-31` và `2026-07-15..08-15` là hai bộ khác nhau nên vẫn lọt. Cần `EXCLUDE USING gist` trên `daterange` (§12). Trạng thái: **đề xuất**, Q-PAY-3. |
-| **INV-PAYROLL-26** | `TeacherPayRate` là append-only: chỉ INSERT. Không UPDATE bản ghi cũ, không DELETE, không có endpoint nào cho phép (ADR-008 Accepted). ⚠ **C2** — xem §16. |
-| **INV-PAYROLL-27** | `effectiveFrom` của bản ghi mới phải **lớn hơn hẳn** `MAX(effectiveFrom)` hiện có của teacher đó. Cấm chèn lùi quá khứ. Lý do: chèn lùi làm đổi số tiền của kỳ đã `finalized`/`paid` (xem §3.5 — breakdown tính lại lúc đọc). |
-| **INV-PAYROLL-28** | Tối đa một `TeacherPayRate` cho mỗi bộ `(teacherId, effectiveFrom)` — UNIQUE ở DB. Không có ràng buộc này thì câu chọn mức ở INV-PAYROLL-01 trở nên **phi tất định** (hai dòng cùng `effectiveFrom`, `LIMIT 1` chọn ngẫu nhiên). |
-| **INV-PAYROLL-29** | `rateAmount > 0`, đúng 2 chữ số thập phân, `Decimal(10,2)`. `rateType ∈ {per_session, per_hour}`. |
-| **INV-PAYROLL-30** | `teacherId` phải trỏ tới `User` có `role = 'teacher'`. Kiểm ở service layer (FK chỉ trỏ `User`, không phân biệt role). |
-| **INV-PAYROLL-31** | Chỉ actor `role = 'admin'` **và** `status = 'active'` gọi được toàn bộ 7 endpoint. Kiểm ở service layer, không chỉ `@Roles()` guard. |
-| **INV-PAYROLL-32** | Response không bao giờ chứa `User.passwordHash`, `User.email`, hay field nhạy cảm khác — chỉ `teacherId` + tên hiển thị. |
+| **INV-PAYROLL-24** | **At most one** `PayrollPeriod` exists per `(teacherId, periodStart, periodEnd)`. Guaranteed by a **DB UNIQUE constraint**, not just a service check. |
+| **INV-PAYROLL-25** | Two `PayrollPeriod`s of **the same teacher** must not overlap in date range. UNIQUE in INV-PAYROLL-24 is **not enough**: `2026-07-01..07-31` and `2026-07-15..08-15` are different key pairs so both pass. Needs an `EXCLUDE USING gist` on `daterange` (§12). Status: **proposed**, Q-PAY-3. |
+| **INV-PAYROLL-26** | `TeacherPayRate` is append-only: INSERT only. No UPDATE of old records, no DELETE, no endpoint allowing either (ADR-008 Accepted). ⚠ **C2** — see §16. |
+| **INV-PAYROLL-27** | A new record's `effectiveFrom` must be **strictly greater than** the teacher's current `MAX(effectiveFrom)`. Backdating is forbidden. Reason: backdating changes the money of already `finalized`/`paid` periods (see §3.5 — breakdown recomputed at read time). |
+| **INV-PAYROLL-28** | At most one `TeacherPayRate` per `(teacherId, effectiveFrom)` — DB UNIQUE. Without it, the rate-selection query in INV-PAYROLL-01 becomes **non-deterministic** (two rows with the same `effectiveFrom`, `LIMIT 1` picks arbitrarily). |
+| **INV-PAYROLL-29** | `rateAmount > 0`, exactly 2 decimal places, `Decimal(10,2)`. `rateType ∈ {per_session, per_hour}`. |
+| **INV-PAYROLL-30** | `teacherId` must point to a `User` with `role = 'teacher'`. Checked at the service layer (FK only points to `User`, doesn't distinguish roles). |
+| **INV-PAYROLL-31** | Only an actor with `role = 'admin'` **and** `status = 'active'` can call all 7 endpoints. Checked at the service layer, not only by an `@Roles()` guard. |
+| **INV-PAYROLL-32** | Responses never contain `User.passwordHash`, `User.email`, or other sensitive fields — only `teacherId` + display name. |
 
 ## 5. Ownership / RBAC
 
-Guard: `@Roles('admin')` trên cả 7 route. Kiểm thêm ở **service layer**:
+Guard: `@Roles('admin')` on all 7 routes. Additional check at the **service layer**:
 
-- `actor.role === 'admin' && actor.status === 'active'` — sai → `AUTH_INSUFFICIENT_ROLE` 403.
-- **Không có ownership filter**: RBAC_MATRIX ghi `TeacherPayRate set = ✅ Admin`, `PayrollPeriod create/finalize/pay = ✅ Admin` → admin thao tác trên mọi teacher.
-- Teacher: `PayrollPeriod read own = 🔒` — **chưa có route** (Q-PAY-7). Khi làm phải là route riêng (vd `/api/v1/teacher/payroll`) với điều kiện service-layer `period.teacherId === actor.id`, **không** mở `/admin/*` cho teacher.
-- Teacher với `TeacherPayRate`: `❌` — teacher không đọc được cả mức lương của chính mình theo ma trận hiện tại. (Nghiệp vụ đáng ngờ nhưng đây là điều ma trận nói; không tự sửa.)
-- Student: `❌` toàn bộ.
-- Tách quyền tài chính: hiện mọi admin đều finalize và pay được. Có cần tách vai trò "người chốt" ≠ "người chi" (nguyên tắc four-eyes) không → Q-PAY-10.
+- `actor.role === 'admin' && actor.status === 'active'` — otherwise → `AUTH_INSUFFICIENT_ROLE` 403.
+- **No ownership filter**: RBAC_MATRIX says `TeacherPayRate set = ✅ Admin`, `PayrollPeriod
+  create/finalize/pay = ✅ Admin` → admin operates on every teacher.
+- Teacher: `PayrollPeriod read own = 🔒` — **no route yet** (Q-PAY-7). When built, it must be a
+  separate route (e.g. `/api/v1/teacher/payroll`) with a service-layer condition
+  `period.teacherId === actor.id` — **not** `/admin/*` opened to teachers.
+- Teacher and `TeacherPayRate`: `❌` — per the current matrix a teacher can't even read their own
+  rate. (Business-wise dubious, but that's what the matrix says; not self-corrected.)
+- Student: `❌` everywhere.
+- Financial segregation: today any admin can both finalize and pay. Whether to split "finalizer"
+  ≠ "payer" roles (four-eyes principle) → Q-PAY-10.
 
 ## 6. State machine
 
@@ -219,70 +246,79 @@ Guard: `@Roles('admin')` trên cả 7 route. Kiểm thêm ở **service layer**:
 
 ```
        POST /api/v1/admin/payroll
-       ├─ gom session (approved, payrollPeriodId IS NULL, trong khoảng ngày)
-       ├─ tra rate theo scheduledDate từng session
-       ├─ tính amount từng session → totalAmount, totalSessions
-       └─ gán payrollPeriodId cho từng session
-                    │  ← TẤT CẢ TRONG MỘT TRANSACTION (§7)
+       ├─ collect sessions (approved, payrollPeriodId IS NULL, within date range)
+       ├─ look up rate by each session's scheduledDate
+       ├─ compute each session's amount → totalAmount, totalSessions
+       └─ assign payrollPeriodId to each session
+                    │  ← ALL IN ONE TRANSACTION (§7)
                     ▼
               ┌───────────┐
-              │   draft   │   totalAmount đã tính, paidAt = NULL
-              └───────────┘   sessions đã bị gán payrollPeriodId
+              │   draft   │   totalAmount computed, paidAt = NULL
+              └───────────┘   sessions already assigned payrollPeriodId
                     │
-                    │ PATCH /admin/payroll/:id/finalize      (body rỗng)
+                    │ PATCH /admin/payroll/:id/finalize      (empty body)
                     ▼
         ╔═══════════════════════╗
-        ║      finalized        ║ ◄══ CỔNG MỘT CHIỀU
-        ╚═══════════════════════╝     totalAmount / totalSessions / tập session
-                    │                 BẤT BIẾN VĨNH VIỄN — không có đường về draft
-                    │                 sessions thuộc kỳ bị khoá ghi (INV-PAYROLL-21)
-                    │ PATCH /admin/payroll/:id/pay           (body rỗng)
+        ║      finalized        ║ ◄══ ONE-WAY GATE
+        ╚═══════════════════════╝     totalAmount / totalSessions / session set
+                    │                 PERMANENTLY IMMUTABLE — no path back to draft
+                    │                 sessions in the period are write-locked (INV-PAYROLL-21)
+                    │ PATCH /admin/payroll/:id/pay           (empty body)
                     ▼
         ╔═══════════════════════╗
-        ║        paid           ║ ◄══ TRẠNG THÁI CUỐI
-        ╚═══════════════════════╝     paidAt = now(), set đúng một lần
-                                      không có transition ra khỏi đây
+        ║        paid           ║ ◄══ FINAL STATE
+        ╚═══════════════════════╝     paidAt = now(), set exactly once
+                                      no transition out of here
 ```
 
-**Bảng chuyển đổi**
+**Transition table**
 
-| Từ | Sang | Endpoint | Hợp lệ |
+| From | To | Endpoint | Valid |
 |---|---|---|---|
-| (không có) | `draft` | `POST /admin/payroll` | ✅ |
+| (none) | `draft` | `POST /admin/payroll` | ✅ |
 | `draft` | `finalized` | `PATCH /:id/finalize` | ✅ |
 | `finalized` | `paid` | `PATCH /:id/pay` | ✅ |
-| `draft` | `paid` | — | ❌ nhảy cóc, 409 |
-| `finalized` | `draft` | — | ❌ **không tồn tại** |
-| `paid` | bất kỳ | — | ❌ **không tồn tại** |
-| bất kỳ | (xoá) | — | ❌ không có endpoint (Q-PAY-6) |
+| `draft` | `paid` | — | ❌ skipping, 409 |
+| `finalized` | `draft` | — | ❌ **doesn't exist** |
+| `paid` | any | — | ❌ **doesn't exist** |
+| any | (deleted) | — | ❌ no endpoint (Q-PAY-6) |
 
-**Cổng một chiều — phát biểu chính xác**: sau `finalize`, số tiền đã là cam kết chi trả. Không có "undo", không có cờ admin, không có sửa `totalAmount`. Sai sót sau khi finalize phải xử lý bằng kỳ điều chỉnh ở kỳ sau — **nhưng cơ chế kỳ điều chỉnh chưa được thiết kế** (Q-PAY-6). Cổng khoá lan sang `ClassSession`: session thuộc kỳ finalized bị khoá ghi (bắt tay với INV-SESSION-03).
+**One-way gate — precise statement**: after `finalize`, the amount is a payment commitment.
+No "undo", no admin flag, no `totalAmount` edit. Mistakes found after finalize must be handled
+by an adjustment period in a later period — **but the adjustment-period mechanism isn't
+designed** (Q-PAY-6). The gate also propagates to `ClassSession`: sessions in a finalized period
+are write-locked (handshake with INV-SESSION-03).
 
 ### 6.2 `TeacherPayRate`
 
 ```
-(không có) ──INSERT──► bản ghi bất biến ──► [KẾT THÚC]
+(none) ──INSERT──► immutable record ──► [END]
                             │
-                            └── không UPDATE, không DELETE, không status
+                            └── no UPDATE, no DELETE, no status
 ```
 
-`TeacherPayRate` **không có state machine** — không có cột `status`. "Hiệu lực" là thuộc tính **dẫn xuất từ ngày**, không phải trạng thái lưu trữ: mức hiệu lực tại ngày D = bản ghi có `effectiveFrom <= D` mới nhất. Đây chính là điểm C2 tranh chấp: nếu `effectiveTo` được ghi thì "hiệu lực" biến thành trạng thái lưu trữ và mọi câu ở INV-PAYROLL-01 phải viết lại.
+`TeacherPayRate` **has no state machine** — no `status` column. "In effect" is a property
+**derived from dates**, not stored state: the rate in effect on day D = the record with the
+newest `effectiveFrom <= D`. This is exactly C2's dispute: if `effectiveTo` gets written,
+"in effect" becomes stored state and every statement in INV-PAYROLL-01 must be rewritten.
 
 ## 7. Transaction boundary
 
-### TX-PAY-A — `POST /admin/payroll` (khối quan trọng nhất của module)
+### TX-PAY-A — `POST /admin/payroll` (the module's most important block)
 
-Isolation: `READ COMMITTED` + `SELECT ... FOR UPDATE` ở bước 3. Không dùng `SERIALIZABLE` (chi phí retry cao trên bảng session nóng, và row lock đã đủ tuần tự hoá).
+Isolation: `READ COMMITTED` + `SELECT ... FOR UPDATE` in step 3. No `SERIALIZABLE` (high retry
+cost on the hot session table, and row locks already serialize sufficiently).
 
 ```
 BEGIN
- 1. Validate DTO. SELECT User WHERE id=:teacherId → tồn tại, role='teacher'
-    (fail → rollback, không có gì được ghi)
+ 1. Validate DTO. SELECT User WHERE id=:teacherId → exists, role='teacher'
+    (fail → rollback, nothing written)
 
  2. INSERT PayrollPeriod (teacherId, periodStart, periodEnd,
                           status='draft', totalSessions=0, totalAmount=0)
-    -- INSERT TRƯỚC, có chủ ý: UNIQUE(teacherId, periodStart, periodEnd) bắn ngay tại đây,
-    -- chặn request song song cùng kỳ ở điểm sớm nhất, TRƯỚC khi tốn công gom và tính.
+    -- INSERT FIRST, deliberately: UNIQUE(teacherId, periodStart, periodEnd) fires right here,
+    -- blocking a concurrent same-period request at the earliest point, BEFORE the expensive
+    -- collect-and-compute work.
     -- P2002 → rollback → 409 (§9)
 
  3. SELECT id, scheduledDate, actualStart, actualEnd
@@ -292,22 +328,22 @@ BEGIN
        AND "scheduledDate" BETWEEN :periodStart AND :periodEnd
      ORDER BY "scheduledDate", id
        FOR UPDATE
-    -- FOR UPDATE khoá hàng: request song song có khoảng ngày chồng lấn phải CHỜ,
-    -- rồi đọc lại trạng thái sau commit → không gom trùng.
+    -- FOR UPDATE locks rows: a concurrent request with an overlapping range must WAIT,
+    -- then re-read state after commit → no double collection.
 
  4. SELECT id, rateType, rateAmount, effectiveFrom
       FROM "TeacherPayRate" WHERE "teacherId"=:teacherId
      ORDER BY "effectiveFrom" DESC
-    -- MỘT query duy nhất, nạp toàn bộ mức của teacher (số dòng nhỏ),
-    -- rồi khớp trong bộ nhớ theo scheduledDate → tránh N+1 (§11).
+    -- ONE single query loading all of the teacher's rates (a small row count),
+    -- then match in memory by scheduledDate → avoids N+1 (§11).
 
- 5. Với từng session: chọn rate (INV-PAYROLL-01) → tính amount (INV-PAYROLL-05..08)
-    -- Không tìm được rate         → THROW → rollback toàn phần (INV-PAYROLL-16)
-    -- per_hour thiếu actualStart/End → THROW → rollback toàn phần (INV-PAYROLL-17)
+ 5. For each session: pick rate (INV-PAYROLL-01) → compute amount (INV-PAYROLL-05..08)
+    -- No applicable rate found   → THROW → full rollback (INV-PAYROLL-16)
+    -- per_hour missing actualStart/End → THROW → full rollback (INV-PAYROLL-17)
 
  6. UPDATE "ClassSession" SET "payrollPeriodId"=:periodId, "updatedAt"=now()
      WHERE id IN (:ids) AND "payrollPeriodId" IS NULL AND status='approved'
-    -- affectedRows PHẢI = số dòng ở bước 3. Khác → THROW → rollback (INV-PAYROLL-14)
+    -- affectedRows MUST equal the row count of step 3. Otherwise → THROW → rollback (INV-PAYROLL-14)
 
  7. UPDATE "PayrollPeriod" SET "totalSessions"=:n, "totalAmount"=:sum, "updatedAt"=now()
      WHERE id=:periodId
@@ -316,9 +352,15 @@ BEGIN
 COMMIT
 ```
 
-**Bắt buộc cùng transaction**: gom + tính + INSERT period + gán `payrollPeriodId` + ghi audit. Không tồn tại trạng thái trung gian nào quan sát được từ bên ngoài: không có period đã tạo mà session chưa gán (kỳ hiển thị 0 đồng sai), không có session đã gán mà period rollback (session bị "mồ côi", khoá vĩnh viễn khỏi mọi kỳ tương lai vì `payrollPeriodId` NOT NULL trỏ tới id không tồn tại).
+**Mandatorily one transaction**: collect + compute + INSERT period + assign `payrollPeriodId` +
+write audit. No externally observable intermediate state: no created period with unassigned
+sessions (a wrong 0-VND period on screen), no assigned session whose period rolled back (an
+"orphaned" session, permanently locked out of every future period because `payrollPeriodId` NOT
+NULL points to a nonexistent id).
 
-Nếu bước 6 chạy ngoài transaction của bước 2 thì một lần crash giữa chừng để lại session mồ côi **không thể tự phục hồi** — session đã approved, đã gán, nhưng không bao giờ được trả lương. Đây là mất tiền thật của giáo viên, không phải lỗi dữ liệu nhẹ.
+If step 6 ran outside step 2's transaction, a crash in between leaves an orphaned session that
+**cannot self-recover** — the session is approved, assigned, but never paid. That is a teacher's
+real lost money, not a minor data issue.
 
 ### TX-PAY-B — `finalize`
 
@@ -326,12 +368,13 @@ Nếu bước 6 chạy ngoài transaction của bước 2 thì một lần crash
 BEGIN
  1. UPDATE "PayrollPeriod" SET status='finalized', "updatedAt"=now()
      WHERE id=:id AND status='draft'          -- conditional update
-    -- affectedRows = 0 → THROW (phân loại lỗi ở §8)
- 2. INSERT audit (actorId, periodId, action='finalize', totalAmount tại thời điểm chốt, at)
+    -- affectedRows = 0 → THROW (error classification in §8)
+ 2. INSERT audit (actorId, periodId, action='finalize', totalAmount at lock time, at)
 COMMIT
 ```
 
-Audit phải ghi lại `totalAmount` **tại thời điểm chốt** — đây là bản ghi duy nhất chứng minh số tiền đã cam kết, độc lập với việc breakdown ở §3.5 được tính lại.
+The audit must record `totalAmount` **at lock time** — it's the only record proving the
+committed amount, independent of the §3.5 breakdown being recomputed.
 
 ### TX-PAY-C — `pay`
 
@@ -343,7 +386,8 @@ BEGIN
 COMMIT
 ```
 
-`AND "paidAt" IS NULL` là dư thừa về logic (status đã bao hàm) nhưng giữ lại làm hàng rào thứ hai cho INV-PAYROLL-22.
+`AND "paidAt" IS NULL` is logically redundant (status already implies it) but kept as a second
+barrier for INV-PAYROLL-22.
 
 ### TX-PAY-D — `POST /admin/pay-rates`
 
@@ -351,155 +395,192 @@ COMMIT
 BEGIN
  1. SELECT User WHERE id=:teacherId → role='teacher'
  2. pg_advisory_xact_lock(hashtext('pay_rate:' || :teacherId))
-    -- tuần tự hoá theo teacher; không thể FOR UPDATE vì có thể chưa có dòng nào
+    -- serialize per teacher; can't FOR UPDATE because there may be no rows yet
  3. SELECT MAX("effectiveFrom") FROM "TeacherPayRate" WHERE "teacherId"=:teacherId
     -- :effectiveFrom <= max → THROW RATE_EFFECTIVE_DATE_IN_PAST (INV-PAYROLL-27)
  4. INSERT "TeacherPayRate" (...)
-    -- UNIQUE(teacherId, effectiveFrom) là hàng rào cuối nếu advisory lock bị bỏ qua
+    -- UNIQUE(teacherId, effectiveFrom) is the last barrier if the advisory lock is bypassed
  5. INSERT audit
 COMMIT
 ```
 
-**Không được nằm trong transaction** (mọi TX): gọi HTTP ngoài, gửi email/thông báo ngân hàng, ghi file. Nếu sau này cần thông báo cho teacher khi kỳ `paid` thì dùng outbox (INSERT trong TX, worker gửi ngoài TX) — chưa trong phạm vi, Q-PAY-8.
+**Must NOT be inside the transaction** (all TX): outbound HTTP, email/bank notification, file
+writes. If teachers need a notification when a period is `paid` later, use an outbox (INSERT in
+TX, worker sends outside TX) — out of scope for now, Q-PAY-8.
 
 ## 8. Idempotency & concurrency
 
-### 8.1 Hai request tạo payroll cùng kỳ cho cùng teacher
+### 8.1 Two requests creating the same period for the same teacher
 
-Đây là kịch bản phải chặn tuyệt đối: gom trùng = trả lương hai lần.
+This is the scenario that must be absolutely blocked: double collection = paying twice.
 
-**Ba lớp phòng thủ, cần cả ba** (mỗi lớp chặn một kịch bản khác nhau):
+**Three defense layers, all three required** (each blocks a different scenario):
 
-| Lớp | Cơ chế | Chặn kịch bản |
+| Layer | Mechanism | Blocks |
 |---|---|---|
-| **L1 — DB constraint** | `UNIQUE (teacherId, periodStart, periodEnd)` trên `PayrollPeriod`, đặt tên `payroll_period_teacher_range_uq` | Hai admin **khác nhau** cùng bấm tạo kỳ 07/2026 cho cùng teacher. INSERT ở bước 2 của TX-PAY-A → người thua nhận Prisma `P2002` → 409. Đây là hàng rào **không thể vượt**, kể cả khi tầng ứng dụng có bug. |
-| **L2 — Idempotency key** | Header `Idempotency-Key: <uuid>` + bảng phụ `IdempotencyKey(key PK, endpoint, actorId, requestHash, responseStatus, responseBody jsonb, createdAt)`, TTL 24h | **Cùng một client** retry vì timeout mạng, hoặc user double-click. L1 không cứu được ở đây vì client cần lại **response cũ**, không phải một lỗi 409 khó hiểu. Ngữ nghĩa: cùng `key` + cùng `requestHash` → phát lại response đã lưu nguyên trạng (201 + body cũ); cùng `key` + khác `requestHash` → 422. Ghi `IdempotencyKey` **trong cùng TX-PAY-A**. |
-| **L3 — Predicate trên session** | `AND "payrollPeriodId" IS NULL` trong WHERE của bước 6 (TX-PAY-A) + kiểm `affectedRows` khớp số dòng bước 3 | Hai kỳ **khác nhau nhưng chồng lấn ngày** (vd `07-01..07-31` và `07-15..08-15`) — L1 không bắt được vì hai bộ khoá khác nhau. L3 bảo đảm mỗi session chỉ vào đúng một kỳ, nên tiền không nhân đôi ngay cả khi kỳ chồng lấn được tạo. |
+| **L1 — DB constraint** | `UNIQUE (teacherId, periodStart, periodEnd)` on `PayrollPeriod`, named `payroll_period_teacher_range_uq` | Two **different** admins both clicking "create period 07/2026" for the same teacher. INSERT at TX-PAY-A step 2 → the loser gets Prisma `P2002` → 409. This barrier is **impossible to bypass**, even if the application layer has a bug. |
+| **L2 — Idempotency key** | Header `Idempotency-Key: <uuid>` + helper table `IdempotencyKey(key PK, endpoint, actorId, requestHash, responseStatus, responseBody jsonb, createdAt)`, TTL 24h | **The same client** retrying after a network timeout, or a user double-click. L1 doesn't help here because the client needs the **old response back**, not a confusing 409. Semantics: same `key` + same `requestHash` → replay the stored response verbatim (201 + old body); same `key` + different `requestHash` → 422. Write `IdempotencyKey` **inside TX-PAY-A**. |
+| **L3 — Session predicate** | `AND "payrollPeriodId" IS NULL` in the WHERE of step 6 (TX-PAY-A) + checking `affectedRows` matches step 3's count | Two **different but overlapping** periods (e.g. `07-01..07-31` and `07-15..08-15`) — L1 can't catch these (different key pairs). L3 ensures each session enters exactly one period, so money isn't doubled even if overlapping periods get created. |
 
-**Vẫn còn lỗ**: L3 chặn nhân đôi tiền nhưng **không chặn tạo kỳ chồng lấn**, dẫn tới hai kỳ mà kỳ sau chỉ nhặt được phần session còn thừa — số liệu báo cáo méo. Bịt bằng `EXCLUDE USING gist` (INV-PAYROLL-25, §12) — đề xuất, Q-PAY-3.
+**A gap remains**: L3 blocks doubled money but **doesn't block creating overlapping periods**,
+leading to two periods where the second only picks up leftover sessions — skewed reporting.
+Closed by `EXCLUDE USING gist` (INV-PAYROLL-25, §12) — proposed, Q-PAY-3.
 
-**Vì sao `FOR UPDATE` ở bước 3 là cần thiết dù đã có L3**: không có nó, hai request chồng lấn cùng SELECT ra tập session trùng nhau, cùng chạy tới bước 6, một request thắng và request kia thấy `affectedRows` lệch → rollback sau khi đã làm hết việc. Có `FOR UPDATE`, request thứ hai chờ ở bước 3, đọc lại sau commit và thấy các session đã có `payrollPeriodId` → tự loại chúng ra một cách sạch sẽ.
+**Why `FOR UPDATE` in step 3 is necessary despite L3**: without it, two overlapping requests
+both SELECT the same session set, both reach step 6, one wins and the other sees mismatched
+`affectedRows` → rollback after doing all the work. With `FOR UPDATE`, the second request waits
+at step 3, re-reads after commit, sees the sessions already have `payrollPeriodId` → cleanly
+excludes them.
 
-### 8.2 finalize / pay đồng thời
+### 8.2 Concurrent finalize / pay
 
-**Conditional update — optimistic lock lấy `status` làm cột version** (giống spec 04 §8):
+**Conditional update — optimistic lock using `status` as the version column** (like spec 04 §8):
 
 ```sql
 UPDATE "PayrollPeriod" SET status='finalized', "updatedAt"=now()
  WHERE id = $1 AND status = 'draft';
 ```
 
-Prisma `updateMany` → kiểm `count === 1`. **Cấm** `findUnique` kiểm status rồi `update` theo `id` — read-then-write không nguyên tử, hai admin cùng finalize sẽ cùng "thắng" và ghi hai dòng audit.
+Prisma `updateMany` → check `count === 1`. **Forbidden**: `findUnique` to check status then
+`update` by `id` — read-then-write isn't atomic; two admins finalizing concurrently would both
+"win" and write two audit rows.
 
-Phân loại khi `affectedRows = 0` (một `SELECT id, status` sau rollback):
+Classification when `affectedRows = 0` (one `SELECT id, status` after rollback):
 
-| Kết quả | HTTP | code |
+| Result | HTTP | code |
 |---|---|---|
-| 0 dòng | 404 | `PAYROLL_PERIOD_NOT_FOUND` |
-| finalize mà status ∈ {`finalized`,`paid`} | 409 | `PAYROLL_PERIOD_FINALIZED` |
-| pay mà status = `draft` | 409 | `PAYROLL_PERIOD_FINALIZED` (chưa finalize thì không được pay) |
-| pay mà status = `paid` | 409 | `PAYROLL_PERIOD_FINALIZED` |
+| 0 rows | 404 | `PAYROLL_PERIOD_NOT_FOUND` |
+| finalize with status ∈ {`finalized`,`paid`} | 409 | `PAYROLL_PERIOD_FINALIZED` |
+| pay with status = `draft` | 409 | `PAYROLL_PERIOD_FINALIZED` (not finalized ⇒ can't pay) |
+| pay with status = `paid` | 409 | `PAYROLL_PERIOD_FINALIZED` |
 
-⚠ Ba nhánh cuối dùng chung một mã vì registry **không có** mã riêng cho "chưa finalize" và "đã paid". Đây là lỗ hổng mã lỗi → Q-PAY-11. Không tự đặt mã mới.
+⚠ The last three branches share one code because the registry **lacks** a code specific to
+"not finalized" and "already paid". This is an error-code gap → Q-PAY-11. No new codes invented.
 
-### 8.3 `POST /admin/pay-rates` đồng thời
+### 8.3 Concurrent `POST /admin/pay-rates`
 
-Hai admin cùng set mức cho một teacher cùng lúc → không có lock thì cả hai qua bước kiểm `MAX(effectiveFrom)` rồi cùng INSERT, tạo hai bản ghi cùng `effectiveFrom` → INV-PAYROLL-01 trở thành phi tất định (`LIMIT 1` chọn ngẫu nhiên một trong hai mức khác nhau → **số tiền lương phụ thuộc may rủi**). Chặn bằng `pg_advisory_xact_lock` (TX-PAY-D bước 2) + `UNIQUE(teacherId, effectiveFrom)` làm hàng rào cuối.
+Two admins setting a rate for the same teacher at the same time → without a lock both pass the
+`MAX(effectiveFrom)` check then both INSERT, creating two records with the same `effectiveFrom`
+→ INV-PAYROLL-01 becomes non-deterministic (`LIMIT 1` picks randomly between two different rates
+→ **pay depends on luck**). Blocked by `pg_advisory_xact_lock` (TX-PAY-D step 2) +
+`UNIQUE(teacherId, effectiveFrom)` as the last barrier.
 
-### 8.4 Payroll chạy song song với approve session (spec 04)
+### 8.4 Payroll running concurrently with session approval (spec 04)
 
-TX-PAY-A bước 3 khoá hàng `ClassSession` bằng `FOR UPDATE`; TX-SES-A của spec 04 ghi cùng hàng bằng conditional UPDATE. Hai transaction chạm cùng hàng → PostgreSQL tuần tự hoá tự động ở tầng row lock. Hai kết quả có thể xảy ra, cả hai đều đúng: (a) approve commit trước → session lọt vào tập gom; (b) payroll commit trước → session vào kỳ sau. Không có kịch bản session bị gom với status cũ.
+TX-PAY-A step 3 locks `ClassSession` rows with `FOR UPDATE`; spec 04's TX-SES-A writes the same
+rows via conditional UPDATE. Two transactions touching the same row → PostgreSQL serializes at
+the row-lock level automatically. Two outcomes, both correct: (a) approve commits first → the
+session lands in the collected set; (b) payroll commits first → the session goes to the next
+period. No scenario of a session collected with a stale status.
 
-### 8.5 Request lặp trên finalize / pay
+### 8.5 Repeated finalize / pay requests
 
-Lần hai nhận **409**, không trả 200 giả-idempotent (cùng lý do spec 04 §8: đây là hành động tài chính, nuốt lặng lần bấm thứ hai che mất tranh chấp giữa hai admin). Không dùng `Idempotency-Key` cho hai endpoint này — khoá tự nhiên `(periodId, status hiện tại)` đã đủ.
+The second gets **409**, not a fake-idempotent 200 (same reason as spec 04 §8: this is a
+financial action; silently swallowing a second click hides a two-admin conflict). No
+`Idempotency-Key` for these two endpoints — the natural key `(periodId, current status)` already
+suffices.
 
-## 9. Error → mã lỗi
+## 9. Error → code mapping
 
-| Nhánh lỗi | HTTP | code | Trạng thái code |
+| Error branch | HTTP | code | Code status |
 |---|---|---|---|
-| Không token / token hỏng | 401 | `AUTH_TOKEN_INVALID` | có trong API_ERROR_CODES.md |
-| Token hết hạn | 401 | `AUTH_TOKEN_EXPIRED` | có trong API_ERROR_CODES.md |
-| Không phải admin / admin bị suspend | 403 | `AUTH_INSUFFICIENT_ROLE` | có trong API_ERROR_CODES.md |
-| DTO sai (`rateAmount <= 0`, `periodEnd < periodStart`, enum sai, uuid sai) | 400 | `VALIDATION_ERROR` + `details` | có trong API_ERROR_CODES.md |
-| `teacherId` không tồn tại | 404 | `USER_NOT_FOUND` | có trong API_ERROR_CODES.md |
-| `teacherId` tồn tại nhưng `role ≠ 'teacher'` | 400 | `VALIDATION_ERROR` với `details.teacherId` | có trong API_ERROR_CODES.md |
-| `:id` kỳ lương không tồn tại | 404 | `PAYROLL_PERIOD_NOT_FOUND` | ⚠ **tranh chấp** — có trong registry API_ERROR_CODES.md §3, **không có** trong danh sách "Mã lỗi đã có" của `_FACTS.md` (Q-PAY-11) |
-| finalize khi ≠ `draft`; pay khi ≠ `finalized` | 409 | `PAYROLL_PERIOD_FINALIZED` | ⚠ **tranh chấp** (như trên) |
-| Không có mức lương hiệu lực tại `scheduledDate` của một session bất kỳ | 404 | `RATE_NOT_FOUND` | **proposed, not agreed** (nhóm RATE_*) |
-| `effectiveFrom` ≤ `MAX(effectiveFrom)` hiện có | 400 | `RATE_EFFECTIVE_DATE_IN_PAST` | **proposed, not agreed** |
-| Có ai đó thêm route sửa/xoá rate | 409 | `RATE_IMMUTABLE` | **proposed, not agreed** — hiện không route nào cần dùng |
-| **Trùng kỳ `(teacherId, periodStart, periodEnd)`** | 409 | **DUPLICATE_ENTRY** | ⚠ **LỖ HỔNG** — mã này chỉ xuất hiện trong đoạn code `GlobalExceptionFilter` ở API_ERROR_CODES.md §5 (map Prisma `P2002`), **không có trong bảng registry §3**. Không có mã `PAYROLL_PERIOD_DUPLICATE` (*proposed*, 2026-08-19). Cần chốt (Q-PAY-11) |
-| Kỳ chồng lấn ngày (nếu bật EXCLUDE constraint) | 409 | *(chưa có mã)* | ⚠ **LỖ HỔNG** (Q-PAY-3 + Q-PAY-11) |
-| `per_hour` mà `actualStart`/`actualEnd` NULL | 400 | *(chưa có mã)* | ⚠ **LỖ HỔNG** — `PAYROLL_SESSION_NOT_COMPLETED` gần nghĩa nhất nhưng không đúng ngữ nghĩa (session đã approved rồi). Q-PAY-11 |
-| `Idempotency-Key` trùng, `requestHash` khác | 422 | *(chưa có mã)* | ⚠ **LỖ HỔNG** — Q-PAY-5 |
+| No token / broken token | 401 | `AUTH_TOKEN_INVALID` | in API_ERROR_CODES.md |
+| Token expired | 401 | `AUTH_TOKEN_EXPIRED` | in API_ERROR_CODES.md |
+| Not admin / admin suspended | 403 | `AUTH_INSUFFICIENT_ROLE` | in API_ERROR_CODES.md |
+| Malformed DTO (`rateAmount <= 0`, `periodEnd < periodStart`, wrong enum, wrong uuid) | 400 | `VALIDATION_ERROR` + `details` | in API_ERROR_CODES.md |
+| `teacherId` doesn't exist | 404 | `USER_NOT_FOUND` | in API_ERROR_CODES.md |
+| `teacherId` exists but `role ≠ 'teacher'` | 400 | `VALIDATION_ERROR` with `details.teacherId` | in API_ERROR_CODES.md |
+| `:id` payroll period doesn't exist | 404 | `PAYROLL_PERIOD_NOT_FOUND` | ⚠ **disputed** — in API_ERROR_CODES.md §3 registry, **not** in `_FACTS.md`'s "Existing error codes" list (Q-PAY-11) |
+| finalize when ≠ `draft`; pay when ≠ `finalized` | 409 | `PAYROLL_PERIOD_FINALIZED` | ⚠ **disputed** (as above) |
+| No rate in effect at a session's `scheduledDate` | 404 | `RATE_NOT_FOUND` | **proposed, not agreed** (RATE_* group) |
+| `effectiveFrom` ≤ current `MAX(effectiveFrom)` | 400 | `RATE_EFFECTIVE_DATE_IN_PAST` | **proposed, not agreed** |
+| Someone adds a rate edit/delete route | 409 | `RATE_IMMUTABLE` | **proposed, not agreed** — no route needs it today |
+| **Duplicate period `(teacherId, periodStart, periodEnd)`** | 409 | **DUPLICATE_ENTRY** | ⚠ **GAP** — this code only appears in the `GlobalExceptionFilter` code snippet in API_ERROR_CODES.md §5 (mapping Prisma `P2002`), **not in the §3 registry table**. No `PAYROLL_PERIOD_DUPLICATE` code exists (*proposed*, 2026-08-19). Needs locking (Q-PAY-11) |
+| Overlapping period (if EXCLUDE constraint enabled) | 409 | *(no code yet)* | ⚠ **GAP** (Q-PAY-3 + Q-PAY-11) |
+| `per_hour` with `actualStart`/`actualEnd` NULL | 400 | *(no code yet)* | ⚠ **GAP** — `PAYROLL_SESSION_NOT_COMPLETED` is closest but semantically wrong (the session is already approved). Q-PAY-11 |
+| `Idempotency-Key` duplicate, `requestHash` differs | 422 | *(no code yet)* | ⚠ **GAP** — Q-PAY-5 |
 
-**Tổng kết mã lỗi**: module này có **4 nhánh lỗi không có mã hợp lệ** và **2 nhóm mã ở trạng thái tranh chấp**. Không được tự đặt mã mới. Nếu tới lúc code vẫn chưa chốt: dùng HTTP status đúng + `VALIDATION_ERROR` hoặc mã gần nhất, ghi TODO có mã theo dõi, và **không** khoá contract FE cho các nhánh đó.
+**Error-code summary**: this module has **4 error branches with no valid code** and **2 code
+groups in dispute**. No new codes invented. If still unresolved at coding time: use the correct
+HTTP status + `VALIDATION_ERROR` or the closest code, leave a TODO with a tracking code, and
+**don't** lock FE contracts for those branches.
 
-Envelope lỗi flat theo API_CONVENTIONS.md; `details` chỉ có ở `VALIDATION_ERROR`.
+Flat error envelope per API_CONVENTIONS.md; `details` only on `VALIDATION_ERROR`.
 
-## 10. Side effect & notification
+## 10. Side effects & notifications
 
-**Module này KHÔNG sinh Notification nào.** `ENTITY_NOTIFICATION.md` liệt kê 11 type và **không có type nào cho payroll**: không có `payroll_finalized`, không có `payroll_paid`, không có `pay_rate_changed`.
+**This module produces NO Notification.** `ENTITY_NOTIFICATION.md` lists 11 types and **none is
+for payroll**: no `payroll_finalized`, no `payroll_paid`, no `pay_rate_changed`.
 
-Hệ quả nghiệp vụ: giáo viên **không được thông báo** khi kỳ lương của mình được chốt hay được chi trả, và không được thông báo khi mức lương của mình thay đổi. Kết hợp với việc RBAC cho teacher đọc `TeacherPayRate` là `❌`, giáo viên **không có bất kỳ đường nào** biết mức lương của mình đã đổi. → Q-PAY-8.
+Business consequence: teachers are **not notified** when their payroll period is finalized or
+paid, and not notified when their rate changes. Combined with `TeacherPayRate` read = `❌` for
+teachers, a teacher **has no way at all** to know their rate changed. → Q-PAY-8.
 
-**Side effect thực tế của module** (không phải notification):
+**The module's real side effects** (not notifications):
 
-| Hành động | Tác dụng phụ lên bảng khác |
+| Action | Side effect on other tables |
 |---|---|
-| `POST /admin/payroll` | Ghi `ClassSession.payrollPeriodId` cho N session → khoá lớp thứ hai lên các session đó (INV-SESSION-03 spec 04) |
-| `PATCH /:id/finalize` | Khoá vĩnh viễn số tiền + khoá ghi toàn bộ session thuộc kỳ (INV-PAYROLL-21) |
-| `PATCH /:id/pay` | Set `paidAt`; là input cho ô "monthly payroll" của `GET /admin/dashboard/stats` |
-| `POST /admin/pay-rates` | Đổi mức áp dụng cho **các session tương lai**; không đổi kỳ đã tạo (nhờ INV-PAYROLL-27 cấm chèn lùi) |
+| `POST /admin/payroll` | Writes `ClassSession.payrollPeriodId` for N sessions → a second lock layer on those sessions (spec 04 INV-SESSION-03) |
+| `PATCH /:id/finalize` | Permanently locks the amount + write-locks all sessions in the period (INV-PAYROLL-21) |
+| `PATCH /:id/pay` | Sets `paidAt`; it's input for the "monthly payroll" tile of `GET /admin/dashboard/stats` |
+| `POST /admin/pay-rates` | Changes the applicable rate for **future sessions**; doesn't change created periods (thanks to INV-PAYROLL-27 forbidding backdating) |
 
-Không gửi email, không webhook, không gọi cổng ngân hàng. `PATCH /:id/pay` chỉ **ghi nhận** rằng chuyển khoản đã xảy ra ngoài hệ thống (ENTITY_PAYROLL_PERIOD: "Admin marks after actual bank transfer").
+No email, no webhook, no bank gateway call. `PATCH /:id/pay` merely **records** that the
+transfer happened outside the system (ENTITY_PAYROLL_PERIOD: "Admin marks after actual bank
+transfer").
 
 ## 11. Index & query
 
 ```
-PayrollPeriod:  UNIQUE ("teacherId", "periodStart", "periodEnd")   -- INV-PAYROLL-24, tên payroll_period_teacher_range_uq
-PayrollPeriod:  INDEX  ("teacherId", "periodStart" DESC)           -- GET /admin/payroll lọc + sort
-PayrollPeriod:  INDEX  (status)                                    -- lọc theo trạng thái + dashboard
-TeacherPayRate: UNIQUE ("teacherId", "effectiveFrom")              -- INV-PAYROLL-28 (bắt buộc, không phải tối ưu)
-TeacherPayRate: INDEX  ("teacherId", "effectiveFrom" DESC)         -- câu chọn mức INV-PAYROLL-01
-ClassSession:   INDEX  ("teacherId", status, "scheduledDate")      -- câu gom TX-PAY-A bước 3
+PayrollPeriod:  UNIQUE ("teacherId", "periodStart", "periodEnd")   -- INV-PAYROLL-24, named payroll_period_teacher_range_uq
+PayrollPeriod:  INDEX  ("teacherId", "periodStart" DESC)           -- GET /admin/payroll filter + sort
+PayrollPeriod:  INDEX  (status)                                    -- status filter + dashboard
+TeacherPayRate: UNIQUE ("teacherId", "effectiveFrom")              -- INV-PAYROLL-28 (mandatory, not optimization)
+TeacherPayRate: INDEX  ("teacherId", "effectiveFrom" DESC)         -- the rate-selection query INV-PAYROLL-01
+ClassSession:   INDEX  ("teacherId", status, "scheduledDate")      -- the collect query TX-PAY-A step 3
 ClassSession:   INDEX  ("payrollPeriodId")                         -- breakdown GET /admin/payroll/:id
 ClassSession:   INDEX  ("teacherId", "scheduledDate")
-                  WHERE status='approved' AND "payrollPeriodId" IS NULL   -- partial, tập gom luôn nhỏ
+                  WHERE status='approved' AND "payrollPeriodId" IS NULL   -- partial, the collect set is always small
 ```
 
-**Nguy cơ N+1 — bắt buộc chặn**:
+**N+1 risk — must be blocked**:
 
-1. **Nặng nhất**: vòng lặp tra `TeacherPayRate` cho từng session → N query cho N session (một kỳ 20–40 session = 40 query). **Sửa**: một query nạp toàn bộ mức của teacher (`ORDER BY effectiveFrom DESC`), khớp trong bộ nhớ bằng cách quét mảng đã sắp xếp tìm phần tử đầu tiên có `effectiveFrom <= scheduledDate`. Số dòng rate mỗi teacher luôn nhỏ (đơn vị chục).
-2. `GET /admin/payroll` list: **cấm** JOIN `ClassSession` để đếm lại `totalSessions` — đọc thẳng cột đã lưu. Đó là lý do cột này tồn tại.
-3. `GET /admin/payroll` list: vòng lặp lấy `teacherName` từng dòng → dùng `include: { teacher: { select: { id, nickname } } }`.
-4. `GET /admin/payroll/:id`: lấy toàn bộ session của kỳ trong **một** query (index `payrollPeriodId`), lấy `Class` bằng `include`, lấy rate bằng một query như mục 1.
-5. `meta.total`: `COUNT(*)` riêng cùng WHERE, không `findMany().length`.
+1. **Worst**: a loop looking up `TeacherPayRate` per session → N queries for N sessions (a
+   20–40-session period = 40 queries). **Fix**: one query loading all of the teacher's rates
+   (`ORDER BY effectiveFrom DESC`), match in memory by scanning the sorted array for the first
+   element with `effectiveFrom <= scheduledDate`. Each teacher's rate-row count is always small
+   (tens).
+2. `GET /admin/payroll` list: **forbidden** to JOIN `ClassSession` to re-count `totalSessions` —
+   read the stored column directly. That's why the column exists.
+3. `GET /admin/payroll` list: loop fetching `teacherName` per row → use
+   `include: { teacher: { select: { id, nickname } } }`.
+4. `GET /admin/payroll/:id`: fetch the period's sessions in **one** query (index `payrollPeriodId`),
+   fetch `Class` via `include`, fetch rates in one query per item 1.
+5. `meta.total`: separate `COUNT(*)` with the same WHERE, not `findMany().length`.
 
-**Query kiểm tra tính đúng đắn** (chạy trong job giám sát, §14):
+**Correctness-check queries** (run in the monitoring job, §14):
 
 ```sql
--- INV-PAYROLL-18: totalSessions phải khớp số session thực gán
+-- INV-PAYROLL-18: totalSessions must match the real assigned session count
 SELECT p.id, p."totalSessions", COUNT(s.id)
   FROM "PayrollPeriod" p LEFT JOIN "ClassSession" s ON s."payrollPeriodId" = p.id
  GROUP BY p.id, p."totalSessions" HAVING p."totalSessions" <> COUNT(s.id);
--- kết quả PHẢI rỗng
+-- result MUST be empty
 
--- session mồ côi: đã gán nhưng kỳ không tồn tại
+-- orphan sessions: assigned but the period doesn't exist
 SELECT s.id FROM "ClassSession" s
  WHERE s."payrollPeriodId" IS NOT NULL
    AND NOT EXISTS (SELECT 1 FROM "PayrollPeriod" p WHERE p.id = s."payrollPeriodId");
--- PHẢI rỗng (FK đảm bảo, nhưng kiểm để bắt trường hợp FK chưa được tạo)
+-- MUST be empty (FK guarantees, but checked to catch a missing FK)
 
--- session đã gán nhưng chưa approved: vi phạm INV-PAYROLL-13
+-- assigned but not approved: violates INV-PAYROLL-13
 SELECT id FROM "ClassSession" WHERE "payrollPeriodId" IS NOT NULL AND status <> 'approved';
--- PHẢI rỗng
+-- MUST be empty
 ```
 
 ## 12. Migration & seed
 
-**Migration bắt buộc**
+**Mandatory migration**
 
 ```
 -- PayrollPeriod
@@ -515,24 +596,24 @@ ADD CHECK  ("rateAmount" > 0)
 ADD INDEX  ("teacherId", "effectiveFrom" DESC)
 
 -- ClassSession
-ADD FK     ("payrollPeriodId") REFERENCES "PayrollPeriod"(id)   -- xác nhận đã có
+ADD FK     ("payrollPeriodId") REFERENCES "PayrollPeriod"(id)   -- confirm it exists
 ADD INDEX  ("payrollPeriodId")
-ADD partial INDEX như §11
+ADD partial INDEX per §11
 ```
 
-**Migration đề xuất, chờ quyết** (không chạy trước khi chốt):
+**Proposed migration, awaiting decisions** (don't run before they're locked):
 
 ```
--- Q-PAY-3: chống kỳ chồng lấn (INV-PAYROLL-25)
+-- Q-PAY-3: prevent overlapping periods (INV-PAYROLL-25)
 CREATE EXTENSION IF NOT EXISTS btree_gist;
 ALTER TABLE "PayrollPeriod" ADD CONSTRAINT payroll_period_no_overlap
   EXCLUDE USING gist (
     "teacherId" WITH =,
     daterange("periodStart", "periodEnd", '[]') WITH &&
   );
--- Bắt buộc kiểm dữ liệu chồng lấn hiện có TRƯỚC khi chạy, nếu không migration fail.
+-- Must check existing overlapping data BEFORE running, otherwise the migration fails.
 
--- Q-PAY-5: bảng idempotency
+-- Q-PAY-5: idempotency table
 CREATE TABLE "IdempotencyKey" (
   key text PRIMARY KEY, endpoint text NOT NULL, "actorId" uuid NOT NULL,
   "requestHash" text NOT NULL, "responseStatus" int, "responseBody" jsonb,
@@ -540,114 +621,158 @@ CREATE TABLE "IdempotencyKey" (
 );
 ```
 
-**Migration phụ thuộc C2** (không chạy trước khi chốt C2): nếu chốt theo ADR-008 thuần thì cột `TeacherPayRate.effectiveTo` trở thành cột chết → hoặc DROP (breaking cho FE contract), hoặc giữ và thêm `CHECK ("effectiveTo" IS NULL)` để cấm ghi. Nếu chốt theo ENTITY doc thì phải thêm cơ chế UPDATE và **viết lại toàn bộ INV-PAYROLL-01, 26, 27, §6.2, §7 TX-PAY-D**.
+**C2-dependent migration** (don't run before C2 is locked): if resolved purely per ADR-008, the
+`TeacherPayRate.effectiveTo` column becomes dead → either DROP (breaking for the FE contract), or
+keep and add `CHECK ("effectiveTo" IS NULL)` to forbid writes. If resolved per the ENTITY doc,
+an UPDATE mechanism must be added and **INV-PAYROLL-01, 26, 27, §6.2, §7 TX-PAY-D entirely
+rewritten**.
 
-**Seed để test tiền và tranh chấp** (phải INSERT thẳng DB vì SCOPE-01/02 của spec 04 chặn đường tạo qua API):
+**Seed for testing money and conflicts** (must INSERT directly into the DB because spec 04's
+SCOPE-01/02 block the API creation path):
 
-1. 2 admin `role=admin, status=active` (để test hai admin tranh chấp).
-2. Teacher **T1** — `rateType=per_session`, 2 mức: `250000.00` từ `2026-07-01`, `300000.00` từ `2026-07-16`.
-3. Teacher **T2** — `rateType=per_hour`, 1 mức `200000.00` từ `2026-07-01`.
-4. Teacher **T3** — **không có mức nào** (test INV-PAYROLL-16).
-5. Teacher **T4** — mức đầu tiên từ `2026-07-10`, và có session `approved` ngày `2026-07-05` (**trước** mức đầu tiên → test INV-PAYROLL-16 ở nhánh "có rate nhưng chưa hiệu lực").
-6. Session của T1: 4 session `approved` ngày `07-03, 07-10, 07-20, 07-25` → kỳ 07/2026 phải ra `2×250000 + 2×300000 = 1.100.000` với `totalSessions = 4`. **Đây là ca kiểm chứng INV-PAYROLL-02.**
-7. Session của T2: session 2h00 (`11:00Z→13:00Z`) → `400000.00`; session 1h30 (`11:00Z→12:30Z`) → `300000.00`; session 1h37m20s → `hours = 1.6166` (làm tròn xuống phút: 97 phút) → `200000 × 97/60 = 323333.333…` → **HALF_UP 2 chữ số = `323333.33`**. Tổng kỳ = `1.023.333,33`. **Đây là ca kiểm chứng INV-PAYROLL-07 + INV-PAYROLL-08.**
-8. Session của T2 thiếu `actualEnd` (test INV-PAYROLL-17).
-9. Session `completed_pending` và `rejected` trong khoảng kỳ (phải **không** được gom — INV-PAYROLL-13).
-10. Session `approved` đã có `payrollPeriodId` trỏ tới một kỳ cũ (phải **không** bị gom lại — INV-PAYROLL-14).
-11. Session `approved` ngày `2026-06-30` và `2026-08-01` (test biên kỳ, INV-PAYROLL-12).
-12. 1 kỳ `draft`, 1 kỳ `finalized`, 1 kỳ `paid` sẵn để test transition.
+1. 2 admins `role=admin, status=active` (to test two-admin conflicts).
+2. Teacher **T1** — `rateType=per_session`, 2 rates: `250000.00` from `2026-07-01`,
+   `300000.00` from `2026-07-16`.
+3. Teacher **T2** — `rateType=per_hour`, 1 rate `200000.00` from `2026-07-01`.
+4. Teacher **T3** — **no rate at all** (tests INV-PAYROLL-16).
+5. Teacher **T4** — first rate from `2026-07-10`, with an `approved` session on `2026-07-05`
+   (**before** the first rate → tests INV-PAYROLL-16's "has a rate but not yet in effect" branch).
+6. T1's sessions: 4 `approved` sessions on `07-03, 07-10, 07-20, 07-25` → period 07/2026 must
+   produce `2×250000 + 2×300000 = 1,100,000` with `totalSessions = 4`. **This is the
+   INV-PAYROLL-02 verification case.**
+7. T2's sessions: a 2h00 session (`11:00Z→13:00Z`) → `400000.00`; a 1h30 session
+   (`11:00Z→12:30Z`) → `300000.00`; a 1h37m20s session → `hours = 1.6166` (round down to the
+   minute: 97 minutes) → `200000 × 97/60 = 323333.333…` → **HALF_UP to 2 decimals = `323333.33`**.
+   Period total = `1,023,333.33`. **This is the INV-PAYROLL-07 + INV-PAYROLL-08 verification
+   case.**
+8. A T2 session missing `actualEnd` (tests INV-PAYROLL-17).
+9. `completed_pending` and `rejected` sessions within the period range (must **not** be collected
+   — INV-PAYROLL-13).
+10. An `approved` session that already has `payrollPeriodId` pointing to an old period (must
+    **not** be re-collected — INV-PAYROLL-14).
+11. `approved` sessions on `2026-06-30` and `2026-08-01` (test the period boundary,
+    INV-PAYROLL-12).
+12. One `draft`, one `finalized`, one `paid` period ready for transition tests.
 
 ## 13. Security & rate limit
 
-- **Không trả ra**: `User.passwordHash`, `User.email`, `User.lastLoginAt`, `User.bio`. Dùng `select` tường minh, không `include: { teacher: true }` trần (INV-PAYROLL-32).
-- **Tiền lương là dữ liệu nhân sự nhạy cảm**: `rateAmount`, `totalAmount` **không** được đưa vào log level `info`, không vào APM trace attribute, không vào analytics event. Chỉ xuất hiện trong bảng audit có kiểm soát truy cập.
-- **Không** log `Idempotency-Key` kèm body (body chứa tiền).
-- Rò rỉ chéo teacher: mọi endpoint đều admin-only nên không có nguy cơ tenant; nhưng khi làm route teacher (Q-PAY-7) thì **bắt buộc** lọc `period.teacherId === actor.id` ở service, không dựa vào query param client gửi.
-- **Rate limit đề xuất** (API_CONVENTIONS.md không có mục rate limit → Q-PAY-12): `POST /admin/payroll` **10 req/phút/admin** (mỗi request là TX nặng có row lock, spam sẽ khoá bảng session); `POST /admin/pay-rates` 20/phút; `PATCH finalize|pay` 20/phút; các `GET` 60/phút. Vượt → 429 — ⚠ chưa có mã 429 trong registry.
-- **Audit bắt buộc, bất biến, không xoá**: mọi `create`/`finalize`/`pay`/`set-rate` ghi `actorId`, `entityId`, `action`, `totalAmount` hoặc `rateAmount` tại thời điểm đó, `at`, `ip`. Audit của `finalize` là chứng từ duy nhất cho số tiền đã cam kết.
-- Validate uuid trước khi query để tránh lỗi Prisma lộ chi tiết schema ra response.
+- **Never return**: `User.passwordHash`, `User.email`, `User.lastLoginAt`, `User.bio`. Use
+  explicit `select`, never a bare `include: { teacher: true }` (INV-PAYROLL-32).
+- **Pay is sensitive HR data**: `rateAmount`, `totalAmount` must **not** go into `info`-level
+  logs, APM trace attributes, or analytics events. Only in the access-controlled audit table.
+- **Don't** log `Idempotency-Key` together with the body (the body contains money).
+- Cross-teacher leakage: every endpoint is admin-only so there's no tenant risk; but when the
+  teacher route is built (Q-PAY-7), **mandatory** `period.teacherId === actor.id` filtering at
+  the service layer, never trusting client-sent query params.
+- **Proposed rate limits** (API_CONVENTIONS.md has no rate-limit section → Q-PAY-12):
+  `POST /admin/payroll` **10 req/min/admin** (each request is a heavy TX holding row locks; spam
+  locks up the session table); `POST /admin/pay-rates` 20/min; `PATCH finalize|pay` 20/min; the
+  `GET`s 60/min. Over → 429 — ⚠ no 429 code in the registry.
+- **Audit mandatory, immutable, non-deletable**: every `create`/`finalize`/`pay`/`set-rate`
+  records `actorId`, `entityId`, `action`, `totalAmount` or `rateAmount` at that moment, `at`,
+  `ip`. The `finalize` audit is the only voucher for the committed amount.
+- Validate uuid before querying to avoid Prisma errors leaking schema details into responses.
 
 ## 14. Observability
 
-**Log** (structured; **không** kèm số tiền — xem §13):
+**Logs** (structured; **without** money amounts — see §13):
 - `payroll.create.attempt` / `.success` / `.conflict` / `.rollback` — `{ actorId, teacherId, periodStart, periodEnd, sessionCount }`
-- `payroll.create.no_rate` — `{ teacherId, sessionId, scheduledDate }` — **level ERROR**, đây là dữ liệu thiếu chặn cả kỳ lương
-- `payroll.finalize.conflict` / `payroll.pay.conflict` — `{ actorId, periodId, observedStatus }` — **level WARN**, hai admin tranh chấp
+- `payroll.create.no_rate` — `{ teacherId, sessionId, scheduledDate }` — **level ERROR**; missing data blocks an entire payroll period
+- `payroll.finalize.conflict` / `payroll.pay.conflict` — `{ actorId, periodId, observedStatus }` — **level WARN**; two-admin conflict
 - `payrate.create.success` / `.rejected_backdate` — `{ actorId, teacherId, effectiveFrom }`
 
-**Metric**:
-- `payroll_create_latency_ms` — histogram. TX-PAY-A giữ row lock trên `ClassSession`; p99 tăng = nguy cơ khoá lan sang luồng approve của spec 04.
-- `payroll_create_rollback_total{reason}` — `reason ∈ {no_rate, missing_actual_time, affected_rows_mismatch, duplicate_period}`. `affected_rows_mismatch` khác 0 = có race chưa bịt.
-- `payroll_period_conflict_total` — counter tranh chấp finalize/pay.
-- `payroll_draft_age_seconds` — histogram tuổi kỳ `draft`. Kỳ nằm draft quá lâu = lương chưa được chốt.
-- `payroll_sessions_unpaid_gauge` — số session `approved` có `payrollPeriodId IS NULL` cũ hơn 45 ngày. Tăng = có giáo viên bị bỏ sót khỏi mọi kỳ lương. **Đây là metric quan trọng nhất của module** — nó bắt đúng loại lỗi mà không ai khiếu nại cho tới khi quá muộn.
-- `payroll_integrity_violations_gauge` — số dòng trả về từ 3 câu query kiểm tra ở §11, chạy định kỳ. Phải luôn bằng 0.
+**Metrics**:
+- `payroll_create_latency_ms` — histogram. TX-PAY-A holds row locks on `ClassSession`; rising p99
+  = lock-spill risk into spec 04's approve flow.
+- `payroll_create_rollback_total{reason}` — `reason ∈ {no_rate, missing_actual_time,
+  affected_rows_mismatch, duplicate_period}`. A non-zero `affected_rows_mismatch` = an unsealed race.
+- `payroll_period_conflict_total` — finalize/pay conflict counter.
+- `payroll_draft_age_seconds` — histogram of `draft` period age. Periods stuck in draft too long
+  = pay not finalized.
+- `payroll_sessions_unpaid_gauge` — count of `approved` sessions with `payrollPeriodId IS NULL`
+  older than 45 days. Rising = teachers being missed from every payroll period. **This is the
+  module's most important metric** — it catches the exact kind of error nobody complains about
+  until it's too late.
+- `payroll_integrity_violations_gauge` — number of rows returned by the 3 check queries in §11,
+  run periodically. Must always be 0.
 
-**Cảnh báo**: `payroll_sessions_unpaid_gauge > 0`; `payroll_integrity_violations_gauge > 0` (severity cao nhất); `payroll_create_rollback_total{reason="affected_rows_mismatch"}` > 0; `payroll_draft_age_seconds` p95 > 14 ngày.
+**Alerts**: `payroll_sessions_unpaid_gauge > 0`; `payroll_integrity_violations_gauge > 0`
+(highest severity); `payroll_create_rollback_total{reason="affected_rows_mismatch"}` > 0;
+`payroll_draft_age_seconds` p95 > 14 days.
 
 ## 15. Test matrix
 
-`svc` = unit service · `int` = integration qua HTTP + **DB thật** · `db` = trực tiếp trên **DB thật**. **Mọi test tiền và mọi test concurrency chạy trên PostgreSQL thật (testcontainer hoặc DB test riêng) — CẤM mock Prisma.** Lý do: sai số Decimal, constraint, row lock và hành vi `READ COMMITTED` không tái hiện được trên mock, mà đó chính là ba thứ có thể làm sai tiền.
+`svc` = unit service · `int` = integration via HTTP + **real DB** · `db` = direct on **real DB**.
+**Everything can make money wrong.**
 
-| INV | Loại | Mô tả test |
+| INV | Type | Test description |
 |---|---|---|
-| INV-PAYROLL-01 | **int (DB thật)** | Teacher có mức `250000` từ `07-01` và `300000` từ `07-16`. Session ngày `07-10` phải áp `250000`; session `07-16` phải áp `300000` (biên: đúng ngày `effectiveFrom` áp mức **mới**); session `07-20` áp `300000`. Thêm mức `400000` từ `08-01` **sau khi** đã có kỳ 07 → tính lại kỳ 07 không đổi. |
-| INV-PAYROLL-02 | **int (DB thật)** | Seed §12 mục 6 → `totalAmount = "1100000.00"`, `totalSessions = 4`. Khẳng định kỳ chứa **2 mức khác nhau** bằng cách đối chiếu `GET /admin/payroll/:id` breakdown: 2 dòng `appliedRateAmount="250000.00"`, 2 dòng `"300000.00"`. |
-| INV-PAYROLL-03 | int (DB thật) | Gọi tính toán 3 lần trên cùng tập dữ liệu (rollback giữa các lần) → ra cùng `totalAmount` từng đồng. Đảo thứ tự `ORDER BY` của bước 3 → kết quả không đổi. |
-| INV-PAYROLL-04 | int (DB thật) | Teacher đổi `per_session` → `per_hour` giữa kỳ. Session trước mốc tính theo count, sau mốc tính theo giờ. Kiểm từng dòng breakdown có `appliedRateType` đúng. |
-| INV-PAYROLL-05 | int (DB thật) | `per_session`, 5 session độ dài khác nhau (kể cả 1 session 15 phút) → `totalAmount = 5 × rate`, không phụ thuộc thời lượng. |
-| INV-PAYROLL-06 | **int (DB thật)** | `per_hour` 200000đ: 2h00 → `400000.00`; 1h30 → `300000.00`; 0h45 → `150000.00`. Kiểm **cấm dùng scheduled**: session có `scheduled` 2h nhưng `actual` 1h → phải ra `200000.00`, không phải `400000.00`. |
-| INV-PAYROLL-07 | **int (DB thật)** | 1h37m20s → làm tròn xuống 97 phút → `hours = 1.6166…`. 1h00m59s → 60 phút → `hours = 1.00`. 0h00m30s → 0 phút → `amount = 0.00`. |
-| INV-PAYROLL-08 | **int (DB thật)** | Ca §12 mục 7: 3 session → `400000.00 + 300000.00 + 323333.33 = 1023333.33`. Khẳng định **`Σ breakdown[].amount` === `totalAmount`** đúng từng đồng. Ca đối chứng: nếu cộng trước rồi làm tròn sẽ ra số khác → test phải fail nếu ai đó đổi thứ tự. |
-| INV-PAYROLL-09 | db | `totalAmount` cột `numeric(12,2)`; INSERT giá trị âm → CHECK chặn. Kỳ rỗng → `totalAmount = 0.00`. |
-| INV-PAYROLL-10 | int (DB thật) | `per_hour` với 3 session tổng 7.5 giờ → `totalSessions = 3` (**không phải 7 hay 8**). |
-| INV-PAYROLL-11 | **int (DB thật)** | Rate `333333.33` × 3 session `per_session` → `999999.99` chính xác. Rate `0.01` × 10000 session → không mất chính xác. Kiểm response JSON: tiền là **string**, không phải number. Kiểm không có `Number()`/`parseFloat` trên đường tính (test tĩnh: grep + lint rule). |
-| INV-PAYROLL-12 | **int (DB thật)** | Kỳ `07-01..07-31`: session `06-30` và `08-01` **không** vào; session `07-01` và `07-31` **có** vào (biên đóng hai đầu). |
-| INV-PAYROLL-13 | int (DB thật) | Trong khoảng kỳ có session `completed_pending`, `rejected`, `scheduled`, `in_progress` → không cái nào được gom; `payrollPeriodId` của chúng vẫn NULL sau commit. |
-| INV-PAYROLL-14 | **db — concurrency thật** | Tạo kỳ A `07-01..07-15` rồi kỳ B `07-10..07-25` (chồng lấn). Session ngày `07-12` phải thuộc **đúng một** kỳ. Chạy song song hai request → khẳng định `affectedRows` khớp hoặc rollback sạch; không session nào bị đổi `payrollPeriodId`. |
-| INV-PAYROLL-15 | db | Câu query "session tính hai lần" ở §11 trả về rỗng sau mọi test. |
-| INV-PAYROLL-16 | **int (DB thật)** | Teacher T3 (không mức nào) → `POST /admin/payroll` trả 404 `RATE_NOT_FOUND`; khẳng định **`COUNT(PayrollPeriod)` không đổi** và **không session nào bị gán** `payrollPeriodId`. Teacher T4 (session `07-05` trước mức đầu `07-10`) → cùng kết quả. Ca hỗn hợp: 9 session có rate + 1 session không → **cả 10 đều không được gán**, kỳ không được tạo. |
-| INV-PAYROLL-17 | int (DB thật) | `per_hour` với session thiếu `actualEnd` → request fail toàn phần, không tạo kỳ, không gán session nào. |
-| INV-PAYROLL-18 | db | Sau mỗi test tạo kỳ, chạy query đối chiếu `totalSessions` ở §11 → rỗng. Đưa vào `afterEach` của cả suite. |
-| INV-PAYROLL-19 | int (DB thật) | Ma trận 3 status × 2 action: `draft`+pay → 409; `finalized`+finalize → 409; `paid`+finalize → 409; `paid`+pay → 409; `draft`+finalize → 200; `finalized`+pay → 200. Sau mỗi lần 409, DB không đổi (so khớp `updatedAt`). |
-| INV-PAYROLL-20 | **int (DB thật)** | Sau finalize: không endpoint nào đổi được `totalAmount`/`totalSessions`/tập session. Gửi `totalAmount` trong body finalize/pay → bị strip. Tạo kỳ mới chồng lấn → không session nào bị gỡ khỏi kỳ đã finalized. |
-| INV-PAYROLL-21 | int + db | Session thuộc kỳ `finalized`: mọi UPDATE qua service bị chặn; `UPDATE ... WHERE payrollPeriodId IS NULL` cho `affectedRows = 0`. Bắt tay với test INV-SESSION-03 của spec 04. |
-| INV-PAYROLL-22 | int + db | `draft`/`finalized` → `paidAt` NULL. Sau pay → NOT NULL. Gọi pay lần hai → 409, `paidAt` **không đổi**. DB: INSERT `status='paid', paidAt=NULL` → CHECK chặn; INSERT `status='draft', paidAt=now()` → CHECK chặn. |
-| INV-PAYROLL-23 | int | Không tồn tại route DELETE cho `/admin/payroll/:id` (404 route, không phải 403). |
-| INV-PAYROLL-24 | **db — concurrency thật** | Hai connection song song cùng `POST /admin/payroll` với cùng `(teacherId, periodStart, periodEnd)`. Khẳng định: đúng **1** kỳ trong DB; đúng **1** response 201, response kia 409; **tổng session được gán = số session của một kỳ, không nhân đôi**; `totalAmount` của kỳ duy nhất đúng bằng giá trị kỳ vọng. Lặp ≥ 50 vòng. |
-| INV-PAYROLL-25 | db | (Khi bật EXCLUDE) INSERT kỳ `07-01..07-31` rồi `07-15..08-15` cùng teacher → constraint chặn. Cùng khoảng nhưng **khác teacher** → cho phép. Kỳ liền kề `07-01..07-31` + `08-01..08-31` → cho phép (biên `'[]'` không chồng). |
-| INV-PAYROLL-26 | int | Không tồn tại route PATCH/DELETE cho `/admin/pay-rates/:id`. Sau nhiều lần POST, `COUNT(TeacherPayRate)` tăng đúng bằng số lần POST và **không bản ghi cũ nào có `updatedAt` thay đổi**. |
-| INV-PAYROLL-27 | int (DB thật) | Đã có mức `effectiveFrom='2026-07-01'`: POST với `2026-06-15` → 400 `RATE_EFFECTIVE_DATE_IN_PAST`; với `2026-07-01` (bằng) → 400; với `2026-07-02` → 201. |
-| INV-PAYROLL-28 | **db — concurrency thật** | Hai connection cùng INSERT rate cùng `(teacherId, effectiveFrom)` → đúng 1 thành công. Không có UNIQUE thì test này phải fail (chứng minh constraint là cần thiết, không phải trang trí). |
-| INV-PAYROLL-29 | int + db | `rateAmount` = `0`, `-1`, `"abc"`, `"100.999"` → 400 `VALIDATION_ERROR`. `rateType = "fixed_monthly"` → 400. DB: CHECK chặn `rateAmount <= 0`. |
-| INV-PAYROLL-30 | int (DB thật) | `teacherId` trỏ user `role='student'` hoặc `role='admin'` → 400 với `details.teacherId`. `teacherId` không tồn tại → 404 `USER_NOT_FOUND`. |
-| INV-PAYROLL-31 | int | 7 endpoint × {token teacher, token student, admin `status='suspended'`, không token} → 403/403/403/401. |
-| INV-PAYROLL-32 | int | So khớp toàn bộ key của mọi response với whitelist; khẳng định không có `passwordHash`, `email`. |
+| INV-PAYROLL-01 | **int (real DB)** | Teacher has `250000` from `07-01` and `300000` from `07-16`. A session on `07-10` must apply `250000`; a session on `07-16` must apply `300000` (boundary: exactly on `effectiveFrom` the **new** rate applies); a session on `07-20` applies `300000`. Add a `400000` rate from `08-01` **after** period 07 exists → recomputing period 07 doesn't change. |
+| INV-PAYROLL-02 | **int (real DB)** | Seed §12 item 6 → `totalAmount = "1100000.00"`, `totalSessions = 4`. Assert the period holds **2 different rates** by checking `GET /admin/payroll/:id` breakdown: 2 rows `appliedRateAmount="250000.00"`, 2 rows `"300000.00"`. |
+| INV-PAYROLL-03 | int (real DB) | Run the computation 3 times on the same dataset (rollback between runs) → identical `totalAmount` to the cent. Reverse the `ORDER BY` of step 3 → result unchanged. |
+| INV-PAYROLL-04 | int (real DB) | Teacher switches `per_session` → `per_hour` mid-period. Sessions before the switch count-based, after switch hour-based. Check each breakdown line's `appliedRateType`. |
+| INV-PAYROLL-05 | int (real DB) | `per_session`, 5 sessions of different lengths (including one 15-min session) → `totalAmount = 5 × rate`, independent of duration. |
+| INV-PAYROLL-06 | **int (real DB)** | `per_hour` at 200000 VND: 2h00 → `400000.00`; 1h30 → `300000.00`; 0h45 → `150000.00`. Test the **scheduled-time ban**: a session scheduled 2h but actual 1h → must produce `200000.00`, not `400000.00`. |
+| INV-PAYROLL-07 | **int (real DB)** | 1h37m20s → round down to 97 minutes → `hours = 1.6166…`. 1h00m59s → 60 minutes → `hours = 1.00`. 0h00m30s → 0 minutes → `amount = 0.00`. |
+| INV-PAYROLL-08 | **int (real DB)** | §12 item 7 case: 3 sessions → `400000.00 + 300000.00 + 323333.33 = 1023333.33`. Assert **`Σ breakdown[].amount` === `totalAmount`** to the cent. Counter-case: summing first then rounding would produce a different number → the test must fail if someone reorders. |
+| INV-PAYROLL-09 | db | `totalAmount` column `numeric(12,2)`; INSERTing a negative value → CHECK blocks. Empty period → `totalAmount = 0.00`. |
+| INV-PAYROLL-10 | int (real DB) | `per_hour` with 3 sessions totaling 7.5 hours → `totalSessions = 3` (**not** 7 or 8). |
+| INV-PAYROLL-11 | **int (real DB)** | Rate `333333.33` × 3 `per_session` sessions → exactly `999999.99`. Rate `0.01` × 10000 sessions → no precision loss. Check the JSON response: money is **string**, not number. Check for no `Number()`/`parseFloat` on the money path (static test: grep + lint rule). |
+| INV-PAYROLL-12 | **int (real DB)** | Period `07-01..07-31`: sessions on `06-30` and `08-01` **don't** enter; sessions on `07-01` and `07-31` **do** (closed both ends). |
+| INV-PAYROLL-13 | int (real DB) | Within the period range there are `completed_pending`, `rejected`, `scheduled`, `in_progress` sessions → none collected; their `payrollPeriodId` stays NULL after commit. |
+| INV-PAYROLL-14 | **db — real concurrency** | Create period A `07-01..07-15` then period B `07-10..07-25` (overlapping). A session on `07-12` must belong to **exactly one** period. Run the two requests concurrently → assert `affectedRows` matched or a clean rollback; no session's `payrollPeriodId` changed. |
+| INV-PAYROLL-15 | db | The "session paid twice" query in §11 returns empty after every test. |
+| INV-PAYROLL-16 | **int (real DB)** | Teacher T3 (no rate) → `POST /admin/payroll` returns 404 `RATE_NOT_FOUND`; assert **`COUNT(PayrollPeriod)` unchanged** and **no session assigned** `payrollPeriodId`. Teacher T4 (session `07-05` before first rate `07-10`) → same result. Mixed case: 9 sessions with rates + 1 without → **all 10 unassigned**, no period created. |
+| INV-PAYROLL-17 | int (real DB) | `per_hour` with a session missing `actualEnd` → request fails entirely, no period created, no session assigned. |
+| INV-PAYROLL-18 | db | After every period-creating test, run the `totalSessions` cross-check query in §11 → empty. Put it in the suite's `afterEach`. |
+| INV-PAYROLL-19 | int (real DB) | 3-status × 2-action matrix: `draft`+pay → 409; `finalized`+finalize → 409; `paid`+finalize → 409; `paid`+pay → 409; `draft`+finalize → 200; `finalized`+pay → 200. After each 409, the DB is unchanged (match `updatedAt`). |
+| INV-PAYROLL-20 | **int (real DB)** | After finalize: no endpoint can change `totalAmount`/`totalSessions`/the session set. Sending `totalAmount` in a finalize/pay body → stripped. Creating a new overlapping period → no session removed from the finalized period. |
+| INV-PAYROLL-21 | int + db | Session in a `finalized` period: every UPDATE via service blocked; `UPDATE ... WHERE payrollPeriodId IS NULL` gives `affectedRows = 0`. Handshake with spec 04's INV-SESSION-03 test. |
+| INV-PAYROLL-22 | int + db | `draft`/`finalized` → `paidAt` NULL. After pay → NOT NULL. Second pay → 409, `paidAt` **unchanged**. DB: INSERT `status='paid', paidAt=NULL` → CHECK blocks; INSERT `status='draft', paidAt=now()` → CHECK blocks. |
+| INV-PAYROLL-23 | int | No DELETE route for `/admin/payroll/:id` (route 404, not 403). |
+| INV-PAYROLL-24 | **db — real concurrency** | Two concurrent connections doing `POST /admin/payroll` with the same `(teacherId, periodStart, periodEnd)`. Assert: exactly **1** period in the DB; exactly **1** response 201, the other 409; **total assigned sessions = one period's worth, not doubled**; the single period's `totalAmount` equals the expected value. Repeat ≥ 50 rounds. |
+| INV-PAYROLL-25 | db | (When EXCLUDE is enabled) INSERT period `07-01..07-31` then `07-15..08-15` for the same teacher → constraint blocks. Same range but **different teacher** → allowed. Adjacent `07-01..07-31` + `08-01..08-31` → allowed (`'[]'` boundary doesn't overlap). |
+| INV-PAYROLL-26 | int | No PATCH/DELETE route for `/admin/pay-rates/:id`. After many POSTs, `COUNT(TeacherPayRate)` grows exactly by the POST count and **no old record's `updatedAt` changed**. |
+| INV-PAYROLL-27 | int (real DB) | With a rate `effectiveFrom='2026-07-01'` existing: POST `2026-06-15` → 400 `RATE_EFFECTIVE_DATE_IN_PAST`; `2026-07-01` (equal) → 400; `2026-07-02` → 201. |
+| INV-PAYROLL-28 | **db — real concurrency** | Two connections INSERTing rates with the same `(teacherId, effectiveFrom)` → exactly 1 succeeds. Without the UNIQUE this test must fail (proving the constraint is necessary, not decorative). |
+| INV-PAYROLL-29 | int + db | `rateAmount` = `0`, `-1`, `"abc"`, `"100.999"` → 400 `VALIDATION_ERROR`. `rateType = "fixed_monthly"` → 400. DB: CHECK blocks `rateAmount <= 0`. |
+| INV-PAYROLL-30 | int (real DB) | `teacherId` pointing to a `role='student'` or `role='admin'` user → 400 with `details.teacherId`. Nonexistent `teacherId` → 404 `USER_NOT_FOUND`. |
+| INV-PAYROLL-31 | int | 7 endpoints × {teacher token, student token, `suspended` admin, no token} → 403/403/403/401. |
+| INV-PAYROLL-32 | int | Match every response key against a whitelist; assert no `passwordHash`, no `email`. |
 
-**Test bổ sung không gắn INV** (vẫn bắt buộc):
-- **Idempotency (Q-PAY-5)**: cùng `Idempotency-Key` + cùng body gửi 2 lần → 1 kỳ trong DB, response thứ hai giống hệt response đầu. Cùng key + body khác → 422.
-- **Rollback nguyên tử TX-PAY-A**: bơm lỗi ở bước 6 và bước 7 → sau rollback: 0 kỳ mới, 0 session bị gán, 0 dòng audit.
-- **Kỳ rỗng**: kỳ không có session nào đủ điều kiện → hành vi hiện chưa chốt (Q-PAY-6); test phải khoá hành vi đã chọn để không trôi.
-- **N+1 gate**: bật query log, tạo kỳ có 40 session → tổng số query ≤ 8. `GET /admin/payroll` 20 dòng → ≤ 4 query. Ngưỡng là gate CI.
-- **Envelope**: response thành công khớp `{ data }` / `{ data, meta }`; lỗi khớp envelope flat 7 field.
+**Additional non-INV tests** (still mandatory):
+- **Idempotency (Q-PAY-5)**: same `Idempotency-Key` + same body sent twice → 1 period in the DB,
+  the second response identical to the first. Same key + different body → 422.
+- **TX-PAY-A atomic rollback**: inject errors at step 6 and step 7 → after rollback: 0 new
+  periods, 0 assigned sessions, 0 audit rows.
+- **Empty period**: a period with no eligible sessions → behavior currently unlocked (Q-PAY-6);
+  the test must lock the chosen behavior so it doesn't drift.
+- **N+1 gate**: enable query logging, create a 40-session period → total queries ≤ 8.
+  `GET /admin/payroll` with 20 rows → ≤ 4 queries. The threshold is a CI gate.
+- **Envelope**: success responses match `{ data }` / `{ data, meta }`; errors match the flat
+  7-field envelope.
 
-## 16. Chưa chốt
+## 16. Unresolved
 
-| # | Câu hỏi | Chặn gì | Owner | Cần quyết trước |
+| # | Question | What it blocks | Owner | Decide by |
 |---|---|---|---|---|
-| **C2** 🔴 | **Mâu thuẫn nghiêm trọng nhất của module.** `ADR-008 Rates append-only` (status **Accepted**) nói: đổi mức = **TẠO BẢN GHI MỚI** với `effectiveFrom` mới, **không update endpoint, không delete**, và câu đọc mức là `WHERE effectiveFrom <= <date> ORDER BY effectiveFrom DESC LIMIT 1` — **không hề dùng `effectiveTo`**. Nhưng `ENTITY_TEACHER_PAY_RATE.md` (và `ENTITY_STUDENT_TUITION_RATE.md`) ghi: *"To update rate: **set `effectiveTo` on current**, create new record"* và *"Active rate = where `effectiveTo IS NULL` or `effectiveTo > today`"* — tức **CÓ update dòng cũ**. **Hai cái không thể cùng đúng.** Ba hệ quả nếu code trước khi chốt: (a) hai câu SQL chọn mức khác nhau → hai số tiền khác nhau cho cùng một kỳ lương; (b) nếu ghi `effectiveTo` thì `TeacherPayRate` hết append-only, phải thiết kế lại concurrency (§8.3) và audit; (c) mọi invariant INV-PAYROLL-01, 02, 03, 04, 26, 27 và toàn bộ §6.2, §7 TX-PAY-D phải viết lại. **Spec này tạm chốt theo ADR-008** (lý do: ADR ở trạng thái Accepted, ENTITY doc không phải ADR; và FE `admin-tuition-rates.spec.md` mô tả lịch sử mức chỉ bằng `effectiveFrom` + cờ `current`, **không có `effectiveTo`** → thêm một phiếu cho ADR-008). **Đây là chốt tạm, không phải quyết định.** Ghi chú kiểm chứng: file `docs/shared/decisions/008-append-only-rates.md` được API_ADMIN.md và API_ERROR_CODES.md dẫn link nhưng **không tồn tại trong bộ tài liệu** (thư mục `docs/shared/` chỉ có `RBAC_MATRIX.md`) — nội dung ADR-008 hiện chỉ biết qua tóm tắt trong `_FACTS.md`, chưa đọc được bản gốc. | **CHẶN TOÀN BỘ §4** — không được code phép tính tiền trước khi chốt | BE lead + PO + tác giả ADR-008 | **trước mọi dòng code của module** |
-| **Q-PAY-1** 🔴 | **Ranh giới kỳ lương — ba câu hỏi con, phải trả lời cả ba.** (1) **Timezone**: `periodStart`/`periodEnd` là `Date` (không timezone), nhưng `ClassSession.actualStart` là `DateTime` **UTC** (API_CONVENTIONS: mọi DateTime là UTC) trong khi lớp học diễn ra theo giờ Việt Nam (UTC+7). Một buổi học 06:00 ngày `01/07` giờ VN = `2026-06-30T23:00Z` — **rơi sang tháng trước** nếu neo theo UTC. Spec này neo tập gom vào `ClassSession.scheduledDate` (kiểu `Date`, không timezone, nên miễn nhiễm) — **nhưng phải xác nhận `scheduledDate` được ghi theo ngày địa phương VN chứ không phải ngày UTC của `actualStart`**. Nếu ghi theo UTC thì mọi buổi học sáng sớm bị tính sai tháng. (2) **Biên đóng/mở**: spec chốt tạm `BETWEEN periodStart AND periodEnd` (đóng hai đầu, `[]`). Cần xác nhận không ai hiểu là `[)`. (3) **Kỳ có phải luôn là tháng dương lịch không?** FE `pages/_INDEX.md` ghi rõ "period boundary undecided" và đó là lý do `GET /admin/payroll/:id` bị block. Nếu kỳ tuỳ ý thì phải bịt chồng lấn (Q-PAY-3); nếu kỳ luôn là tháng thì UNIQUE `(teacherId, periodStart, periodEnd)` gần như đủ. | INV-PAYROLL-12; `GET /admin/payroll/:id` (PROPOSED, block toàn bộ luồng finalize của FE); INV-PAYROLL-25 | PO + BE lead | **trước Sprint 3** |
-| **Q-PAY-9** | **Có thêm `rateType = fixed_monthly` không?** Hiện enum chỉ có `per_session` \| `per_hour`. FE `pages/_INDEX.md` liệt kê "Pay-rate unit basis" là **quyết định #2 đang treo**, và đó là lý do `GET /admin/pay-rates` bị chặn. Nếu thêm `fixed_monthly` thì: (a) enum đổi → migration; (b) INV-PAYROLL-05/06 thêm nhánh thứ ba; (c) **`totalSessions` mất ý nghĩa** với lương cứng (18 buổi hay 2 buổi đều cùng số tiền) — phải định nghĩa lại cột; (d) sinh câu hỏi tính theo tỉ lệ khi teacher vào/nghỉ giữa tháng; (e) sinh câu hỏi kỳ lương không phải tháng thì chia thế nào. **Chốt sau khi đã code sẽ phải viết lại §4.** | Enum `rateType`; INV-PAYROLL-05/06/10; `GET /admin/pay-rates` | PO | **trước Sprint 3** |
-| Q-PAY-3 | Chống kỳ chồng lấn: có bật `EXCLUDE USING gist` không (cần extension `btree_gist`, cần dọn dữ liệu chồng lấn cũ trước)? Nếu không bật thì chấp nhận tồn tại kỳ chồng lấn với số liệu méo — INV-PAYROLL-14 vẫn giữ tiền không nhân đôi nhưng báo cáo sai. | INV-PAYROLL-25; migration §12 | BE lead + DBA | trước Sprint 3 |
-| Q-PAY-4 | Breakdown ở `GET /admin/payroll/:id` hiện **tính lại lúc đọc** từ `TeacherPayRate`, không lưu snapshot. Sau khi kỳ `finalized`, nếu dữ liệu rate bị đụng bằng bất kỳ đường nào (migration, sửa tay DB, hoặc nếu C2 kết luận cho phép update) thì breakdown lệch `totalAmount` đã chốt. Có thêm bảng `PayrollPeriodLine` (snapshot từng dòng: `sessionId`, `appliedRateId`, `hours`, `amount`) không? | Độ tin cậy §3.5; khả năng đối soát kế toán | BE lead | trước Sprint 4 |
-| Q-PAY-5 | `Idempotency-Key`: `API_CONVENTIONS.md` **không có mục nào** về idempotency. Có chuẩn hoá header + bảng `IdempotencyKey` toàn hệ thống không, hay chỉ riêng payroll? Mã lỗi cho "key trùng, body khác" là gì? | §8.1 lớp L2; migration §12 | BE lead | trước Sprint 3 |
-| Q-PAY-6 | **Kỳ `draft` tạo nhầm không có đường huỷ.** Không có `DELETE /admin/payroll/:id`. Session đã bị gán `payrollPeriodId` và không có endpoint gỡ gán → tạo nhầm một kỳ là **khoá vĩnh viễn** các session đó khỏi mọi kỳ tương lai. Liên quan: kỳ rỗng (0 session) nên trả 201 với `totalAmount=0` hay từ chối? Và sai sót phát hiện **sau** finalize xử lý thế nào (cơ chế kỳ điều chỉnh chưa được thiết kế)? | INV-PAYROLL-23; §6.1; vận hành thực tế | PO + BE lead | **trước Sprint 3** |
-| Q-PAY-7 | RBAC_MATRIX ghi `PayrollPeriod read own = 🔒 Teacher` và ENTITY_PAYROLL_PERIOD ghi "Teacher can view own PayrollPeriods (read-only)", nhưng **không có route nào** và không có `API_TEACHER.md`. Giáo viên hiện không xem được lương của mình. | §5; lane teacher | BE lead | trước Sprint 4 |
-| Q-PAY-8 | **Không có Notification type nào cho payroll** trong ENTITY_NOTIFICATION (11 type, không có `payroll_*`, không có `pay_rate_changed`). Cộng với `TeacherPayRate read = ❌` cho teacher (RBAC_MATRIX), giáo viên **không có đường nào biết mức lương của mình đã thay đổi hay kỳ lương đã được chi trả**. Có bổ sung type không (cần migration enum + ADR)? | §10; trải nghiệm giáo viên | PO | trước Sprint 4 |
-| **Q-PAY-11** | **Lỗ hổng mã lỗi — 4 nhánh không có mã hợp lệ.** (a) Trùng kỳ: không có `PAYROLL_PERIOD_DUPLICATE` (*proposed*, 2026-08-19); **DUPLICATE_ENTRY** chỉ xuất hiện trong đoạn code `GlobalExceptionFilter` ở API_ERROR_CODES.md §5, **không có trong bảng registry §3**. (b) Kỳ chồng lấn: không có mã. (c) `per_hour` thiếu `actualStart`/`actualEnd`: không có mã đúng ngữ nghĩa. (d) Idempotency key xung đột: không có mã. **Thêm nữa**: nhóm `PAYROLL_*` (`PAYROLL_PERIOD_NOT_FOUND`, `PAYROLL_PERIOD_FINALIZED`, `PAYROLL_SESSION_*`) **có** trong registry API_ERROR_CODES.md §3 nhưng **không có** trong danh sách "Mã lỗi đã có" của `_FACTS.md` → trạng thái tranh chấp (đây là **mâu thuẫn thứ 5**, chưa được ghi trong `_FACTS.md`, trùng với Q-SES-1 của spec 04). Và `PAYROLL_PERIOD_FINALIZED` đang phải gánh 3 ngữ nghĩa khác nhau (§8.2) vì thiếu mã. | §9 toàn bộ; FE không map được error | BE owner API_ERROR_CODES | **trước khi code §9** |
-| Q-PAY-10 | Có tách vai trò "người finalize" ≠ "người pay" (nguyên tắc four-eyes cho hành động chi tiền) không? Hiện mọi admin làm được cả hai. | §5 | PO | trước Sprint 4 |
-| Q-PAY-12 | `API_CONVENTIONS.md` không có mục rate limit; registry không có mã 429. §13 đang đề xuất. | §13 | BE lead | Sprint 4 |
-| Q-PAY-13 | Không có ENTITY doc cho bảng audit, nhưng §7, §13 và INV-PAYROLL-19/20/22 đều dựa vào nó. Audit của `finalize` là chứng từ tài chính duy nhất. Bảng tên gì, ai sở hữu? (trùng Q-SES-8 của spec 04) | Migration §12; §13 | BE lead | trước Sprint 3 |
-| **C1** | `User.nickname` (ENTITY_USER) vs `fullName` (API_AUTH). `teacherName` trong DTO §3.2, §3.3, §3.5 đọc field nào? | Contract FE của cả 3 màn payroll | BE lead | trước khi khoá contract |
+| **C2** 🔴 | **The module's most serious contradiction.** `ADR-008 Rates append-only` (status **Accepted**) says: change a rate = **CREATE A NEW RECORD** with a new `effectiveFrom`, **no update endpoint, no delete**, and the rate-lookup query is `WHERE effectiveFrom <= <date> ORDER BY effectiveFrom DESC LIMIT 1` — **`effectiveTo` is never used**. But `ENTITY_TEACHER_PAY_RATE.md` (and `ENTITY_STUDENT_TUITION_RATE.md`) says: *"To update rate: **set `effectiveTo` on current**, create new record"* and *"Active rate = where `effectiveTo IS NULL` or `effectiveTo > today`"* — i.e. the old row **IS updated**. **Both can't be true.** Three consequences of coding before locking: (a) two different rate-selection SQL queries → two different amounts for the same payroll period; (b) if `effectiveTo` is written, `TeacherPayRate` stops being append-only and concurrency (§8.3) and audit must be redesigned; (c) every invariant INV-PAYROLL-01, 02, 03, 04, 26, 27 and all of §6.2, §7 TX-PAY-D must be rewritten. **This spec tentatively locks per ADR-008** (reasoning: the ADR is Accepted while the ENTITY doc isn't an ADR; and FE `admin-tuition-rates.spec.md` describes the rate history using only `effectiveFrom` + a `current` flag, **no `effectiveTo`** → another vote for ADR-008). **This is a tentative lock, not a decision.** Verification note: `docs/shared/decisions/008-append-only-rates.md` is link-referenced by API_ADMIN.md and API_ERROR_CODES.md but **doesn't exist in the docs** (the `docs/shared/` folder only holds `RBAC_MATRIX.md`) — ADR-008's content is currently only known via the summary in `_FACTS.md`; the original was never read. | **BLOCKS ALL OF §4** — no money computation can be coded before this is locked | BE lead + PO + ADR-008 author | **before any line of this module's code** |
+| **Q-PAY-1** 🔴 | **Payroll period boundary — three sub-questions, all three must be answered.** (1) **Timezone**: `periodStart`/`periodEnd` are `Date` (no timezone), but `ClassSession.actualStart` is a **UTC** `DateTime` (API_CONVENTIONS: all DateTimes are UTC) while classes run on Vietnam time (UTC+7). A class at 06:00 on `01/07` VN time = `2026-06-30T23:00Z` — **falls into last month** if anchored on UTC. This spec anchors collection on `ClassSession.scheduledDate` (type `Date`, no timezone, so immune) — **but it must be confirmed that `scheduledDate` is written as the VN local date, not the UTC date of `actualStart`**. If written per UTC, every early-morning class is billed in the wrong month. (2) **Closed/open boundary**: the spec tentatively locks `BETWEEN periodStart AND periodEnd` (closed both ends, `[]`). Confirm nobody reads it as `[)`. (3) **Must a period always be a calendar month?** FE `pages/_INDEX.md` says "period boundary undecided" and that's why `GET /admin/payroll/:id` is blocked. If periods are arbitrary, overlap must be sealed (Q-PAY-3); if periods are always months, UNIQUE `(teacherId, periodStart, periodEnd)` is almost enough. | INV-PAYROLL-12; `GET /admin/payroll/:id` (PROPOSED, blocks the FE's whole finalize flow); INV-PAYROLL-25 | PO + BE lead | **before Sprint 3** |
+| **Q-PAY-9** | **Add `rateType = fixed_monthly`?** The enum only has `per_session` \| `per_hour`. FE `pages/_INDEX.md` lists "Pay-rate unit basis" as **pending decision #2**, which is why `GET /admin/pay-rates` is blocked. If `fixed_monthly` is added: (a) enum changes → migration; (b) INV-PAYROLL-05/06 get a third branch; (c) **`totalSessions` loses meaning** with flat pay (18 sessions or 2 sessions, same amount) — the column must be redefined; (d) proration questions arise when a teacher joins/leaves mid-month; (e) non-monthly periods raise the question of how to split. **Locking after coding means rewriting §4.** | Enum `rateType`; INV-PAYROLL-05/06/10; `GET /admin/pay-rates` | PO | **before Sprint 3** |
+| Q-PAY-3 | Prevent overlapping periods: enable `EXCLUDE USING gist` or not (needs the `btree_gist` extension, needs cleaning existing overlapping data first)? If not enabled, overlapping periods with skewed numbers are accepted — INV-PAYROLL-14 still prevents doubled money but reports lie. | INV-PAYROLL-25; migration §12 | BE lead + DBA | before Sprint 3 |
+| Q-PAY-4 | The breakdown at `GET /admin/payroll/:id` is currently **recomputed at read time** from `TeacherPayRate`, no snapshot stored. After a period is `finalized`, if rate data is touched by any path (migration, manual DB edit, or C2 resolving in favor of updates), the breakdown drifts from the locked `totalAmount`. Add a `PayrollPeriodLine` table (per-line snapshot: `sessionId`, `appliedRateId`, `hours`, `amount`)? | §3.5 reliability; accounting reconciliation ability | BE lead | before Sprint 4 |
+| Q-PAY-5 | `Idempotency-Key`: `API_CONVENTIONS.md` has **no idempotency section at all**. Standardize a header + `IdempotencyKey` table system-wide, or payroll-only? What error code for "key duplicate, body differs"? | §8.1 layer L2; migration §12 | BE lead | before Sprint 3 |
+| Q-PAY-6 | **A mistakenly created `draft` period has no cancellation path.** No `DELETE /admin/payroll/:id`. Sessions already assigned `payrollPeriodId` and no unassign endpoint → a mistaken period **permanently locks** those sessions out of every future period. Related: should an empty period (0 sessions) return 201 with `totalAmount=0` or be rejected? And how are mistakes found **after** finalize handled (the adjustment-period mechanism isn't designed)? | INV-PAYROLL-23; §6.1; real operations | PO + BE lead | **before Sprint 3** |
+| Q-PAY-7 | RBAC_MATRIX says `PayrollPeriod read own = 🔒 Teacher` and ENTITY_PAYROLL_PERIOD says "Teacher can view own PayrollPeriods (read-only)", but **no route exists** and there's no `API_TEACHER.md`. Teachers currently can't see their pay. | §5; teacher lane | BE lead | before Sprint 4 |
+| Q-PAY-8 | **No Notification type for payroll** in ENTITY_NOTIFICATION (11 types, no `payroll_*`, no `pay_rate_changed`). Combined with `TeacherPayRate read = ❌` for teachers (RBAC_MATRIX), a teacher **has no path to know their rate changed or their period was paid**. Add types (enum migration + ADR needed)? | §10; teacher experience | PO | before Sprint 4 |
+| **Q-PAY-11** | **Error-code gaps — 4 branches without a valid code.** (a) Duplicate period: no `PAYROLL_PERIOD_DUPLICATE` (*proposed*, 2026-08-19); **DUPLICATE_ENTRY** only appears in the `GlobalExceptionFilter` snippet of API_ERROR_CODES.md §5, **not in the §3 registry table**. (b) Overlapping period: no code. (c) `per_hour` missing `actualStart`/`actualEnd`: no semantically correct code. (d) Idempotency-key conflict: no code. **Plus**: the `PAYROLL_*` group (`PAYROLL_PERIOD_NOT_FOUND`, `PAYROLL_PERIOD_FINALIZED`, `PAYROLL_SESSION_*`) **is** in API_ERROR_CODES.md §3 but **not** in `_FACTS.md`'s "Existing error codes" list → disputed status (this is **contradiction #5**, not yet recorded in `_FACTS.md`, same as spec 04's Q-SES-1). And `PAYROLL_PERIOD_FINALIZED` currently carries 3 different meanings (§8.2) for lack of codes. | All of §9; FE can't map errors | BE owner of API_ERROR_CODES | **before coding §9** |
+| Q-PAY-10 | Split the "finalizer" ≠ "payer" roles (four-eyes for money-out actions)? Today every admin does both. | §5 | PO | before Sprint 4 |
+| Q-PAY-12 | `API_CONVENTIONS.md` has no rate-limit section; the registry has no 429 code. §13 is proposing both. | §13 | BE lead | Sprint 4 |
+| Q-PAY-13 | No ENTITY doc for the audit table, but §7, §13 and INV-PAYROLL-19/20/22 all depend on it. The `finalize` audit is the only financial voucher. What's the table called, who owns it? (overlaps spec 04's Q-SES-8) | Migration §12; §13 | BE lead | before Sprint 3 |
+| **C1** | `User.nickname` (ENTITY_USER) vs `fullName` (API_AUTH). Which field does `teacherName` in DTO §3.2, §3.3, §3.5 read? | FE contract of all 3 payroll screens | BE lead | before locking the contract |
 
-**Phụ thuộc ngược lên spec 04**: module này chỉ có dữ liệu đầu vào khi có session `approved`. Mà `SCOPE-01` (`Class`/`ClassEnrollment` không có endpoint) và `SCOPE-02` (không có endpoint teacher-side để đưa session tới `completed_pending`) của spec 04 đang chặn nguồn đó. **Payroll không thể chạy end-to-end trước khi hai lỗ hổng phạm vi kia được lấp** — chỉ test được bằng seed DB.
+**Reverse dependency on spec 04**: this module only has input data when `approved` sessions
+exist. And spec 04's SCOPE-01 (`Class`/`ClassEnrollment` have no endpoints) and SCOPE-02 (no
+teacher-side endpoint to move a session to `completed_pending`) are blocking that source.
+**Payroll cannot run end-to-end until those two scope gaps are filled** — only testable via DB
+seed.

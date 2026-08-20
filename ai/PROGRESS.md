@@ -93,16 +93,17 @@ _(verified against the repo 2026-08-14 — do not mark anything here without che
       deliberately broken fixture and to clear afterwards. `pnpm check:docs` runs it locally.
 - ⬜ `git add --renormalize .` **not yet run** — until it is, CI's line-ending step fails
       and ~118 files still show as modified (KNOWN_ISSUES GIT-001)
-- ✅ **Bước 7 (Record) giờ được enforce bằng máy** — 2026-08-19.
-  `working-rules.md` § The flow thêm bảng **Hai loại task**: task docs/spec/rule cũng phải làm
-  bước 7, không chỉ task build màn. DoD thêm mục 4 (session file) và mục 5 (index của bộ doc).
-  `.github/workflows/docs-check.yml` thêm step **Record step was not skipped**: PR đổi ≥50 dòng
-  trong `docs/ apps/ prisma/ packages/ .agents/skills/` mà không đụng `ai/PROGRESS.md` hoặc
-  không có file dưới `ai/context/sessions/` → **fail, chặn merge**.
-  Lý do: session 2026-08-19 viết 8 module spec (~3.900 dòng) và không ghi PROGRESS dòng nào.
-- ✅ **Khôi phục rule fast-verify** — 2026-08-19. Bản "Verify — FAST by default" từng viết ở
-  branch `chore/fast-verify-rule` rồi **mất khi chuyển branch vì chưa commit**. Đã viết lại,
-  kèm ghi chú để lần sau nhận ra nếu nó biến mất nữa.
+- ✅ **Record step (Step 7) is now machine-enforced** — 2026-08-19.
+  `working-rules.md` § The flow adds a **Two task types** table: docs/spec/rule tasks must also
+  do step 7, not just screen-build tasks. DoD adds item 4 (session file) and item 5 (docs index).
+  `.github/workflows/docs-check.yml` adds the **Record step was not skipped** step: a PR changing
+  ≥50 lines in `docs/ apps/ prisma/ packages/ .agents/skills/` without touching `ai/PROGRESS.md`
+  or without a file under `ai/context/sessions/` → **fails, blocks merge**.
+  Reason: the 2026-08-19 session wrote 8 module specs (~3,900 lines) and recorded zero lines in
+  PROGRESS.
+- ✅ **fast-verify rule restored** — 2026-08-19. The "Verify — FAST by default" version was
+  written on branch `chore/fast-verify-rule` then **lost on branch switch because it was never
+  committed**. Rewritten, with a note to recognize it if it disappears again.
 - ⬜ husky pre-commit hook — deferred; CI covers the same ground and cannot be `--no-verify`'d
 
 ---
@@ -163,88 +164,88 @@ _(use this space for quick notes not yet clear enough to become their own checkl
 ---
 
 ## Needs from the other lane
-_(phát hiện khi map UI Admin — 2026-08-13)_
+_(discovered while mapping the Admin UI — 2026-08-13)_
 
-- [ ] (fe → be) **`GET /api/v1/admin/payroll/:id`** — không tồn tại. Chặn toàn bộ màn
-      `/admin/payroll/[periodId]`. Dữ liệu đã được `calculatePeriodAmount` tính sẵn
-      (`FLOW_PAYROLL_CYCLE` §3) nhưng không có endpoint để lấy
-- [ ] (fe → be) `GET /api/v1/admin/pay-rates` + `GET /api/v1/admin/tuition-rates` — hiện chỉ có POST,
-      không lấy được danh sách/lịch sử (ADR-008 yêu cầu hiển thị lịch sử)
-- [ ] (fe → be) `POST /api/v1/admin/invoices/batch` + endpoint preview cho `/admin/invoices/generate`
+- [ ] (fe → be) **`GET /api/v1/admin/payroll/:id`** — does not exist. Blocks the whole
+      `/admin/payroll/[periodId]` screen. `calculatePeriodAmount` already computes the data
+      (`FLOW_PAYROLL_CYCLE` §3) but there is no endpoint to fetch it
+- [ ] (fe → be) `GET /api/v1/admin/pay-rates` + `GET /api/v1/admin/tuition-rates` — only POST
+      exists today; the list/history cannot be fetched (ADR-008 requires showing history)
+- [ ] (fe → be) `POST /api/v1/admin/invoices/batch` + preview endpoint for `/admin/invoices/generate`
 - [ ] (fe → be) `GET /api/v1/admin/monitoring/gemini`
-- [ ] (fe → be) `GET /admin/invoices` cần `meta.summary` (đã thu n/total, tổng thu, còn nợ)
-- [ ] (fe → be) `GET /admin/users/:id` cần nhúng lịch sử theo role (student: enrollments+attempts,
-      teacher: classes+sessions)
-- [ ] (fe → be) `GET /admin/sessions/pending` cần nhúng giờ thực tế, chủ đề, ghi chú, **điểm danh**
-- [ ] (fe → be) `GET /admin/dashboard/stats` — chốt shape payload trước khi build
-- [x] (be) ~~Thiếu toàn bộ nhóm `INVOICE_*`~~ — 2026-08-14: đã thêm `INVOICE_*`, `RATE_*`,
-      `SESSION_*`, `AI_*` vào `API_ERROR_CODES.md`, **đánh dấu *proposed, not agreed***.
-      Chưa dùng được cho tới khi BE owner duyệt
-- [x] (be) ~~Endpoint thiếu~~ — 2026-08-14: cả 7 endpoint đã được ghi vào `API_ADMIN.md`
-      § *Referenced by FE contracts, not yet defined*. **Ghi ra không phải là chốt** — vẫn
-      chặn, vẫn cần BE owner ký từng dòng
-- [ ] (be) **`packages/types` chưa tồn tại** — không có contract chung nào giữa hai lane.
-      Đây là việc mở khoá quan trọng nhất, phải là commit đầu tiên của session song song
+- [ ] (fe → be) `GET /admin/invoices` needs `meta.summary` (paid n/total, total collected, outstanding)
+- [ ] (fe → be) `GET /admin/users/:id` needs role-scoped history embedded (student:
+      enrollments+attempts, teacher: classes+sessions)
+- [ ] (fe → be) `GET /admin/sessions/pending` needs actual time, topic, notes, **attendance** embedded
+- [ ] (fe → be) `GET /admin/dashboard/stats` — lock the payload shape before building
+- [x] (be) ~~Entire `INVOICE_*` family missing~~ — 2026-08-14: added `INVOICE_*`, `RATE_*`,
+      `SESSION_*`, `AI_*` to `API_ERROR_CODES.md`, **marked *proposed, not agreed***.
+      Not usable until the BE owner approves
+- [x] (be) ~~Missing endpoints~~ — 2026-08-14: all 7 endpoints written into `API_ADMIN.md`
+      § *Referenced by FE contracts, not yet defined*. **Writing them down is not closing them**
+      — still blocking, still needs BE owner sign-off line by line
+- [ ] (be) **`packages/types` does not exist** — no shared contract between the two lanes.
+      This is the most important unlock; it must be the first commit of a parallel session
 
-## Quyết định nghiệp vụ
+## Business decisions
 
-> ⚠️ **Doc drift đã phát hiện 2026-08-19.** Năm quyết định dưới đây **đã được người dùng
-> duyệt ngày 2026-08-16** (ghi trong `ai/context/HANDOFF.md` § 2026-08-16, mục *Temporary
-> decisions to preserve*) nhưng file này vẫn ghi là chưa chốt suốt 3 ngày. Đã sửa.
+> ⚠️ **Doc drift detected 2026-08-19.** The five decisions below **were approved by the user
+> on 2026-08-16** (recorded in `ai/context/HANDOFF.md` § 2026-08-16, *Temporary decisions to
+> preserve*) but this file kept marking them as unsettled for 3 days. Fixed.
 >
-> **Chúng vẫn chưa phải ADR.** Một dòng trong HANDOFF không phải quyết định kiến trúc có
-> hiệu lực — HANDOFF là nơi ghi thứ *tạm thời và dễ quên*. Trước khi code backend đụng
-> schema, cả năm phải thành ADR trong `docs/shared/decisions/`.
+> **They are still not ADRs.** A line in HANDOFF is not an effective architecture decision —
+> HANDOFF holds things that are *temporary and easy to forget*. Before backend code touches the
+> schema, all five must become ADRs in `docs/shared/decisions/`.
 
-| # | Quyết định | Chốt ngày 16/08 là | ADR |
+| # | Decision | Locked on 16/08 as | ADR |
 |---|---|---|---|
-| 1 | Mô hình học phí (`A-INV-1`) | **flat theo tháng, mỗi học sinh một mức** — khớp `billingCycle: monthly` trong entity | ⬜ cần ADR-013 |
-| 2 | Đơn vị tính lương (`A-PAY-1`) | **dual-mode**: `per_session` + `per_hour`. **Không** thêm `fixed_monthly` | ⬜ cần ADR-012 |
-| 3 | Ranh giới kỳ lương (`A-PAY-4`) | **tháng dương lịch** | ⬜ cần ADR-012 — còn thiếu timezone, biên đóng/mở, chống chồng lấn |
-| 4 | Gemini API key (`UC-A-005`) | **một key dùng chung của nền tảng**, không BYOK | ⬜ cần ADR-014 |
-| 5 | Từ chối đăng ký (`UC-A-001`) | **soft rejection** — giữ bản ghi, không hard delete | ⬜ cần ADR-011 — `User.status` hiện **không có** state `rejected`, cần migration |
+| 1 | Tuition model (`A-INV-1`) | **flat per month, one rate per student** — matches `billingCycle: monthly` in the entity | ⬜ needs ADR-013 |
+| 2 | Pay rate unit (`A-PAY-1`) | **dual-mode**: `per_session` + `per_hour`. **No** `fixed_monthly` | ⬜ needs ADR-012 |
+| 3 | Payroll period boundary (`A-PAY-4`) | **calendar month** | ⬜ needs ADR-012 — still missing timezone, open/close boundaries, overlap prevention |
+| 4 | Gemini API key (`UC-A-005`) | **one shared platform key**, no BYOK | ⬜ needs ADR-014 |
+| 5 | Registration rejection (`UC-A-001`) | **soft rejection** — keep the record, no hard delete | ⬜ needs ADR-011 — `User.status` currently has **no** `rejected` state, needs a migration |
 
-### Vẫn chưa chốt — chặn backend
+### Still unsettled — blocks backend
 
-- [ ] **Biểu diễn tiền** — chưa từng được hỏi. Entity đang `Decimal(10,2)`/`Decimal(12,2)`,
-      mà VND không có đơn vị phụ. Cần chốt rounding, arithmetic, JSON serialization.
-      Prisma `Decimal` **không được** lọt thẳng ra API response. → chặn module 05, 06
-- [ ] **SCOPE-01 — phạm vi Classes/Enrollment**: làm đầy đủ hay tối thiểu đủ cho Sessions?
-      `Class` + `ClassEnrollment` không có endpoint nào trong `API_ADMIN.md`, mà
-      Sessions/Attendance và Payroll phụ thuộc chúng. → chặn module 03, 04, 05.
-      Hai phương án + đề xuất: `docs/api/modules/03-classes-enrollment.md` §16
-- [ ] **C2 — hai công thức đọc rate mâu thuẫn nhau** (xem `API-002` trong KNOWN_ISSUES).
-      → chặn mọi phép tính tiền
+- [ ] **Money representation** — never been asked. Entities use `Decimal(10,2)`/`Decimal(12,2)`,
+      but VND has no minor unit. Need to lock rounding, arithmetic, JSON serialization.
+      Prisma `Decimal` must **not** leak straight into API responses. → blocks modules 05, 06
+- [ ] **SCOPE-01 — Classes/Enrollment scope**: full implementation or just enough for Sessions?
+      `Class` + `ClassEnrollment` have no endpoints in `API_ADMIN.md`, yet
+      Sessions/Attendance and Payroll depend on them. → blocks modules 03, 04, 05.
+      Two options + recommendation: `docs/api/modules/03-classes-enrollment.md` §16
+- [ ] **C2 — two rate-reading formulas contradict each other** (see `API-002` in KNOWN_ISSUES).
+      → blocks every money calculation
 
 ---
 
 ## Backend — module spec
 
-_(spec viết 2026-08-19, `docs/api/modules/`. Chưa có dòng code backend nào.
-`apps/api` chưa tồn tại, `packages/` vẫn rỗng.)_
+_(specs written 2026-08-19, `docs/api/modules/`. No backend code exists yet.
+`apps/api` does not exist, `packages/` is still empty.)_
 
-| # | Module | Spec | Status | INV | Chặn bởi |
+| # | Module | Spec | Status | INV | Blocked by |
 |---|---|---|---|---|---|
 | 1 | Auth | `01-auth.md` | ✅ accepted | 24 | — |
-| 2 | Users | `02-users.md` | 🔶 proposed | 18 | C1 · C3 (cần migration `rejected`) |
+| 2 | Users | `02-users.md` | 🔶 proposed | 18 | C1 · C3 (needs `rejected` migration) |
 | 3 | Classes+Enrollment | `03-classes-enrollment.md` | ⛔ deferred | 8 | **SCOPE-01** |
 | 4 | Sessions+Attendance | `04-sessions-attendance.md` | 🔶 proposed | 16 | SCOPE-01 |
-| 5 | Payroll+PayRates | `05-payroll.md` | 🔶 proposed | 33 | tiền · C2 · timezone kỳ lương |
-| 6 | Billing | `06-billing.md` | 🔶 proposed | 34 | tiền · C2 |
-| 7 | Notifications | `07-notifications.md` | 🔶 proposed | 21 | chưa có endpoint nào định nghĩa |
-| 8 | Dashboard | `08-dashboard.md` | ⛔ deferred | 14 | làm cuối, theo thiết kế |
+| 5 | Payroll+PayRates | `05-payroll.md` | 🔶 proposed | 33 | money · C2 · payroll-period timezone |
+| 6 | Billing | `06-billing.md` | 🔶 proposed | 34 | money · C2 |
+| 7 | Notifications | `07-notifications.md` | 🔶 proposed | 21 | no endpoint defined yet |
+| 8 | Dashboard | `08-dashboard.md` | ⛔ deferred | 14 | last, per design |
 
-**168 invariant**, mỗi cái có dòng test tương ứng ở mục 15 của module — invariant gate thay
-cho coverage %.
+**168 invariants**, each with a matching test line in module section 15 — the invariant gate
+replaces coverage %.
 
-**Chỉ Auth đủ điều kiện code ngay.**
+**Only Auth is ready to code right now.**
 
-### Backend — chưa bắt đầu
+### Backend — not started
 
-- ⬜ ADR-009 risk-based testing · ADR-010 tiền · ADR-011 vòng đời tài khoản ·
-  ADR-012 payroll · ADR-013 học phí · ADR-014 Gemini key
-- ⬜ `packages/types` — transport contract (OpenAPI/Zod). Nest DTO implement nó,
-  **không** sinh types từ Nest DTO
+- ⬜ ADR-009 risk-based testing · ADR-010 money · ADR-011 account lifecycle ·
+  ADR-012 payroll · ADR-013 tuition · ADR-014 Gemini key
+- ⬜ `packages/types` — transport contract (OpenAPI/Zod). Nest DTOs implement it,
+  **not** generated from Nest DTOs
 - ⬜ `turbo.json` (BUILD-001) — có 2 app rồi, không hoãn thêm được
 - ⬜ Phase 1 hạ tầng: envelope interceptor · exception filter · error enum ·
   Prisma + migration `User` · Swagger `/api` · `/health` + `/ready` · CI + migration rehearsal

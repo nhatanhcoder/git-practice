@@ -1,6 +1,6 @@
 # 🔌 API Student
 
-> Endpoints dành riêng cho role Student.  
+> Endpoints reserved for the Student role.  
 > Conventions: [API_CONVENTIONS.md](./API_CONVENTIONS.md)  
 > Permissions: [PERMISSIONS_STUDENT.md](../actors/student/PERMISSIONS_STUDENT.md)
 

@@ -31,49 +31,84 @@
 
 ---
 
-## [2026-08-19] — Backend module specs cho toàn bộ Admin — Claude (Cowork)
+## [2026-08-20] — Full docs/api translation to English — Antigravity — branch `chore/record-enforcement`
 
 **Done**:
-- **8 module spec** trong `docs/api/modules/` (~3.900 dòng), theo template 16 mục cố định:
-  `01-auth` (accepted) · `02-users` · `03-classes-enrollment` (deferred) ·
-  `04-sessions-attendance` · `05-payroll` · `06-billing` · `07-notifications` ·
-  `08-dashboard` (deferred). Cộng `_INDEX.md` + `_TEMPLATE.md`.
-- **168 invariant** đánh số (INV-<MODULE>-NN), mỗi cái có dòng tương ứng ở mục 15 test matrix
-  của module đó. Đây là **invariant gate** — thay cho coverage %.
-- `docs/BACKEND_PLAN.md` — kế hoạch backend tự đứng một mình, viết cho người chưa biết gì về
-  project. Đã qua 3 vòng phản biện.
-- `PR_BODY.md` ở root — nội dung PR cho `docs/BACKEND_PLAN.md`, **chưa tạo PR**.
+- Translated the entire `docs/api/` corpus from Vietnamese to English (all 10 module specs
+  incl. the 116 KB `06-billing`, plus `API_CONVENTIONS` / `API_ADMIN` / `API_TEACHER` /
+  `API_STUDENT` / `API_ERROR_CODES`), preserving every code block, SQL, JSON, invariant ID
+  (INV-*), error code, endpoint path, field name, entity reference, emoji status mark, date,
+  and Vietnamese names inside quoted examples.
+- `API_ERROR_CODES.md`: registered the two **Fallback Errors** (`DUPLICATE_ENTRY` /
+  `INTERNAL_SERVER_ERROR`) the `GlobalExceptionFilter` emits and `TOO_MANY_REQUESTS` +
+  `PAYROLL_PERIOD_DUPLICATE` under *proposed, not agreed*; runtime Vietnamese UI strings in
+  code samples intentionally kept (product UI language is Vietnamese).
+- `pnpm check:docs` → **all 8 checks passed**; final diacritic grep across `docs/api/` → only
+  intentional remnants (`=1đ` in a billing test value; runtime UI strings in error-code samples).
+
+**In progress**:
+- Changes still uncommitted on `chore/record-enforcement` (branch is clean vs origin/main —
+  PR #9 already merged).
 
 **Temporary decisions to preserve**:
-- **Chỉ `01-auth` ở trạng thái `accepted`.** 7 module còn lại `proposed`/`deferred`, chờ ADR.
-- Spec **ghi lại mâu thuẫn** trong tài liệu nguồn thay vì tự chọn một bên. Chỗ nào entity và
-  API bất đồng, mục 16 của module ghi nguyên trạng + cái nó chặn.
-- Không module nào tự bịa mã lỗi. Nhánh lỗi thiếu mã đánh ⛔ ở mục 9.
-- Ranh giới module đi theo **transaction boundary**, không theo bảng — nên
-  rate+invoice+payment chung một module `06-billing`.
+- This was purely a language pass — **no technical content changed** (same invariants, statuses,
+  blockers, unresolved tables).
+- Runtime Vietnamese strings inside code samples stay Vietnamese (UI copy policy); prose, table
+  cells and headings are English.
 
 **Blocker / needs follow-up**:
-- ⚠️ **Doc drift đã sửa**: 5 quyết định nghiệp vụ được duyệt ở entry 2026-08-16 nhưng
-  `ai/PROGRESS.md` vẫn ghi "chưa chốt" suốt 3 ngày. Đã cập nhật PROGRESS.
-  **Cả 5 vẫn chưa phải ADR** — một dòng trong HANDOFF không phải quyết định kiến trúc có
-  hiệu lực. Cần ADR-011 → ADR-014 trước khi code đụng schema.
-- **Biểu diễn tiền chưa từng được hỏi.** Không nằm trong 5 quyết định kia. Entity đang
-  `Decimal(10,2)`/`(12,2)` mà VND không có đơn vị phụ. Chặn module 05 và 06.
-- **SCOPE-01 chưa quyết** — Classes/Enrollment không có endpoint nào, mà Sessions và Payroll
-  phụ thuộc. Hai phương án + đề xuất ở `03-classes-enrollment.md` §16.
-- 5 issue mới ghi vào `KNOWN_ISSUES.md`: `API-002` (hai công thức đọc rate → hai số tiền),
-  `API-003` (kỳ payroll draft không huỷ được), `API-004` (`/admin/sessions/pending` vĩnh viễn
-  rỗng), `DOC-005` (thiếu state `rejected`), `DOC-006` (`nickname` vs `fullName`),
-  `DOC-007` (mã lỗi không rõ cái nào dùng được).
-- `device_bash` phía máy người dùng chết giữa session ("workspace failed to start") → **không
-  chạy được git**. Nhánh, commit, push, PR đều phải làm tay. Lệnh nằm trong tin nhắn chat.
+- Commit + push + create the PR for the translated docs (the old `PR_BODY.md` at root belongs to
+  the already-merged BACKEND_PLAN PR — stale, do not reuse).
 
 **Next steps**:
-1. Viết **ADR-011 → ADR-014** từ 5 quyết định đã duyệt 16/08, để chúng có hiệu lực thật.
-2. Trả lời **biểu diễn tiền** (ADR-010) và **SCOPE-01** — hai thứ chặn nhiều nhất.
-3. Chốt `API-002` — không viết dòng code tính tiền nào trước khi xong.
-4. `01-auth.md` đủ điều kiện code ngay: Phase 1 hạ tầng (`turbo.json`, envelope interceptor,
-   error enum, Prisma + migration `User`, Swagger) rồi Phase 2 Auth.
+1. Commit all docs/api + PROGRESS + HANDOFF + session file changes.
+2. Push `chore/record-enforcement` and open a new PR (session file under `ai/context/sessions/`
+   satisfies the CI record gate).
+3. `KNOWN_ISSUES.md` + `working-rules.md` remain Vietnamese by design (out of scope).
+
+---
+
+**Done**:
+- **8 module specs** in `docs/api/modules/` (~3,900 lines), following the fixed 16-section template:
+  `01-auth` (accepted) · `02-users` · `03-classes-enrollment` (deferred) ·
+  `04-sessions-attendance` · `05-payroll` · `06-billing` · `07-notifications` ·
+  `08-dashboard` (deferred). Plus `_INDEX.md` + `_TEMPLATE.md`.
+- **168 numbered invariants** (INV-<MODULE>-NN), each with a matching line in module
+  section 15 test matrix. This is the **invariant gate** — replacing coverage %.
+- `docs/BACKEND_PLAN.md` — a standalone backend plan, written for someone who knows nothing
+  about the project. Went through 3 rounds of critique.
+- `PR_BODY.md` at root — PR content for `docs/BACKEND_PLAN.md`, **PR not created yet**.
+
+**Temporary decisions to preserve**:
+- **Only `01-auth` is in `accepted` status.** The other 7 modules are `proposed`/`deferred`, awaiting ADR.
+- Specs **record contradictions** found in source docs instead of picking a side. Where the
+  entity and the API disagree, module section 16 records the status quo + what it blocks.
+- No module invents its own error codes. Error branches missing a code are marked ⛔ in section 9.
+- Module boundaries follow the **transaction boundary**, not tables — so
+  rate+invoice+payment share one module `06-billing`.
+
+**Blocker / needs follow-up**:
+- ⚠️ **Doc drift fixed**: 5 business decisions approved in the 2026-08-16 entry were still
+  marked "unsettled" in `ai/PROGRESS.md` for 3 days. PROGRESS updated.
+  **All 5 are still not ADRs** — a line in HANDOFF is not an effective architecture decision.
+  Need ADR-011 → ADR-014 before any code touches the schema.
+- **Money representation has never been asked.** Not part of those 5 decisions. Entities use
+  `Decimal(10,2)`/`(12,2)` but VND has no minor unit. Blocks modules 05 and 06.
+- **SCOPE-01 undecided** — Classes/Enrollment has no endpoints, yet Sessions and Payroll
+  depend on it. Two options + recommendation in `03-classes-enrollment.md` §16.
+- 5 new issues recorded in `KNOWN_ISSUES.md`: `API-002` (two rate-reading formulas → two
+  amounts), `API-003` (draft payroll period cannot be cancelled), `API-004`
+  (`/admin/sessions/pending` permanently empty), `DOC-005` (missing `rejected` state),
+  `DOC-006` (`nickname` vs `fullName`), `DOC-007` (unclear which error code is usable).
+- `device_bash` on the user's machine died mid-session ("workspace failed to start") → **git
+  could not run**. Branch, commit, push, PR all had to be done by hand. Commands are in the chat.
+
+**Next steps**:
+1. Write **ADR-011 → ADR-014** from the 5 decisions approved on 16/08, so they take real effect.
+2. Answer **money representation** (ADR-010) and **SCOPE-01** — the two biggest blockers.
+3. Lock `API-002` — no money-calculation code before it's done.
+4. `01-auth.md` is ready to code now: Phase 1 infra (`turbo.json`, envelope interceptor,
+   error enum, Prisma + migration `User`, Swagger) then Phase 2 Auth.
 
 ---
 
@@ -172,37 +207,37 @@
 ## [2026-08-13] — FE design pipeline + scaffold Next.js — Claude Code
 
 **Done**:
-- `ai/skills/flow-mapper.md` + `ai/skills/page-designer.md` viết xong (trước đó là file rỗng 0 byte)
-- Admin: 13 Page Contract + `admin-flow.md` (UI flow + API map) + `pages/_INDEX.md`
-- Admin: 13 Design Spec + `specs/_DESIGN-SYSTEM.md` (phần dùng chung, paste 1 lần)
-- `AGENTS.md` / `CLAUDE.md` trỏ tới 2 skill; tạo lại `.gitignore` (trước đó không có)
+- `ai/skills/flow-mapper.md` + `ai/skills/page-designer.md` written (previously empty 0-byte files)
+- Admin: 13 Page Contracts + `admin-flow.md` (UI flow + API map) + `pages/_INDEX.md`
+- Admin: 13 Design Specs + `specs/_DESIGN-SYSTEM.md` (shared section, pasted once)
+- `AGENTS.md` / `CLAUDE.md` point to the 2 skills; `.gitignore` recreated (did not exist before)
 - ADR-007 (chart palette), ADR-008 (append-only rates)
-- Scaffold `apps/web`: Next 14 + TS + Tailwind + pnpm workspace, `pnpm install` chạy được
+- Scaffold `apps/web`: Next 14 + TS + Tailwind + pnpm workspace, `pnpm install` runs
 
 **In progress**:
-- Chưa code màn nào. `apps/web` mới là scaffold mặc định của create-next-app
-- File token (`tailwind.config.ts`, `globals.css`, `lib/status.ts`, `components/`,
-  `app/admin/layout.tsx`) **chưa ghi** — phải ghi trước khi code `/admin/users`
+- No screen coded yet. `apps/web` is still the default create-next-app scaffold
+- Token files (`tailwind.config.ts`, `globals.css`, `lib/status.ts`, `components/`,
+  `app/admin/layout.tsx`) **not written** — must be written before coding `/admin/users`
 
 **Temporary decisions to preserve**:
-- Spec = mô tả page + API mapping. Token/component chuẩn nằm ở `specs/_DESIGN-SYSTEM.md`,
-  page spec **không lặp lại**. Lý do: Claude Design không đọc được repo, chỉ thấy file được paste
-- `ui-ux-pro-max`: chỉ lấy layout/interaction, **không chạy `--design-system`**, không lấy
-  palette/font của nó
-- `taste-skill`: chỉ dùng cho trang public, không dùng cho dashboard đã đăng nhập
+- Spec = page description + API mapping. Standard tokens/components live in `specs/_DESIGN-SYSTEM.md`;
+  the page spec **does not repeat them**. Reason: Claude Design cannot read the repo, it only sees pasted files
+- `ui-ux-pro-max`: take layout/interaction only, **do not run `--design-system`**, do not take
+  its palette/fonts
+- `taste-skill`: public pages only, not for authenticated dashboards
 
 **Blocker / needs follow-up**:
-- `.git/index.lock` còn kẹt; worktree nằm **trong** repo tại `.claude/worktrees/` làm 88 file
-  .md bị nhân đôi (bản sao đã cũ). Phải `git worktree remove` rồi tạo lại **ngoài** repo
-- OneDrive đã sync lại một bản copy ở `C:\Users\nhata\OneDrive\Máy tính\Real` — nguồn trùng
-  thứ ba, nên xoá
-- API thiếu + 5 quyết định nghiệp vụ chưa chốt → xem `## Needs from the other lane` trong `ai/PROGRESS.md`
+- `.git/index.lock` still stuck; worktree lives **inside** the repo at `.claude/worktrees/`
+  duplicating 88 .md files (copies are stale). Must `git worktree remove` then recreate **outside** the repo
+- OneDrive synced a duplicate copy at `C:\Users\nhata\OneDrive\Máy tính\Real` — a third
+  source, should be deleted
+- Missing APIs + 5 unsettled business decisions → see `## Needs from the other lane` in `ai/PROGRESS.md`
 
 **Next steps**:
-1. Dọn git lock + worktree
-2. Ghi file token vào `apps/web`
-3. Code `/admin/users` cho chạy được, rồi **sửa lại template spec** theo cái học được
-4. Sau đó mới map Teacher + Student (sai template lúc 13 file thì sửa 13, để tới 39 thì sửa 39)
+1. Clean up git lock + worktree
+2. Write token files into `apps/web`
+3. Code `/admin/users` so it runs, then **fix the spec template** from what was learned
+4. Only then map Teacher + Student (fixing the template at 13 files means fixing 13; waiting means fixing 39)
 
 ---
 

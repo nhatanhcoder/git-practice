@@ -1,206 +1,213 @@
 ---
 module: classes-enrollment
 status: deferred
-blocked_by: SCOPE-01 — chưa quyết phạm vi. Không có endpoint nào trong docs/api/ cho phía Admin.
+blocked_by: SCOPE-01 — scope undecided. No endpoints in docs/api/ for the Admin side.
 owner: -
 last_updated: 2026-08-19
 ---
 
 # Module Spec — Classes + Enrollment
 
-## 0. Tóm tắt
+## 0. Summary
 
-Lớp học và ghi danh. **Module này không phục vụ màn Admin nào** — Admin không tạo lớp, không
-ghi danh học sinh (xem RBAC: `Class.create` = ❌ cho Admin).
+Classes and enrollment. **This module does not serve any Admin screen** — Admin neither creates
+classes nor enrolls students (see RBAC: `Class.create` = ❌ for Admin).
 
-Nó có mặt ở đây vì **Sessions/Attendance và Payroll phụ thuộc nó**. Không có `Class` thì không
-có `ClassSession`; không có `ClassEnrollment` thì không có `SessionAttendance`. Cả nhánh
-payroll đứng sau hai bảng này.
+It exists here because **Sessions/Attendance and Payroll depend on it**. Without `Class` there is
+no `ClassSession`; without `ClassEnrollment` there is no `SessionAttendance`. The whole payroll
+branch stands on these two tables.
 
-Đây là **lỗ hổng phạm vi**, không phải module bị hoãn vì ưu tiên thấp.
+This is a **scope gap**, not a module deferred due to low priority.
 
-## 1. Bảng chạm tới
+## 1. Tables touched
 
-| Bảng | Đọc/Ghi | Ghi chú |
+| Table | Read/Write | Notes |
 |---|---|---|
-| `Class` | Ghi (Teacher) · Đọc (Admin, gián tiếp) | Admin chỉ đọc qua session/payroll |
-| `ClassEnrollment` | Ghi (Student join) · Đọc | Admin chỉ đọc |
-| `User` | Đọc | teacherId, studentId |
+| `Class` | Write (Teacher) · Read (Admin, indirect) | Admin only reads through session/payroll |
+| `ClassEnrollment` | Write (Student join) · Read | Admin only reads |
+| `User` | Read | teacherId, studentId |
 
 ## 2. Endpoints
 
-**Không có endpoint nào được định nghĩa cho Admin.** RBAC gán quyền tạo/sửa cho Teacher và
-quyền ghi danh cho Student — nhưng `docs/api/API_TEACHER.md` và `API_STUDENT.md` chưa được
-đối chiếu với module spec này.
+**No endpoints are defined for Admin.** RBAC assigns create/edit rights to Teacher and
+enrollment rights to Student — but `docs/api/API_TEACHER.md` and `API_STUDENT.md` have not been
+cross-checked against this module spec.
 
-| Method | Path | Role | Mô tả | Trạng thái |
+| Method | Path | Role | Description | Status |
 |---|---|---|---|---|
-| POST | `/api/v1/classes` | teacher | Tạo lớp, sinh `enrollmentCode` 8 ký tự | ⛔ chưa đối chiếu |
-| PATCH | `/api/v1/classes/:id` | teacher (own) | Sửa lớp | ⛔ chưa đối chiếu |
-| GET | `/api/v1/classes` | teacher (own) / student (enrolled) | Danh sách lớp | ⛔ chưa đối chiếu |
-| POST | `/api/v1/classes/join` | student | Ghi danh bằng `enrollmentCode` | ⛔ chưa đối chiếu |
-| GET | `/api/v1/classes/:id/students` | teacher (own) | Danh sách học sinh trong lớp | ⛔ chưa đối chiếu |
+| POST | `/api/v1/classes` | teacher | Create class, generate 8-char `enrollmentCode` | ⛔ not cross-checked |
+| PATCH | `/api/v1/classes/:id` | teacher (own) | Edit class | ⛔ not cross-checked |
+| GET | `/api/v1/classes` | teacher (own) / student (enrolled) | List classes | ⛔ not cross-checked |
+| POST | `/api/v1/classes/join` | student | Enroll via `enrollmentCode` | ⛔ not cross-checked |
+| GET | `/api/v1/classes/:id/students` | teacher (own) | List students in class | ⛔ not cross-checked |
 
-**Phần tối thiểu Sessions cần** (nếu chọn phương án B ở mục 16):
+**The minimal part Sessions needs** (if option B in section 16 is chosen):
 
-| Method | Path | Role | Mô tả |
+| Method | Path | Role | Description |
 |---|---|---|---|
-| GET | `/api/v1/admin/classes` | admin | Đọc lớp, để hiển thị tên lớp trong màn session/payroll |
-| GET | `/api/v1/admin/classes/:id/enrollments` | admin | Đọc học sinh đang `active`, để tính attendance |
+| GET | `/api/v1/admin/classes` | admin | Read classes, to display the class name in session/payroll screens |
+| GET | `/api/v1/admin/classes/:id/enrollments` | admin | Read `active` students, to compute attendance |
 
-Hai endpoint này **chưa tồn tại trong `API_ADMIN.md`**.
+These two endpoints **do not exist in `API_ADMIN.md`** yet.
 
 ## 3. DTO
 
-Không đặc tả ở đây. DTO thuộc về module Teacher/Student, sẽ viết khi phạm vi được chốt.
-Chỉ ghi phần Admin đọc:
+Not specified here. The DTO belongs to the Teacher/Student module and will be written once the
+scope is locked. Only the Admin-read part is recorded:
 
 ```
 ClassSummary  = { id, name, hskLevel, teacherId, teacherName, status, studentCount }
 EnrollmentRef = { studentId, nickname, status, joinedAt }
 ```
 
-`studentCount` là suy diễn (`COUNT(ClassEnrollment WHERE status='active')`), không phải cột.
+`studentCount` is derived (`COUNT(ClassEnrollment WHERE status='active')`), not a column.
 
-## 4. Rule nghiệp vụ (invariant)
+## 4. Business rules (invariants)
 
 | ID | Invariant |
 |---|---|
-| INV-CLASS-01 | `enrollmentCode` dài đúng 8 ký tự chữ-số, **duy nhất toàn hệ thống** |
-| INV-CLASS-02 | Chỉ lớp `status = active` mới ghi danh được |
-| INV-CLASS-03 | Chỉ teacher sở hữu lớp mới sửa được: `class.teacherId === req.user.id` |
-| INV-CLASS-04 | Archive lớp **không** xoá enrollment và assignment đang có |
-| INV-CLASS-05 | `UNIQUE(classId, studentId)` — một học sinh chỉ ghi danh một lần mỗi lớp |
-| INV-CLASS-06 | Rời lớp = `status = dropped`, **không xoá bản ghi** (giữ lịch sử) |
-| INV-CLASS-07 | Học sinh chỉ xem được nội dung lớp khi enrollment `status = active` |
-| INV-CLASS-08 | Mọi `ClassSession` phải trỏ tới một `Class` tồn tại — không có session mồ côi |
+| INV-CLASS-01 | `enrollmentCode` is exactly 8 alphanumeric characters, **globally unique** |
+| INV-CLASS-02 | Only classes with `status = active` can be enrolled into |
+| INV-CLASS-03 | Only the teacher who owns the class can edit it: `class.teacherId === req.user.id` |
+| INV-CLASS-04 | Archiving a class **does not** delete existing enrollments and assignments |
+| INV-CLASS-05 | `UNIQUE(classId, studentId)` — a student enrolls at most once per class |
+| INV-CLASS-06 | Leaving a class = `status = dropped`, **no record deletion** (history kept) |
+| INV-CLASS-07 | A student can only view class content when their enrollment `status = active` |
+| INV-CLASS-08 | Every `ClassSession` must point to an existing `Class` — no orphan sessions |
 
 ## 5. Ownership / RBAC
 
 ```
-Teacher   class.teacherId === req.user.id           tạo/sửa/archive
-Student   enrollment.studentId === req.user.id      chỉ lớp mình đã ghi danh, status=active
-Admin     ❌ tạo/sửa  ·  👁️ đọc (chỉ để hiển thị trong session/payroll)
+Teacher   class.teacherId === req.user.id           create/edit/archive
+Student   enrollment.studentId === req.user.id      only classes they enrolled, status=active
+Admin     ❌ create/edit  ·  👁️ read (display only in session/payroll)
 ```
 
-Admin đọc được lớp **không** đồng nghĩa Admin sửa được. Guard phải tách hai quyền này.
+Admin being able to read a class **does not** mean Admin can edit it. The guard must keep these
+two rights separate.
 
 ## 6. State machine
 
 ```
 Class:            active ──archive──► archived
-                     ▲                    │
-                     └──── (chưa quyết: có cho un-archive không?) ────┘
+                      ▲                    │
+                      └──── (undecided: allow un-archive?) ────┘
 
 ClassEnrollment:  (join) ──► active ──leave──► dropped
-                                 ▲                │
-                                 └── (chưa quyết: join lại được không?) ──┘
+                                  ▲                │
+                                  └── (undecided: can they re-join?) ──┘
 ```
 
-Hai transition dấu hỏi chưa có quy định ở bất kỳ tài liệu nào.
+Neither of the two question-marked transitions is specified in any document.
 
 ## 7. Transaction boundary
 
-- **Ghi danh**: kiểm `enrollmentCode` + kiểm lớp `active` + tạo `ClassEnrollment` — một
-  transaction. Nếu không, hai request cùng lúc tạo hai bản ghi trùng trước khi unique
-  constraint kịp chặn ở lần commit thứ hai.
-- **Tạo lớp**: sinh `enrollmentCode` + INSERT — một transaction, retry khi đụng unique.
+- **Enrollment**: check `enrollmentCode` + check class is `active` + create `ClassEnrollment` — one
+  transaction. Otherwise two concurrent requests create two duplicate records before the unique
+  constraint can block the second commit.
+- **Create class**: generate `enrollmentCode` + INSERT — one transaction, retry on unique
+  collision.
 
 ## 8. Idempotency & concurrency
 
-| Kịch bản | Cơ chế |
+| Scenario | Mechanism |
 |---|---|
-| Sinh `enrollmentCode` trùng | `UNIQUE(enrollmentCode)` + retry tối đa N lần. Không tự tin vào random |
-| Hai request join cùng lúc | `UNIQUE(classId, studentId)` là hàng phòng thủ cuối. Kiểm ở service **không đủ** |
-| Join lại sau khi dropped | Phải quyết: UPDATE bản ghi cũ về `active`, hay chặn? Xem mục 16 |
+| Duplicate `enrollmentCode` generated | `UNIQUE(enrollmentCode)` + retry up to N times. Never trust randomness alone |
+| Two concurrent join requests | `UNIQUE(classId, studentId)` is the last line of defense. Service-level check **is not enough** |
+| Re-join after dropped | Must decide: UPDATE the old record back to `active`, or block? See section 16 |
 
-## 9. Error → mã lỗi
+## 9. Error → code mapping
 
-| Nhánh lỗi | HTTP | code | Trạng thái |
+| Error branch | HTTP | code | Status |
 |---|---|---|---|
-| Mã ghi danh không tồn tại | 404 | `CLASS_ENROLL_CODE_INVALID` | ✅ có |
-| Lớp đã archive | 400 | `CLASS_ALREADY_ARCHIVED` | ✅ có (registry ghi HTTP 400) |
-| Đã ghi danh rồi | 409 | `CLASS_ALREADY_ENROLLED` | ✅ có |
-| Không phải chủ lớp | 403 | `AUTH_INSUFFICIENT_ROLE` | ✅ có |
-| Validate sai | 400 | `VALIDATION_ERROR` | ✅ có |
+| Enrollment code does not exist | 404 | `CLASS_ENROLL_CODE_INVALID` | ✅ exists |
+| Class already archived | 400 | `CLASS_ALREADY_ARCHIVED` | ✅ exists (registry says HTTP 400) |
+| Already enrolled | 409 | `CLASS_ALREADY_ENROLLED` | ✅ exists |
+| Not the class owner | 403 | `AUTH_INSUFFICIENT_ROLE` | ✅ exists |
+| Validation failed | 400 | `VALIDATION_ERROR` | ✅ exists |
 
-Cả ba mã **đã tồn tại** trong `API_ERROR_CODES.md` § Class Errors. Bản spec đầu tiên viết sai
-tên (CLASS_CODE_INVALID, CLASS_ARCHIVED — hai mã không tồn tại) — `pnpm check:docs` bắt được, đã sửa 2026-08-19.
-Đây đúng là loại lỗi mà check tồn tại để chặn: bịa tên mới trong khi mã đúng đã có sẵn.
+All three codes **already exist** in `API_ERROR_CODES.md` § Class Errors. The first spec draft
+wrote wrong names (CLASS_CODE_INVALID, CLASS_ARCHIVED — two codes that do not exist) —
+`pnpm check:docs` caught it, fixed 2026-08-19.
+This is exactly the error kind the check exists to block: inventing new names while the correct
+code was already there.
 
-## 10. Side effect & notification
+## 10. Side effects & notifications
 
-Không có notification type nào trong `ENTITY_NOTIFICATION.md` gắn với ghi danh hay tạo lớp.
-Nếu nghiệp vụ cần (ví dụ báo teacher có học sinh mới), phải **thêm enum type mới** —
-đó là migration, không phải chi tiết.
+No notification type in `ENTITY_NOTIFICATION.md` is tied to enrollment or class creation.
+If the business needs one (e.g. telling a teacher a new student joined), a **new enum type must
+be added** — that is a migration, not a detail.
 
 ## 11. Index & query
 
 ```
-Class.enrollmentCode          UNIQUE       tra cứu lúc join, đường nóng
-Class.teacherId                            danh sách lớp của teacher
-ClassEnrollment(classId, studentId) UNIQUE ràng buộc + tra cứu
-ClassEnrollment.studentId                  danh sách lớp của student
-ClassEnrollment(classId, status)           đếm sĩ số active
+Class.enrollmentCode          UNIQUE       lookup at join time, hot path
+Class.teacherId                            teacher's class list
+ClassEnrollment(classId, studentId) UNIQUE constraint + lookup
+ClassEnrollment.studentId                  student's class list
+ClassEnrollment(classId, status)           count active headcount
 ```
 
-**Nguy cơ N+1**: danh sách lớp kèm `studentCount` — đếm trong vòng lặp là sai. Dùng một
-query gộp có `GROUP BY classId`.
+**N+1 risk**: class list with `studentCount` — counting in a loop is wrong. Use a single
+aggregate query with `GROUP BY classId`.
 
 ## 12. Migration & seed
 
-Chưa có migration nào. Khi làm, `Class` và `ClassEnrollment` phải migrate **trước**
-`ClassSession` và `SessionAttendance` — quan hệ khoá ngoại bắt buộc thứ tự này.
+No migration yet. When done, `Class` and `ClassEnrollment` must be migrated **before**
+`ClassSession` and `SessionAttendance` — foreign-key relationships force this order.
 
-Seed cần cho test payroll: ít nhất 1 teacher · 1 class · 3 student đã ghi danh · 5 session
-`approved` trải qua ranh giới tháng.
+Seed needed for payroll testing: at least 1 teacher · 1 class · 3 enrolled students · 5
+`approved` sessions spanning a month boundary.
 
 ## 13. Security & rate limit
 
-- `enrollmentCode` là **bí mật yếu**: ai có mã cũng vào được lớp. Cần rate limit trên
-  `POST /classes/join` để chặn dò mã (8 ký tự alphanumeric = đoán được nếu cho thử vô hạn).
-- Không trả `enrollmentCode` ra cho student trong bất kỳ response nào.
+- `enrollmentCode` is a **weak secret**: anyone with the code can enter the class. Rate limiting
+  on `POST /classes/join` is needed to stop code guessing (8 alphanumeric chars = guessable with
+  unlimited attempts).
+- Never return `enrollmentCode` to students in any response.
 
 ## 14. Observability
 
-Log: tạo lớp, ghi danh thành công/thất bại, số lần dò mã sai theo IP.
+Log: class creation, successful/failed enrollments, wrong-code guessing attempts by IP.
 
 ## 15. Test matrix
 
-| INV | Loại test | Mô tả |
+| INV | Test type | Description |
 |---|---|---|
-| INV-CLASS-01 | service | Sinh 1000 mã, không trùng, đúng 8 ký tự alphanumeric |
-| INV-CLASS-01 | **DB thật** | Ép trùng mã → unique constraint chặn, retry thành công |
-| INV-CLASS-02 | integration | Join lớp `archived` → 409 |
-| INV-CLASS-03 | integration | Teacher B sửa lớp của teacher A → 403 |
-| INV-CLASS-04 | service | Archive lớp → enrollment vẫn còn, assignment vẫn còn |
-| INV-CLASS-05 | **DB thật** | Hai request join đồng thời → đúng 1 bản ghi, request kia 409 |
-| INV-CLASS-06 | service | Leave → `status=dropped`, bản ghi vẫn tồn tại |
-| INV-CLASS-07 | integration | Student `dropped` đọc nội dung lớp → 403 |
-| INV-CLASS-08 | **DB thật** | Xoá Class có session → FK chặn |
+| INV-CLASS-01 | service | Generate 1000 codes: no duplicates, exactly 8 alphanumeric chars |
+| INV-CLASS-01 | **real DB** | Force a code collision → unique constraint blocks, retry succeeds |
+| INV-CLASS-02 | integration | Join an `archived` class → 409 |
+| INV-CLASS-03 | integration | Teacher B edits teacher A's class → 403 |
+| INV-CLASS-04 | service | Archive a class → enrollments still there, assignments still there |
+| INV-CLASS-05 | **real DB** | Two concurrent join requests → exactly 1 record, the other gets 409 |
+| INV-CLASS-06 | service | Leave → `status=dropped`, record still exists |
+| INV-CLASS-07 | integration | `dropped` student reads class content → 403 |
+| INV-CLASS-08 | **real DB** | Delete a Class that has sessions → FK blocks |
 
-## 16. Chưa chốt
+## 16. Unresolved
 
-| Câu hỏi | Chặn gì | Owner | Cần quyết trước |
+| Question | What it blocks | Owner | Decide by |
 |---|---|---|---|
-| **SCOPE-01: phạm vi module này** — làm đầy đủ (kéo scope Teacher vào sớm) hay tối thiểu đủ cho Sessions? | **Toàn bộ Sessions + Payroll**. Không có Class thì `GET /admin/sessions/pending` vĩnh viễn rỗng | - | trước Phase 3 |
-| **SCOPE-02**: ba transition `scheduled → in_progress → completed_pending` không có endpoint ở đâu | Notification `session_submitted_for_review` không có nơi phát sinh | - | cùng SCOPE-01 |
-| Un-archive lớp có cho phép không? | state machine | - | khi làm module |
-| Join lại sau `dropped`: UPDATE về `active` hay chặn? | INV-CLASS-05, unique constraint | - | khi làm module |
+| **SCOPE-01: scope of this module** — full implementation (pull Teacher scope in early) or minimal enough for Sessions? | **All of Sessions + Payroll**. Without Class, `GET /admin/sessions/pending` is permanently empty | - | before Phase 3 |
+| **SCOPE-02**: the three transitions `scheduled → in_progress → completed_pending` have no endpoint anywhere | The `session_submitted_for_review` notification has no producer | - | same as SCOPE-01 |
+| Is un-archiving a class allowed? | state machine | - | when working on the module |
+| Re-join after `dropped`: UPDATE back to `active` or block? | INV-CLASS-05, unique constraint | - | when working on the module |
 
-| `hskLevel` của Class ghi 1–9, GLOSSARY nói 1–6 (DOC-004) | validate | - | trước migration |
+| `hskLevel` of Class says 1–9, GLOSSARY says 1–6 (DOC-004) | validation | - | before migration |
 
-### Hai phương án cho SCOPE-01
+### Two options for SCOPE-01
 
-**A. Làm đầy đủ** — Class + Enrollment thành module BE hoàn chỉnh, kéo phần scope Teacher vào
-sớm hơn kế hoạch.
-*Được*: Sessions/Payroll có nền thật, không phải làm lại. Teacher module sau này đỡ việc.
-*Mất*: phình phạm vi giai đoạn Admin; phải thiết kế thêm API Teacher/Student.
+**A. Full implementation** — Class + Enrollment become a complete BE module, pulling the Teacher
+side of the scope in earlier than planned.
+*Gain*: Sessions/Payroll get a real foundation, no rework later. The future Teacher module has
+less to do.
+*Cost*: the Admin phase scope grows; Teacher/Student APIs must be designed now.
 
-**B. Tối thiểu** — chỉ làm phần Admin đọc được (2 endpoint ở mục 2) + seed dữ liệu lớp bằng
-script, chưa có đường tạo lớp qua API.
-*Được*: nhanh, đủ để Sessions/Payroll chạy và test.
-*Mất*: hệ thống chưa dùng thật được (không ai tạo được lớp qua UI); phải quay lại làm tiếp.
+**B. Minimal** — only the Admin-readable part (the 2 endpoints in section 2) + seed class data
+via script, no API path to create classes yet.
+*Gain*: fast, enough for Sessions/Payroll to run and be tested.
+*Cost*: the system is not truly usable yet (nobody can create a class via UI); must come back
+and finish.
 
-**Đề xuất: B**, kèm điều kiện ghi rõ trong `PROGRESS.md` rằng Sessions/Payroll xây trên nền
-tạm, và Class/Enrollment đầy đủ là việc bắt buộc trước khi có người dùng thật.
+**Recommendation: B**, with the condition recorded in `PROGRESS.md` that Sessions/Payroll are
+built on a temporary foundation, and full Class/Enrollment is mandatory before real users exist.
