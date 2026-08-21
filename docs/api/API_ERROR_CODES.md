@@ -185,31 +185,31 @@
 | `AI_KEY_INVALID` | 401 | The configured Gemini API key was rejected |
 | `AI_GRADING_FAILED` | 502 | Gemini returned an unusable grading response |
 
-### Fallback Errors — phát ra bởi Global Exception Filter
+### Fallback Errors — emitted by the Global Exception Filter
 
-> ⚠️ Hai mã này **đã được `GlobalExceptionFilter` ở §5 phát ra từ đầu** nhưng chưa bao giờ
-> được đăng ký ở §3. `pnpm check:docs` phát hiện 2026-08-19 khi các module spec tham chiếu tới
-> chúng. Đăng ký ở đây để registry khớp với code mẫu — **không phải** để khuyến khích dùng.
+> ⚠️ These two codes **have been emitted by the `GlobalExceptionFilter` in §5 all along** but were never
+> registered in §3. `pnpm check:docs` flagged them on 2026-08-19 when module specs referenced
+> them. Registered here so the registry matches the sample code — **not** to encourage usage.
 
 | Code | HTTP | Description |
 |------|------|-------|
-| `DUPLICATE_ENTRY` | 409 | Prisma P2002 (vi phạm unique) rơi tới global filter |
-| `INTERNAL_SERVER_ERROR` | 500 | Lỗi không được ánh xạ — nhánh mặc định của filter |
+| `DUPLICATE_ENTRY` | 409 | Prisma P2002 (unique violation) falls through to the global filter |
+| `INTERNAL_SERVER_ERROR` | 500 | Unmapped error — the filter's default branch |
 
-**Đây là mã của tầng cuối, không phải mã nghiệp vụ.** Service **phải** bắt lỗi và ném lại mã
-cụ thể trước khi nó rơi tới filter. Ví dụ: `register` bắt P2002 và ném `AUTH_EMAIL_EXISTS`
-(409) — nếu để lọt thành `DUPLICATE_ENTRY`, frontend nhận một `code` nó không có nhánh xử lý
-và rơi vào toast mặc định. `DUPLICATE_ENTRY` xuất hiện trong log production = có một nhánh
-lỗi ai đó quên ánh xạ.
+**These are last-resort codes, not business codes.** Services **must** catch errors and rethrow
+specific codes before they fall through to the filter. Example: `register` catches P2002 and
+throws `AUTH_EMAIL_EXISTS` (409) — if it leaked out as `DUPLICATE_ENTRY`, the frontend receives a
+`code` it has no handler branch for and falls into the default toast. `DUPLICATE_ENTRY` appearing
+in production logs = an error branch someone forgot to map.
 
-### Đề xuất, chưa được duyệt (proposed, not agreed)
+### Proposed, not agreed
 
-> ⚠️ **Chưa dùng được.** Cần BE owner ký từng dòng. Ghi ra không phải là chốt.
+> ⚠️ **Not usable yet.** Needs a BE owner to sign off each row. Listing them is not locking them.
 
-| Code | HTTP | Description | Cần cho |
+| Code | HTTP | Description | Needed for |
 |------|------|-------------|---------|
-| `TOO_MANY_REQUESTS` | 429 | Vượt rate limit | `API_CONVENTIONS.md` chưa có mục rate limit nào — phải viết trước |
-| `PAYROLL_PERIOD_DUPLICATE` | 409 | Đã tồn tại kỳ lương cho teacher này trong khoảng ngày đó | `POST /admin/payroll` — hiện `PAYROLL_PERIOD_FINALIZED` đang gánh 3 ngữ nghĩa khác nhau |
+| `TOO_MANY_REQUESTS` | 429 | Rate limit exceeded | `API_CONVENTIONS.md` has no rate-limit section yet — must be written first |
+| `PAYROLL_PERIOD_DUPLICATE` | 409 | A payroll period already exists for this teacher in that date range | `POST /admin/payroll` — `PAYROLL_PERIOD_FINALIZED` currently carries 3 different meanings |
 
 ### Validation Errors (VALIDATION_*)
 

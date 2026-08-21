@@ -1,38 +1,47 @@
 ---
 module: Auth
 status: accepted
-blocked_by: - (không quyết định nghiệp vụ nào chặn phần lõi; các điểm hở ghi ở §16 — C1 chặn tên field DTO, không chặn luồng)
+blocked_by: - (no business decision blocks the core; open points recorded in §16 — C1 blocks DTO field names, not flows)
 owner: -
 last_updated: 2026-08-19
 ---
 
-## 0. Tóm tắt
+## 0. Summary
 
-Module sở hữu **danh tính và phiên đăng nhập**: tạo tài khoản (`status=pending`), xác thực mật khẩu, phát/xoay/thu hồi token, và cho phép chủ tài khoản tự đọc – tự sửa hồ sơ của chính mình. Ranh giới: module này **không đổi `User.status`** (approve/suspend/activate thuộc module Users, `PATCH /admin/users/:id/*`) và **không đọc/ghi dữ liệu của user khác** — mọi endpoint chỉ tác động lên `req.user.id`, không endpoint nào nhận `:id`. Ba thứ module này độc quyền sở hữu: `User.passwordHash`, bảng `RefreshToken`, và cookie `refresh_token`. Không module nào khác được chạm vào ba thứ đó.
+The module owns **identity and login sessions**: account creation (`status=pending`), password
+authentication, token issuance/rotation/revocation, and letting the account owner read and edit
+their own profile. Boundaries: this module **does not change `User.status`** (approve/suspend/
+activate belong to the Users module, `PATCH /admin/users/:id/*`) and **does not read/write other
+users' data** — every endpoint only touches `req.user.id`; no endpoint accepts a `:id`. Three
+things this module exclusively owns: `User.passwordHash`, the `RefreshToken` table, and the
+`refresh_token` cookie. No other module may touch those three.
 
-## 1. Bảng chạm tới
+## 1. Tables touched
 
-| Bảng | Đọc/Ghi | Ghi chú |
+| Table | Read/Write | Notes |
 |---|---|---|
-| `User` | Đọc + Ghi | INSERT khi register (luôn `status=pending`). UPDATE: `lastLoginAt` (login), `passwordHash` (change-password), `nickname`/`email`/`avatarUrl` (PATCH /me). **Không bao giờ ghi `role`, `status`**. Đọc `passwordHash` chỉ trong hàm xác thực, không bao giờ đưa ra khỏi service |
-| `RefreshToken` | Đọc + Ghi | INSERT khi login + mỗi lần rotate; UPDATE `revokedAt` khi rotate/logout/đổi mật khẩu/phát hiện replay. ⚠️ **Bảng này không có file `ENTITY_*.md`** trong `docs/entities/postgres/` và không có trong `_FACTS.md`; định nghĩa duy nhất tìm được là `PROJECT_KNOWLEDGE.md` mục 16 (`id · userId · tokenHash unique · expiresAt · revokedAt`). Các field mà §6/§8 cần (`familyId`, `replacedById`, lý do thu hồi) **chưa tồn tại** → §12 + §16 |
-| `Notification` | Ghi (INSERT) | Chỉ 2 type: `new_teacher_registration`, `new_student_registration`, gửi cho admin. Append-only. Không đọc |
-| *(bộ đếm rate limit)* | Đọc + Ghi | **Không có bảng** trong tài liệu. Không dùng bảng Postgres cho đếm login fail (ghi nóng, không cần bền vững) — đề xuất Redis/in-memory store của `@nestjs/throttler`. Là hạ tầng chưa được chốt → §16 |
-| Supabase Storage | Ghi (ngoài DB) | Upload avatar cho `PATCH /auth/me`. Nằm **ngoài mọi transaction** (§7) |
+| `User` | Read + Write | INSERT on register (always `status=pending`). UPDATE: `lastLoginAt` (login), `passwordHash` (change-password), `nickname`/`email`/`avatarUrl` (PATCH /me). **Never writes `role`, `status`**. Reads `passwordHash` only inside the authentication function, never outside the service |
+| `RefreshToken` | Read + Write | INSERT on login + every rotation; UPDATE `revokedAt` on rotate/logout/password-change/replay detection. ⚠️ **This table has no `ENTITY_*.md` file** in `docs/entities/postgres/` and isn't in `_FACTS.md`; the only definition found is `PROJECT_KNOWLEDGE.md` section 16 (`id · userId · tokenHash unique · expiresAt · revokedAt`). Fields §6/§8 need (`familyId`, `replacedById`, revocation reason) **don't exist** → §12 + §16 |
+| `Notification` | Write (INSERT) | Only 2 types: `new_teacher_registration`, `new_student_registration`, sent to admins. Append-only. No reads |
+| *(rate-limit counter)* | Read + Write | **No table** in the docs. Don't use a Postgres table for login-failure counting (hot writes, no durability needed) — proposed Redis/in-memory store via `@nestjs/throttler`. Infrastructure not locked → §16 |
+| Supabase Storage | Write (outside DB) | Avatar upload for `PATCH /auth/me`. Outside **every transaction** (§7) |
 
 ## 2. Endpoints
 
-| Method | Path | Role | Mô tả | Trạng thái |
+| Method | Path | Role | Description | Status |
 |---|---|---|---|---|
-| POST | `/api/v1/auth/register` | public | Tạo tài khoản mới, luôn ở `pending`, chờ admin duyệt | defined (API_AUTH.md) |
-| POST | `/api/v1/auth/login` | public | Đổi email+mật khẩu lấy access token + cookie `refresh_token` | defined |
-| POST | `/api/v1/auth/refresh` | public *(xác thực bằng cookie)* | Xoay refresh token, phát access token mới | defined |
-| POST | `/api/v1/auth/logout` | authenticated (mọi role) | Thu hồi refresh token của phiên hiện tại, xoá cookie | defined |
-| GET | `/api/v1/auth/me` | authenticated (mọi role) | Hồ sơ của chính người đang đăng nhập | defined |
-| PATCH | `/api/v1/auth/me` | authenticated (mọi role) | Tự sửa hồ sơ của chính mình | defined |
-| POST | `/api/v1/auth/change-password` | authenticated (mọi role) | Đổi mật khẩu, cần mật khẩu hiện tại | defined |
+| POST | `/api/v1/auth/register` | public | Create a new account, always `pending`, awaiting admin approval | defined (API_AUTH.md) |
+| POST | `/api/v1/auth/login` | public | Exchange email+password for an access token + `refresh_token` cookie | defined |
+| POST | `/api/v1/auth/refresh` | public *(authenticated via cookie)* | Rotate the refresh token, issue a new access token | defined |
+| POST | `/api/v1/auth/logout` | authenticated (any role) | Revoke the current session's refresh token, clear the cookie | defined |
+| GET | `/api/v1/auth/me` | authenticated (any role) | The currently logged-in user's own profile | defined |
+| PATCH | `/api/v1/auth/me` | authenticated (any role) | Edit one's own profile | defined |
+| POST | `/api/v1/auth/change-password` | authenticated (any role) | Change password, requires the current password | defined |
 
-Không có: `POST /auth/forgot-password`, `POST /auth/reset-password`, `POST /auth/verify-email`, `GET /auth/sessions`. **Không tồn tại đường khôi phục mật khẩu** trong toàn bộ tài liệu API → §16. `/auth/refresh` là endpoint public duy nhất được xác thực bằng cookie thay vì header — đó là lý do §13 phải nói về CSRF.
+Absent: `POST /auth/forgot-password`, `POST /auth/reset-password`, `POST /auth/verify-email`,
+`GET /auth/sessions`. **No password-recovery path exists** in the entire API docs → §16.
+`/auth/refresh` is the only public endpoint authenticated via cookie instead of a header — that's
+why §13 must discuss CSRF.
 
 ## 3. DTO
 
@@ -40,34 +49,44 @@ Không có: `POST /auth/forgot-password`, `POST /auth/reset-password`, `POST /au
 
 **POST /auth/register**
 
-| Field | Kiểu | Bắt buộc | Ràng buộc validate |
+| Field | Type | Required | Validation constraint |
 |---|---|---|---|
-| `email` | string | có | Định dạng email, ≤ 255 ký tự, **chuẩn hoá `trim` + lowercase trước khi lưu và trước khi so trùng** (⚠️ ENTITY_USER chỉ nói "unique", không nói phân biệt hoa/thường → §16) |
-| `password` | string | có | ≥ 8 ký tự (API_AUTH). ⚠️ API_ERROR_CODES.md và FE profile spec còn yêu cầu "có chữ hoa và số" — **hai nguồn, hai luật** → §16. Không bao giờ log, không bao giờ echo lại trong `details` |
-| `fullName` | string | có | ⚠️ **C1** — field entity tên là `nickname`. Tên trong body theo API_AUTH.md là `fullName`. Không tự đổi, xem §16. Ràng buộc: trim, 1–100 ký tự (khớp `varchar(100)` của `nickname`) |
-| `role` | enum string | có | ∈ `student` \| `teacher`. **`admin` không phải giá trị hợp lệ** — không có đường tự đăng ký làm admin (INV-AUTH-03) |
+| `email` | string | yes | Email format, ≤ 255 chars, **normalized `trim` + lowercase before saving and before matching** (⚠️ ENTITY_USER only says "unique", nothing about case sensitivity → §16) |
+| `password` | string | yes | ≥ 8 chars (API_AUTH). ⚠️ API_ERROR_CODES.md and the FE profile spec also require "uppercase and a number" — **two sources, two rules** → §16. Never logged, never echoed in `details` |
+| `fullName` | string | yes | ⚠️ **C1** — the entity field is named `nickname`. The body name per API_AUTH.md is `fullName`. Don't change it yourself, see §16. Constraint: trim, 1–100 chars (matches `nickname`'s `varchar(100)`) |
+| `role` | enum string | yes | ∈ `student` \| `teacher`. **`admin` is not a valid value** — no self-registration as admin (INV-AUTH-03) |
 
-Không nhận `status`, `hskLevelGoal`, `bio`, `avatarUrl`, `id` trong body register — thừa field phải bị loại bỏ (whitelist), không im lặng bỏ qua rồi lưu.
+Not accepted: `status`, `hskLevelGoal`, `bio`, `avatarUrl`, `id` in the register body — extra
+fields must be stripped (whitelist), not silently ignored and saved.
 
-**POST /auth/login** — `email` (string, có, chuẩn hoá như trên), `password` (string, có). Không validate độ dài mật khẩu ở login (validate độ dài ở đây làm lộ chính sách và tạo thêm một nhánh phân biệt) — sai định dạng email vẫn phải cho ra cùng kết quả với sai mật khẩu (§13).
+**POST /auth/login** — `email` (string, yes, normalized as above), `password` (string, yes). Don't
+validate password length at login (length validation here leaks policy and adds a distinguishing
+branch) — a malformed email must produce the same result as a wrong password (§13).
 
-**POST /auth/refresh** — **không có body**. Đầu vào duy nhất: cookie `refresh_token`. Không chấp nhận refresh token trong body hay header (nếu chấp nhận thì cookie httpOnly mất tác dụng bảo vệ).
+**POST /auth/refresh** — **no body**. Sole input: the `refresh_token` cookie. Never accept the
+refresh token in the body or header (doing so defeats the httpOnly cookie's protection).
 
-**POST /auth/logout** — không body. `Authorization: Bearer <access_token>` + cookie `refresh_token`.
+**POST /auth/logout** — no body. `Authorization: Bearer <access_token>` + the `refresh_token`
+cookie.
 
-**GET /auth/me** — không tham số.
+**GET /auth/me** — no parameters.
 
-**PATCH /auth/me** — tất cả field optional, nhưng body rỗng `{}` → `VALIDATION_ERROR` (không cho phép PATCH rỗng làm `updatedAt` nhảy vô nghĩa):
+**PATCH /auth/me** — all fields optional, but an empty body `{}` → `VALIDATION_ERROR` (no
+meaningless `updatedAt` bump from an empty PATCH):
 
-| Field | Kiểu | Bắt buộc | Ràng buộc validate |
+| Field | Type | Required | Validation constraint |
 |---|---|---|---|
-| `fullName` | string | không | ⚠️ C1 như trên; trim, 1–100 |
-| `email` | string | không | Định dạng email, ≤255, chuẩn hoá; trùng email người khác → `AUTH_EMAIL_EXISTS` |
-| `avatarUrl` | string | không | URL hợp lệ, https, trỏ tới Supabase Storage. `null` = xoá avatar (FE có nút `Xóa ảnh`) — ⚠️ API_AUTH không nói `null` có được chấp nhận không → §16 |
+| `fullName` | string | no | ⚠️ C1 as above; trim, 1–100 |
+| `email` | string | no | Email format, ≤255, normalized; duplicate of another user's email → `AUTH_EMAIL_EXISTS` |
+| `avatarUrl` | string | no | Valid URL, https, pointing to Supabase Storage. `null` = remove avatar (FE has a "Remove image" button) — ⚠️ API_AUTH doesn't say whether `null` is accepted → §16 |
 
-**Không có** `hskLevelGoal`, `bio`, `role`, `status` trong body → hệ quả: `hskLevelGoal` (mục tiêu HSK của học sinh) và `bio` (giới thiệu giáo viên) **không có bất kỳ endpoint nào ghi được**, dù cả hai là field của `User` và hiển thị ở màn chi tiết. Ghi nhận, không tự thêm field → §16.
+**Not present**: `hskLevelGoal`, `bio`, `role`, `status` in the body → consequence: `hskLevelGoal`
+(student's HSK target) and `bio` (teacher intro) **have no endpoint that can write them**, even
+though both are `User` fields displayed on the detail screen. Noted; not self-added → §16.
 
-**POST /auth/change-password** — `currentPassword` (string, có), `newPassword` (string, có, cùng chính sách với `password` ở register, và **phải khác** `currentPassword`). FE có ô thứ ba `Xác nhận mật khẩu mới` — đó là ràng buộc FE, **không** gửi lên API.
+**POST /auth/change-password** — `currentPassword` (string, yes), `newPassword` (string, yes, same
+policy as register's `password`, and **must differ** from `currentPassword`). FE has a third
+"Confirm new password" field — that's an FE constraint, **not** sent to the API.
 
 ### Response
 
@@ -77,98 +96,116 @@ Không nhận `status`, `hskLevelGoal`, `bio`, `avatarUrl`, `id` trong body regi
 { "data": { "message": "Registration successful. Awaiting admin approval." } }
 ```
 
-Không trả `id`, không trả token, không trả bất kỳ field nào của user vừa tạo. (Trả `id` là rò rỉ không cần thiết; trả token là sai — tài khoản đang `pending`.)
+No `id`, no token, no user fields of the just-created account. (Returning `id` is unnecessary
+leakage; returning a token is wrong — the account is `pending`.)
 
-**POST /auth/login** → `200`, kèm header `Set-Cookie: refresh_token=<...>; HttpOnly; ...` (thuộc tính cookie ở §13)
+**POST /auth/login** → `200`, plus header `Set-Cookie: refresh_token=<...>; HttpOnly; ...`
+(cookie attributes in §13)
 
 ```
 { "data": { "accessToken": "<jwt>",
             "user": { "id": "...", "email": "...", "role": "student", "status": "active" } } }
 ```
 
-`user` ở đây **đúng 4 field** theo API_AUTH.md — không nhồi thêm `nickname`/`avatarUrl`; FE muốn thêm thì gọi `GET /auth/me`. Không có `refreshToken` trong body (INV-AUTH-09). Không có `expiresIn` (không được định nghĩa; FE biết 15 phút từ tài liệu, hoặc đọc `exp` trong JWT).
+`user` here is **exactly 4 fields** per API_AUTH.md — no extra `nickname`/`avatarUrl`; FE wanting
+more calls `GET /auth/me`. No `refreshToken` in the body (INV-AUTH-09). No `expiresIn` (not
+defined; FE knows 15 minutes from the docs, or reads `exp` from the JWT).
 
-**POST /auth/refresh** → `200` + `Set-Cookie` mới (token đã xoay)
+**POST /auth/refresh** → `200` + a new `Set-Cookie` (token rotated)
 
 ```
 { "data": { "accessToken": "<jwt>" } }
 ```
 
-**POST /auth/logout** → `204`, kèm `Set-Cookie` xoá cookie (`Max-Age=0`, cùng `Path`/`Domain` với lúc set — sai `Path` là cookie không bị xoá).
+**POST /auth/logout** → `204`, plus a `Set-Cookie` clearing the cookie (`Max-Age=0`, same
+`Path`/`Domain` as when set — a wrong `Path` means the cookie isn't deleted).
 
 **GET /auth/me** · **PATCH /auth/me** → `200` — `{ "data": UserProfile }`
 
 `UserProfile`:
 
-| Field | Kiểu | Nullable | Ghi chú |
+| Field | Type | Nullable | Notes |
 |---|---|---|---|
 | `id` | uuid | no | |
 | `email` | string | no | |
 | `role` | `admin`\|`teacher`\|`student` | no | |
 | `status` | `pending`\|`active`\|`suspended` | no | |
-| `nickname` | string | yes | ⚠️ C1 — nếu chốt theo API_AUTH thì key này phải là `fullName` ở cả request lẫn response |
+| `nickname` | string | yes | ⚠️ C1 — if resolved per API_AUTH, this key must be `fullName` in both request and response |
 | `avatarUrl` | string | yes | |
-| `hskLevelGoal` | int | yes | Chỉ có nghĩa với `student`. ⚠️ C4: ENTITY_USER ghi 1–9, GLOSSARY/DATABASE_SCHEMA ghi 1–6 (DOC-004) — module này chỉ đọc, không validate |
-| `bio` | text | yes | Chỉ có nghĩa với `teacher` |
-| `lastLoginAt` | DateTime UTC ISO 8601 | yes | `null` khi chưa từng đăng nhập thành công |
+| `hskLevelGoal` | int | yes | Only meaningful for `student`. ⚠️ C4: ENTITY_USER says 1–9, GLOSSARY/DATABASE_SCHEMA say 1–6 (DOC-004) — this module only reads, doesn't validate |
+| `bio` | text | yes | Only meaningful for `teacher` |
+| `lastLoginAt` | DateTime UTC ISO 8601 | yes | `null` when never logged in successfully |
 | `createdAt` | DateTime UTC ISO 8601 | no | |
 | `updatedAt` | DateTime UTC ISO 8601 | no | |
 
-`passwordHash` **không xuất hiện** trong bất kỳ response nào, kể cả nhánh lỗi và kể cả `details`.
+`passwordHash` **never appears** in any response, including error branches and `details`.
 
-**POST /auth/change-password** → `204`, không body. Không trả token mới (INV-AUTH-17 thu hồi hết token cũ ⇒ FE phải cho đăng nhập lại; ⚠️ hệ quả UX này chưa được tài liệu nào mô tả → §16).
+**POST /auth/change-password** → `204`, no body. No new token returned (INV-AUTH-17 revokes all
+old tokens ⇒ FE must ask the user to log in again; ⚠️ this UX consequence isn't described by any
+document → §16).
 
-## 4. Rule nghiệp vụ (invariant)
+## 4. Business rules (invariants)
 
-| ID | Phát biểu |
+| ID | Statement |
 |---|---|
-| **INV-AUTH-01** | `passwordHash` không bao giờ rời khỏi tầng service: không có trong response nào, không có trong log nào, không có trong `details` của lỗi nào, không có trong claim của JWT nào. |
-| **INV-AUTH-02** | Mật khẩu chỉ được lưu dưới dạng bcrypt **cost 12**; mật khẩu thô không bao giờ được ghi xuống đĩa, ghi log hay gửi đi nơi khác; so khớp chỉ qua hàm so sánh của bcrypt, không tự so chuỗi. |
-| **INV-AUTH-03** | Mọi user tạo bởi `POST /auth/register` luôn có `status = pending` và `role ∈ {student, teacher}`; không tồn tại giá trị body nào khiến register cho ra `status = active` hoặc `role = admin`. |
-| **INV-AUTH-04** | `email` là duy nhất toàn hệ thống sau chuẩn hoá (trim + lowercase): hai request register cùng email — kể cả đồng thời, kể cả khác kiểu hoa/thường — cho ra **đúng một** hàng `User`; request thua nhận `409 AUTH_EMAIL_EXISTS`. |
-| **INV-AUTH-05** | Login chỉ phát token khi `status = active`. `pending` → `403 AUTH_ACCOUNT_PENDING`, `suspended` → `403 AUTH_ACCOUNT_SUSPENDED`; cả hai nhánh **không** phát access token, **không** set cookie, **không** ghi `RefreshToken`, **không** đụng `lastLoginAt`. |
-| **INV-AUTH-06** | Email không tồn tại và mật khẩu sai cho ra **cùng một phản hồi**: cùng HTTP 401, cùng `code = AUTH_INVALID_CREDENTIALS`, cùng `message`, cùng shape (không `details`), và thời gian phản hồi cùng phân phối (không có nhánh nào trả về sớm hơn vì bỏ qua bcrypt). |
-| **INV-AUTH-07** | `AUTH_ACCOUNT_PENDING` / `AUTH_ACCOUNT_SUSPENDED` chỉ được trả **sau khi mật khẩu đã đúng**. Mật khẩu sai trên tài khoản `pending`/`suspended` vẫn trả `AUTH_INVALID_CREDENTIALS`. (Trạng thái tài khoản là thông tin chỉ chủ tài khoản mới được biết.) |
-| **INV-AUTH-08** | Access token có hạn đúng **15 phút**, refresh token đúng **7 ngày**, tính từ lúc phát; token quá hạn bị từ chối ở mọi endpoint (`AUTH_TOKEN_EXPIRED`), không có gia hạn ngầm cho access token. |
-| **INV-AUTH-09** | Refresh token chỉ đi qua cookie `refresh_token` với cờ `HttpOnly`: không nằm trong body response, không nằm trong header response nào khác, không đọc được bằng JavaScript, và không được chấp nhận nếu client gửi nó qua body/header. |
-| **INV-AUTH-10** | Mỗi lần `/auth/refresh` thành công là một lần **xoay**: token vừa dùng bị đánh dấu thu hồi trong cùng transaction với việc phát token mới. Ngoài cửa sổ ân hạn (§8), mỗi family có **tối đa một** token còn dùng được. |
-| **INV-AUTH-11** | Trình lại một refresh token đã bị thu hồi/đã xoay (ngoài cửa sổ ân hạn) là **REPLAY**: hệ thống thu hồi **toàn bộ family** của token đó, không phát token mới, trả `401 AUTH_REFRESH_INVALID`. Việc thu hồi family **được commit** dù request kết thúc bằng lỗi. |
-| **INV-AUTH-12** | Sau khi một family bị thu hồi, không token nào thuộc family đó còn dùng được — kể cả token mới nhất, kể cả token chưa hết hạn. Đường duy nhất để tiếp tục là đăng nhập lại. |
-| **INV-AUTH-13** | Refresh token chỉ được lưu dưới dạng băm (`tokenHash`, UNIQUE); giá trị thô không tồn tại trong DB, trong log hay trong bản backup. Đọc trộm DB không thu được token dùng được. |
-| **INV-AUTH-14** | `lastLoginAt` được cập nhật **sau khi phát token thành công** ở `/auth/login` và chỉ ở đó: login thất bại (mọi nhánh lỗi), `/auth/refresh`, `/auth/logout` **không** làm nó đổi. |
-| **INV-AUTH-15** | Trạng thái tài khoản được kiểm **theo từng request** trên dữ liệu DB, không chỉ tin vào claim trong JWT: user bị `suspended` sau khi đã có access token còn hạn vẫn bị từ chối ở mọi endpoint được bảo vệ, và refresh token của họ không xoay được nữa. |
-| **INV-AUTH-16** | `/auth/logout` thu hồi refresh token của phiên hiện tại và xoá cookie; gọi lại lần hai (không cookie, hoặc cookie đã thu hồi) vẫn trả `204`, không lỗi, không side effect mới. Logout **không** làm access token đang cầm biến mất — nó sống tối đa hết 15 phút của nó (giới hạn đã biết của JWT không trạng thái). |
-| **INV-AUTH-17** | `POST /auth/change-password` chỉ thành công khi `currentPassword` đúng; khi thành công, **toàn bộ** refresh token của user (mọi family, mọi thiết bị) bị thu hồi trong cùng transaction với việc ghi `passwordHash` mới. |
-| **INV-AUTH-18** | Việc ghi `passwordHash` mới và việc thu hồi token là **nguyên tử**: không tồn tại trạng thái "đã đổi mật khẩu nhưng token cũ vẫn xoay được", cũng không tồn tại "đã thu hồi token nhưng mật khẩu chưa đổi". |
-| **INV-AUTH-19** | `PATCH /auth/me` chỉ ghi lên hàng `User` có `id = req.user.id`, và chỉ ghi được `nickname`(⚠️C1)/`email`/`avatarUrl` + `updatedAt`. `id`, `role`, `status`, `passwordHash`, `createdAt`, `lastLoginAt` bất biến qua endpoint này. |
-| **INV-AUTH-20** | Đổi email qua `PATCH /auth/me` vẫn giữ nguyên tính duy nhất của `email` (trùng → `409 AUTH_EMAIL_EXISTS`, không ghi gì) và **không** đổi `status` — đổi email không đưa tài khoản active về `pending`. |
-| **INV-AUTH-21** | Quá **5 lần login thất bại trong 15 phút** cho cùng một khoá đếm thì các lần tiếp theo bị chặn bằng HTTP 429 mà **không** thực hiện so khớp mật khẩu; hành vi chặn giống hệt nhau với email tồn tại và email không tồn tại (không được dùng 429 để dò tài khoản). Login **thành công** không bị chặn bởi bộ đếm của lần thất bại trước đó khi chưa chạm ngưỡng. |
-| **INV-AUTH-22** | Hai request `/auth/refresh` đồng thời mang **cùng một** refresh token hợp lệ (hai tab của cùng trình duyệt) **không phải** replay: đúng một lần xoay xảy ra, cả hai request nhận access token dùng được, family **không** bị thu hồi, và giá trị cookie cuối cùng ở trình duyệt là token còn dùng được. |
-| **INV-AUTH-23** | Mọi response lỗi của module theo đúng envelope phẳng của API_CONVENTIONS.md (`statusCode`/`error`/`code`/`message`/`timestamp`/`path`, không cờ `success`, không object `error` lồng); `details` **chỉ** xuất hiện ở `VALIDATION_ERROR`. |
-| **INV-AUTH-24** | Mọi field DateTime trả ra là UTC ISO 8601; `lastLoginAt = null` (không phải chuỗi rỗng, không phải epoch 0) khi user chưa từng đăng nhập thành công. |
+| **INV-AUTH-01** | `passwordHash` never leaves the service layer: not in any response, not in any log, not in any error's `details`, not in any JWT claim. |
+| **INV-AUTH-02** | Passwords are only stored as bcrypt **cost 12**; the raw password is never written to disk, logged, or sent anywhere; matching only via bcrypt's comparison function, never string comparison. |
+| **INV-AUTH-03** | Every user created by `POST /auth/register` always has `status = pending` and `role ∈ {student, teacher}`; no body value can make register produce `status = active` or `role = admin`. |
+| **INV-AUTH-04** | `email` is unique system-wide after normalization (trim + lowercase): two register requests with the same email — including concurrent, including different casing — produce **exactly one** `User` row; the losing request gets `409 AUTH_EMAIL_EXISTS`. |
+| **INV-AUTH-05** | Login issues tokens only when `status = active`. `pending` → `403 AUTH_ACCOUNT_PENDING`, `suspended` → `403 AUTH_ACCOUNT_SUSPENDED`; both branches **don't** issue an access token, **don't** set a cookie, **don't** write `RefreshToken`, **don't** touch `lastLoginAt`. |
+| **INV-AUTH-06** | Nonexistent email and wrong password produce **the same response**: same HTTP 401, same `code = AUTH_INVALID_CREDENTIALS`, same `message`, same shape (no `details`), and the same response-time distribution (no branch returns early by skipping bcrypt). |
+| **INV-AUTH-07** | `AUTH_ACCOUNT_PENDING` / `AUTH_ACCOUNT_SUSPENDED` are only returned **after the password is verified correct**. A wrong password on a `pending`/`suspended` account still returns `AUTH_INVALID_CREDENTIALS`. (Account status is information only the account owner may learn.) |
+| **INV-AUTH-08** | Access token lifetime is exactly **15 minutes**, refresh token exactly **7 days**, from issuance; expired tokens are rejected at every endpoint (`AUTH_TOKEN_EXPIRED`), no implicit access-token renewal. |
+| **INV-AUTH-09** | The refresh token only travels via the `refresh_token` cookie with the `HttpOnly` flag: not in the response body, not in any other response header, unreadable by JavaScript, and not accepted if a client sends it via body/header. |
+| **INV-AUTH-10** | Every successful `/auth/refresh` is a **rotation**: the just-used token is marked revoked in the same transaction as issuing the new one. Outside the grace window (§8), each family has **at most one** usable token. |
+| **INV-AUTH-11** | Re-presenting a revoked/rotated refresh token (outside the grace window) is **REPLAY**: the system revokes **the entire family** of that token, issues no new token, returns `401 AUTH_REFRESH_INVALID`. The family revocation **is committed** even though the request ends in error. |
+| **INV-AUTH-12** | After a family is revoked, no token in that family works — including the newest, including unexpired ones. The only way forward is logging in again. |
+| **INV-AUTH-13** | Refresh tokens are only stored hashed (`tokenHash`, UNIQUE); the raw value never exists in the DB, logs, or backups. Stealing the DB yields no usable token. |
+| **INV-AUTH-14** | `lastLoginAt` is updated **after successful token issuance** at `/auth/login` and only there: failed login (all error branches), `/auth/refresh`, `/auth/logout` **don't** change it. |
+| **INV-AUTH-15** | Account status is checked **per request** against DB data, not just trusted from the JWT claim: a user `suspended` after receiving an unexpired access token is still rejected at every protected endpoint, and their refresh token can't rotate anymore. |
+| **INV-AUTH-16** | `/auth/logout` revokes the current session's refresh token and clears the cookie; calling again (no cookie, or an already-revoked cookie) still returns `204`, no error, no new side effect. Logout **doesn't** make a held access token disappear — it lives out its ≤15 minutes (the known stateless-JWT limitation). |
+| **INV-AUTH-17** | `POST /auth/change-password` only succeeds when `currentPassword` is correct; on success, **all** of the user's refresh tokens (every family, every device) are revoked in the same transaction as writing the new `passwordHash`. |
+| **INV-AUTH-18** | Writing the new `passwordHash` and revoking tokens is **atomic**: no "password changed but old tokens still rotate" state, and no "tokens revoked but password unchanged" state. |
+| **INV-AUTH-19** | `PATCH /auth/me` only writes the `User` row with `id = req.user.id`, and only `nickname`(⚠️C1)/`email`/`avatarUrl` + `updatedAt`. `id`, `role`, `status`, `passwordHash`, `createdAt`, `lastLoginAt` are immutable through this endpoint. |
+| **INV-AUTH-20** | Changing email via `PATCH /auth/me` keeps `email` uniqueness (duplicate → `409 AUTH_EMAIL_EXISTS`, nothing written) and **doesn't** change `status` — changing email doesn't put an active account back to `pending`. |
+| **INV-AUTH-21** | After **5 failed logins in 15 minutes** for the same counter key, subsequent attempts are blocked with HTTP 429 **without** running the password comparison; the blocking behavior is identical for existing and nonexistent emails (429 must not be usable to enumerate accounts). A **successful** login is not blocked by the previous failures' counter before the threshold is hit. |
+| **INV-AUTH-22** | Two concurrent `/auth/refresh` requests carrying **the same** valid refresh token (two tabs of the same browser) are **not** replay: exactly one rotation happens, both requests receive usable access tokens, the family is **not** revoked, and the final cookie value in the browser is a usable token. |
+| **INV-AUTH-23** | Every error response of the module follows API_CONVENTIONS.md's flat envelope (`statusCode`/`error`/`code`/`message`/`timestamp`/`path`; no `success` flag, no nested `error` object); `details` **only** appears on `VALIDATION_ERROR`. |
+| **INV-AUTH-24** | Every DateTime field returned is UTC ISO 8601; `lastLoginAt = null` (not empty string, not epoch 0) when the user never logged in successfully. |
 
 ## 5. Ownership / RBAC
 
-RBAC_MATRIX.md: `User · read own profile` = ✅ Admin / 🔒 Teacher / 🔒 Student; `User · update own profile` = ✅ Admin / 🔒 Teacher / 🔒 Student. Module này **không có endpoint nào bị giới hạn theo role** — mọi role đăng nhập được đều gọi được cả 7 endpoint. Vì vậy `AUTH_INSUFFICIENT_ROLE` không xuất hiện ở §9.
+RBAC_MATRIX.md: `User · read own profile` = ✅ Admin / 🔒 Teacher / 🔒 Student;
+`User · update own profile` = ✅ Admin / 🔒 Teacher / 🔒 Student. This module has **no
+role-restricted endpoint** — any logged-in role can call all 7 endpoints. Hence
+`AUTH_INSUFFICIENT_ROLE` doesn't appear in §9.
 
-Quyền sở hữu ở đây là **cấu trúc, không phải kiểm tra**: không endpoint nào nhận `:id` hay `userId` trong body/query, nên không tồn tại đường để trỏ vào hàng của người khác. Đây là lựa chọn có chủ đích — thêm `?userId=` vào `/auth/me` sẽ biến một invariant cấu trúc thành một invariant phải test.
+Ownership here is **structural, not a check**: no endpoint accepts a `:id` or `userId` in the
+body/query, so no path points at another user's row. Deliberate — adding `?userId=` to
+`/auth/me` would turn a structural invariant into one that must be tested.
 
-Kiểm hai tầng (không chỉ dựa vào guard):
+Two-layer check (not relying on the guard alone):
 
-| Tầng | Điều kiện | Sai thì |
+| Layer | Condition | On failure |
 |---|---|---|
-| Guard | Có `Authorization: Bearer`, chữ ký JWT hợp lệ, chưa quá `exp` | `401 AUTH_TOKEN_INVALID` / `401 AUTH_TOKEN_EXPIRED` |
-| Guard/Service (bắt buộc) | Đọc lại `User` theo `sub` của token: hàng còn tồn tại | `401 AUTH_TOKEN_INVALID` (user đã bị xoá — hiện chưa có đường xoá user) |
-| Service (bắt buộc, không bỏ) | `user.status === 'active'` — **đọc từ DB, không đọc từ claim** | `403 AUTH_ACCOUNT_SUSPENDED` (⚠️ 401 hay 403: xem §16) |
-| Service | Mọi truy vấn dùng `id = req.user.id`, không nhận id từ input | — (không có nhánh sai) |
+| Guard | Has `Authorization: Bearer`, valid JWT signature, not past `exp` | `401 AUTH_TOKEN_INVALID` / `401 AUTH_TOKEN_EXPIRED` |
+| Guard/Service (mandatory) | Re-read `User` by the token's `sub`: the row still exists | `401 AUTH_TOKEN_INVALID` (user deleted — no deletion path exists today) |
+| Service (mandatory, non-negotiable) | `user.status === 'active'` — **read from the DB, not from the claim** | `403 AUTH_ACCOUNT_SUSPENDED` (⚠️ 401 vs 403: see §16) |
+| Service | Every query uses `id = req.user.id`, no id from input | — (no failure branch) |
 
-**Vì sao phải đọc `status` từ DB mỗi request**: access token sống 15 phút. Nếu chỉ tin `status` trong claim, một tài khoản bị admin `suspend` vẫn thao tác bình thường tới 15 phút — với vai trò teacher/admin thì 15 phút đó đủ để duyệt buổi học, ghi nhận thanh toán, hoặc đổi email tài khoản để giữ quyền truy cập. Đây là ranh giới bảo mật, không phải tối ưu hiệu năng ⇒ chấp nhận một truy vấn `User` theo primary key mỗi request (có thể cache ngắn hạn nhưng phải chốt TTL — §16).
+**Why read `status` from the DB on every request**: an access token lives 15 minutes. If the
+claim were trusted, an account `suspend`ed by an admin would keep working normally for up to 15
+minutes — with teacher/admin powers, those 15 minutes are enough to approve a session, record a
+payment, or change the account email to retain access. This is a security boundary, not a
+performance optimization ⇒ accept one `User` query by primary key per request (a short-lived
+cache is possible but the TTL must be locked — §16).
 
 ## 6. State machine
 
-Hai máy trạng thái, thuộc hai chủ sở hữu khác nhau. Module Auth **đọc** cái thứ nhất và **sở hữu** cái thứ hai.
+Two state machines, owned by two different owners. The Auth module **reads** the first and **owns**
+the second.
 
-### 6.1 `User.status` — module Users sở hữu, Auth chỉ là cổng kiểm
+### 6.1 `User.status` — owned by the Users module, Auth is only the check gate
 
 ```
    register (Auth)          approve (Users)          suspend (Users)
@@ -180,346 +217,467 @@ Hai máy trạng thái, thuộc hai chủ sở hữu khác nhau. Module Auth **�
         │                             activate (Users)
         │
    login → 403 AUTH_ACCOUNT_PENDING          login → 403 AUTH_ACCOUNT_SUSPENDED
-   (không token, không cookie)               (không token; token cũ cũng bị từ chối — INV-AUTH-15)
+   (no token, no cookie)                     (no token; old tokens also rejected — INV-AUTH-15)
 ```
 
-Auth chỉ ghi trạng thái đầu tiên (`pending` lúc register) và **không có đường nào** đổi trạng thái sau đó.
+Auth only writes the first state (`pending` at register) and has **no path** to change it later.
 
-### 6.2 `RefreshToken` — rotation + family, module Auth sở hữu
+### 6.2 `RefreshToken` — rotation + family, owned by the Auth module
 
-Một lần `login` thành công tạo một **family** (một phiên đăng nhập trên một trình duyệt/thiết bị) và token đầu tiên của family đó. Mỗi lần `/auth/refresh` thành công nối thêm một mắt xích.
+One successful `login` creates a **family** (one signed-in session on one browser/device) and the
+family's first token. Each successful `/auth/refresh` appends a link.
 
 ```
 login OK
-   │  tạo familyId = f, phát RT1
+   │  create familyId = f, issue RT1
    ▼
  RT1 ──refresh OK──► RT2 ──refresh OK──► RT3 ──refresh OK──► RT4 (active)
   │                   │                   │                   │
   ▼                   ▼                   ▼                   │
-rotated             rotated             rotated               └── là token duy nhất
-(revokedAt=t1,      (revokedAt=t2,      (revokedAt=t3,            còn dùng được của f
- replacedBy=RT2)     replacedBy=RT3)     replacedBy=RT4)          (ngoài cửa sổ ân hạn)
+rotated             rotated             rotated               └── the only usable
+(revokedAt=t1,      (revokedAt=t2,      (revokedAt=t3,            token of f
+ replacedBy=RT2)     replacedBy=RT3)     replacedBy=RT4)          (outside the grace window)
 ```
 
-Trạng thái của **một token**:
+States of **a single token**:
 
 ```
-  active ──(dùng ở /auth/refresh, hợp lệ)────────► rotated                [kết thúc]
-  active ──(POST /auth/logout)───────────────────► revoked:logout         [kết thúc]
-  active ──(POST /auth/change-password)──────────► revoked:password_change[kết thúc]
-  active ──(qua expiresAt, không cần ghi DB)─────► expired                [kết thúc]
-  active ──(family bị thu hồi vì replay)─────────► revoked:replay         [kết thúc]
+  active ──(used at /auth/refresh, valid)────────► rotated                [end]
+  active ──(POST /auth/logout)───────────────────► revoked:logout         [end]
+  active ──(POST /auth/change-password)──────────► revoked:password_change[end]
+  active ──(past expiresAt, no DB write needed)──► expired                [end]
+  active ──(family revoked due to replay)────────► revoked:replay         [end]
 
-  rotated | revoked:* ──(bị trình ra lần nữa ở /auth/refresh)──► ┌──────────────────┐
-                                                                 │ REPLAY DETECTED  │
-                                                                 └──────────────────┘
+  rotated | revoked:* ──(re-presented at /auth/refresh)──► ┌──────────────────┐
+                                                           │ REPLAY DETECTED  │
+                                                           └──────────────────┘
 ```
 
-Cổng REPLAY — đây là phần bắt buộc phải đúng:
+The REPLAY gate — the part that must be exactly right:
 
 ```
-  Trình ra RT2 (đã rotated lúc t2), hiện tại là T
+  Re-present RT2 (rotated at t2), current time T
         │
-        ├─ family f đã bị thu hồi?            ──► CÓ  ─► 401 AUTH_REFRESH_INVALID (không thu hồi lại, không báo động lần hai)
+        ├─ family f already revoked?          ──► YES ─► 401 AUTH_REFRESH_INVALID (no re-revocation, no second alarm)
         │
-        ├─ (T − t2) ≤ G (cửa sổ ân hạn) VÀ
-        │  token con của RT2 (RT3) vẫn đang active?  ──► CÓ  ─► ĐUA HỢP LỆ, không phải replay (§8)
-        │                                                        trả lại đúng access token/cookie của lần xoay đó
+        ├─ (T − t2) ≤ G (grace window) AND
+        │  RT2's child (RT3) still active?    ──► YES ─► VALID RACE, not replay (§8)
+        │                                                return the exact access token/cookie of that rotation
         │
-        └─ ngược lại                          ──────────► REPLAY
+        └─ otherwise                          ──────────► REPLAY
                                                             │
-                                                            ├─ thu hồi TOÀN BỘ family f
-                                                            │   (RT1..RTn, mọi trạng thái, lý do = replay)
-                                                            ├─ COMMIT phần thu hồi (§7)
-                                                            ├─ ghi log mức cảnh báo + metric (§14)
+                                                            ├─ revoke the ENTIRE family f
+                                                            │   (RT1..RTn, every state, reason = replay)
+                                                            ├─ COMMIT the revocation (§7)
+                                                            ├─ warn-level log + metric (§14)
                                                             └─ 401 AUTH_REFRESH_INVALID
 ```
 
-| Từ | Đến | Hành động | Hợp lệ? |
+| From | To | Action | Valid? |
 |---|---|---|---|
-| `active` | `rotated` | `/auth/refresh` | ✅ đồng thời phát token con |
+| `active` | `rotated` | `/auth/refresh` | ✅ simultaneously issues the child token |
 | `active` | `revoked:logout` | `/auth/logout` | ✅ |
-| `active` | `revoked:password_change` | đổi mật khẩu | ✅ áp cho **mọi** family của user |
-| `active` | `revoked:replay` | phát hiện replay ở family | ✅ áp cho **mọi** token của family đó |
-| `rotated` | `active` | — | ❌ không có đường quay lại |
-| `revoked:*` | bất kỳ trạng thái dùng được | — | ❌ **cổng một chiều**; thu hồi là vĩnh viễn |
-| `expired` | bất kỳ | — | ❌ hết hạn không cứu được, kể cả trong cửa sổ ân hạn |
+| `active` | `revoked:password_change` | change password | ✅ applies to **every** family of the user |
+| `active` | `revoked:replay` | replay detected in the family | ✅ applies to **every** token of that family |
+| `rotated` | `active` | — | ❌ no path back |
+| `revoked:*` | any usable state | — | ❌ **one-way gate**; revocation is permanent |
+| `expired` | any | — | ❌ expiry can't be undone, even inside the grace window |
 
-**Cổng một chiều**: thu hồi không đảo ngược được. Hệ quả nghiệp vụ trực tiếp: một lần phát hiện replay là **đăng xuất toàn bộ phiên đó**, và người dùng thật (nếu là dương tính giả) bị buộc đăng nhập lại. Vì vậy §8 phải phân biệt cho đúng "đua hợp lệ" với "replay" — dương tính giả ở đây không phải phiền toái nhỏ, nó là đăng xuất cưỡng bức giữa lúc đang làm việc.
+**One-way gate**: revocation is irreversible. Direct business consequence: one replay detection
+**logs out that entire session**, and the real user (if a false positive) is forced to log in
+again. So §8 must distinguish "valid race" from "replay" correctly — a false positive here isn't
+a minor annoyance, it's a forced logout mid-work.
 
-**Phạm vi thu hồi khi replay**: thu hồi **family**, không thu hồi mọi family của user. Lý do: kẻ tấn công chỉ cầm được token của một phiên (một lần trộm cookie); thu hồi hết mọi thiết bị của user vì một phiên bị lộ là hình phạt quá rộng và biến mọi lỗi mạng thành sự cố toàn tài khoản. Nếu chính sách muốn "một replay = đăng xuất mọi thiết bị" thì phải chốt riêng — §16.
+**Revocation scope on replay**: revoke the **family**, not every family of the user. Reason: an
+attacker can only hold one session's token (one cookie theft); revoking every device because one
+session leaked is an overly broad punishment and turns every network hiccup into an
+account-wide incident. If policy wants "one replay = log out every device", that must be locked
+separately — §16.
 
 ## 7. Transaction boundary
 
-Mức isolation mặc định `READ COMMITTED` là đủ cho mọi luồng; tính đúng đắn dựa vào **UNIQUE constraint** và **guarded UPDATE có kiểm `rowCount`**, không dựa vào `SERIALIZABLE`.
+Default isolation `READ COMMITTED` suffices for every flow; correctness relies on **UNIQUE
+constraints** and **guarded UPDATEs with `rowCount` checks**, not on `SERIALIZABLE`.
 
-| Luồng | Trong CÙNG một transaction | Bắt buộc nằm NGOÀI transaction |
+| Flow | Inside the SAME transaction | Must be OUTSIDE the transaction |
 |---|---|---|
-| `register` | (1) INSERT `User` (`status=pending`) → (2) INSERT `Notification` `new_teacher_registration`/`new_student_registration` cho **mọi** admin, bằng **một câu bulk insert**, không vòng lặp | Không có (không gửi mail/push ở phạm vi hiện tại) |
-| `login` | (1) INSERT `RefreshToken` (family mới) → (2) UPDATE `User.lastLoginAt` | Ký JWT (thuần CPU, làm trước khi mở transaction), set cookie (sau commit) |
-| `refresh` — nhánh thành công | (1) guarded UPDATE thu hồi token cũ (`... WHERE tokenHash=:h AND revokedAt IS NULL`) → kiểm `rowCount=1` → (2) INSERT token con cùng `familyId` | Ký access token mới, ghi cookie (sau commit) |
-| `refresh` — nhánh REPLAY | Transaction **riêng**, chỉ chứa: UPDATE thu hồi toàn bộ family | Ném lỗi 401 **sau khi transaction thu hồi đã commit** |
-| `logout` | Một câu UPDATE duy nhất (không cần transaction tường minh) | Xoá cookie (sau khi UPDATE trả về) |
-| `change-password` | (1) UPDATE `User.passwordHash` → (2) UPDATE thu hồi **mọi** `RefreshToken` của user | Băm bcrypt mật khẩu mới (**~250ms ở cost 12** — phải làm **trước** khi mở transaction, không giữ transaction mở suốt thời gian băm) |
-| `PATCH /auth/me` | Một câu UPDATE duy nhất; tính duy nhất của email do UNIQUE constraint đảm bảo | Upload/xoá file avatar trên Supabase Storage — **không thể rollback**, phải xử lý như side effect ngoài (§10) |
+| `register` | (1) INSERT `User` (`status=pending`) → (2) INSERT `Notification` `new_teacher_registration`/`new_student_registration` for **every** admin, via **one bulk insert**, no loop | None (no mail/push at current scope) |
+| `login` | (1) INSERT `RefreshToken` (new family) → (2) UPDATE `User.lastLoginAt` | JWT signing (pure CPU; do it before opening the transaction), set cookie (after commit) |
+| `refresh` — success branch | (1) guarded UPDATE revoking the old token (`... WHERE tokenHash=:h AND revokedAt IS NULL`) → check `rowCount=1` → (2) INSERT child token with the same `familyId` | Sign the new access token, write the cookie (after commit) |
+| `refresh` — REPLAY branch | **Separate** transaction containing only: UPDATE revoking the whole family | Throw the 401 error **after the revocation transaction has committed** |
+| `logout` | One single UPDATE (no explicit transaction needed) | Clear the cookie (after the UPDATE returns) |
+| `change-password` | (1) UPDATE `User.passwordHash` → (2) UPDATE revoking **every** `RefreshToken` of the user | bcrypt the new password (**~250ms at cost 12** — must happen **before** opening the transaction; don't hold the transaction open through the hashing) |
+| `PATCH /auth/me` | One single UPDATE; email uniqueness guaranteed by the UNIQUE constraint | Avatar file upload/delete on Supabase Storage — **not rollbackable**, must be treated as an outside side effect (§10) |
 
-**Cái bẫy quan trọng nhất của module này**: ở nhánh REPLAY, nếu việc thu hồi family nằm chung transaction với luồng xử lý rồi ném lỗi 401, thì **transaction bị rollback và family không hề bị thu hồi** — hệ thống báo lỗi cho kẻ tấn công nhưng token vẫn sống, tức là phòng thủ trông như có mà thực tế không có. Bắt buộc: mở transaction riêng cho việc thu hồi, commit, rồi mới ném lỗi (INV-AUTH-11).
+**This module's most important trap**: in the REPLAY branch, if the family revocation shares a
+transaction with the handling flow and then throws 401, the **transaction rolls back and the
+family is never revoked** — the system reports the attack but the token lives, i.e. a defense
+that looks real but isn't. Mandatory: open a separate transaction for the revocation, commit,
+then throw (INV-AUTH-11).
 
-Cái bẫy thứ hai: bcrypt cost 12 mất khoảng 200–300ms. Băm **bên trong** một transaction đang mở (khi register hoặc đổi mật khẩu) sẽ giữ kết nối và khoá hàng suốt thời gian đó; dưới tải cao là cạn pool kết nối. Băm trước, mở transaction sau.
+The second trap: bcrypt cost 12 takes ~200–300ms. Hashing **inside** an open transaction (at
+register or password change) holds the connection and row locks for that duration; under load
+that's connection-pool exhaustion. Hash first, open the transaction after.
 
 ## 8. Idempotency & concurrency
 
-**`register`** — không idempotent theo thiết kế; hàng rào duy nhất là `UNIQUE(email)` ở DB (chuẩn hoá lowercase trước khi ghi, hoặc unique index trên `lower(email)`). Hai request cùng email chạy song song: một cái INSERT thắng, cái kia dính vi phạm unique. **Bắt buộc bắt lỗi P2002 ngay trong AuthService và ném lại `AUTH_EMAIL_EXISTS`** — không được để nó rơi xuống global exception filter, vì filter đó ánh xạ P2002 thành **DUPLICATE_ENTRY**, một mã **không có trong API_ERROR_CODES.md** (§9, §16). Cấm mẫu "SELECT xem email tồn tại chưa → INSERT" nếu không có unique constraint đỡ phía sau: hai request có thể cùng vượt qua bước SELECT.
+**`register`** — not idempotent by design; the only barrier is `UNIQUE(email)` in the DB
+(normalize lowercase before writing, or a unique index on `lower(email)`). Two concurrent requests
+with the same email: one INSERT wins, the other hits the unique violation. **Mandatory: catch
+P2002 inside AuthService and rethrow `AUTH_EMAIL_EXISTS`** — never let it fall to the global
+exception filter, which maps P2002 to **DUPLICATE_ENTRY**, a code **not in API_ERROR_CODES.md**
+(§9, §16). The "SELECT if email exists → INSERT" pattern is forbidden unless a unique constraint
+backs it: two requests can both pass the SELECT.
 
-**`login`** — hai login song song của cùng user là hợp lệ và tạo **hai family độc lập** (hai thiết bị). Không có khoá, không có giới hạn số phiên (⚠️ không giới hạn số phiên đồng thời → §16). `lastLoginAt` ghi đè theo thứ tự commit — lệch vài mili giây là chấp nhận được.
+**`login`** — two concurrent logins by the same user are valid and create **two independent
+families** (two devices). No lock, no session-count limit (⚠️ no concurrent-session cap → §16).
+`lastLoginAt` overwrites in commit order — a few milliseconds of skew is acceptable.
 
-**`logout`** — idempotent: guarded UPDATE `... SET revokedAt = now() WHERE tokenHash = :h AND revokedAt IS NULL`; `rowCount = 0` (không có cookie, token lạ, token đã thu hồi) vẫn trả `204`. Không bao giờ trả lỗi ở logout — lỗi ở đây chỉ làm FE kẹt lại ở trạng thái "đã đăng xuất một nửa".
+**`logout`** — idempotent: guarded UPDATE `... SET revokedAt = now() WHERE tokenHash = :h AND
+revokedAt IS NULL`; `rowCount = 0` (no cookie, unknown token, already revoked) still returns
+`204`. Never error on logout — an error here just leaves FE stuck in a "half logged out" state.
 
-**`change-password`** — hai request song song với cùng `currentPassword` đúng: cả hai đều hợp lệ về mặt nghiệp vụ, kết quả cuối là một trong hai mật khẩu mới. Nếu muốn "cái thứ hai phải thất bại" thì phải khoá hàng `User FOR UPDATE` rồi so lại `currentPassword` **bên trong** khoá. Đề xuất: khoá hàng, vì thế mạnh hơn và chi phí bằng không ở lưu lượng thực tế.
+**`change-password`** — two concurrent requests with the same correct `currentPassword`: both are
+business-valid, the end state is one of the two new passwords. To make "the second one must
+fail", lock the `User` row `FOR UPDATE` and re-verify `currentPassword` **inside** the lock.
+Proposal: lock the row — it's stronger and costs nothing at real traffic.
 
-**`/auth/refresh`** — phần khó nhất của module.
+**`/auth/refresh`** — the module's hardest part.
 
-*Vì sao đây là đua hợp lệ chứ không phải tấn công*: cookie thuộc về trình duyệt, không thuộc về tab. Hai tab của cùng một người dùng cùng thấy access token hết hạn tại thời điểm gần nhau (rất phổ biến: một tab để mở, một tab đang thao tác; hoặc trang có nhiều request song song cùng nhận 401 rồi cùng gọi refresh). Cả hai gửi **đúng cùng một** giá trị `refresh_token`. Với cài đặt rotation ngây thơ: tab A xoay RT2→RT3, tab B đến sau thấy RT2 đã `rotated` ⇒ kết luận REPLAY ⇒ thu hồi cả family ⇒ **người dùng thật bị đăng xuất giữa chừng**, mà nguyên nhân là hai tab, không phải kẻ trộm. Rotation không có xử lý đua sẽ tạo ra đăng xuất ngẫu nhiên và không tái hiện được — đúng loại lỗi tốn nhiều thời gian nhất để truy.
+*Why this is a valid race, not an attack*: the cookie belongs to the browser, not the tab. Two
+tabs of the same user see the access token expire at nearly the same moment (very common: one tab
+left open, one active; or a page firing several parallel requests that all get 401 and all call
+refresh). Both send **the exact same** `refresh_token` value. With a naive rotation setup: tab A
+rotates RT2→RT3, tab B arrives later, sees RT2 `rotated` ⇒ concludes REPLAY ⇒ revokes the whole
+family ⇒ **the real user is logged out mid-work**, and the cause was two tabs, not a thief.
+Rotation without race handling produces random, non-reproducible logouts — exactly the kind of
+bug that eats the most debugging time.
 
-*Nguyên thuỷ chống hai token con*: mọi cài đặt phải bắt đầu bằng **guarded UPDATE** chứ không phải "SELECT rồi UPDATE":
+*The primitive against two child tokens*: every implementation must start from a **guarded
+UPDATE**, not "SELECT then UPDATE":
 
 ```
 UPDATE "RefreshToken" SET "revokedAt" = now(), reason = 'rotated'
 WHERE "tokenHash" = :h AND "revokedAt" IS NULL
 ```
 
-`rowCount = 1` ⇒ mình là người xoay ⇒ INSERT token con. `rowCount = 0` ⇒ ai đó đã xoay/thu hồi trước ⇒ **chưa kết luận replay vội**, đi tiếp vào cây quyết định ở §6.2. Điều này đảm bảo dù bao nhiêu request đến cùng lúc, chỉ một token con được sinh ra.
+`rowCount = 1` ⇒ I'm the rotator ⇒ INSERT the child token. `rowCount = 0` ⇒ someone rotated/
+revoked first ⇒ **don't conclude replay yet**, continue into the §6.2 decision tree. This
+guarantees that no matter how many requests arrive at once, only one child token is born.
 
-*Hai cách xử lý đua, phải chọn một (đề xuất: cách A)*:
+*Two ways to handle the race, pick one (proposal: A)*:
 
-| | **A. Ân hạn + trả lại kết quả cũ** (đề xuất) | **B. Ân hạn + cho phát token anh em** |
+| | **A. Grace + return the old result** (proposed) | **B. Grace + allow a sibling token** |
 |---|---|---|
-| Cách làm | Khi xoay xong, lưu **kết quả của lần xoay** (access token vừa ký + giá trị refresh token con thô) vào cache ngoài DB, khoá theo `tokenHash` của token cha, TTL = G. Request đến sau trong cửa sổ G nhận **đúng bản sao** kết quả đó | Token cha đã `rotated` nhưng còn trong G thì được phép sinh thêm một token con nữa trong cùng family; family tạm thời có 2 lá |
-| Kết quả cho 2 tab | Hai response **giống hệt nhau**; cookie ghi hai lần cùng một giá trị ⇒ không có chuyện tab này ghi đè token của tab kia | Hai response khác nhau; tab ghi sau đè cookie của tab ghi trước ⇒ token của tab kia thành mồ côi (vẫn active nhưng không ai cầm) |
-| Giữ được INV-AUTH-10 | Có, chặt: mỗi lần xoay đúng một token con | Yếu đi: trong G có thể tồn tại 2 token dùng được |
-| Chi phí | Cần một cache ngoài DB (Redis) hoặc cột lưu tạm; **lưu token thô trong TTL ngắn** — đổi lấy đúng đắn bằng một chỗ lưu nhạy cảm có hạn dùng | Không cần hạ tầng mới |
-| Rủi ro còn lại | Cache mất (restart Redis) ⇒ rơi về nhánh replay ⇒ đăng xuất; chấp nhận được nếu cache có sẵn | Cửa sổ để kẻ trộm dùng token cha bị nới rộng đúng bằng G |
+| How | After rotating, store **the rotation's result** (the just-signed access token + the raw child refresh token) in a cache outside the DB, keyed by the parent's `tokenHash`, TTL = G. A later request inside window G receives **the exact copy** of that result | A `rotated` parent still inside G may spawn one more child token in the same family; the family temporarily has 2 leaves |
+| Result for 2 tabs | Two responses **identical**; cookie written twice with the same value ⇒ no tab overwriting the other's token | Two different responses; the later tab overwrites the earlier tab's cookie ⇒ the other tab's token becomes orphaned (still active but held by nobody) |
+| Keeps INV-AUTH-10 | Yes, strictly: each rotation yields exactly one child | Weakened: inside G two usable tokens can exist |
+| Cost | Needs a cache outside the DB (Redis) or a temp column; **stores the raw token for a short TTL** — trading correctness for one sensitive short-lived store | No new infrastructure |
+| Remaining risk | Cache loss (Redis restart) ⇒ falls back to the replay branch ⇒ logout; acceptable if the cache exists | The window for an attacker to use the parent token widens by exactly G |
 
-Cách thứ ba, có thể **kết hợp với A**: **single-flight** — request thứ hai lấy advisory lock theo `familyId`, chờ request thứ nhất commit, rồi đọc kết quả từ cache. Bỏ được nhánh "đọc cache trượt" nhưng thêm độ trễ chờ.
+A third approach, **combinable with A**: **single-flight** — the second request takes an
+advisory lock on `familyId`, waits for the first to commit, then reads the result from cache.
+Eliminates the "cache miss" branch but adds wait latency.
 
-*Điều kiện phân biệt (chuẩn để cài đặt và để test)* — coi là **đua hợp lệ** khi **và chỉ khi** cả bốn điều sau cùng đúng: (1) token trình ra tồn tại, (2) trạng thái là `rotated` (không phải `revoked:logout`/`revoked:password_change`/`revoked:replay`), (3) `now − revokedAt ≤ G`, (4) family chưa bị thu hồi và token con vẫn còn `active`. Thiếu bất kỳ điều nào ⇒ **REPLAY** ⇒ thu hồi family. Đặc biệt: token bị thu hồi do `logout` mà được trình lại **không** phải đua — người dùng đã chủ động kết thúc phiên, không có lý do hợp lệ nào để nó quay lại.
+*The distinguishing condition (the standard to implement and test)* — a **valid race** when
+**and only when** all four hold: (1) the presented token exists, (2) its state is `rotated` (not
+`revoked:logout`/`revoked:password_change`/`revoked:replay`), (3) `now − revokedAt ≤ G`, (4) the
+family isn't revoked and the child token is still `active`. Missing any one ⇒ **REPLAY** ⇒ revoke
+the family. In particular: a token revoked by `logout` being re-presented is **not** a race — the
+user deliberately ended the session; there's no legitimate reason for it to come back.
 
-*Giá trị G*: đề xuất **30 giây** (đủ cho đua giữa các tab, kể cả mạng chậm; đủ ngắn để không nới rộng cửa sổ tấn công đáng kể). Chưa có tài liệu nào quy định ⇒ §16. G phải cấu hình được và phải có metric đếm số lần rơi vào nhánh ân hạn (§14) để hiệu chỉnh.
+*The value of G*: proposal **30 seconds** (enough for tab races including slow networks; short
+enough to not meaningfully widen the attack window). No document specifies it ⇒ §16. G must be
+configurable and must have a metric counting grace-branch hits (§14) for tuning.
 
-**`change-password` xảy ra đồng thời với `refresh`** — refresh đang bay sẽ thấy token đã bị thu hồi với lý do `password_change`. Đây **không** phải replay và **không** được kích hoạt báo động: trả `401 AUTH_REFRESH_INVALID`, ghi log mức info. Đây chính là lý do cột "lý do thu hồi" phải tồn tại trong bảng (§12) — thiếu nó thì mọi lần đổi mật khẩu sẽ tạo ra một cảnh báo replay giả, và cảnh báo giả nhiều lần sẽ khiến cảnh báo thật bị bỏ qua.
+**`change-password` concurrent with `refresh`** — an in-flight refresh will find the token
+revoked with reason `password_change`. This is **not** replay and **must not** trigger an alarm:
+return `401 AUTH_REFRESH_INVALID`, log at info level. This is exactly why the "revocation reason"
+column must exist in the table (§12) — without it, every password change creates a false replay
+alarm, and enough false alarms make real ones ignored.
 
-## 9. Error → mã lỗi
+## 9. Error → code mapping
 
-| Nhánh lỗi | HTTP | code | Trạng thái code |
+| Error branch | HTTP | code | Code status |
 |---|---|---|---|
-| register: body sai định dạng / thiếu field / `role='admin'` | 400 | `VALIDATION_ERROR` | có trong registry + `_FACTS` |
-| register: email đã tồn tại (kể cả do đua, bắt từ vi phạm unique) | 409 | `AUTH_EMAIL_EXISTS` | có |
-| login: email không tồn tại | 401 | `AUTH_INVALID_CREDENTIALS` | có |
-| login: mật khẩu sai (mọi `status`) | 401 | `AUTH_INVALID_CREDENTIALS` | có — **phải giống hệt dòng trên** (INV-AUTH-06) |
-| login: mật khẩu đúng, `status=pending` | 403 | `AUTH_ACCOUNT_PENDING` | có |
-| login: mật khẩu đúng, `status=suspended` | 403 | `AUTH_ACCOUNT_SUSPENDED` | có |
-| login: vượt 5 lần thất bại/15 phút | 429 | ⚠️ **không có mã nào** | API_ERROR_CODES.md có HTTP 429 trong bảng status nhưng **không có code** cho rate limit (`AI_QUOTA_EXCEEDED` là 429 nhưng thuộc nhóm AI và đang *proposed*). **Không bịa mã** → §16 |
-| refresh: không có cookie / token không tồn tại / đã thu hồi / **replay** | 401 | `AUTH_REFRESH_INVALID` | có |
-| refresh: token còn trong DB nhưng quá `expiresAt` | 401 | `AUTH_TOKEN_EXPIRED` | có |
-| endpoint được bảo vệ: không có/hỏng chữ ký/sai định dạng token | 401 | `AUTH_TOKEN_INVALID` | ⚠️ có trong API_ERROR_CODES.md nhưng **không có trong danh sách "Mã lỗi đã có" của `_FACTS.md`** → §16 |
-| endpoint được bảo vệ: access token quá 15 phút | 401 | `AUTH_TOKEN_EXPIRED` | có |
-| endpoint được bảo vệ: user đã bị `suspended` sau khi phát token | 403 | `AUTH_ACCOUNT_SUSPENDED` | có — ⚠️ ENTITY_USER.md nói "all JWT tokens rejected (401)" → xung đột 401/403, §16 |
-| `PATCH /auth/me`: email trùng người khác | 409 | `AUTH_EMAIL_EXISTS` | có |
-| `PATCH /auth/me`: body rỗng / field sai định dạng | 400 | `VALIDATION_ERROR` | có |
-| `PATCH /auth/me`: upload avatar thất bại | 500 | `USER_AVATAR_UPLOAD_FAILED` | có |
-| change-password: `currentPassword` sai | 401 | `AUTH_INVALID_CREDENTIALS` | có |
-| change-password: `newPassword` không đạt chính sách / trùng mật khẩu cũ | 400 | `VALIDATION_ERROR` | có |
-| logout: mọi tình huống | 204 | — | không có nhánh lỗi (INV-AUTH-16) |
+| register: malformed/missing fields, `role='admin'` | 400 | `VALIDATION_ERROR` | in registry + `_FACTS` |
+| register: email already exists (including via race, caught from the unique violation) | 409 | `AUTH_EMAIL_EXISTS` | exists |
+| login: email doesn't exist | 401 | `AUTH_INVALID_CREDENTIALS` | exists |
+| login: wrong password (any `status`) | 401 | `AUTH_INVALID_CREDENTIALS` | exists — **must be identical to the row above** (INV-AUTH-06) |
+| login: correct password, `status=pending` | 403 | `AUTH_ACCOUNT_PENDING` | exists |
+| login: correct password, `status=suspended` | 403 | `AUTH_ACCOUNT_SUSPENDED` | exists |
+| login: over 5 failures/15 min | 429 | ⚠️ **no code** | API_ERROR_CODES.md lists HTTP 429 in the status table but has **no code** for rate limiting (`AI_QUOTA_EXCEEDED` is 429 but belongs to the AI group and is *proposed*). **Don't invent** → §16 |
+| refresh: no cookie / token doesn't exist / revoked / **replay** | 401 | `AUTH_REFRESH_INVALID` | exists |
+| refresh: token still in DB but past `expiresAt` | 401 | `AUTH_TOKEN_EXPIRED` | exists |
+| protected endpoint: missing/broken signature/malformed token | 401 | `AUTH_TOKEN_INVALID` | ⚠️ in API_ERROR_CODES.md but **not** in `_FACTS.md`'s "Existing error codes" list → §16 |
+| protected endpoint: access token past 15 min | 401 | `AUTH_TOKEN_EXPIRED` | exists |
+| protected endpoint: user `suspended` after token issuance | 403 | `AUTH_ACCOUNT_SUSPENDED` | exists — ⚠️ ENTITY_USER.md says "all JWT tokens rejected (401)" → 401/403 conflict, §16 |
+| `PATCH /auth/me`: email duplicate of another user | 409 | `AUTH_EMAIL_EXISTS` | exists |
+| `PATCH /auth/me`: empty body / malformed field | 400 | `VALIDATION_ERROR` | exists |
+| `PATCH /auth/me`: avatar upload failed | 500 | `USER_AVATAR_UPLOAD_FAILED` | exists |
+| change-password: `currentPassword` wrong | 401 | `AUTH_INVALID_CREDENTIALS` | exists |
+| change-password: `newPassword` fails policy / same as old | 400 | `VALIDATION_ERROR` | exists |
+| logout: every situation | 204 | — | no error branch (INV-AUTH-16) |
 
-**Ba điểm phải chú ý**:
-1. **REPLAY không có mã riêng và điều đó là cố ý.** Trả một mã riêng (kiểu AUTH_TOKEN_REUSED — cố ý **không** đăng ký mã này) sẽ báo cho kẻ tấn công biết hệ thống đã phát hiện ra hắn và token nào đã bị dùng. Phân biệt replay với các nhánh khác chỉ được làm ở **log/metric** (§14), không ở response.
-2. **P2002 phải được bắt trong service.** Global filter ánh xạ P2002 → **DUPLICATE_ENTRY**, mã này không nằm trong bất kỳ nhóm nào của API_ERROR_CODES.md, nên nếu để lọt, FE sẽ nhận một `code` mà nó không có nhánh xử lý và rơi vào toast mặc định.
-3. **`AUTH_INSUFFICIENT_ROLE` không dùng ở module này** — không endpoint nào giới hạn theo role.
+**Three points to note**:
+1. **REPLAY has no dedicated code, deliberately.** Returning a dedicated code (like
+   AUTH_TOKEN_REUSED — deliberately **not** registered) tells the attacker the system detected
+   them and which token was used. Distinguishing replay from other branches must only happen in
+   **logs/metrics** (§14), not in the response.
+2. **P2002 must be caught in the service.** The global filter maps P2002 → **DUPLICATE_ENTRY**, a
+   code in no group of API_ERROR_CODES.md; if it leaks, FE receives a `code` it has no branch for
+   and falls into the default toast.
+3. **`AUTH_INSUFFICIENT_ROLE` isn't used in this module** — no endpoint is role-restricted.
 
-## 10. Side effect & notification
+## 10. Side effects & notifications
 
-| Hành động | Notification `type` | `userId` (người nhận) | `referenceId` / `referenceType` | `payload` |
+| Action | Notification `type` | `userId` (recipient) | `referenceId` / `referenceType` | `payload` |
 |---|---|---|---|---|
-| `POST /auth/register` với `role='teacher'` | `new_teacher_registration` | **mọi** user có `role='admin'` (fan-out N bản ghi) | `user.id` mới / ⚠️ `referenceType` không có giá trị `user` trong enum (`assignment`/`attempt`/`invoice`/`session`) ⇒ để `null` | ⚠️ chưa chốt; deep-link tới `/admin/users/[id]` cần `referenceId` nên vẫn ghi `referenceId` |
-| `POST /auth/register` với `role='student'` | `new_student_registration` | **mọi** admin | như trên | như trên |
+| `POST /auth/register` with `role='teacher'` | `new_teacher_registration` | **every** user with `role='admin'` (fan-out of N rows) | new `user.id` / ⚠️ `referenceType` has no `user` value in the enum (`assignment`/`attempt`/`invoice`/`session`) ⇒ `null` | ⚠️ not locked; the deep-link to `/admin/users/[id]` needs `referenceId` so it's still written |
+| `POST /auth/register` with `role='student'` | `new_student_registration` | **every** admin | as above | as above |
 
-Các hành động **không** sinh notification, vì enum của ENTITY_NOTIFICATION.md không có type tương ứng: `login`, `login thất bại`, `logout`, `refresh`, **`change-password`**, `PATCH /auth/me` (kể cả khi đổi email). Hệ quả đáng chú ý: **đổi mật khẩu không báo cho chủ tài khoản** — nếu kẻ tấn công chiếm được phiên và đổi mật khẩu, chủ tài khoản không nhận được tín hiệu nào (và cũng không có luồng quên mật khẩu để giành lại). Ghi nhận, không tự thêm type → §16.
+Actions that **don't** produce notifications, because ENTITY_NOTIFICATION.md's enum has no
+matching type: `login`, `failed login`, `logout`, `refresh`, **`change-password`**,
+`PATCH /auth/me` (including email changes). Notable consequence: **a password change isn't
+reported to the account owner** — if an attacker takes over a session and changes the password,
+the owner gets no signal (and there's no forgot-password flow to recover it). Noted; no type
+self-added → §16.
 
-Side effect khác (không phải notification):
+Other side effects (not notifications):
 
-| Hành động | Side effect | Ghi chú |
+| Action | Side effect | Notes |
 |---|---|---|
-| `login` | `Set-Cookie: refresh_token`, INSERT `RefreshToken`, UPDATE `lastLoginAt` | `lastLoginAt` là input cho cột "Lần đăng nhập cuối" ở `GET /admin/users` (spec 02) |
-| `refresh` | `Set-Cookie` mới, thu hồi token cũ, INSERT token con | |
-| `logout` / `change-password` | Thu hồi token (một family / toàn bộ) | |
-| `PATCH /auth/me` với avatar | Upload/xoá file trên Supabase Storage | **Không rollback được.** Thứ tự bắt buộc: upload trước → UPDATE DB sau; nếu UPDATE hỏng thì file mồ côi trên storage (rác, không phải lỗi dữ liệu). Thứ tự ngược lại sẽ cho ra `avatarUrl` trỏ vào file không tồn tại — tệ hơn |
-| Đăng ký khi hệ thống có nhiều admin | N bản ghi Notification | Bulk insert một câu, không vòng lặp (§11) |
+| `login` | `Set-Cookie: refresh_token`, INSERT `RefreshToken`, UPDATE `lastLoginAt` | `lastLoginAt` is input for the "Last login" column of `GET /admin/users` (spec 02) |
+| `refresh` | New `Set-Cookie`, revoke old token, INSERT child token | |
+| `logout` / `change-password` | Revoke token (one family / all) | |
+| `PATCH /auth/me` with avatar | Upload/delete file on Supabase Storage | **Not rollbackable.** Mandatory order: upload first → UPDATE DB after; if the UPDATE fails, the file is orphaned on storage (garbage, not a data error). The reverse order produces an `avatarUrl` pointing at a nonexistent file — worse |
+| Registration with many admins | N Notification rows | One bulk insert, no loop (§11) |
 
-Fan-out cho admin dùng chung quy tắc transaction với module Notifications (spec 07 §7): hàng `Notification` INSERT trong **cùng** transaction với hành động nghiệp vụ; mọi thứ rời khỏi DB (push, email) nằm ngoài, sau commit.
+Admin fan-out shares the transaction rule with the Notifications module (spec 07 §7): the
+`Notification` row is INSERTed in the **same** transaction as the business action; everything
+leaving the DB (push, email) is outside, after commit.
 
 ## 11. Index & query
 
 ```
-User:         UNIQUE (email)                          -- hoặc UNIQUE (lower(email)) nếu chốt không phân biệt hoa/thường
-User:         (khoá chính id)                          -- đọc lại status mỗi request (§5)
-RefreshToken: UNIQUE ("tokenHash")                     -- tra token khi refresh/logout; là hàng rào chống 2 hàng cùng token
-RefreshToken: INDEX ("userId", "revokedAt")            -- thu hồi toàn bộ token của user khi đổi mật khẩu
-RefreshToken: INDEX ("familyId")                       -- thu hồi cả family khi replay   [field proposed, §12]
-RefreshToken: INDEX ("expiresAt")                      -- job dọn token hết hạn
-Notification: INDEX ("userId", "createdAt")            -- do module Notifications sở hữu (spec 07 §11)
+User:         UNIQUE (email)                          -- or UNIQUE (lower(email)) if case-insensitivity is locked
+User:         (primary key id)                        -- re-read status per request (§5)
+RefreshToken: UNIQUE ("tokenHash")                     -- token lookup on refresh/logout; the barrier against two rows with the same token
+RefreshToken: INDEX ("userId", "revokedAt")            -- revoke all of a user's tokens on password change
+RefreshToken: INDEX ("familyId")                       -- revoke the whole family on replay   [field proposed, §12]
+RefreshToken: INDEX ("expiresAt")                      -- expired-token cleanup job
+Notification: INDEX ("userId", "createdAt")            -- owned by the Notifications module (spec 07 §11)
 ```
 
-**Chi phí thật của module nằm ở CPU, không ở I/O**: bcrypt cost 12 tốn ~200–300ms mỗi lần so khớp và **không** song song hoá được trong một tiến trình Node đơn luồng nếu dùng bản đồng bộ. Bắt buộc dùng bản bất đồng bộ (chạy trên thread pool). Hệ quả cần biết trước: mỗi worker chỉ phục vụ được vài login đồng thời — rate limit ở §13 vừa là biện pháp bảo mật vừa là biện pháp bảo vệ năng lực xử lý.
+**The module's real cost is CPU, not I/O**: bcrypt cost 12 takes ~200–300ms per comparison and
+**can't** be parallelized within a single-threaded Node process if the synchronous build is used.
+The async build (thread pool) is mandatory. Consequence to know in advance: each worker serves
+only a few concurrent logins — the §13 rate limit is both a security measure and a capacity
+protector.
 
-**Truy vấn theo luồng — số query bắt buộc, không được nhiều hơn**:
+**Per-flow queries — mandatory counts, no more**:
 
-| Luồng | Query |
+| Flow | Queries |
 |---|---|
-| `login` | 1 SELECT `User` theo email (select đúng field cần: `id, email, passwordHash, role, status`) + 1 INSERT `RefreshToken` + 1 UPDATE `User` |
-| `refresh` | 1 guarded UPDATE token cũ + 1 INSERT token con (+ 1 SELECT chỉ khi `rowCount=0`, để đi cây quyết định §6.2) |
-| `GET /auth/me` | 1 SELECT theo primary key |
-| `register` | 1 INSERT `User` + 1 SELECT danh sách admin (`WHERE role='admin' AND status='active'`) + 1 bulk INSERT `Notification` |
+| `login` | 1 SELECT `User` by email (select the exact fields needed: `id, email, passwordHash, role, status`) + 1 INSERT `RefreshToken` + 1 UPDATE `User` |
+| `refresh` | 1 guarded UPDATE of the old token + 1 INSERT child token (+ 1 SELECT only when `rowCount=0`, to walk the §6.2 decision tree) |
+| `GET /auth/me` | 1 SELECT by primary key |
+| `register` | 1 INSERT `User` + 1 SELECT of the admin list (`WHERE role='admin' AND status='active'`) + 1 bulk INSERT `Notification` |
 
-**Nguy cơ N+1 duy nhất**: vòng lặp `for (admin of admins) createNotification(...)` ở register. Với 3 admin thì vô hại, nhưng nó nằm trong transaction cùng với INSERT `User` — số câu lệnh tỉ lệ thuận với số admin và kéo dài transaction. Dùng một câu insert nhiều dòng.
+**The only N+1 risk**: the `for (admin of admins) createNotification(...)` loop at register. With
+3 admins it's harmless, but it sits in the same transaction as the `User` INSERT — the statement
+count scales with the admin count and lengthens the transaction. Use one multi-row insert.
 
-**Dọn dẹp**: bảng `RefreshToken` tăng đơn điệu (mỗi lần refresh thêm một hàng — một user hoạt động liên tục 7 ngày với access token 15 phút sinh tới ~670 hàng). Cần job xoá hàng đã `expiresAt < now() - <giữ lại>` (đề xuất giữ 30 ngày cho mục đích điều tra). Chưa có tài liệu nào quy định → §16.
+**Cleanup**: the `RefreshToken` table grows monotonically (each refresh adds a row — a user
+active continuously for 7 days with 15-minute access tokens produces ~670 rows). A job deleting
+rows with `expiresAt < now() - <retention>` is needed (proposal: keep 30 days for investigation
+purposes). No document specifies it → §16.
 
 ## 12. Migration & seed
 
-**Bảng `User`**: module này không thêm/sửa cột nào (do module Users/migration nền sở hữu). Chỉ **yêu cầu** một điều: quyết định về tính duy nhất của email không phân biệt hoa/thường phải được phản ánh trong migration (`citext`, hoặc unique index trên `lower(email)`, hoặc chuẩn hoá lowercase ở tầng ứng dụng + unique thường). Ba cách cho ba hành vi khác nhau khi dữ liệu cũ đã lẫn hoa/thường → phải chốt trước khi có dữ liệu thật.
+**`User` table**: this module adds/changes no column (owned by the Users module / base
+migration). It only **requires** one thing: the case-insensitive email-uniqueness decision must be
+reflected in the migration (`citext`, or a unique index on `lower(email)`, or app-layer lowercase
+normalization + a plain unique). Three options, three different behaviors with legacy mixed-case
+data → must be locked before real data exists.
 
-**Bảng `RefreshToken`**: **chưa tồn tại và chưa có ENTITY spec**. Migration phải tạo mới, gồm phần đã có tài liệu và phần bắt buộc phải thêm để §6/§8 chạy được:
+**`RefreshToken` table**: **doesn't exist yet and has no ENTITY spec.** The migration must create
+it, including the documented part and the part that must be added for §6/§8 to work:
 
-| Cột | Nguồn | Ghi chú |
+| Column | Source | Notes |
 |---|---|---|
-| `id` | PROJECT_KNOWLEDGE.md #16 | uuid, khoá chính |
+| `id` | PROJECT_KNOWLEDGE.md #16 | uuid, primary key |
 | `userId` | PROJECT_KNOWLEDGE.md #16 | FK → `User`, `ON DELETE CASCADE` |
-| `tokenHash` | PROJECT_KNOWLEDGE.md #16 | UNIQUE, băm một chiều của token thô |
-| `expiresAt` | PROJECT_KNOWLEDGE.md #16 | = thời điểm phát + 7 ngày |
-| `revokedAt` | PROJECT_KNOWLEDGE.md #16 | `null` = còn dùng được |
-| `familyId` | **proposed** — cần cho INV-AUTH-11/12 | uuid, sinh lúc login, giữ nguyên qua mọi lần xoay |
-| `replacedById` | **proposed** — cần cho cửa sổ ân hạn §8 | FK tự trỏ, `null` khi chưa xoay |
-| `revokedReason` | **proposed** — cần để không báo động giả (§8) | enum `rotated` \| `logout` \| `password_change` \| `replay` |
-| `createdAt` | **proposed** | phục vụ điều tra và job dọn dẹp |
+| `tokenHash` | PROJECT_KNOWLEDGE.md #16 | UNIQUE, one-way hash of the raw token |
+| `expiresAt` | PROJECT_KNOWLEDGE.md #16 | = issuance + 7 days |
+| `revokedAt` | PROJECT_KNOWLEDGE.md #16 | `null` = usable |
+| `familyId` | **proposed** — needed for INV-AUTH-11/12 | uuid, generated at login, stable across every rotation |
+| `replacedById` | **proposed** — needed for the §8 grace window | self-referencing FK, `null` when not rotated |
+| `revokedReason` | **proposed** — needed to avoid false alarms (§8) | enum `rotated` \| `logout` \| `password_change` \| `replay` |
+| `createdAt` | **proposed** | for investigation and the cleanup job |
 
-Ba cột `familyId`/`replacedById`/`revokedReason` **không có trong bất kỳ tài liệu nguồn nào** — spec này nêu chúng như yêu cầu kỹ thuật bắt buộc, và việc phê duyệt bảng `RefreshToken` (kèm một `ENTITY_REFRESH_TOKEN.md`) là một mục ở §16. Không code trước khi bảng được chốt.
+The three columns `familyId`/`replacedById`/`revokedReason` **aren't in any source document** —
+this spec states them as mandatory technical requirements, and approving the `RefreshToken` table
+(plus an `ENTITY_REFRESH_TOKEN.md`) is an item in §16. No coding before the table is locked.
 
-**Seed để test được module**:
-- 1 admin `active`, 1 teacher `active`, 1 student `active`, 1 teacher `pending`, 1 student `suspended` — mật khẩu biết trước, băm bằng **đúng cost 12** (seed bằng cost thấp sẽ làm test hiệu năng và test cost sai).
-- 1 user `active` chưa từng đăng nhập (`lastLoginAt = null`) để khoá INV-AUTH-24.
-- 1 user có email viết hoa lẫn thường để test chuẩn hoá.
-- Ít nhất 2 admin để test fan-out notification khi register (bulk insert, không vòng lặp).
-- Test rotation/ân hạn cần **tiêm được đồng hồ** (clock injectable) để tua qua G và qua hạn 15 phút/7 ngày mà không phải chờ thật.
+**Seed to make the module testable**:
+- 1 `active` admin, 1 `active` teacher, 1 `active` student, 1 `pending` teacher, 1 `suspended`
+  student — known passwords, hashed with **exactly cost 12** (seeding with a low cost makes the
+  performance and cost tests wrong).
+- 1 `active` user who never logged in (`lastLoginAt = null`) to lock INV-AUTH-24.
+- 1 user with mixed-case email to test normalization.
+- At least 2 admins to test register's notification fan-out (bulk insert, no loop).
+- Rotation/grace tests need an **injectable clock** to jump past G and past the 15-min/7-day
+  lifetimes without waiting for real time.
 
 ## 13. Security & rate limit
 
-**Dữ liệu tuyệt đối không được ra ngoài**
+**Data that must never leave**
 
-| Thứ | Quy tắc |
+| Thing | Rule |
 |---|---|
-| `passwordHash` | Không có trong DTO nào, log nào, `details` nào, claim JWT nào. Cách thực thi: repository dùng `select` liệt kê tường minh; hàm duy nhất được phép đọc `passwordHash` là hàm xác thực, và nó nhận vào/trả ra boolean, không trả ra hash |
-| Mật khẩu thô | Không log, không đưa vào `details` của `VALIDATION_ERROR` (thông báo lỗi mô tả luật, không lặp lại giá trị), không đưa vào APM/breadcrumb |
-| Refresh token thô | Không log, không ghi DB (chỉ băm), không trả trong body. Nếu chọn phương án A ở §8 thì bản thô nằm trong cache TTL = G — phải là store riêng, không phải log, không phải bảng dùng chung |
-| Header `Authorization`, header `Cookie` | Phải nằm trong danh sách redact của logger/APM |
-| JWT claim | Chỉ `sub`, `role`, `jti`, `iat`, `exp` (+ `status` nếu muốn, nhưng **vẫn phải** kiểm lại DB — §5). Không nhét `email`, `nickname`, `passwordHash`, không nhét dữ liệu nghiệp vụ |
+| `passwordHash` | Not in any DTO, log, `details`, or JWT claim. Enforcement: the repository uses an explicit `select` list; the only function allowed to read `passwordHash` is the authentication function, and it returns a boolean, never the hash |
+| Raw password | Not logged, not in `VALIDATION_ERROR`'s `details` (the error message describes the rule, doesn't echo the value), not in APM/breadcrumbs |
+| Raw refresh token | Not logged, not stored in the DB (only hashed), not returned in the body. If option A in §8 is chosen, the raw value sits in a cache with TTL = G — it must be a dedicated store, not a log, not a shared table |
+| `Authorization` and `Cookie` headers | Must be in the logger/APM redaction list |
+| JWT claims | Only `sub`, `role`, `jti`, `iat`, `exp` (+ `status` if wanted, but the DB **must** still be re-checked — §5). No `email`, `nickname`, `passwordHash`, no business data |
 
-**Rate limit login: 5 lần/15 phút**
-- Chỉ đếm **lần thất bại**; login thành công không tính vào bộ đếm và (đề xuất) xoá bộ đếm của khoá đó.
-- Hai bộ đếm chạy song song: theo **email đã chuẩn hoá** (chống dò mật khẩu vào một tài khoản) và theo **IP** (chống rải mật khẩu qua nhiều tài khoản). Chỉ đếm theo IP là vô dụng với kẻ có nhiều IP; chỉ đếm theo email là vô dụng với kiểu password spraying.
-- Đếm theo email **phải hành xử y hệt với email không tồn tại** — nếu email lạ không bị đếm (hoặc bị đếm khác), kẻ tấn công phân biệt được tài khoản có thật bằng chính hành vi rate limit. Đây là biến thể tinh vi của lỗ hổng liệt kê tài khoản.
-- Vượt ngưỡng → HTTP 429, **không** so khớp bcrypt (bảo vệ CPU), **không** tiết lộ thời gian còn lại theo tài khoản. ⚠️ Chưa có `code` cho 429 → §16.
-- Đề xuất áp rate limit rộng hơn (chưa có tài liệu, để §16): `register` (chống tạo hàng loạt tài khoản rác làm ngập hàng chờ duyệt của admin) và `change-password`/`refresh` (chống lạm dụng).
+**Rate limit login: 5 attempts/15 minutes**
+- Only **failures** count; a successful login doesn't count against the counter and (proposal)
+  clears that key's counter.
+- Two counters run in parallel: by **normalized email** (blocks password guessing against one
+  account) and by **IP** (blocks password spraying across many accounts). IP-only is useless
+  against someone with many IPs; email-only is useless against password spraying.
+- The email counter **must behave identically for nonexistent emails** — if an unknown email isn't
+  counted (or counted differently), an attacker distinguishes real accounts by the rate-limit
+  behavior itself. This is a subtle variant of the account-enumeration vulnerability.
+- Over threshold → HTTP 429, **no** bcrypt comparison (CPU protection), **no** per-account
+  remaining-time disclosure. ⚠️ No `code` for 429 yet → §16.
+- Proposal to apply broader rate limits (no doc, leaving for §16): `register` (blocks mass
+  junk-signup flooding the admin approval queue) and `change-password`/`refresh` (blocks abuse).
 
-**Chống liệt kê tài khoản (user enumeration) — bắt buộc**
-1. **Sai email và sai mật khẩu trả CÙNG một mã lỗi**: `401 AUTH_INVALID_CREDENTIALS`, cùng `message`, cùng shape, không `details`, không field phụ nào khác nhau (INV-AUTH-06).
-2. **Cân bằng thời gian**: khi email không tồn tại, vẫn chạy một phép so bcrypt với một hash giả cố định rồi mới trả lỗi. Không làm điều này thì nhánh "email lạ" trả về nhanh hơn ~250ms và trở thành oracle đo được từ xa.
-3. **Trạng thái tài khoản chỉ lộ sau khi mật khẩu đúng** (INV-AUTH-07). Nếu trả `AUTH_ACCOUNT_PENDING` ngay khi thấy email tồn tại thì mọi nỗ lực ở điểm 1 và 2 đều vô nghĩa.
-4. **Rate limit không được phân biệt** (điểm ở trên).
-5. **Giới hạn đã biết, không tự sửa**: `POST /auth/register` trả `409 AUTH_EMAIL_EXISTS` — tức là **register vẫn là một oracle liệt kê tài khoản theo đúng thiết kế đã ghi trong API_AUTH.md**. Spec này không tự đổi hành vi đó (đổi sẽ phá UX đăng ký và phá hợp đồng FE); ghi nhận là rủi ro chấp nhận có ý thức, và vì vậy `register` cũng cần rate limit. → §16.
+**Anti user-enumeration — mandatory**
+1. **Wrong email and wrong password return the SAME error code**: `401 AUTH_INVALID_CREDENTIALS`,
+   same `message`, same shape, no `details`, no differing extra field (INV-AUTH-06).
+2. **Timing equalization**: when the email doesn't exist, still run one bcrypt comparison against
+   a fixed dummy hash before replying. Without this, the "unknown email" branch returns ~250ms
+   faster and becomes a remotely measurable oracle.
+3. **Account status only leaks after the password is correct** (INV-AUTH-07). Returning
+   `AUTH_ACCOUNT_PENDING` as soon as the email is seen to exist makes points 1 and 2 pointless.
+4. **Rate limiting must not discriminate** (point above).
+5. **Known limitation, not self-fixed**: `POST /auth/register` returns `409 AUTH_EMAIL_EXISTS` —
+   i.e. **register is by design an account-enumeration oracle per API_AUTH.md**. This spec doesn't
+   change that behavior itself (changing breaks signup UX and the FE contract); recorded as a
+   consciously accepted risk, which is also why `register` needs rate limiting. → §16.
 
-**Cookie `refresh_token`** — `HttpOnly` (bắt buộc, API_AUTH đã ghi), `Secure` (bắt buộc ở production), `Max-Age` 7 ngày khớp `expiresAt` trong DB, `Path` hẹp nhất có thể (đề xuất `/api/v1/auth` — cookie sẽ không bị gửi kèm mọi request nghiệp vụ), `SameSite` **chưa được tài liệu nào quy định** → §16. Lựa chọn `SameSite` quyết định luôn bề mặt CSRF:
+**The `refresh_token` cookie** — `HttpOnly` (mandatory, per API_AUTH), `Secure` (mandatory in
+production), `Max-Age` 7 days matching `expiresAt` in the DB, the narrowest possible `Path`
+(proposal `/api/v1/auth` — the cookie won't be sent with every business request), `SameSite`
+**not specified by any document** → §16. The `SameSite` choice determines the CSRF surface:
 
-**CSRF** — `/auth/refresh` là endpoint POST được xác thực **hoàn toàn bằng cookie**, không cần header nào. Đó chính là hình dạng kinh điển của mục tiêu CSRF: một trang bất kỳ có thể khiến trình duyệt nạn nhân gọi `/auth/refresh`. Mức thiệt hại có giới hạn (kẻ tấn công không đọc được response vì CORS, nên không lấy được access token) nhưng **hậu quả thật là làm xoay token liên tục**, và nếu kẻ tấn công ép gọi hai lần thì có thể kích hoạt nhánh replay ⇒ **đăng xuất nạn nhân từ xa**. Phòng thủ tối thiểu: `SameSite=Lax` trở lên (chặn POST cross-site), cộng kiểm `Origin`/`Referer` ở endpoint refresh. Phải chốt cùng lúc với quyết định FE/API có cùng site hay không → §16.
+**CSRF** — `/auth/refresh` is a POST endpoint authenticated **entirely by cookie**, no header
+needed. That's the classic CSRF target shape: any page can make the victim's browser call
+`/auth/refresh`. The damage is bounded (the attacker can't read the response due to CORS, so
+can't get the access token) but **the real consequence is continuously rotating the token**, and
+if the attacker forces two calls it can trigger the replay branch ⇒ **remotely log the victim
+out**. Minimum defense: `SameSite=Lax` or stricter (blocks cross-site POSTs) plus an
+`Origin`/`Referer` check on the refresh endpoint. Must be locked together with whether FE/API are
+same-site in production → §16.
 
-**Khác**: `bcrypt` cost 12 cố định, không cấu hình theo môi trường (test chạy cost thấp sẽ không phát hiện được sai cost ở production — nếu buộc phải hạ cost khi test thì phải có một test riêng khoá đúng cost của cấu hình production). Không có bảng `AuditLog` trong toàn bộ tài liệu ⇒ **không có nơi bền vững lưu "ai đăng nhập lúc nào, từ đâu, thất bại bao nhiêu lần"** ngoài log ứng dụng ⇒ điều tra sự cố bảo mật sẽ phụ thuộc vào retention của log → §16.
+**Other**: `bcrypt` cost 12 fixed, not environment-configurable (tests running at a lower cost
+won't catch a wrong production cost — if the cost must be lowered for tests, a dedicated test must
+lock the production configuration's cost). No `AuditLog` table anywhere in the docs ⇒ **no durable
+place recording "who logged in when, from where, how many failures"** beyond application logs ⇒
+security incident investigation depends on log retention → §16.
 
 ## 14. Observability
 
-**Log** (không bao giờ chứa token thô, mật khẩu, hash; chỉ `jti`/tiền tố của `tokenHash`/`familyId`):
+**Logs** (never containing raw tokens, passwords, or hashes; only `jti`/`tokenHash` prefixes/
+`familyId`):
 
-| Sự kiện | Mức | Kèm theo |
+| Event | Level | With |
 |---|---|---|
-| Login thành công | info | `userId`, `role`, IP, user-agent |
-| Login thất bại | info | **nhóm lý do** (`invalid_credentials` / `pending` / `suspended`), email đã băm hoặc rút gọn, IP. Không log mật khẩu, không log email đầy đủ nếu chính sách riêng tư yêu cầu |
-| Chạm ngưỡng rate limit | warn | khoá đếm (email băm / IP), số lần |
-| Refresh xoay thành công | debug | `userId`, `familyId`, `jti` cũ → mới |
-| Rơi vào **cửa sổ ân hạn** (đua hợp lệ) | info | `familyId`, độ trễ so với lần xoay — **dùng để hiệu chỉnh G** |
-| **REPLAY phát hiện** | **warn/alert** | `userId`, `familyId`, số token bị thu hồi, IP + user-agent của cả lần xoay gốc lẫn lần trình lại (hai UA khác nhau là dấu hiệu trộm cookie thật sự) |
-| Thu hồi vì `logout` / `password_change` | info | Phải phân biệt rõ với replay, nếu không sẽ tạo báo động giả (§8) |
-| Đổi mật khẩu thành công | info | `userId`, số token bị thu hồi |
-| Đổi email thành công | info | `userId`, email cũ → mới (là sự kiện nhạy cảm: chiếm tài khoản thường bắt đầu bằng đổi email) |
+| Successful login | info | `userId`, `role`, IP, user-agent |
+| Failed login | info | **reason group** (`invalid_credentials` / `pending` / `suspended`), hashed or truncated email, IP. No passwords; no full email if privacy policy requires |
+| Rate-limit hit | warn | counter key (hashed email / IP), count |
+| Successful refresh rotation | debug | `userId`, `familyId`, `jti` old → new |
+| **Grace-window hit** (valid race) | info | `familyId`, latency since the original rotation — **used to tune G** |
+| **REPLAY detected** | **warn/alert** | `userId`, `familyId`, revoked token count, IP + user-agent of both the original rotation and the re-presentation (two different UAs = a real cookie theft signal) |
+| Revocation due to `logout` / `password_change` | info | Must be clearly distinguished from replay, or every password change creates a false alarm (§8) |
+| Successful password change | info | `userId`, revoked token count |
+| Successful email change | info | `userId`, old → new email (a sensitive event: account takeover usually starts with an email change) |
 
-**Đo**:
-- Tỉ lệ login thành công/thất bại theo thời gian; đột biến thất bại theo một email = tấn công dò mật khẩu.
-- Số lần **replay phát hiện/ngày** — ngưỡng cảnh báo là **> 0 kéo dài**: hoặc đang bị tấn công, hoặc cửa sổ ân hạn đang quá ngắn (dương tính giả). Hai nguyên nhân phân biệt bằng metric "ân hạn" ở trên.
-- Tỉ lệ request rơi vào nhánh ân hạn / tổng số refresh — nếu cao bất thường thì FE đang gọi refresh dồn (thiếu single-flight ở interceptor).
-- p95/p99 thời gian bcrypt và thời gian `/auth/login` — cost 12 khiến login là endpoint chậm nhất hệ thống; theo dõi để biết khi nào phải tăng worker.
-- Số hàng `RefreshToken` và tốc độ tăng — theo dõi job dọn dẹp (§11).
-- Tỉ lệ 401 trên các endpoint nghiệp vụ — tăng đột ngột thường nghĩa là luồng refresh của FE hỏng.
+**Measure**:
+- Login success/failure ratio over time; a failure spike on one email = password-guessing attack.
+- **Replay detections/day** — the alert threshold is **> 0 sustained**: either being attacked, or
+  the grace window is too short (false positives). The two causes are distinguished by the
+  "grace" metric above.
+- Grace-branch requests / total refreshes — abnormally high means FE is firing refresh in bursts
+  (missing single-flight in the interceptor).
+- p95/p99 of bcrypt and `/auth/login` time — cost 12 makes login the system's slowest endpoint;
+  track to know when to add workers.
+- `RefreshToken` row count and growth rate — tracks the cleanup job (§11).
+- 401 ratio on business endpoints — a sudden spike usually means FE's refresh flow is broken.
 
 ## 15. Test matrix
 
-Đây là **invariant gate**: mọi INV ở §4 phải có ít nhất một dòng ở đây. Thiếu một dòng = không merge.
+This is the **invariant gate**: every INV in §4 must have at least one row here. A missing row =
+no merge.
 
-| INV | Loại test | Mô tả |
+| INV | Test type | Description |
 |---|---|---|
-| INV-AUTH-01 | integration | Serialize response của cả 7 endpoint (cả nhánh thành công lẫn 400/401/403/409) thành chuỗi → assert không chứa khoá `passwordHash` và không chứa chuỗi hash của seed. Giải mã payload JWT → assert không có `passwordHash`. Bắt log trong lúc chạy → assert không chứa hash |
-| INV-AUTH-02 | DB thật | Sau register, đọc thẳng `passwordHash` từ DB → assert tiền tố bcrypt và **cost = 12**; assert giá trị ≠ mật khẩu thô; login bằng đúng mật khẩu → 200 |
-| INV-AUTH-03 | integration | register với `role='admin'` → 400; với `status='active'` thêm vào body → field bị loại, DB vẫn `pending`; mọi register hợp lệ → DB `status='pending'` |
-| INV-AUTH-04 | DB thật (concurrency) | Bắn 2 register song song cùng email → đúng 1 bản ghi `User`, 1 request 201 và 1 request **409 `AUTH_EMAIL_EXISTS`** (không phải 500, không phải **DUPLICATE_ENTRY**). Lặp với `A@x.com` vs `a@x.com` |
-| INV-AUTH-05 | integration + DB thật | Login user `pending` (mật khẩu đúng) → 403 `AUTH_ACCOUNT_PENDING`; `suspended` → 403 `AUTH_ACCOUNT_SUSPENDED`. Assert: không có `Set-Cookie`, không có `accessToken`, `COUNT(RefreshToken)` không tăng, `lastLoginAt` không đổi |
-| INV-AUTH-06 | integration | So sánh **từng byte** response của (email không tồn tại) và (email tồn tại + mật khẩu sai): cùng `statusCode`, `error`, `code`, `message`, không `details`. Thêm test thời gian: chạy N lần mỗi nhánh, assert phân phối thời gian không tách rời (không có nhánh nhanh hơn một ngưỡng) |
-| INV-AUTH-07 | integration | Sai mật khẩu trên tài khoản `pending` → `AUTH_INVALID_CREDENTIALS` (**không** `AUTH_ACCOUNT_PENDING`); lặp cho `suspended` |
-| INV-AUTH-08 | integration (clock giả) | Tua đồng hồ 14 phút → access token còn dùng được; 15 phút + 1 giây → 401 `AUTH_TOKEN_EXPIRED`. Tua 7 ngày + 1 phút → refresh token hết hạn → 401 `AUTH_TOKEN_EXPIRED` |
-| INV-AUTH-09 | integration | Response login/refresh không chứa chuỗi refresh token; header `Set-Cookie` có `HttpOnly` (và `Secure` ở cấu hình production). Gửi refresh token trong body/header thay vì cookie → 401, không phát token |
-| INV-AUTH-10 | DB thật | Sau mỗi lần refresh: token cũ có `revokedAt ≠ null`, token mới `revokedAt = null`, cùng `familyId`; `COUNT(* WHERE familyId=f AND revokedAt IS NULL) = 1` (đo ngoài cửa sổ ân hạn). Chuỗi 5 lần refresh liên tiếp đều đúng |
-| INV-AUTH-11 | DB thật | Refresh bằng RT1 (đã xoay từ lâu, ngoài G) → 401 `AUTH_REFRESH_INVALID`, **và** `COUNT(* WHERE familyId=f AND revokedAt IS NULL) = 0`, **và** việc thu hồi vẫn còn sau khi request lỗi kết thúc (đọc lại từ connection khác — bắt đúng lỗi rollback ở §7) |
-| INV-AUTH-12 | integration | Sau khi family bị thu hồi, dùng token mới nhất của family đó → 401; access token cũ vẫn sống tới hết 15 phút (ghi nhận giới hạn) nhưng không xoay được nữa; login lại → family mới, hoạt động bình thường |
-| INV-AUTH-13 | DB thật | `SELECT` toàn bảng `RefreshToken` → không cột nào chứa giá trị token thô mà client cầm; `tokenHash` là UNIQUE (thử insert trùng → vi phạm constraint) |
-| INV-AUTH-14 | DB thật | Login thành công → `lastLoginAt` cập nhật (sau thời điểm phát token). Login thất bại (3 nhánh) → không đổi. `/auth/refresh`, `/auth/logout` → không đổi |
-| INV-AUTH-15 | integration | Login → có access token còn hạn → admin `suspend` user đó → gọi `GET /auth/me` bằng token cũ → bị từ chối; gọi `/auth/refresh` → bị từ chối. (Khoá cả HTTP code sau khi §16 giải xung đột 401/403) |
-| INV-AUTH-16 | integration + DB thật | Logout → 204, token bị thu hồi trong DB, cookie bị xoá đúng `Path`. Logout lần hai (không cookie) → vẫn 204, `COUNT` token thu hồi không đổi. Logout với cookie rác → 204 |
-| INV-AUTH-17 | DB thật | Sai `currentPassword` → 401, `passwordHash` không đổi, token không bị thu hồi. Đúng → 204, đăng nhập bằng mật khẩu mới thành công, mật khẩu cũ thất bại, **mọi** refresh token của user (tạo từ 2 lần login khác nhau = 2 family) đều bị thu hồi |
-| INV-AUTH-18 | DB thật | Ép bước thu hồi token thất bại → assert `passwordHash` **vẫn là giá trị cũ** (rollback); chiều ngược lại: ép UPDATE `passwordHash` thất bại → assert không token nào bị thu hồi |
-| INV-AUTH-19 | DB thật | Snapshot hàng `User` trước/sau `PATCH /auth/me` → chỉ `nickname`(⚠️C1)/`email`/`avatarUrl`/`updatedAt` đổi. Gửi thêm `role`/`status`/`id`/`passwordHash` trong body → bị loại bỏ, DB không đổi, không 500 |
-| INV-AUTH-20 | DB thật | PATCH email trùng user khác → 409 `AUTH_EMAIL_EXISTS`, DB không đổi (kể cả `updatedAt`). Đổi email hợp lệ → `status` giữ nguyên `active`, đăng nhập bằng email mới thành công |
-| INV-AUTH-21 | integration (clock giả) | 5 lần sai liên tiếp → lần 6 trả 429 **và không** chạy bcrypt (đo bằng thời gian phản hồi hoặc spy). Lặp y hệt với email **không tồn tại** → assert hành vi và mã trả về giống hệt. Tua 15 phút → login lại được. 4 lần sai rồi 1 lần đúng → 200 |
-| INV-AUTH-22 | DB thật (concurrency) | Bắn 2 request `/auth/refresh` song song với **cùng** cookie → cả hai 200 với access token dùng được; đúng **1** token con được tạo (`COUNT(WHERE parent=RT_n) = 1`); family **không** bị thu hồi; giá trị cookie cuối cùng dùng được. Lặp 50 lần để bắt lỗi đua thưa. Biến thể ngoài G: request thứ hai sau G → 401 và family bị thu hồi (đúng là replay) |
-| INV-AUTH-23 | integration | Mọi nhánh lỗi của 7 endpoint: response có đủ `statusCode`/`error`/`code`/`message`/`timestamp`/`path`, **không** có `success`, `error` là chuỗi không phải object; `details` chỉ xuất hiện ở `VALIDATION_ERROR` và có dạng `Record<field, string[]>` |
-| INV-AUTH-24 | integration | Mọi DateTime trong `GET /auth/me` khớp regex ISO 8601 UTC (kết thúc `Z`); user seed chưa đăng nhập → `lastLoginAt === null` |
+| INV-AUTH-01 | integration | Serialize the responses of all 7 endpoints (success and 400/401/403/409 branches) to strings → assert no `passwordHash` key and no seed hash strings. Decode JWT payloads → assert no `passwordHash`. Capture logs during the run → assert no hash |
+| INV-AUTH-02 | real DB | After register, read `passwordHash` directly from the DB → assert the bcrypt prefix and **cost = 12**; assert the value ≠ the raw password; login with the exact password → 200 |
+| INV-AUTH-03 | integration | register with `role='admin'` → 400; adding `status='active'` to the body → field stripped, DB still `pending`; every valid register → DB `status='pending'` |
+| INV-AUTH-04 | real DB (concurrency) | Fire 2 concurrent registers with the same email → exactly 1 `User` row, 1 request 201 and 1 request **409 `AUTH_EMAIL_EXISTS`** (not 500, not **DUPLICATE_ENTRY**). Repeat with `A@x.com` vs `a@x.com` |
+| INV-AUTH-05 | integration + real DB | Login a `pending` user (correct password) → 403 `AUTH_ACCOUNT_PENDING`; `suspended` → 403 `AUTH_ACCOUNT_SUSPENDED`. Assert: no `Set-Cookie`, no `accessToken`, `COUNT(RefreshToken)` unchanged, `lastLoginAt` unchanged |
+| INV-AUTH-06 | integration | Byte-compare the responses of (nonexistent email) and (existing email + wrong password): same `statusCode`, `error`, `code`, `message`, no `details`. Add a timing test: run N of each branch, assert the time distributions don't separate (no branch faster by a threshold) |
+| INV-AUTH-07 | integration | Wrong password on a `pending` account → `AUTH_INVALID_CREDENTIALS` (**not** `AUTH_ACCOUNT_PENDING`); repeat for `suspended` |
+| INV-AUTH-08 | integration (fake clock) | Advance 14 minutes → access token still usable; 15 min + 1 s → 401 `AUTH_TOKEN_EXPIRED`. Advance 7 days + 1 min → refresh token expired → 401 `AUTH_TOKEN_EXPIRED` |
+| INV-AUTH-09 | integration | Login/refresh responses contain no refresh-token string; the `Set-Cookie` header has `HttpOnly` (and `Secure` in production config). Sending the refresh token via body/header instead of cookie → 401, no token issued |
+| INV-AUTH-10 | real DB | After each refresh: the old token has `revokedAt ≠ null`, the new one `revokedAt = null`, same `familyId`; `COUNT(* WHERE familyId=f AND revokedAt IS NULL) = 1` (measured outside the grace window). A chain of 5 consecutive refreshes all correct |
+| INV-AUTH-11 | real DB | Refresh with RT1 (rotated long ago, outside G) → 401 `AUTH_REFRESH_INVALID`, **and** `COUNT(* WHERE familyId=f AND revokedAt IS NULL) = 0`, **and** the revocation persists after the failing request ends (re-read from another connection — catches the §7 rollback bug) |
+| INV-AUTH-12 | integration | After a family is revoked, using that family's newest token → 401; the old access token lives out its 15 minutes (known limitation) but can't rotate anymore; logging in again → new family, works normally |
+| INV-AUTH-13 | real DB | `SELECT` the whole `RefreshToken` table → no column contains the raw token value the client holds; `tokenHash` is UNIQUE (try inserting a duplicate → constraint violation) |
+| INV-AUTH-14 | real DB | Successful login → `lastLoginAt` updated (after token issuance). Failed login (3 branches) → unchanged. `/auth/refresh`, `/auth/logout` → unchanged |
+| INV-AUTH-15 | integration | Login → hold an unexpired access token → admin `suspend`s that user → call `GET /auth/me` with the old token → rejected; call `/auth/refresh` → rejected. (Lock the HTTP code after §16 resolves the 401/403 conflict) |
+| INV-AUTH-16 | integration + real DB | Logout → 204, token revoked in the DB, cookie cleared with the right `Path`. Second logout (no cookie) → still 204, revoked token count unchanged. Logout with a garbage cookie → 204 |
+| INV-AUTH-17 | real DB | Wrong `currentPassword` → 401, `passwordHash` unchanged, no tokens revoked. Correct → 204, login with the new password succeeds, old password fails, **every** refresh token of the user (created from 2 different logins = 2 families) revoked |
+| INV-AUTH-18 | real DB | Force the token-revocation step to fail → assert `passwordHash` **is still the old value** (rollback); reverse: force the `passwordHash` UPDATE to fail → assert no token revoked |
+| INV-AUTH-19 | real DB | Snapshot the `User` row before/after `PATCH /auth/me` → only `nickname`(⚠️C1)/`email`/`avatarUrl`/`updatedAt` change. Sending `role`/`status`/`id`/`passwordHash` in the body → stripped, DB unchanged, no 500 |
+| INV-AUTH-20 | real DB | PATCH email duplicate of another user → 409 `AUTH_EMAIL_EXISTS`, DB unchanged (including `updatedAt`). Valid email change → `status` stays `active`, login with the new email succeeds |
+| INV-AUTH-21 | integration (fake clock) | 5 consecutive failures → the 6th returns 429 **and** doesn't run bcrypt (measured via response time or a spy). Repeat identically with a **nonexistent** email → assert identical behavior and code. Advance 15 min → login works again. 4 failures then 1 success → 200 |
+| INV-AUTH-22 | real DB (concurrency) | Fire 2 concurrent `/auth/refresh` requests with **the same** cookie → both 200 with usable access tokens; exactly **1** child token created (`COUNT(WHERE parent=RT_n) = 1`); the family **not** revoked; the final cookie value is usable. Repeat 50 times to catch rare races. Out-of-G variant: the second request after G → 401 and the family revoked (correctly, it's replay) |
+| INV-AUTH-23 | integration | Every error branch of the 7 endpoints: the response has `statusCode`/`error`/`code`/`message`/`timestamp`/`path`, **no** `success`; `error` is a string not an object; `details` only on `VALIDATION_ERROR` and shaped `Record<field, string[]>` |
+| INV-AUTH-24 | integration | Every DateTime in `GET /auth/me` matches the UTC ISO 8601 regex (ends with `Z`); the never-logged-in seed user → `lastLoginAt === null` |
 
-Bổ sung ngoài invariant gate (không thay thế các dòng trên): test P2002 ở register **không** rò **DUPLICATE_ENTRY** ra ngoài; test cookie có `Path` đúng cho cả lúc set và lúc xoá; test upload avatar thất bại → 500 `USER_AVATAR_UPLOAD_FAILED` và `avatarUrl` trong DB không đổi.
+Beyond the invariant gate (not replacing the rows above): test that register's P2002 **doesn't**
+leak **DUPLICATE_ENTRY**; test the cookie has the right `Path` on both set and clear; test avatar
+upload failure → 500 `USER_AVATAR_UPLOAD_FAILED` and `avatarUrl` in the DB unchanged.
 
-## 16. Chưa chốt
+## 16. Unresolved
 
-| Câu hỏi | Chặn gì | Owner | Cần quyết trước |
+| Question | What it blocks | Owner | Decide by |
 |---|---|---|---|
-| **C1 — `nickname` hay `fullName`?** ENTITY_USER.md + `_FACTS.md` định nghĩa field là `nickname` (`varchar(100)`, nullable, "Display name (student); full name (teacher/admin)"). API_AUTH.md dùng `fullName` ở **cả** body `POST /auth/register` **và** body `PATCH /auth/me`. API_ERROR_CODES.md ví dụ validation cũng dùng khoá `fullName`. Nhưng FE spec `admin-profile.spec.md` mục 6 lại trả dữ liệu mẫu với khoá `nickname`. Ba tài liệu, hai tên, một field | Chặn **khoá DTO của 3 trong 7 endpoint** (register, PATCH /me, và response của GET /me) — tức là chặn hợp đồng FE–BE ở màn đăng ký và màn hồ sơ. Nếu chốt `fullName` thì phát sinh migration **đổi tên cột** `nickname → fullName` và sửa lan sang mọi module đang đọc `nickname` (spec 02 §3 danh sách user, spec 04 §11 include teacher). Nếu chốt `nickname` thì phải sửa API_AUTH.md và FE form. **Không tự chọn bên nào** — cả hai đều đang được viện dẫn ở tài liệu đang có hiệu lực | - | trước khi code `POST /auth/register` (là endpoint đầu tiên của Sprint 1) |
-| **Bảng `RefreshToken` chưa được phê duyệt.** Không có `ENTITY_REFRESH_TOKEN.md`; định nghĩa duy nhất nằm ở PROJECT_KNOWLEDGE.md #16 với 5 cột. Ba cột `familyId`, `replacedById`, `revokedReason` là **bắt buộc** để §6/§8 chạy được nhưng chưa có ở bất kỳ đâu | Chặn migration của cả module; chặn INV-AUTH-11/12/22 (không có `familyId` thì không thu hồi family được, không có `revokedReason` thì mọi lần đổi mật khẩu tạo cảnh báo replay giả) | - | trước Sprint 1 |
-| **Cửa sổ ân hạn G bằng bao nhiêu, và chọn phương án A hay B ở §8?** Đề xuất A + G = 30s | Chặn hành vi của INV-AUTH-22 và dòng test tương ứng; A yêu cầu có Redis (phụ thuộc hạ tầng), B yêu cầu nới lỏng cách phát biểu INV-AUTH-10 | - | trước khi code `/auth/refresh` |
-| **Không có mã lỗi nào cho HTTP 429.** API_ERROR_CODES.md liệt kê 429 ở bảng HTTP status nhưng registry không có code rate limit (`AI_QUOTA_EXCEEDED` là 429 nhưng thuộc nhóm AI và đang *proposed, not agreed*) | Chặn §9 và dòng test INV-AUTH-21 (hiện chỉ khoá được HTTP 429, chưa khoá được `code`); FE không có nhánh xử lý | - | trước khi code rate limit |
-| **`AUTH_TOKEN_INVALID` đã được duyệt chưa?** Có trong API_ERROR_CODES.md nhưng **không** có trong danh sách "Mã lỗi đã có" của `_FACTS.md` | Chặn assert `code` cho mọi nhánh 401 không phải refresh (§9) | - | cùng lúc với dòng trên |
-| **Token của user `suspended` bị từ chối bằng 401 hay 403?** ENTITY_USER.md: "status = suspended → all JWT tokens rejected (401)". API_ERROR_CODES.md: `AUTH_ACCOUNT_SUSPENDED = 403` | Chặn §5, §9 và test INV-AUTH-15. Khác biệt không nhỏ: FE thường coi 401 là tín hiệu "thử refresh rồi đăng xuất", còn 403 là "hiện thông báo" — chọn sai làm FE lặp vô hạn vòng refresh | - | trước khi code guard |
-| **`SameSite` của cookie `refresh_token` và phòng thủ CSRF cho `/auth/refresh`.** Không tài liệu nào quy định. Phụ thuộc FE (`:3000`) và API (`:3001`) ở production có cùng site hay không | Chặn cấu hình cookie; nếu khác site thì buộc `SameSite=None; Secure` ⇒ mất phòng thủ CSRF mặc định ⇒ phải thêm kiểm `Origin` hoặc CSRF token, tức là thêm bề mặt hợp đồng FE–BE | - | trước khi lên môi trường có domain thật |
-| **Chính sách mật khẩu: chỉ "≥ 8 ký tự" hay còn "chữ hoa + số"?** API_AUTH.md ghi `min8chars`; API_ERROR_CODES.md và FE profile spec hiển thị luật mạnh hơn | Chặn DTO §3, chặn thông điệp trong `details`, chặn seed và test | - | trước khi code register |
-| **Email có phân biệt hoa/thường không?** ENTITY_USER chỉ nói "unique" | Chặn migration (chọn `citext` / unique trên `lower(email)` / chuẩn hoá ở ứng dụng), chặn INV-AUTH-04 và luồng đăng nhập | - | trước migration đầu tiên |
-| **Không có luồng quên/đặt lại mật khẩu.** Không có `POST /auth/forgot-password`, `/auth/reset-password`, không có `PATCH /admin/users/:id/reset-password` | Người dùng quên mật khẩu **không có đường nào lấy lại tài khoản**; cộng với việc không có notification khi đổi mật khẩu (§10), một tài khoản bị chiếm là mất vĩnh viễn. Chặn kế hoạch vận hành, không chặn code Sprint 1 | - | trước go-live |
-| **Đổi email có thu hồi token / có cần xác minh email mới không?** Hiện `PATCH /auth/me` đổi email ngay, không xác minh, không thu hồi phiên | Chặn INV-AUTH-20 (hiện đang phát biểu là "không đổi status, không thu hồi"). Là bước kinh điển của chiếm tài khoản: kẻ chiếm phiên đổi email rồi giữ quyền vĩnh viễn | - | trước go-live |
-| **`hskLevelGoal` và `bio` không có endpoint nào ghi được.** Không có trong body `PATCH /auth/me`, cũng không có trong module Users (chỉ đổi `status`) | Hai field sẽ luôn `null` trong thực tế; chặn tính năng "mục tiêu HSK" của học sinh và "giới thiệu" của giáo viên | - | trước Sprint 2 |
-| **Envelope của `/auth/me`: `data` hay `data.user`?** API_CONVENTIONS.md nói `{ "data": {...} }`; FE `admin-profile.spec.md` §3 ghi `data.user` cho cả GET và PATCH | Chặn parse response ở FE cho 2 endpoint; cùng loại lệch đã ghi ở spec 02 §16 ⇒ nên chốt một lần cho toàn hệ thống | - | trước khi code màn hồ sơ |
-| **Số phiên đồng thời tối đa và chính sách dọn `RefreshToken`.** Không giới hạn số family/user; không có job dọn token hết hạn | Bảng tăng đơn điệu (~670 hàng/user/tuần khi hoạt động liên tục); chặn kế hoạch vận hành DB, không chặn code | - | trước go-live |
-| **Register là oracle liệt kê tài khoản theo thiết kế** (`AUTH_EMAIL_EXISTS` 409). Chấp nhận hay đổi sang phản hồi trung tính "nếu email chưa dùng, tài khoản đã được tạo"? | Nếu chấp nhận: mọi nỗ lực chống liệt kê ở login chỉ giảm được một phần rủi ro; nếu đổi: phá hợp đồng API_AUTH.md hiện tại và UX form đăng ký | - | trước go-live |
-| **Không có bảng `AuditLog`.** Không có nơi bền vững lưu ai đăng nhập/đăng xuất/đổi mật khẩu lúc nào | Chặn yêu cầu truy vết ở §13/§14; điều tra sự cố phụ thuộc hoàn toàn vào retention log ứng dụng | - | trước go-live |
-| **Có cache `User.status` cho guard không, TTL bao nhiêu?** §5 yêu cầu đọc DB mỗi request | Nếu có cache thì INV-AUTH-15 chỉ đúng sau TTL ⇒ phải phát biểu lại invariant kèm trễ tối đa; nếu không cache thì mỗi request tốn một truy vấn khoá chính | - | trước khi tối ưu hiệu năng |
+| **C1 — `nickname` or `fullName`?** ENTITY_USER.md + `_FACTS.md` define the field as `nickname` (`varchar(100)`, nullable, "Display name (student); full name (teacher/admin)"). API_AUTH.md uses `fullName` in **both** the `POST /auth/register` body **and** the `PATCH /auth/me` body. API_ERROR_CODES.md's validation example also uses the `fullName` key. But FE spec `admin-profile.spec.md` section 6 returns sample data with the `nickname` key. Three documents, two names, one field | Blocks **the DTO keys of 3 of 7 endpoints** (register, PATCH /me, and GET /me's response) — i.e. the FE–BE contract on the signup and profile screens. If `fullName` is locked, a **column rename** migration `nickname → fullName` is needed and ripples to every module reading `nickname` (spec 02 §3 user list, spec 04 §11 teacher include). If `nickname` is locked, API_AUTH.md and the FE form must change. **No side chosen here** — both are cited by currently-valid documents | - | before coding `POST /auth/register` (the first endpoint of Sprint 1) |
+| **The `RefreshToken` table isn't approved.** No `ENTITY_REFRESH_TOKEN.md`; the only definition is PROJECT_KNOWLEDGE.md #16 with 5 columns. The three columns `familyId`, `replacedById`, `revokedReason` are **mandatory** for §6/§8 but exist nowhere | Blocks the whole module's migration; blocks INV-AUTH-11/12/22 (no `familyId` → families can't be revoked; no `revokedReason` → every password change creates a false replay alarm) | - | before Sprint 1 |
+| **Grace window G value, and option A or B in §8?** Proposal A + G = 30s | Blocks INV-AUTH-22's behavior and its test row; A requires Redis (infrastructure dependency), B requires loosening how INV-AUTH-10 is stated | - | before coding `/auth/refresh` |
+| **No error code for HTTP 429.** API_ERROR_CODES.md lists 429 in the HTTP-status table but the registry has no rate-limit code (`AI_QUOTA_EXCEEDED` is 429 but in the AI group and *proposed, not agreed*) | Blocks §9 and the INV-AUTH-21 test row (currently only HTTP 429 can be locked, not `code`); FE has no handling branch | - | before coding rate limiting |
+| **Is `AUTH_TOKEN_INVALID` approved?** In API_ERROR_CODES.md but **not** in `_FACTS.md`'s "Existing error codes" list | Blocks asserting `code` for every non-refresh 401 branch (§9) | - | together with the row above |
+| **Token of a `suspended` user rejected with 401 or 403?** ENTITY_USER.md: "status = suspended → all JWT tokens rejected (401)". API_ERROR_CODES.md: `AUTH_ACCOUNT_SUSPENDED = 403` | Blocks §5, §9 and the INV-AUTH-15 test. Not a small difference: FE usually treats 401 as "try refresh then log out" and 403 as "show a message" — the wrong choice makes FE loop refreshes forever | - | before coding the guard |
+| **`SameSite` of the `refresh_token` cookie and CSRF defense for `/auth/refresh`.** No document specifies it. Depends on whether FE (`:3000`) and API (`:3001`) are same-site in production | Blocks cookie configuration; if cross-site, `SameSite=None; Secure` is forced ⇒ default CSRF defense lost ⇒ an `Origin` check or CSRF token must be added — i.e. more FE–BE contract surface | - | before going to an environment with a real domain |
+| **Password policy: just "≥ 8 chars" or also "uppercase + number"?** API_AUTH.md says `min8chars`; API_ERROR_CODES.md and the FE profile spec show a stronger rule | Blocks §3 DTO, the `details` messages, seed and tests | - | before coding register |
+| **Is email case-sensitive?** ENTITY_USER only says "unique" | Blocks the migration (`citext` / unique on `lower(email)` / app normalization), INV-AUTH-04, and the login flow | - | before the first migration |
+| **No forgot/reset-password flow.** No `POST /auth/forgot-password`, `/auth/reset-password`, no `PATCH /admin/users/:id/reset-password` | A user who forgot their password **has no way to recover the account**; combined with no password-change notification (§10), a taken-over account is permanently lost. Blocks operations planning, not Sprint 1 code | - | before go-live |
+| **Does an email change revoke tokens / verify the new email?** Currently `PATCH /auth/me` changes the email immediately, no verification, no session revocation | Blocks INV-AUTH-20 (currently stated as "no status change, no revocation"). The classic account-takeover step: a session thief changes the email and keeps control forever | - | before go-live |
+| **`hskLevelGoal` and `bio` have no endpoint that can write them.** Not in `PATCH /auth/me`'s body, not in the Users module (status-only) | Both fields will always be `null` in practice; blocks the student "HSK goal" feature and the teacher "bio" feature | - | before Sprint 2 |
+| **Envelope of `/auth/me`: `data` or `data.user`?** API_CONVENTIONS.md says `{ "data": {...} }`; FE `admin-profile.spec.md` §3 writes `data.user` for both GET and PATCH | Blocks response parsing on FE for 2 endpoints; the same kind of drift already recorded in spec 02 §16 ⇒ should be locked once for the whole system | - | before coding the profile screen |
+| **Max concurrent sessions and `RefreshToken` cleanup policy.** No family/user limit; no expired-token cleanup job | The table grows monotonically (~670 rows/user/week when active); blocks DB operations planning, not code | - | before go-live |
+| **Register is a by-design account-enumeration oracle** (`AUTH_EMAIL_EXISTS` 409). Accept, or switch to a neutral "if the email is unused, the account has been created" response? | If accepted: all login anti-enumeration work only reduces part of the risk; if changed: breaks the current API_AUTH.md contract and the signup form UX | - | before go-live |
+| **No `AuditLog` table.** No durable place recording who logged in/out/changed password when | Blocks the §13/§14 traceability requirements; incident investigation depends entirely on application log retention | - | before go-live |
+| **Cache `User.status` for the guard, and what TTL?** §5 requires a DB read per request | With a cache, INV-AUTH-15 is only true after the TTL ⇒ the invariant must be restated with a max lag; without, each request pays one primary-key query | - | before performance optimization |
 
-*(C2 và C3 trong `_FACTS.md` không chạm tới module này: C2 thuộc nhóm rate/payroll; C3 chạm gián tiếp — nếu thêm `status='rejected'` thì §6.1 và INV-AUTH-05 phải bổ sung một nhánh lỗi login cho trạng thái mới, hiện chưa có mã lỗi tương ứng. C4 chỉ ảnh hưởng `hskLevelGoal` ở mức đọc, module này không validate.)*
+*(C2 and C3 in `_FACTS.md` don't touch this module: C2 belongs to the rate/payroll group; C3
+touches indirectly — if `status='rejected'` is added, §6.1 and INV-AUTH-05 must add a login error
+branch for the new state, for which no error code currently exists. C4 only affects
+`hskLevelGoal` at the read level; this module doesn't validate it.)*

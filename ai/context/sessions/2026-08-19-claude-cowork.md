@@ -20,6 +20,17 @@
   bảng "Hai loại task" trong § The flow · session file vào DoD mục 4 · index bộ doc vào mục 5 ·
   CI step `Record step was not skipped` · khôi phục rule fast-verify đã mất
 
+- **Vòng 4**: `pnpm check:docs` bắt **15 mã lỗi** trong spec không có trong registry.
+  Ba loại khác nhau, sửa khác nhau:
+  - **(a) spec bịa tên trong khi mã đúng đã có** — `CLASS_CODE_INVALID` →
+    `CLASS_ENROLL_CODE_INVALID`, `CLASS_ARCHIVED` → `CLASS_ALREADY_ARCHIVED`
+  - **(b) lỗ hổng thật trong `API_ERROR_CODES.md`** — `DUPLICATE_ENTRY` và
+    `INTERNAL_SERVER_ERROR` được `GlobalExceptionFilter` mẫu ở §5 phát ra từ đầu nhưng
+    registry §3 chưa bao giờ đăng ký. Đã thêm mục *Fallback Errors*
+  - **(c) nhắc-để-cấm, không phải dùng** — `AUTH_TOKEN_REUSED` là ví dụ phản diện; checker
+    quét backtick nên hiểu nhầm. Bỏ backtick là xong
+  Thêm `TOO_MANY_REQUESTS` + `PAYROLL_PERIOD_DUPLICATE` vào mục *proposed, not agreed*.
+
 **In progress** (và vì sao chưa xong):
 - `PR_BODY.md` nằm ở root repo, PR **chưa được tạo** — `device_bash` phía máy người dùng
   chết giữa session, không chạy được git từ agent
@@ -41,8 +52,14 @@
 - API-002 hai công thức đọc rate — chặn mọi phép tính tiền
 - 5 quyết định 16/08 chưa thành ADR
 - Working tree còn nhiều thay đổi chưa commit, chưa tách branch
-- **Bài học**: rule fast-verify mất vì viết xong không commit ngay. Commit từng phần, đừng
-  gom cuối session.
+- **Bài học 1**: rule fast-verify mất vì viết xong không commit ngay. Commit từng phần,
+  đừng gom cuối session.
+- **Bài học 2**: khi giao việc cho subagent, file "sự thật đã xác minh" phải **đầy đủ**.
+  `_FACTS.md` tôi soạn không chép mục `Class Errors` của `API_ERROR_CODES.md`, nên agent
+  viết spec `03` bịa ra hai mã trong khi mã đúng đã tồn tại. Agent không sai — nó không có
+  cách nào biết. **Chép thiếu nguồn thì agent bịa, và nó bịa rất tự tin.**
+- **Bài học 3**: `pnpm check:docs` bắt được cả ba loại lỗi trên trong dưới một giây. Chạy nó
+  TRƯỚC khi commit, không phải để CI bắt.
 
 **Next steps**:
 1. ADR-010 → ADR-014

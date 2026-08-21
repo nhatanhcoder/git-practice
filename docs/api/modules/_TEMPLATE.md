@@ -1,67 +1,67 @@
-# MODULE SPEC TEMPLATE — bắt buộc theo đúng thứ tự mục này
+# MODULE SPEC TEMPLATE — mandatory, section order must be followed exactly
 
 ---
-module: <tên>
+module: <name>
 status: accepted | proposed | deferred
-blocked_by: <ADR/quyết định, hoặc ->
+blocked_by: <ADR/decision, or ->
 owner: <->
 last_updated: 2026-08-19
 ---
 
-## 0. Tóm tắt
-2-3 câu: module này chịu trách nhiệm gì, ranh giới ở đâu.
+## 0. Summary
+2-3 sentences: what this module is responsible for, where its boundary lies.
 
-## 1. Bảng chạm tới
-Bảng | Đọc/Ghi | Ghi chú
+## 1. Tables touched
+Table | Read/Write | Notes
 
 ## 2. Endpoints
-Method | Path | Role | Mô tả | Trạng thái (defined/proposed)
-Path đầy đủ, có prefix /api/v1.
+Method | Path | Role | Description | Status (defined/proposed)
+Full path, with /api/v1 prefix.
 
 ## 3. DTO
 ### Request
-Từng field: tên · kiểu · bắt buộc · ràng buộc validate
+Each field: name · type · required · validation constraint
 ### Response
-Bọc trong { "data": ... }. List thì có "meta".
+Wrapped in { "data": ... }. Lists have "meta".
 
-## 4. Rule nghiệp vụ (invariant)
-Đánh số INV-<MODULE>-01... Mỗi invariant là một câu khẳng định luôn đúng.
-Đây là danh sách mà mục 15 (test matrix) phải phủ hết.
+## 4. Business rules (invariants)
+Numbered INV-<MODULE>-01... Each invariant is a statement that always holds.
+This is the list that section 15 (test matrix) must fully cover.
 
 ## 5. Ownership / RBAC
-Kiểm ở service layer, không chỉ role guard. Ghi rõ câu điều kiện.
+Check at the service layer, not just role guard. Write the exact predicate.
 
 ## 6. State machine
-Trạng thái, chuyển đổi hợp lệ, cổng một chiều. Vẽ dạng text.
+States, valid transitions, one-way gates. Draw as text.
 
 ## 7. Transaction boundary
-Thao tác nào phải nằm trong CÙNG một transaction. Ghi rõ mức isolation nếu cần.
+Which operations must be in the SAME transaction. State the isolation level if needed.
 
 ## 8. Idempotency & concurrency
-Request lặp thì sao. Hai request đồng thời thì sao. Khoá nào, unique constraint nào.
+What happens on duplicate requests. What happens with two concurrent requests. Which locks, which unique constraints.
 
-## 9. Error → mã lỗi
-Nhánh lỗi | HTTP | code | Trạng thái code (có trong API_ERROR_CODES.md / proposed)
-KHÔNG được bịa mã mới.
+## 9. Error → code mapping
+Error branch | HTTP | code | Code status (in API_ERROR_CODES.md / proposed)
+NEVER invent new codes.
 
-## 10. Side effect & notification
-Hành động nào sinh Notification type nào, gửi cho ai.
+## 10. Side effects & notifications
+Which action produces which Notification type, sent to whom.
 
 ## 11. Index & query
-Index cần cho filter/sort/phân trang. Query nào có nguy cơ N+1.
+Indexes needed for filter/sort/pagination. Which queries risk N+1.
 
 ## 12. Migration & seed
-Migration này thêm/sửa gì. Seed cần gì để test.
+What this migration adds/changes. What the seed needs for testing.
 
 ## 13. Security & rate limit
-Giới hạn, dữ liệu nhạy cảm KHÔNG được trả ra, audit.
+Limits, sensitive data that must NOT be exposed, audit.
 
 ## 14. Observability
-Log gì, đo gì.
+What to log, what to measure.
 
 ## 15. Test matrix
-INV | Loại test (service/integration/DB thật) | Mô tả
-Mọi INV ở mục 4 phải xuất hiện ở đây. Đây là invariant gate.
+INV | Test type (service/integration/real DB) | Description
+Every INV in section 4 must appear here. This is the invariant gate.
 
-## 16. Chưa chốt
-Câu hỏi | Chặn gì | Owner | Cần quyết trước ngày
+## 16. Unresolved
+Question | What it blocks | Owner | Decide by date

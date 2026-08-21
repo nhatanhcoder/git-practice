@@ -1,6 +1,6 @@
 # 🔌 API Teacher
 
-> Endpoints dành riêng cho role Teacher.  
+> Endpoints reserved for the Teacher role.  
 > Conventions: [API_CONVENTIONS.md](./API_CONVENTIONS.md)  
 > Permissions: [PERMISSIONS_TEACHER.md](../actors/teacher/PERMISSIONS_TEACHER.md)
 

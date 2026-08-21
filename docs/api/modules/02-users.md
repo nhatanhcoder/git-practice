@@ -1,36 +1,43 @@
 ---
 module: Users / Admin Users
 status: proposed
-blocked_by: C1 (nickname vs fullName) · C3 (thiếu state `rejected` → cần ADR vòng đời tài khoản + migration)
+blocked_by: C1 (nickname vs fullName) · C3 (missing `rejected` state → needs account-lifecycle ADR + migration)
 owner: -
 last_updated: 2026-08-19
 ---
 
-## 0. Tóm tắt
+## 0. Summary
 
-Module quản lý tài khoản từ phía Admin: liệt kê / xem chi tiết user và điều khiển vòng đời `User.status` qua 3 hành động approve · suspend · activate. Ranh giới: module này **chỉ đọc** profile của user khác và **chỉ ghi đúng một field** là `status` (+ `updatedAt`); mọi thao tác self-service (đổi tên, avatar, mật khẩu) thuộc module Auth (`PATCH /auth/me`, `POST /auth/change-password`), không thuộc đây. Module không tạo user — đăng ký là self-serve; không xoá user — không có endpoint DELETE.
+Account management from the Admin side: list / view user details and control the `User.status`
+lifecycle through 3 actions: approve · suspend · activate. Boundary: this module **only reads**
+other users' profiles and **writes exactly one field**, `status` (+ `updatedAt`); every
+self-service action (rename, avatar, password) belongs to the Auth module (`PATCH /auth/me`,
+`POST /auth/change-password`), not here. The module does not create users — registration is
+self-service; it does not delete users — no DELETE endpoint.
 
-## 1. Bảng chạm tới
+## 1. Tables touched
 
-| Bảng | Đọc/Ghi | Ghi chú |
+| Table | Read/Write | Notes |
 |---|---|---|
-| `User` | Đọc + Ghi | Ghi **duy nhất** `status`, `updatedAt`. Đọc: `id, email, role, status, nickname, avatarUrl, hskLevelGoal, bio, lastLoginAt, createdAt, updatedAt`. **Không bao giờ select `passwordHash`** |
-| `Notification` | Ghi (INSERT) | `account_approved`, `account_suspended`. Append-only, không update/delete |
-| `Class` | Đọc (chặn) | Panel "Lớp đang dạy" ở trang chi tiết teacher — shape chưa chốt, xem §16 |
-| `ClassEnrollment` | Đọc (chặn) | Panel "Lớp đã tham gia" ở trang chi tiết student — chưa chốt |
-| `ClassSession` | Đọc (chặn) | Panel "Buổi học" ở trang chi tiết teacher — chưa chốt |
+| `User` | Read + Write | Writes **only** `status`, `updatedAt`. Reads: `id, email, role, status, nickname, avatarUrl, hskLevelGoal, bio, lastLoginAt, createdAt, updatedAt`. **Never select `passwordHash`** |
+| `Notification` | Write (INSERT) | `account_approved`, `account_suspended`. Append-only, no update/delete |
+| `Class` | Read (blocked) | "Classes teaching" panel on the teacher detail page — shape not locked, see §16 |
+| `ClassEnrollment` | Read (blocked) | "Classes joined" panel on the student detail page — not locked |
+| `ClassSession` | Read (blocked) | "Sessions" panel on the teacher detail page — not locked |
 
 ## 2. Endpoints
 
-| Method | Path | Role | Mô tả | Trạng thái |
+| Method | Path | Role | Description | Status |
 |---|---|---|---|---|
-| GET | `/api/v1/admin/users` | admin | Danh sách user, filter `role` + `status` + tìm kiếm, có phân trang | defined (API_ADMIN.md) |
-| GET | `/api/v1/admin/users/:id` | admin | Chi tiết một user | defined (path) / **proposed (shape response)** — phần history nhúng chưa được định nghĩa ở API_ADMIN.md |
-| PATCH | `/api/v1/admin/users/:id/approve` | admin | Duyệt tài khoản đang `pending` → `active` | defined |
-| PATCH | `/api/v1/admin/users/:id/suspend` | admin | Khoá tài khoản đang `active` → `suspended` | defined (path) / **proposed (request body)** — FE bắt buộc nhập "Lý do khóa", API_ADMIN.md không định nghĩa body |
-| PATCH | `/api/v1/admin/users/:id/activate` | admin | Mở khoá tài khoản đang `suspended` → `active` | defined |
+| GET | `/api/v1/admin/users` | admin | User list, filter by `role` + `status` + search, paginated | defined (API_ADMIN.md) |
+| GET | `/api/v1/admin/users/:id` | admin | Single user detail | defined (path) / **proposed (response shape)** — the embedded history part is not defined in API_ADMIN.md |
+| PATCH | `/api/v1/admin/users/:id/approve` | admin | Approve an account in `pending` → `active` | defined |
+| PATCH | `/api/v1/admin/users/:id/suspend` | admin | Lock an account in `active` → `suspended` | defined (path) / **proposed (request body)** — FE mandates a "Lock reason" input, API_ADMIN.md defines no body |
+| PATCH | `/api/v1/admin/users/:id/activate` | admin | Unlock an account in `suspended` → `active` | defined |
 
-Không có `POST /admin/users`, `PATCH /admin/users/:id` (sửa profile), `DELETE /admin/users/:id`. Ba route PATCH ở trên là **toàn bộ** khả năng ghi của Admin lên tài khoản người khác.
+There is no `POST /admin/users`, no `PATCH /admin/users/:id` (profile edit), no
+`DELETE /admin/users/:id`. The three PATCH routes above are **all** of the Admin's write
+capability over other accounts.
 
 ## 3. DTO
 
@@ -38,19 +45,22 @@ Không có `POST /admin/users`, `PATCH /admin/users/:id` (sửa profile), `DELET
 
 **GET /admin/users** — query params:
 
-| Field | Kiểu | Bắt buộc | Ràng buộc validate |
+| Field | Type | Required | Validation constraint |
 |---|---|---|---|
-| `role` | enum string | không | ∈ `admin` \| `teacher` \| `student`. Giá trị khác → `VALIDATION_ERROR`. Không gửi = không lọc theo role |
-| `status` | enum string | không | ∈ `pending` \| `active` \| `suspended`. Giá trị khác → `VALIDATION_ERROR`. Không gửi = không lọc theo status |
-| `q` | string | không | trim, độ dài 1–100 sau trim; chuỗi rỗng sau trim ⇒ coi như không gửi. Khớp substring **case-insensitive** trên `nickname` HOẶC `email`. ⚠️ Tên param chưa chốt: FE contract dùng `q`, API_ADMIN.md mô tả là "search" — xem §16 |
-| `page` | int | không | ≥ 1, mặc định `1` |
-| `limit` | int | không | ≥ 1, mặc định `20`, trần `100` (**proposed** — API_CONVENTIONS.md không quy định trần) |
-| `sortBy` | enum string | không | **proposed** — ∈ `createdAt` \| `lastLoginAt`, mặc định `createdAt`. FE chỉ cho sort 2 cột này |
-| `order` | enum string | không | **proposed** — ∈ `asc` \| `desc`, mặc định `desc` |
+| `role` | enum string | no | ∈ `admin` \| `teacher` \| `student`. Any other value → `VALIDATION_ERROR`. Not sent = no role filter |
+| `status` | enum string | no | ∈ `pending` \| `active` \| `suspended`. Any other value → `VALIDATION_ERROR`. Not sent = no status filter |
+| `q` | string | no | trim, length 1–100 after trim; empty after trim ⇒ treated as not sent. Case-insensitive substring match on `nickname` OR `email`. ⚠️ Param name not locked: FE contract uses `q`, API_ADMIN.md describes it as "search" — see §16 |
+| `page` | int | no | ≥ 1, default `1` |
+| `limit` | int | no | ≥ 1, default `20`, cap `100` (**proposed** — API_CONVENTIONS.md specifies no cap) |
+| `sortBy` | enum string | no | **proposed** — ∈ `createdAt` \| `lastLoginAt`, default `createdAt`. FE only allows sorting by these 2 columns |
+| `order` | enum string | no | **proposed** — ∈ `asc` \| `desc`, default `desc` |
 
-**GET /admin/users/:id** · **PATCH .../approve** · **PATCH .../activate** — path param `id` (uuid, `VALIDATION_ERROR` nếu sai định dạng). Không có body.
+**GET /admin/users/:id** · **PATCH .../approve** · **PATCH .../activate** — path param `id`
+(uuid, `VALIDATION_ERROR` if malformed). No body.
 
-**PATCH /admin/users/:id/suspend** — path param `id` (uuid). Body: **chưa chốt**. FE spec bắt buộc textarea "Lý do khóa" (submit bị disable khi rỗng) nhưng: (a) API_ADMIN.md không định nghĩa body, (b) `User` không có field nào để lưu lý do. Không tự đặt tên field ở đây — xem §16.
+**PATCH /admin/users/:id/suspend** — path param `id` (uuid). Body: **not locked**. The FE spec
+mandates a "Lock reason" textarea (submit disabled when empty) but (a) API_ADMIN.md defines no
+body, (b) `User` has no field to store a reason. Don't invent a field name here — see §16.
 
 ### Response
 
@@ -65,251 +75,334 @@ Không có `POST /admin/users`, `PATCH /admin/users/:id` (sửa profile), `DELET
 
 `AdminUserListItem`:
 
-| Field | Kiểu | Nullable | Ghi chú |
+| Field | Type | Nullable | Notes |
 |---|---|---|---|
 | `id` | uuid | no | |
 | `email` | string | no | |
 | `role` | `admin`\|`teacher`\|`student` | no | |
 | `status` | `pending`\|`active`\|`suspended` | no | |
-| `nickname` | string | yes | ⚠️ C1 — xem §16 |
+| `nickname` | string | yes | ⚠️ C1 — see §16 |
 | `avatarUrl` | string | yes | |
 | `createdAt` | DateTime UTC ISO 8601 | no | |
-| `lastLoginAt` | DateTime UTC ISO 8601 | yes | `null` khi chưa từng đăng nhập |
+| `lastLoginAt` | DateTime UTC ISO 8601 | yes | `null` when never logged in |
 
-**GET /admin/users/:id** → `200` — `{ "data": AdminUserDetail }`. `AdminUserDetail` = `AdminUserListItem` + `hskLevelGoal` (int, nullable, chỉ có nghĩa với `student`) + `bio` (text, nullable, chỉ có nghĩa với `teacher`) + `updatedAt`.
-⚠️ Phần history theo role (`enrollments[]`/`attempts[]` cho student, `classes[]`/`sessions[]` cho teacher) mà FE yêu cầu **không có trong spec API** → không định nghĩa ở đây, đang chặn (§16).
+**GET /admin/users/:id** → `200` — `{ "data": AdminUserDetail }`. `AdminUserDetail` =
+`AdminUserListItem` + `hskLevelGoal` (int, nullable, only meaningful for `student`) + `bio`
+(text, nullable, only meaningful for `teacher`) + `updatedAt`.
+⚠️ The role-scoped history (`enrollments[]`/`attempts[]` for student, `classes[]`/`sessions[]`
+for teacher) that FE asks for **is not in the API spec** → not defined here, currently blocking (§16).
 
 **PATCH .../approve|suspend|activate** → `200` — `{ "data": AdminUserDetail }`.
-⚠️ FE contract ghi envelope là `data.user` (bọc thêm một lớp). API_CONVENTIONS.md ghi `{ "data": {...} }`. Spec này theo API_CONVENTIONS.md (nguồn chuẩn) và ghi lệch vào §16.
+⚠️ The FE contract records the envelope as `data.user` (one extra wrapper layer).
+API_CONVENTIONS.md says `{ "data": {...} }`. This spec follows API_CONVENTIONS.md (the normative
+source) and records the discrepancy in §16.
 
-`passwordHash` **không xuất hiện** trong bất kỳ DTO response nào ở trên.
+`passwordHash` **never appears** in any response DTO above.
 
-## 4. Rule nghiệp vụ (invariant)
+## 4. Business rules (invariants)
 
-| ID | Phát biểu |
+| ID | Statement |
 |---|---|
-| **INV-USERS-01** | Mọi endpoint của module chỉ thực thi khi actor có `role = admin` **và** `status = active`; mọi actor khác bị từ chối trước khi truy vấn dữ liệu user. |
-| **INV-USERS-02** | Không response nào, không log nào, không `details` lỗi nào của module chứa `passwordHash`. |
-| **INV-USERS-03** | `data[]` của `GET /admin/users` chỉ chứa user thoả **đồng thời tất cả** filter đang bật (`role` AND `status` AND `q`); không bản ghi nào ngoài tập filter lọt vào kết quả. |
-| **INV-USERS-04** | Giá trị `role`/`status` ngoài enum làm request thất bại với `VALIDATION_ERROR`; hệ thống **không** âm thầm bỏ qua filter sai và trả về tập rộng hơn. |
-| **INV-USERS-05** | `q` khớp substring không phân biệt hoa/thường trên `nickname` **hoặc** `email`; `q` không gửi hoặc rỗng sau trim ⇒ không lọc theo từ khoá. |
-| **INV-USERS-06** | `meta.total` = số bản ghi thoả filter **trước** phân trang; `meta.totalPages = ceil(total / limit)`; `data.length ≤ limit`. |
-| **INV-USERS-07** | Thứ tự sắp xếp là toàn phần và ổn định (luôn có tie-breaker `id`), nên duyệt hết các trang cho ra mỗi bản ghi đúng một lần — không trùng, không sót. |
-| **INV-USERS-08** | `approve` chỉ thành công khi `status` hiện tại là `pending`; khi thành công `status` kết quả luôn là `active`. |
-| **INV-USERS-09** | `suspend` chỉ thành công khi `status` hiện tại là `active`; khi thành công `status` kết quả luôn là `suspended`. |
-| **INV-USERS-10** | `activate` chỉ thành công khi `status` hiện tại là `suspended`; khi thành công `status` kết quả luôn là `active`. |
-| **INV-USERS-11** | Không tồn tại đường đi nào đưa `status` trở lại `pending` sau khi đã rời `pending` — `pending` là cổng một chiều. |
-| **INV-USERS-12** | `User.status` luôn thuộc `{pending, active, suspended}`; không có giá trị thứ tư nào được ghi xuống DB qua module này. |
-| **INV-USERS-13** | Mỗi lần chuyển trạng thái thành công sinh **đúng một** `Notification` cho **đúng user bị tác động**: `approve` → `account_approved`, `suspend` → `account_suspended`. `activate` không sinh Notification (không có type tương ứng). |
-| **INV-USERS-14** | Việc đổi `status` và việc INSERT `Notification` nằm trong **cùng một transaction**: nếu một phần thất bại thì cả hai bị rollback — không tồn tại trạng thái "đã đổi status nhưng thiếu notification" hoặc ngược lại. |
-| **INV-USERS-15** | Request lặp lại hoặc hai request đồng thời trên cùng `:id`: `status` chỉ đổi đúng một lần và `Notification` chỉ sinh đúng một bản; lần thứ hai kết thúc bằng lỗi conflict, không phải bằng side effect thứ hai. |
-| **INV-USERS-16** | Module chỉ ghi `status` và `updatedAt`; `email`, `role`, `nickname`, `avatarUrl`, `hskLevelGoal`, `bio`, `passwordHash`, `createdAt`, `lastLoginAt` bất biến qua mọi endpoint của module. |
-| **INV-USERS-17** | `:id` không tồn tại luôn cho `404 USER_NOT_FOUND`; không bao giờ `200` với body rỗng/null. |
-| **INV-USERS-18** | Mọi DateTime trả ra là UTC ISO 8601; `lastLoginAt = null` khi user chưa từng đăng nhập thành công. |
+| **INV-USERS-01** | Every endpoint of the module runs only when the actor has `role = admin` **and** `status = active`; every other actor is refused before any user data is queried. |
+| **INV-USERS-02** | No response, no log, no error `details` of the module contains `passwordHash`. |
+| **INV-USERS-03** | The `data[]` of `GET /admin/users` contains only users satisfying **all active filters at once** (`role` AND `status` AND `q`); no record outside the filter set leaks into the result. |
+| **INV-USERS-04** | A `role`/`status` value outside the enum fails the request with `VALIDATION_ERROR`; the system **does not** silently ignore the bad filter and return a broader set. |
+| **INV-USERS-05** | `q` matches case-insensitive substrings on `nickname` **or** `email`; `q` not sent or empty after trim ⇒ no keyword filter. |
+| **INV-USERS-06** | `meta.total` = number of records matching the filters **before** pagination; `meta.totalPages = ceil(total / limit)`; `data.length ≤ limit`. |
+| **INV-USERS-07** | Sort order is total and stable (always has an `id` tie-breaker), so walking all pages yields each record exactly once — no duplicates, no gaps. |
+| **INV-USERS-08** | `approve` only succeeds when the current `status` is `pending`; on success the resulting `status` is always `active`. |
+| **INV-USERS-09** | `suspend` only succeeds when the current `status` is `active`; on success the resulting `status` is always `suspended`. |
+| **INV-USERS-10** | `activate` only succeeds when the current `status` is `suspended`; on success the resulting `status` is always `active`. |
+| **INV-USERS-11** | No path exists that returns `status` to `pending` after leaving it — `pending` is a one-way gate. |
+| **INV-USERS-12** | `User.status` always belongs to `{pending, active, suspended}`; no fourth value is ever written to the DB through this module. |
+| **INV-USERS-13** | Each successful status transition produces **exactly one** `Notification` for **exactly the affected user**: `approve` → `account_approved`, `suspend` → `account_suspended`. `activate` produces no Notification (no matching type). |
+| **INV-USERS-14** | The `status` change and the `Notification` INSERT are in **the same transaction**: if either part fails, both roll back — no "status changed but notification missing" state or the reverse. |
+| **INV-USERS-15** | Duplicate or concurrent requests on the same `:id`: `status` changes exactly once and a Notification is created exactly once; the second request ends in a conflict error, not a second side effect. |
+| **INV-USERS-16** | The module only writes `status` and `updatedAt`; `email`, `role`, `nickname`, `avatarUrl`, `hskLevelGoal`, `bio`, `passwordHash`, `createdAt`, `lastLoginAt` are immutable across every endpoint of the module. |
+| **INV-USERS-17** | A nonexistent `:id` always yields `404 USER_NOT_FOUND`; never `200` with an empty/null body. |
+| **INV-USERS-18** | Every DateTime returned is UTC ISO 8601; `lastLoginAt = null` when the user has never logged in successfully. |
 
 ## 5. Ownership / RBAC
 
-RBAC_MATRIX.md: `User · list all` = ✅ Admin, ❌ Teacher, ❌ Student. `User · approve / suspend` = ✅ Admin, ❌ Teacher, ❌ Student. **Không có ownership rule** — Admin thấy mọi user, mọi role.
+RBAC_MATRIX.md: `User · list all` = ✅ Admin, ❌ Teacher, ❌ Student. `User · approve / suspend` =
+✅ Admin, ❌ Teacher, ❌ Student. **No ownership rule** — Admin sees every user, every role.
 
-Kiểm hai tầng (guard **và** service), không chỉ dựa vào `@Roles`:
+Two-layer check (guard **and** service), not just `@Roles`:
 
-| Tầng | Điều kiện | Sai thì |
+| Layer | Condition | On failure |
 |---|---|---|
 | Guard | `req.user.role === 'admin'` | `403 AUTH_INSUFFICIENT_ROLE` |
-| Service (bắt buộc, không bỏ) | `actor.status === 'active'` — admin đang `suspended` mà còn token sống vẫn phải bị chặn | `403 AUTH_ACCOUNT_SUSPENDED` |
-| Service | `target = SELECT ... WHERE id = :id` — tồn tại? | `404 USER_NOT_FOUND` |
-| Service | `target.status` khớp trạng thái nguồn hợp lệ của hành động (§6) | §9 |
+| Service (mandatory, non-negotiable) | `actor.status === 'active'` — a suspended admin with a still-live token must still be blocked | `403 AUTH_ACCOUNT_SUSPENDED` |
+| Service | `target = SELECT ... WHERE id = :id` — exists? | `404 USER_NOT_FOUND` |
+| Service | `target.status` matches the valid source state of the action (§6) | §9 |
 
-**Filter theo `status`/`role` là ranh giới dữ liệu, không phải tiện ích UI → BẮT BUỘC TEST.** Sai filter ở đây không phải lỗi hiển thị mà là rò rỉ tập dữ liệu: một filter bị bỏ qua âm thầm sẽ đẩy tài khoản `pending`/`suspended` vào danh sách mà Admin tin là đã lọc, và Admin sẽ hành động trên hàng sai (duyệt nhầm, khoá nhầm). Hai lớp phải test: (a) filter đúng thì kết quả **chỉ** chứa tập đúng (INV-USERS-03); (b) filter sai enum thì **fail chứ không mở rộng tập** (INV-USERS-04).
+**Filtering by `status`/`role` is a data boundary, not a UI convenience → MUST BE TESTED.** A
+wrong filter here is not a display bug but a data-set leak: a silently ignored filter pushes
+`pending`/`suspended` accounts into a list the Admin believes is filtered, and the Admin will act
+on the wrong rows (wrong approvals, wrong locks). Two layers must be tested: (a) a correct filter
+returns **only** the correct set (INV-USERS-03); (b) an out-of-enum filter **fails rather than
+widening** the set (INV-USERS-04).
 
 ## 6. State machine
 
-`User.status` — ba trạng thái, đúng ba chuyển đổi hợp lệ.
+`User.status` — three states, exactly three valid transitions.
 
 ```
-   register (module Auth, ngoài phạm vi spec này)
+   register (Auth module, outside this spec's scope)
         │
         ▼
    ┌─────────┐   approve    ┌────────┐   suspend    ┌───────────┐
    │ pending │ ───────────► │ active │ ───────────► │ suspended │
    └─────────┘              └────────┘ ◄─────────── └───────────┘
         │                              activate
-        └── (không có đường ra nào khác — xem C3 ở §16)
+        └── (no other way out — see C3 in §16)
 ```
 
-| Từ | Đến | Hành động | Hợp lệ? |
+| From | To | Action | Valid? |
 |---|---|---|---|
 | `pending` | `active` | approve | ✅ |
 | `active` | `suspended` | suspend | ✅ |
 | `suspended` | `active` | activate | ✅ |
-| `pending` | `suspended` | — | ❌ Không có endpoint. `suspend` yêu cầu nguồn `active` |
-| `pending` | `pending` | approve lặp | ❌ Conflict, không phải no-op |
+| `pending` | `suspended` | — | ❌ No endpoint. `suspend` requires source `active` |
+| `pending` | `pending` | approve repeat | ❌ Conflict, not a no-op |
 | `active` | `active` | approve / activate | ❌ Conflict |
-| `active` | `pending` | — | ❌ Không tồn tại. Duyệt là **cổng một chiều** |
-| `suspended` | `pending` | — | ❌ Không tồn tại |
-| `suspended` | `suspended` | suspend lặp | ❌ Conflict |
-| bất kỳ | `rejected` | — | ❌ **State `rejected` KHÔNG TỒN TẠI** trong enum |
+| `active` | `pending` | — | ❌ Does not exist. Approval is a **one-way gate** |
+| `suspended` | `pending` | — | ❌ Does not exist |
+| `suspended` | `suspended` | suspend repeat | ❌ Conflict |
+| any | `rejected` | — | ❌ **State `rejected` DOES NOT EXIST** in the enum |
 
-**Cổng một chiều**: `pending` chỉ đi ra, không đi vào. Hệ quả trực tiếp: một tài khoản bị duyệt nhầm **không thể** trả về hàng đợi chờ duyệt; đường sửa sai duy nhất là `active → suspended`, tức là ghi đè ý nghĩa "đã khoá vì vi phạm" lên trường hợp "duyệt nhầm". Spec ghi nhận hệ quả này, không tự sửa.
+**One-way gate**: `pending` only exits, never re-enters. Direct consequence: an account approved
+by mistake **cannot** go back to the review queue; the only correction path is
+`active → suspended`, i.e. stamping the "locked for violation" meaning onto the "wrongly
+approved" case. The spec records this consequence; it does not fix it itself.
 
-**⚠️ Mâu thuẫn C3 — enum không có `rejected`.** `User.status` chỉ có `pending | active | suspended` (ENTITY_USER + _FACTS). Vì `pending → suspended` không hợp lệ và `rejected` không tồn tại, hiện tại hệ thống **không có cách nào biểu diễn "từ chối một đơn đăng ký"**: hồ sơ bị từ chối chỉ có thể nằm mãi ở `pending` và ở lại trong hàng đợi của Admin vĩnh viễn. "Quyết định 5" đề xuất thêm `rejected` nhưng cần migration enum + ADR. Spec này **không tự thêm state, không tự chọn workaround** — xem §16.
+**⚠️ Contradiction C3 — the enum has no `rejected`.** `User.status` only has
+`pending | active | suspended` (ENTITY_USER + _FACTS). Since `pending → suspended` is invalid and
+`rejected` does not exist, the system currently **has no way to represent "reject a
+registration"**: a rejected profile can only sit in `pending` forever and stay in the Admin queue
+permanently. "Decision 5" proposes adding `rejected` but needs an enum migration + ADR. This spec
+**does not add the state itself and does not pick a workaround** — see §16.
 
 ## 7. Transaction boundary
 
-**GET** (list + detail): chỉ đọc, không cần transaction tường minh. `READ COMMITTED` (mặc định PostgreSQL) là đủ. Query đếm `total` và query lấy `data[]` chạy trong cùng một snapshot đọc để `meta.total` không lệch với trang đang trả (chấp nhận sai lệch nhỏ nếu không dùng transaction — nếu chọn không bọc, phải ghi rõ là chấp nhận).
+**GET** (list + detail): read-only, no explicit transaction needed. `READ COMMITTED` (PostgreSQL
+default) is enough. The `total` counting query and the `data[]` fetch run in the same read
+snapshot so `meta.total` does not drift from the page being returned (a small drift is acceptable
+if not wrapped — if you choose not to wrap, record that this is accepted).
 
-**PATCH** (approve / suspend / activate): **một transaction duy nhất**, `READ COMMITTED` + khoá hàng (không cần `SERIALIZABLE`), gồm đúng 4 bước:
+**PATCH** (approve / suspend / activate): **a single transaction**, `READ COMMITTED` + row lock
+(no `SERIALIZABLE` needed), exactly 4 steps:
 
-1. `SELECT ... FROM "User" WHERE id = :id FOR UPDATE` (hoặc guarded UPDATE ở §8) — khoá hàng target.
-2. Kiểm tra `status` nguồn hợp lệ theo §6 → sai thì ném lỗi, transaction rollback, không side effect.
-3. `UPDATE "User" SET status = <đích>, "updatedAt" = now() WHERE id = :id`.
-4. `INSERT INTO "Notification" (...)` — với approve/suspend. Với activate: bỏ qua bước 4.
+1. `SELECT ... FROM "User" WHERE id = :id FOR UPDATE` (or the guarded UPDATE in §8) — lock the target row.
+2. Check `status` source is valid per §6 → if not, throw, transaction rolls back, no side effects.
+3. `UPDATE "User" SET status = <target>, "updatedAt" = now() WHERE id = :id`.
+4. `INSERT INTO "Notification" (...)` — for approve/suspend. For activate: skip step 4.
 
-Ràng buộc: **bước 3 và bước 4 không được tách transaction** (INV-USERS-14). Mọi tác dụng phụ ra ngoài DB (push/websocket/email nếu có sau này) phải chạy **sau khi commit**, không nằm trong transaction.
+Constraint: **steps 3 and 4 must not be split across transactions** (INV-USERS-14). Every
+side effect outside the DB (push/websocket/email if added later) must run **after commit**, not
+inside the transaction.
 
 ## 8. Idempotency & concurrency
 
-**Request lặp** — module này **không idempotent theo thiết kế** và đó là lựa chọn có chủ đích: `approve` lần hai trên user đã `active` trả `409 USER_ALREADY_APPROVED` (theo FE contract) chứ không phải `200` no-op. Lý do: Admin cần biết ai đó đã xử lý hàng này trước mình. Hệ quả tốt: Notification không bao giờ bị nhân đôi vì lần thứ hai không tới được bước INSERT. Không dùng header `Idempotency-Key` (không có trong API_CONVENTIONS.md).
+**Duplicate requests** — this module is **deliberately non-idempotent** and that is a conscious
+choice: a second `approve` on an already-`active` user returns `409 USER_ALREADY_APPROVED` (per FE
+contract), not a `200` no-op. Reason: Admin needs to know someone else already handled this row.
+Good consequence: Notifications are never duplicated because the second request never reaches the
+INSERT step. No `Idempotency-Key` header (not in API_CONVENTIONS.md).
 
-**Hai request đồng thời trên cùng `:id`** — không có unique constraint nào bảo vệ chuyển trạng thái (`UNIQUE(email)` không liên quan), nên **bắt buộc phải khoá**, cấm mẫu đọc-rồi-ghi ngoài khoá:
+**Two concurrent requests on the same `:id`** — no unique constraint protects the status
+transition (`UNIQUE(email)` is unrelated), so **locking is mandatory**; the unlocked
+read-then-write pattern is forbidden:
 
-- **Bắt buộc**: guarded UPDATE — `UPDATE "User" SET status='active', "updatedAt"=now() WHERE id=:id AND status='pending'` rồi kiểm `rowCount`. `rowCount = 1` ⇒ mình thắng cuộc đua, đi tiếp INSERT Notification. `rowCount = 0` ⇒ hoặc user không tồn tại hoặc đã bị người khác đổi trạng thái ⇒ đọc lại để phân biệt `404` với conflict, rollback, **không** INSERT Notification.
-- Tương đương chấp nhận được: `SELECT ... FOR UPDATE` rồi kiểm trong transaction.
-- **Cấm**: `findUnique` → kiểm status ở tầng service → `update` mà không có khoá/guard. Mẫu này cho phép hai request cùng thắng và sinh hai `account_approved`.
+- **Mandatory**: guarded UPDATE — `UPDATE "User" SET status='active', "updatedAt"=now() WHERE
+  id=:id AND status='pending'` then check `rowCount`. `rowCount = 1` ⇒ we won the race, proceed
+  to INSERT Notification. `rowCount = 0` ⇒ either the user does not exist or someone else already
+  changed the status ⇒ re-read to distinguish `404` from conflict, roll back, **do not** INSERT
+  Notification.
+- Acceptable equivalent: `SELECT ... FOR UPDATE` then check inside the transaction.
+- **Forbidden**: `findUnique` → status check at the service layer → `update` without any
+  lock/guard. This pattern lets two requests both win and produce two `account_approved`.
 
-**Khoá**: khoá hàng ở `User.id`, giữ trong suốt transaction §7. Không khoá bảng, không advisory lock.
+**Lock**: row lock on `User.id`, held for the whole §7 transaction. No table lock, no advisory
+lock.
 
-## 9. Error → mã lỗi
+## 9. Error → code mapping
 
-| Nhánh lỗi | HTTP | code | Trạng thái code |
+| Error branch | HTTP | code | Code status |
 |---|---|---|---|
-| Không có/hỏng access token | 401 | `AUTH_TOKEN_EXPIRED` | có trong API_ERROR_CODES.md |
-| Actor không phải admin | 403 | `AUTH_INSUFFICIENT_ROLE` | có |
-| Actor là admin nhưng đang `suspended` | 403 | `AUTH_ACCOUNT_SUSPENDED` | có |
-| `role`/`status`/`page`/`limit`/`id` sai định dạng hoặc ngoài enum | 400 | `VALIDATION_ERROR` (+ `details`) | có |
-| `:id` không tồn tại | 404 | `USER_NOT_FOUND` | có |
-| `approve` khi user đã `active` (hoặc `suspended`) | 409 | `USER_ALREADY_APPROVED` | ⚠️ có trong API_ERROR_CODES.md §User Errors và trong FE contract, **nhưng không có trong danh sách đã xác minh của `_FACTS.md`** → cần xác nhận trước khi code |
-| `suspend` khi user đang `pending` hoặc đã `suspended` | 409 | **CHƯA CÓ MÃ** | ⛔ chặn — xem §16 |
-| `activate` khi user đang `pending` hoặc đã `active` | 409 | **CHƯA CÓ MÃ** | ⛔ chặn — xem §16 |
-| Lỗi không lường trước | 500 | (không có code riêng) | — |
+| Missing/broken access token | 401 | `AUTH_TOKEN_EXPIRED` | in API_ERROR_CODES.md |
+| Actor not admin | 403 | `AUTH_INSUFFICIENT_ROLE` | exists |
+| Actor is admin but `suspended` | 403 | `AUTH_ACCOUNT_SUSPENDED` | exists |
+| `role`/`status`/`page`/`limit`/`id` malformed or out of enum | 400 | `VALIDATION_ERROR` (+ `details`) | exists |
+| `:id` does not exist | 404 | `USER_NOT_FOUND` | exists |
+| `approve` when user already `active` (or `suspended`) | 409 | `USER_ALREADY_APPROVED` | ⚠️ present in API_ERROR_CODES.md §User Errors and in the FE contract, **but missing from the verified list of `_FACTS.md`** → needs confirmation before coding |
+| `suspend` when user is `pending` or already `suspended` | 409 | **NO CODE YET** | ⛔ blocking — see §16 |
+| `activate` when user is `pending` or already `active` | 409 | **NO CODE YET** | ⛔ blocking — see §16 |
+| Unforeseen error | 500 | (no dedicated code) | — |
 
-**Không bịa mã mới.** Hai dòng ⛔ ở trên là lỗ hổng thật trong registry: `USER_ALREADY_APPROVED` chỉ phủ nhánh approve, không có mã đối xứng cho suspend/activate. Không dùng tạm `VALIDATION_ERROR` (đây là vi phạm quy tắc nghiệp vụ, không phải lỗi DTO) và không dùng tạm `USER_ALREADY_APPROVED` cho nhánh suspend (sai ngữ nghĩa, FE sẽ hiển thị nhầm thông báo).
+**Do not invent new codes.** The two ⛔ rows above are real gaps in the registry:
+`USER_ALREADY_APPROVED` only covers the approve branch; no symmetric code exists for
+suspend/activate. Do not reuse `VALIDATION_ERROR` as a stopgap (this is a business-rule
+violation, not a DTO error) and do not reuse `USER_ALREADY_APPROVED` for the suspend branch (wrong
+semantics; FE would show the wrong message).
 
-Envelope lỗi theo API_CONVENTIONS.md — phẳng, có `statusCode`, `error` (reason phrase dạng chuỗi), `message`, `code`, `timestamp`, `path`; `details` **chỉ** xuất hiện ở `VALIDATION_ERROR`; không có cờ `success`.
+Error envelope per API_CONVENTIONS.md — flat, with `statusCode`, `error` (string reason phrase),
+`message`, `code`, `timestamp`, `path`; `details` **only** appears on `VALIDATION_ERROR`; no
+`success` flag.
 
-## 10. Side effect & notification
+## 10. Side effects & notifications
 
-| Hành động | Notification.type | Recipient (`Notification.userId`) | Số bản ghi | Ghi chú |
+| Action | Notification.type | Recipient (`Notification.userId`) | Record count | Notes |
 |---|---|---|---|---|
-| `PATCH .../approve` thành công | `account_approved` | chính user vừa được duyệt | 1 | Trong cùng transaction với UPDATE status |
-| `PATCH .../suspend` thành công | `account_suspended` | chính user vừa bị khoá | 1 | Trong cùng transaction. `payload` **có thể** chứa lý do khoá — nhưng body request chưa chốt (§16), nên chưa khoá tên key |
-| `PATCH .../activate` thành công | **không có** | — | 0 | Enum Notification không có type nào cho "mở khoá". Không tái dùng `account_approved` (sai ngữ nghĩa: user này chưa từng được duyệt lại). Ghi nhận là lỗ hổng, không tự thêm type |
-| Đăng ký mới, `role = teacher` | `new_teacher_registration` | **mọi** user `role = admin` và `status = active` (fan-out N bản ghi) | N | Sinh bởi **module Auth** (`POST /auth/register`), không phải module này. Ghi ở đây vì đây là nguồn nạp hàng đợi `status = pending` mà `GET /admin/users?status=pending` phục vụ |
-| Đăng ký mới, `role = student` | `new_student_registration` | như trên | N | như trên |
+| `PATCH .../approve` succeeds | `account_approved` | the user just approved | 1 | Same transaction as the status UPDATE |
+| `PATCH .../suspend` succeeds | `account_suspended` | the user just locked | 1 | Same transaction. `payload` **may** hold the lock reason — but the request body is not locked (§16), so the key name is not locked either |
+| `PATCH .../activate` succeeds | **none** | — | 0 | The Notification enum has no "unlock" type. Do not reuse `account_approved` (wrong semantics: this user was never re-approved). Recorded as a gap; no type added on our own |
+| New registration, `role = teacher` | `new_teacher_registration` | **every** user with `role = admin` and `status = active` (fan-out of N records) | N | Produced by the **Auth module** (`POST /auth/register`), not this module. Recorded here because it is the source feeding the `status = pending` queue that `GET /admin/users?status=pending` serves |
+| New registration, `role = student` | `new_student_registration` | as above | N | as above |
 
-**GET** không sinh side effect nào (không đánh dấu đã đọc, không ghi audit vào Notification).
+**GET** produces no side effects (no read-marking, no audit written to Notification).
 
-`referenceId` / `referenceType`: mục đích là deep-link. Với `account_approved` / `account_suspended`, đối tượng tham chiếu là chính user. Nhưng ENTITY_NOTIFICATION liệt kê `referenceType` ∈ `assignment`/`attempt`/`invoice`/`session` — **không có `user`**. Chưa chốt (§16); tạm thời để cả hai `null` là phương án an toàn duy nhất không bịa giá trị enum.
+`referenceId` / `referenceType`: purpose is deep-linking. For `account_approved` /
+`account_suspended` the referenced object is the user itself. But ENTITY_NOTIFICATION lists
+`referenceType` ∈ `assignment`/`attempt`/`invoice`/`session` — **no `user`**. Not locked (§16);
+for now leaving both `null` is the only safe option that doesn't invent an enum value.
 
-**Side effect ngoài Notification**: `suspend` phải làm mọi token đang sống của user đó bị từ chối (ENTITY_USER: "`status = suspended` → all JWT tokens rejected"). Cơ chế = kiểm `status` mỗi request ở guard của module Auth, không phải trách nhiệm ghi của module này. ⚠️ ENTITY_USER ghi mã trả về là `401`, còn API_ERROR_CODES.md ghi `AUTH_ACCOUNT_SUSPENDED = 403` — lệch, ghi vào §16.
+**Side effects beyond Notification**: `suspend` must make every live token of that user get
+rejected (ENTITY_USER: "`status = suspended` → all JWT tokens rejected"). Mechanism = status check
+per request in the Auth module's guard, not a write responsibility of this module.
+⚠️ ENTITY_USER says the return code is `401`, while API_ERROR_CODES.md says
+`AUTH_ACCOUNT_SUSPENDED = 403` — mismatch, recorded in §16.
 
 ## 11. Index & query
 
-| Mục đích | Index đề xuất | Ghi chú |
+| Purpose | Proposed index | Notes |
 |---|---|---|
-| Filter `status` + `role` + sort `createdAt` | `INDEX ("role", "status", "createdAt" DESC)` | Phủ tổ hợp filter phổ biến nhất của màn hình (hàng đợi duyệt: `status=pending`) |
-| Filter chỉ `status` | tiền tố của index trên (nếu đảo thứ tự cột thành `("status","role","createdAt" DESC)` thì tối ưu cho hàng đợi `pending`) | Chọn thứ tự cột theo truy vấn thật; đo trước khi chốt |
-| Sort `lastLoginAt` | `INDEX ("lastLoginAt" DESC NULLS LAST)` | FE cho sort cột này |
-| Tìm kiếm `q` | `pg_trgm` + `GIN INDEX ON lower(nickname) gin_trgm_ops`, `GIN INDEX ON lower(email) gin_trgm_ops` | `ILIKE '%q%'` có wildcard đầu chuỗi ⇒ **B-tree vô dụng**. Không có trgm thì mọi tìm kiếm là seq scan toàn bảng |
-| Unique email | đã có (`UNIQUE(email)`) | Không thuộc phạm vi thay đổi |
+| Filter `status` + `role` + sort `createdAt` | `INDEX ("role", "status", "createdAt" DESC)` | Covers the most common filter combo of the screen (review queue: `status=pending`) |
+| Filter only `status` | prefix of the above (if column order flipped to `("status","role","createdAt" DESC)` it optimizes the `pending` queue) | Choose column order by the real queries; measure before locking |
+| Sort `lastLoginAt` | `INDEX ("lastLoginAt" DESC NULLS LAST)` | FE allows sorting by this column |
+| Search `q` | `pg_trgm` + `GIN INDEX ON lower(nickname) gin_trgm_ops`, `GIN INDEX ON lower(email) gin_trgm_ops` | `ILIKE '%q%'` has a leading wildcard ⇒ **B-tree is useless**. Without trgm every search is a full-table seq scan |
+| Unique email | already exists (`UNIQUE(email)`) | Not part of this change |
 
-**Query & rủi ro**
+**Queries & risks**
 
-- Phân trang: `COUNT(*)` + `SELECT ... LIMIT/OFFSET` với **`ORDER BY <sortBy> <order>, id ASC`** — tie-breaker `id` là bắt buộc (INV-USERS-07), thiếu nó thì các bản ghi cùng `createdAt` nhảy giữa các trang.
-- `SELECT` phải **liệt kê cột tường minh**, cấm `SELECT *` / cấm trả nguyên entity — đây là hàng rào kỹ thuật cho INV-USERS-02.
-- **N+1**: endpoint list không join gì thêm (không đếm số lớp, không đếm bài nộp) ⇒ không có N+1. Rủi ro N+1 nằm ở `GET /admin/users/:id` nếu nhúng history theo role — phải lấy bằng số truy vấn cố định (1 truy vấn/panel), không lặp theo từng dòng. Phần này đang bị chặn (§16).
-- `OFFSET` lớn sẽ chậm khi bảng user lớn; chấp nhận ở quy mô hiện tại, ghi nhận là nợ kỹ thuật.
+- Pagination: `COUNT(*)` + `SELECT ... LIMIT/OFFSET` with **`ORDER BY <sortBy> <order>, id ASC`**
+  — the `id` tie-breaker is mandatory (INV-USERS-07); without it, records sharing a `createdAt`
+  jump between pages.
+- `SELECT` must **list columns explicitly**, no `SELECT *` / no raw entity return — this is the
+  technical barrier for INV-USERS-02.
+- **N+1**: the list endpoint joins nothing extra (no class counts, no submission counts) ⇒ no
+  N+1. The N+1 risk sits in `GET /admin/users/:id` if role-scoped history is embedded — it must
+  be fetched with a fixed number of queries (1 query/panel), never looped per row. That part is
+  currently blocked (§16).
+- Large `OFFSET` gets slow on a big user table; accepted at current scale, recorded as tech debt.
 
 ## 12. Migration & seed
 
-**Migration**: module này **không cần migration schema mới** — enum `status` (`pending|active|suspended`) và mọi field dùng tới đều đã tồn tại. Cần một migration **chỉ thêm index** (§11), gồm `CREATE EXTENSION IF NOT EXISTS pg_trgm` và các index composite/GIN; dùng `CREATE INDEX CONCURRENTLY` nếu chạy trên DB có dữ liệu.
+**Migration**: this module **needs no new schema migration** — the `status` enum
+(`pending|active|suspended`) and every used field already exist. One migration **only adding
+indexes** (§11) is needed, including `CREATE EXTENSION IF NOT EXISTS pg_trgm` and the
+composite/GIN indexes; use `CREATE INDEX CONCURRENTLY` when running against a populated DB.
 
-Hai migration **có thể phát sinh nhưng đang bị chặn**, không được viết trước khi có ADR:
-- Thêm giá trị `rejected` vào enum `User.status` (C3) — thay đổi enum + cập nhật mọi guard đọc status.
-- Thêm chỗ lưu lý do khoá (suspend reason) — hiện `User` không có field nào, `Notification.payload` là ứng viên nhưng chưa ai chốt.
+Two migrations **may arise but are blocked** — must not be written before an ADR:
+- Adding the `rejected` value to the `User.status` enum (C3) — enum change + updating every guard
+  that reads status.
+- Adding storage for the lock reason (suspend reason) — `User` has no field today;
+  `Notification.payload` is a candidate but nobody has locked it.
 
-**Seed để test**:
-- ≥ 1 admin `active` (actor gọi API, đồng thời là recipient của `new_*_registration`).
-- Phủ đủ ma trận `role × status`: teacher/student ở cả `pending`, `active`, `suspended` (tối thiểu 6 bản ghi) + 1 admin `suspended` để test INV-USERS-01 nhánh actor bị khoá.
-- ≥ 1 user có `lastLoginAt = null` (INV-USERS-18) và ≥ 1 có `lastLoginAt` khác null.
-- ≥ 25 user tổng cộng để test phân trang thật (page 2, `totalPages`, biên `limit`).
-- Cặp user có `createdAt` **trùng nhau** để test tie-breaker (INV-USERS-07).
-- Bộ `nickname`/`email` có dấu tiếng Việt và có hoa/thường lẫn lộn để test `q` case-insensitive (INV-USERS-05).
+**Seed for testing**:
+- ≥ 1 `active` admin (the API actor, also a recipient of `new_*_registration`).
+- Full `role × status` matrix coverage: teachers/students in each of `pending`, `active`,
+  `suspended` (≥ 6 records) + 1 `suspended` admin to test INV-USERS-01's locked-actor branch.
+- ≥ 1 user with `lastLoginAt = null` (INV-USERS-18) and ≥ 1 with a non-null `lastLoginAt`.
+- ≥ 25 users total to test real pagination (page 2, `totalPages`, `limit` boundaries).
+- A pair of users with **identical** `createdAt` to test the tie-breaker (INV-USERS-07).
+- A set of `nickname`/`email` values with Vietnamese diacritics and mixed case to test `q`
+  case-insensitivity (INV-USERS-05).
 
 ## 13. Security & rate limit
 
-**Dữ liệu nhạy cảm — KHÔNG BAO GIỜ trả ra:**
+**Sensitive data — NEVER exposed:**
 
-- **`passwordHash` KHÔNG BAO GIỜ xuất hiện trong bất kỳ response nào của module này** — không ở list, không ở detail, không ở response của approve/suspend/activate, không trong `details` của lỗi, không trong log, không trong trace/APM span. Đây là INV-USERS-02 và là điều kiện chặn merge, không phải khuyến nghị.
-- Cách bảo đảm (bắt buộc, không tuỳ chọn): tầng truy vấn dùng **danh sách cột tường minh**; cấm trả object entity thô ra controller; DTO response là allow-list, không phải deny-list (thêm field mới vào `User` không được tự động rò ra API).
-- Cùng nguyên tắc với mọi secret khác nếu sau này thêm vào `User` (refresh token hash, MFA secret...).
+- **`passwordHash` NEVER appears in any response of this module** — not in the list, not in the
+  detail, not in approve/suspend/activate responses, not in error `details`, not in logs, not in
+  traces/APM spans. This is INV-USERS-02 and a merge-blocking condition, not a recommendation.
+- How to guarantee (mandatory, not optional): the query layer uses **explicit column lists**; raw
+  entity objects are never returned to the controller; response DTOs are an allow-list, not a
+  deny-list (a new field added to `User` must not auto-leak into the API).
+- Same principle for any future secret added to `User` (refresh-token hash, MFA secret...).
 
-**Quyền hạn**: Admin **không** có đường đổi mật khẩu, email hay profile của người khác — module cố tình không có endpoint đó (INV-USERS-16). Không có endpoint xoá tài khoản.
+**Permissions**: Admin has **no** path to change another user's password, email or profile — the
+module deliberately has no such endpoint (INV-USERS-16). No account-deletion endpoint.
 
-**Rate limit**: API_CONVENTIONS.md không quy định (chỉ có `429 Too Many Requests` trong bảng HTTP status). **Proposed**, cần chốt: GET list/detail ~60 req/phút/admin; PATCH ~30 req/phút/admin. Con số là đề xuất, chưa được duyệt.
+**Rate limit**: API_CONVENTIONS.md doesn't prescribe one (only `429 Too Many Requests` in the HTTP
+status table). **Proposed**, needs locking: GET list/detail ~60 req/min/admin; PATCH ~30
+req/min/admin. These figures are suggestions, not approved.
 
-**Audit**: mọi lần đổi trạng thái phải truy được "ai làm, lúc nào, từ trạng thái nào sang trạng thái nào". Hiện **không có bảng AuditLog** trong danh sách entity ⇒ chỉ còn log ứng dụng (§14), không có bằng chứng bền vững trong DB. Ghi nhận là khoảng trống ở §16.
+**Audit**: every status change must be traceable as "who did it, when, from which state to which
+state". Currently **no AuditLog table** exists in the entity list ⇒ only application logs (§14)
+remain, no durable DB evidence. Recorded as a gap in §16.
 
 ## 14. Observability
 
-**Log** (structured, mỗi PATCH thành công một dòng): `requestId`, `actorUserId`, `targetUserId`, `action` (approve|suspend|activate), `fromStatus`, `toStatus`, `notificationCreated` (bool), `durationMs`. Log cả **nhánh thất bại** kèm `code` (đặc biệt các nhánh conflict — chúng chỉ ra hai admin đang xử lý trùng hàng). Tuyệt đối không log body/entity thô (§13).
+**Logs** (structured, one line per successful PATCH): `requestId`, `actorUserId`, `targetUserId`,
+`action` (approve|suspend|activate), `fromStatus`, `toStatus`, `notificationCreated` (bool),
+`durationMs`. Also log **failure branches** with `code` (especially conflict branches — they
+indicate two admins processing the same row). Never log raw bodies/entities (§13).
 
-**Metric**: đếm theo `action` × kết quả (success/conflict/not_found/forbidden); độ trễ p95 của `GET /admin/users` tách theo "có `q`" / "không có `q`" (truy vấn trgm là điểm chậm dự kiến); kích thước hàng đợi `COUNT(*) WHERE status='pending'` (chỉ số nghiệp vụ: hàng đợi phình = Admin không xử lý kịp, hoặc là triệu chứng của C3 — hồ sơ bị từ chối kẹt lại vĩnh viễn).
+**Metrics**: count by `action` × outcome (success/conflict/not_found/forbidden); p95 latency of
+`GET /admin/users` split by "with `q`" / "without `q`" (the trgm query is the expected slow
+point); queue size `COUNT(*) WHERE status='pending'` (business indicator: a growing queue = Admin
+not keeping up, or a symptom of C3 — rejected profiles stuck forever).
 
-**Cảnh báo**: tỉ lệ conflict tăng đột biến; p95 list vượt ngưỡng; xuất hiện bất kỳ lỗi 500 nào ở nhánh PATCH (nghi ngờ rollback transaction).
+**Alerts**: conflict rate spike; list p95 over threshold; any 500 on the PATCH branch (suspected
+transaction rollback).
 
 ## 15. Test matrix
 
-Đây là **invariant gate**: mọi INV ở §4 phải có ít nhất một dòng ở đây. Thiếu một dòng = không merge.
+This is the **invariant gate**: every INV in §4 must have at least one row here. A missing row =
+no merge.
 
-| INV | Loại test | Mô tả |
+| INV | Test type | Description |
 |---|---|---|
-| INV-USERS-01 | integration | Gọi cả 5 endpoint bằng token teacher → 403 `AUTH_INSUFFICIENT_ROLE`; bằng token student → 403; không token → 401. Thêm: admin có `status=suspended` nhưng token còn hạn → 403 `AUTH_ACCOUNT_SUSPENDED` |
-| INV-USERS-02 | integration | Serialize toàn bộ response của cả 5 endpoint thành chuỗi, assert **không chứa** khoá `passwordHash` và không chứa chuỗi hash của seed. Lặp cho cả nhánh lỗi (404/409) và assert log không chứa hash |
-| INV-USERS-03 | DB thật | Seed đủ ma trận `role × status`; với từng tổ hợp filter (`role`, `status`, `role+status`, `+q`) assert mọi phần tử `data[]` khớp filter **và** số phần tử khớp truy vấn đối chứng chạy thẳng trên DB |
-| INV-USERS-04 | integration | `?role=teachers`, `?status=rejected`, `?status=REJECTED`, `?role=` → 400 `VALIDATION_ERROR`, `details` nêu đúng field. Assert **không** trả 200 với danh sách chưa lọc |
-| INV-USERS-05 | DB thật | `q` viết hoa/thường khác nhau vẫn khớp; khớp được cả trên `nickname` lẫn `email`; `q` là substring giữa chuỗi vẫn khớp; `q=""`/`q="  "` ⇒ kết quả bằng đúng kết quả khi không gửi `q` |
-| INV-USERS-06 | DB thật | Seed 25 user; `limit=10` → `total=25`, `totalPages=3`, `data.length=10`; trang cuối `data.length=5`; filter bật thì `total` phản ánh tập đã lọc, không phải tổng bảng |
-| INV-USERS-07 | DB thật | Seed các bản ghi trùng `createdAt`; duyệt hết mọi trang, gom `id` → assert tập gom = tập seed, không phần tử lặp, không thiếu. Lặp cho `sortBy=lastLoginAt` (có giá trị null) |
-| INV-USERS-08 | service + integration | approve trên `pending` → 200, `status='active'` trong DB. approve trên `active` → 409, DB không đổi. approve trên `suspended` → 409, DB không đổi |
-| INV-USERS-09 | service + integration | suspend trên `active` → 200, `status='suspended'`. suspend trên `pending` → lỗi conflict, DB không đổi. suspend trên `suspended` → lỗi conflict *(⚠️ chưa có mã lỗi — test khoá HTTP 409 + DB không đổi, chốt `code` sau khi §16 được giải)* |
-| INV-USERS-10 | service + integration | activate trên `suspended` → 200, `status='active'`. activate trên `pending` → conflict. activate trên `active` → conflict. DB không đổi ở hai nhánh sau *(cùng ghi chú mã lỗi như trên)* |
-| INV-USERS-11 | integration | Duyệt toàn bộ 5 endpoint × mọi trạng thái nguồn; assert **không** tổ hợp nào cho ra `status='pending'` sau khi user đã rời `pending` |
-| INV-USERS-12 | DB thật | Sau khi chạy toàn bộ bộ test, `SELECT DISTINCT status FROM "User"` ⊆ `{pending, active, suspended}`. Thử ghi `rejected` qua API → không có đường nào làm được |
-| INV-USERS-13 | DB thật | approve → đúng 1 `Notification` type `account_approved`, `userId` = user bị tác động (không phải admin). suspend → đúng 1 `account_suspended`. activate → **0** Notification mới. Assert cả số lượng lẫn recipient |
-| INV-USERS-14 | DB thật | Ép INSERT Notification thất bại (mock/constraint) → assert `User.status` **vẫn là giá trị cũ** sau rollback và không có Notification mồ côi. Chiều ngược lại: ép UPDATE fail → không có Notification nào được ghi |
-| INV-USERS-15 | DB thật (concurrency) | Bắn 2 request approve song song trên cùng `:id` → đúng 1 request trả 200, request kia trả conflict; `COUNT(Notification WHERE type='account_approved' AND userId=:id) = 1`. Lặp cho suspend và activate. Thêm test tuần tự: gọi lại lần 2 → 409, không sinh Notification thứ 2 |
-| INV-USERS-16 | DB thật | Snapshot toàn bộ hàng `User` trước/sau mỗi PATCH; assert **chỉ** `status` và `updatedAt` khác; `email`, `role`, `nickname`, `avatarUrl`, `hskLevelGoal`, `bio`, `passwordHash`, `createdAt`, `lastLoginAt` giữ nguyên |
-| INV-USERS-17 | integration | uuid hợp lệ nhưng không tồn tại → 404 `USER_NOT_FOUND` trên cả 4 endpoint có `:id`; assert không bao giờ 200 với `data: null`. uuid sai định dạng → 400 `VALIDATION_ERROR` (phân biệt rõ hai nhánh) |
-| INV-USERS-18 | integration | Mọi field DateTime trong response khớp regex ISO 8601 UTC (kết thúc `Z`); user chưa từng đăng nhập → `lastLoginAt === null` (không phải chuỗi rỗng, không phải epoch 0) |
+| INV-USERS-01 | integration | Call all 5 endpoints with a teacher token → 403 `AUTH_INSUFFICIENT_ROLE`; with a student token → 403; no token → 401. Plus: an admin with `status=suspended` but a valid token → 403 `AUTH_ACCOUNT_SUSPENDED` |
+| INV-USERS-02 | integration | Serialize every response of all 5 endpoints to a string, assert it **does not contain** the `passwordHash` key or the seed's hash string. Repeat for error branches (404/409) and assert logs contain no hash |
+| INV-USERS-03 | real DB | Seed the full `role × status` matrix; for each filter combo (`role`, `status`, `role+status`, `+q`) assert every `data[]` element matches the filter **and** the element count matches a control query run directly on the DB |
+| INV-USERS-04 | integration | `?role=teachers`, `?status=rejected`, `?status=REJECTED`, `?role=` → 400 `VALIDATION_ERROR`, `details` names the right field. Assert **no** 200 with an unfiltered list |
+| INV-USERS-05 | real DB | `q` with different casing still matches; matches on both `nickname` and `email`; a mid-string substring still matches; `q=""`/`q="  "` ⇒ result identical to sending no `q` |
+| INV-USERS-06 | real DB | Seed 25 users; `limit=10` → `total=25`, `totalPages=3`, `data.length=10`; last page `data.length=5`; with a filter on, `total` reflects the filtered set, not the table total |
+| INV-USERS-07 | real DB | Seed records with duplicate `createdAt`; walk all pages, collect `id`s → assert the collected set = the seeded set, no duplicates, no gaps. Repeat for `sortBy=lastLoginAt` (with null values) |
+| INV-USERS-08 | service + integration | approve on `pending` → 200, `status='active'` in DB. approve on `active` → 409, DB unchanged. approve on `suspended` → 409, DB unchanged |
+| INV-USERS-09 | service + integration | suspend on `active` → 200, `status='suspended'`. suspend on `pending` → conflict error, DB unchanged. suspend on `suspended` → conflict error *(⚠️ no error code yet — test locks HTTP 409 + DB unchanged; lock `code` after §16 is resolved)* |
+| INV-USERS-10 | service + integration | activate on `suspended` → 200, `status='active'`. activate on `pending` → conflict. activate on `active` → conflict. DB unchanged in the last two branches *(same error-code note as above)* |
+| INV-USERS-11 | integration | Exercise all 5 endpoints × every source state; assert **no** combination yields `status='pending'` after the user left `pending` |
+| INV-USERS-12 | real DB | After the full test suite, `SELECT DISTINCT status FROM "User"` ⊆ `{pending, active, suspended}`. Try writing `rejected` via the API → no path can do it |
+| INV-USERS-13 | real DB | approve → exactly 1 `Notification` type `account_approved`, `userId` = the affected user (not the admin). suspend → exactly 1 `account_suspended`. activate → **0** new Notifications. Assert both count and recipient |
+| INV-USERS-14 | real DB | Force the Notification INSERT to fail (mock/constraint) → assert `User.status` **is still the old value** after rollback and no orphan Notification. Reverse: force the UPDATE to fail → no Notification written |
+| INV-USERS-15 | real DB (concurrency) | Fire 2 concurrent approve requests on the same `:id` → exactly 1 returns 200, the other returns conflict; `COUNT(Notification WHERE type='account_approved' AND userId=:id) = 1`. Repeat for suspend and activate. Sequential test: calling again the 2nd time → 409, no second Notification |
+| INV-USERS-16 | real DB | Snapshot the full `User` row before/after each PATCH; assert **only** `status` and `updatedAt` differ; `email`, `role`, `nickname`, `avatarUrl`, `hskLevelGoal`, `bio`, `passwordHash`, `createdAt`, `lastLoginAt` stay unchanged |
+| INV-USERS-17 | integration | Valid uuid that doesn't exist → 404 `USER_NOT_FOUND` on all 4 endpoints with `:id`; assert never a 200 with `data: null`. Malformed uuid → 400 `VALIDATION_ERROR` (clearly distinguish the two branches) |
+| INV-USERS-18 | integration | Every DateTime field in the response matches the ISO 8601 UTC regex (ends with `Z`); a user who never logged in → `lastLoginAt === null` (not empty string, not epoch 0) |
 
-Bổ sung ngoài invariant gate (không thay thế các dòng trên): test envelope lỗi đúng shape phẳng của API_CONVENTIONS.md (`details` chỉ có ở `VALIDATION_ERROR`, không có cờ `success`).
+Beyond the invariant gate (not replacing the rows above): test the error envelope has the flat
+shape of API_CONVENTIONS.md (`details` only on `VALIDATION_ERROR`, no `success` flag).
 
-## 16. Chưa chốt
+## 16. Unresolved
 
-| Câu hỏi | Chặn gì | Owner | Cần quyết trước |
+| Question | What it blocks | Owner | Decide by |
 |---|---|---|---|
-| **C1 — `nickname` hay `fullName`?** ENTITY_USER + _FACTS định nghĩa field là `nickname`; API_AUTH `POST /auth/register` và `PATCH /auth/me` nhận `fullName`. Là hai tên của một field, hay hai field khác nhau? | Chặn khoá DTO response của **cả 5 endpoint** (cột "Người dùng" của bảng và header trang chi tiết đọc field này), chặn field tìm kiếm của `q` (INV-USERS-05 đang giả định tìm trên `nickname`), chặn hợp đồng FE-BE. Nếu chốt là `fullName` thì phát sinh migration đổi tên cột + sửa mọi DTO | - | trước khi code `GET /admin/users` |
-| **C3 — thiếu state `rejected`.** `User.status` chỉ có `pending\|active\|suspended`. "Quyết định 5" đề xuất thêm `rejected` → cần migration enum + ADR | Chặn §6 (state machine không có đường ra cho hồ sơ bị từ chối — chúng kẹt ở `pending` vĩnh viễn và làm phình hàng đợi Admin), chặn migration, chặn giá trị hợp lệ của filter `?status=`, chặn INV-USERS-12. Không tự thêm state, không tự dùng `suspended` thay thế | - | trước khi code endpoint approve |
-| **Body của `PATCH .../suspend`.** FE bắt buộc nhập "Lý do khóa" nhưng API_ADMIN.md không định nghĩa body và `User` không có field lưu lý do (`Notification.payload` là ứng viên) | Chặn DTO request của suspend, chặn `payload` của `account_suspended` (§10), có thể chặn migration | - | trước Sprint code suspend |
-| **Thiếu mã lỗi cho chuyển trạng thái sai ở suspend/activate.** Registry chỉ có `USER_ALREADY_APPROVED`; không có mã đối xứng cho "suspend user đang pending" / "activate user đang active" | Chặn §9 và 2 dòng test INV-USERS-09 / INV-USERS-10 (hiện chỉ khoá được HTTP 409, chưa khoá được `code`) | - | trước khi code suspend/activate |
-| **`USER_ALREADY_APPROVED` có được duyệt chưa?** Có trong API_ERROR_CODES.md và FE contract, nhưng **không** có trong danh sách mã đã xác minh của `_FACTS.md` | Chặn assert `code` của test INV-USERS-08 | - | cùng lúc với dòng trên |
-| **Tên query param tìm kiếm: `q` hay `search`?** FE contract dùng `?q=`, API_ADMIN.md mô tả "filter: role, status, search" | Chặn hợp đồng URL (FE đang deep-link bằng `?q=`), chặn DTO §3 | - | trước khi code list |
-| **Envelope của PATCH: `data` hay `data.user`?** API_CONVENTIONS.md nói `{ "data": {...} }`; FE contract của cả hai màn hình admin ghi `data.user` | Chặn parse response ở FE cho cả 3 PATCH + GET detail | - | trước khi code |
-| **`GET /admin/users/:id` có nhúng history theo role không?** FE yêu cầu `enrollments[]`+`attempts[]` (student) / `classes[]`+`sessions[]` (teacher); API_ADMIN.md không định nghĩa | Chặn DTO `AdminUserDetail`, chặn thiết kế query chống N+1 (§11), chặn quyết định có tách endpoint riêng hay không | - | trước Sprint 3 |
-| **`Notification.referenceType` không có giá trị `user`.** Enum liệt kê `assignment`/`attempt`/`invoice`/`session` | Chặn deep-link của `account_approved`/`account_suspended`; tạm để `null` (§10) | - | trước khi code notification |
-| **Token của user `suspended` bị từ chối bằng 401 hay 403?** ENTITY_USER ghi 401; API_ERROR_CODES.md ghi `AUTH_ACCOUNT_SUSPENDED = 403` | Chặn hành vi guard sau khi suspend (§10) và cách FE xử lý (401 thường kích hoạt luồng refresh/logout, 403 thì không) | - | trước khi code suspend |
-| **Không có bảng AuditLog.** Không có nơi bền vững lưu "ai duyệt/khoá ai, lúc nào" | Chặn yêu cầu truy vết ở §13; hiện chỉ còn log ứng dụng, không truy vấn được | - | trước go-live |
-| **Admin có được tự khoá chính mình / khoá admin cuối cùng không?** Không tài liệu nào nói | Rủi ro tự khoá toàn bộ quyền quản trị. Không tự đặt rule ⇒ chưa có invariant nào phủ | - | trước go-live |
+| **C1 — `nickname` or `fullName`?** ENTITY_USER + _FACTS define the field as `nickname`; API_AUTH `POST /auth/register` and `PATCH /auth/me` accept `fullName`. Are these two names of one field, or two different fields? | Blocked: locking the response DTO of **all 5 endpoints** (the "User" column of the table and the detail-page header read this field), the `q` search field (INV-USERS-05 currently assumes searching on `nickname`), the FE-BE contract. If `fullName` is locked, a column-rename migration + every DTO update follows | - | before coding `GET /admin/users` |
+| **C3 — missing `rejected` state.** `User.status` only has `pending\|active\|suspended`. "Decision 5" proposes adding `rejected` → needs enum migration + ADR | Blocks §6 (the state machine has no way out for rejected profiles — they sit in `pending` forever and bloat the Admin queue), the migration, the valid values of the `?status=` filter, INV-USERS-12. Do not add the state ourselves, do not substitute `suspended` | - | before coding the approve endpoint |
+| **Body of `PATCH .../suspend`.** FE mandates a "Lock reason" input but API_ADMIN.md defines no body and `User` has no field to store the reason (`Notification.payload` is a candidate) | Blocks the suspend request DTO, the `payload` of `account_suspended` (§10), possibly the migration | - | before the suspend coding sprint |
+| **Missing error codes for wrong suspend/activate transitions.** The registry only has `USER_ALREADY_APPROVED`; no symmetric code for "suspend a pending user" / "activate an active user" | Blocks §9 and the 2 test rows INV-USERS-09 / INV-USERS-10 (currently only HTTP 409 can be locked, not `code`) | - | before coding suspend/activate |
+| **Is `USER_ALREADY_APPROVED` approved?** Present in API_ERROR_CODES.md and the FE contract, but **not** in the verified code list of `_FACTS.md` | Blocks asserting the `code` of test INV-USERS-08 | - | together with the row above |
+| **Search query param name: `q` or `search`?** FE contract uses `?q=`, API_ADMIN.md describes "filter: role, status, search" | Blocks the URL contract (FE deep-links with `?q=`), blocks the §3 DTO | - | before coding the list |
+| **PATCH envelope: `data` or `data.user`?** API_CONVENTIONS.md says `{ "data": {...} }`; the FE contract of both admin screens records `data.user` | Blocks FE response parsing for all 3 PATCHes + GET detail | - | before coding |
+| **Does `GET /admin/users/:id` embed role-scoped history?** FE asks for `enrollments[]`+`attempts[]` (student) / `classes[]`+`sessions[]` (teacher); API_ADMIN.md doesn't define it | Blocks the `AdminUserDetail` DTO, the N+1-safe query design (§11), the decision of whether to split a dedicated endpoint | - | before Sprint 3 |
+| **`Notification.referenceType` has no `user` value.** The enum lists `assignment`/`attempt`/`invoice`/`session` | Blocks deep-linking of `account_approved`/`account_suspended`; temporarily `null` (§10) | - | before coding notifications |
+| **Are a `suspended` user's tokens rejected with 401 or 403?** ENTITY_USER says 401; API_ERROR_CODES.md says `AUTH_ACCOUNT_SUSPENDED = 403` | Blocks the guard behavior after suspend (§10) and how FE handles it (401 usually triggers the refresh/logout flow, 403 does not) | - | before coding suspend |
+| **No AuditLog table.** No durable place recording "who approved/locked whom, when" | Blocks the traceability requirement of §13; only application logs remain, not queryable | - | before go-live |
+| **Can Admin lock themselves / the last remaining admin?** No document says | Risk of locking out all administrative access. No rule set on our own ⇒ nothing covered by an invariant yet | - | before go-live |
 
-*(C2 và C4 trong `_FACTS.md` không chạm tới module này: C2 thuộc nhóm rate/payroll; C4 chỉ ảnh hưởng `hskLevelGoal` ở mức hiển thị read-only — module này không validate giá trị đó.)*
+*(C2 and C4 in `_FACTS.md` do not touch this module: C2 belongs to the rate/payroll family; C4
+only affects `hskLevelGoal` at the read-only display level — this module does not validate that
+value.)*
