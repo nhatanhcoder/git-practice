@@ -243,123 +243,128 @@ exported `metadata` or dynamic document title setters, resulting in the fallback
 
 ---
 
-### [API-002] Hai công thức đọc rate mâu thuẫn nhau — sai số tiền
+### [API-002] Two contradictory rate-reading formulas — wrong amounts
 
 **Severity**: Critical
 **Sprint**: Backend Phase 0
 **Status**: Open
 
-**Description**: `ADR-008` (Accepted, 2026-08-13) quy định rates là **append-only**: đổi mức
-= tạo bản ghi mới, đọc mức áp dụng bằng
+**Description**: `ADR-008` (Accepted, 2026-08-13) specifies rates are **append-only**: changing
+a rate = creating a new record, reading the applicable rate via
 `WHERE effectiveFrom <= <date> ORDER BY effectiveFrom DESC LIMIT 1`.
 
-Nhưng `ENTITY_TEACHER_PAY_RATE.md` và `ENTITY_STUDENT_TUITION_RATE.md` lại ghi *"To update
-rate: set `effectiveTo` on current, create new record"* và *"Active rate = where
-`effectiveTo IS NULL` or `effectiveTo > today`"* — tức **có UPDATE dòng cũ**, và đọc bằng
-một câu SQL khác hẳn.
+However, `ENTITY_TEACHER_PAY_RATE.md` and `ENTITY_STUDENT_TUITION_RATE.md` say *"To update
+rate: set `effectiveTo` on current, create new record"* and *"Active rate = where
+`effectiveTo IS NULL` or `effectiveTo > today`"* — meaning it **UPDATEs the old row** and reads
+via a completely different SQL query.
 
-**Reproduce**: Với cùng một teacher và cùng một kỳ lương, hai câu truy vấn trả về hai bản ghi
-rate khác nhau nếu `effectiveTo` bị đặt sai hoặc không đặt → **hai số tiền lương khác nhau**.
+**Reproduce**: For the same teacher and the same payroll period, the two queries return two
+different rate records if `effectiveTo` is set incorrectly or not set → **two different pay
+amounts**.
 
-**Fix Plan**: Chốt một bên bằng ADR trước khi viết dòng code tính tiền đầu tiên. Bằng chứng
-nghiêng về ADR-008: FE `admin-tuition-rates.spec.md` mô tả lịch sử chỉ bằng `effectiveFrom`
-+ cờ `current`, không dùng `effectiveTo`. Nếu chọn ADR-008 thì `effectiveTo` nên bỏ khỏi
-schema, hoặc đánh dấu rõ là cột suy diễn chỉ để hiển thị.
+**Fix Plan**: Lock one side via an ADR before writing the first line of money-calculation code.
+Evidence leans toward ADR-008: FE `admin-tuition-rates.spec.md` describes history using only
+`effectiveFrom` + a `current` flag, without `effectiveTo`. If ADR-008 wins, `effectiveTo`
+should be removed from the schema, or clearly marked as a derived column for display only.
 
 ---
 
-### [API-003] Kỳ payroll `draft` tạo nhầm không có đường huỷ
+### [API-003] Mistakenly created `draft` payroll period has no cancellation path
 
 **Severity**: High
 **Sprint**: Backend Phase 3
 **Status**: Open
 
-**Description**: Tạo `PayrollPeriod` sẽ gán `payrollPeriodId` lên các `ClassSession` được gom
-vào kỳ. Không có endpoint nào xoá kỳ `draft` hay gỡ gán session — `API_ADMIN.md` chỉ có
-`POST /admin/payroll`, `GET`, `PATCH /:id/finalize`, `PATCH /:id/pay`.
+**Description**: Creating a `PayrollPeriod` assigns `payrollPeriodId` to the `ClassSession`
+records grouped into the period. There is no endpoint to delete a `draft` period or unassign
+sessions — `API_ADMIN.md` only has `POST /admin/payroll`, `GET`,
+`PATCH /:id/finalize`, `PATCH /:id/pay`.
 
-**Reproduce**: Admin tạo nhầm kỳ lương (sai khoảng ngày, sai teacher) → các session đã bị gán
-**khoá vĩnh viễn** khỏi mọi kỳ lương tương lai, vì chúng không còn `payrollPeriodId IS NULL`.
+**Reproduce**: Admin creates a payroll period by mistake (wrong date range, wrong teacher) →
+the assigned sessions are **permanently locked** out of all future payroll periods, because
+they no longer have `payrollPeriodId IS NULL`.
 
-**Workaround**: Sửa trực tiếp DB. Không chấp nhận được khi chạy thật.
+**Workaround**: Direct DB edit. Not acceptable in production.
 
-**Fix Plan**: Thêm `DELETE /admin/payroll/:id` chỉ cho phép khi `status = draft`, và phải gỡ
-`payrollPeriodId` của mọi session trong cùng transaction.
+**Fix Plan**: Add `DELETE /admin/payroll/:id` allowed only when `status = draft`, and it must
+unassign `payrollPeriodId` from all sessions in the same transaction.
 
 ---
 
-### [API-004] `GET /admin/sessions/pending` sẽ vĩnh viễn rỗng
+### [API-004] `GET /admin/sessions/pending` will be permanently empty
 
 **Severity**: High
 **Sprint**: Backend Phase 3
 **Status**: Open
 
-**Description**: Màn duyệt buổi dạy không có nguồn dữ liệu. Hai lỗ hổng cộng lại:
-1. Không có endpoint tạo `Class` hay `ClassEnrollment` cho bất kỳ role nào trong phạm vi đã
-   thiết kế — `API_ADMIN.md` không có, và `Class.create` theo RBAC thuộc Teacher.
-2. Ba transition `scheduled → in_progress → completed_pending` của `ClassSession` không có
-   endpoint ở đâu cả. Không có gì đưa session vào trạng thái `completed_pending`.
+**Description**: The session review screen has no data source. Two gaps compound:
+1. There is no endpoint to create a `Class` or `ClassEnrollment` for any role in the current
+   design scope — `API_ADMIN.md` has none, and `Class.create` per RBAC belongs to Teacher.
+2. The three transitions `scheduled → in_progress → completed_pending` for `ClassSession` have
+   no endpoint anywhere. Nothing can move a session into `completed_pending` status.
 
-**Reproduce**: Dựng xong `GET /admin/sessions/pending` → luôn trả mảng rỗng. Notification
-`session_submitted_for_review` không bao giờ phát sinh.
+**Reproduce**: Build `GET /admin/sessions/pending` → always returns an empty array.
+The `session_submitted_for_review` notification is never emitted.
 
-**Fix Plan**: Quyết SCOPE-01 (xem `ai/PROGRESS.md` § Vẫn chưa chốt). Hai phương án và đề xuất
-nằm ở `docs/api/modules/03-classes-enrollment.md` §16.
+**Fix Plan**: Decide SCOPE-01 (see `ai/PROGRESS.md` § Still unsettled). Two options and a
+recommendation are in `docs/api/modules/03-classes-enrollment.md` §16.
 
 ---
 
-### [DOC-005] `User.status` không biểu diễn được "đơn bị từ chối"
+### [DOC-005] `User.status` cannot represent "application rejected"
 
 **Severity**: High
 **Sprint**: Backend Phase 2
 **Status**: Open
 
-**Description**: Quyết định nghiệp vụ #5 (duyệt 2026-08-16) chọn **soft rejection** — giữ bản
-ghi, không hard delete. Nhưng `ENTITY_USER.md` chỉ có `status: pending / active / suspended`.
-Không có `rejected`.
+**Description**: Business decision #5 (approved 2026-08-16) chose **soft rejection** — keep the
+record, no hard delete. But `ENTITY_USER.md` only has `status: pending / active / suspended`.
+There is no `rejected` value.
 
-`pending → suspended` không phải chuyển đổi hợp lệ về mặt ngữ nghĩa (suspend là khoá tài khoản
-đang hoạt động), nên hồ sơ bị từ chối **kẹt ở `pending` vĩnh viễn** và lẫn vào hàng đợi chờ duyệt.
+`pending → suspended` is not a semantically valid transition (suspend is for locking an active
+account), so a rejected application **stays stuck at `pending` forever** and mixes into the
+approval queue.
 
-**Fix Plan**: ADR-011 + migration thêm giá trị enum `rejected`. Kéo theo: giá trị hợp lệ của
-filter `?status=`, state machine ở `docs/api/modules/02-users.md` §6.
+**Fix Plan**: ADR-011 + migration to add the `rejected` enum value. Cascading impact: valid
+values for the `?status=` filter, state machine in `docs/api/modules/02-users.md` §6.
 
 ---
 
-### [DOC-006] `nickname` vs `fullName` — tên field không khớp giữa entity và API
+### [DOC-006] `nickname` vs `fullName` — field name mismatch between entity and API
 
 **Severity**: Medium
 **Sprint**: Backend Phase 2
 **Status**: Open
 
-**Description**: `ENTITY_USER.md` định nghĩa field `nickname`. Nhưng `API_AUTH.md` dùng
-`fullName` ở cả `POST /auth/register` và `PATCH /auth/me`.
+**Description**: `ENTITY_USER.md` defines the field `nickname`. But `API_AUTH.md` uses
+`fullName` in both `POST /auth/register` and `PATCH /auth/me`.
 
-**Impact**: Chặn DTO response của cả 5 endpoint users, và chặn cả việc xác định field nào
-được tìm kiếm bởi query `?search=`.
+**Impact**: Blocks the DTO response for all 5 user endpoints, and also blocks determining
+which field is searched by the `?search=` query parameter.
 
-**Fix Plan**: Chốt một tên. Chọn `fullName` thì phát sinh migration đổi tên cột.
+**Fix Plan**: Lock one name. Choosing `fullName` requires a migration to rename the column.
 
 ---
 
-### [DOC-007] Không rõ mã lỗi nào dùng được, mã nào còn chờ duyệt
+### [DOC-007] Unclear which error codes are usable and which are still pending approval
 
 **Severity**: Medium
 **Sprint**: Backend Phase 0
 **Status**: Open
 
-**Description**: `API_ERROR_CODES.md` đánh dấu *proposed, not agreed* không nhất quán: nhóm
-`INVOICE_*`, `RATE_*`, `AI_*` có banner cảnh báo, nhưng mục "Session Review Errors"
-(`SESSION_*`) **không có**. Ngược lại `PAYROLL_*` có trong registry nhưng không xuất hiện
-trong bất kỳ danh sách "đã duyệt" nào.
+**Description**: `API_ERROR_CODES.md` marks *proposed, not agreed* inconsistently: the
+`INVOICE_*`, `RATE_*`, `AI_*` groups have a warning banner, but the "Session Review Errors"
+section (`SESSION_*`) **does not**. Conversely, `PAYROLL_*` exists in the registry but does
+not appear in any "approved" list.
 
-Ngoài ra các nhánh lỗi sau **chưa có mã hợp lệ**: trùng kỳ lương · kỳ lương chồng lấn ·
-`per_hour` thiếu `actualStart`/`actualEnd` · xung đột idempotency key · chuyển trạng thái sai
-ở suspend/activate · `CLASS_CODE_INVALID` · `CLASS_ARCHIVED` · `CLASS_ALREADY_ENROLLED`.
-`PAYROLL_PERIOD_FINALIZED` đang phải gánh 3 ngữ nghĩa khác nhau.
+Additionally, the following error branches **have no valid code**: duplicate payroll period ·
+overlapping payroll period · `per_hour` missing `actualStart`/`actualEnd` · idempotency key
+conflict · invalid status transition on suspend/activate · `CLASS_CODE_INVALID` ·
+`CLASS_ARCHIVED` · `CLASS_ALREADY_ENROLLED`.
+`PAYROLL_PERIOD_FINALIZED` is currently overloaded with 3 different semantics.
 
-**Fix Plan**: Rà lại toàn bộ registry, đánh dấu trạng thái nhất quán cho từng nhóm, bổ sung
-các mã còn thiếu. Không module nào được tự bịa mã.
+**Fix Plan**: Audit the entire registry, mark status consistently for each group, and add
+the missing codes. No module is allowed to invent its own codes.
 
 ---
 

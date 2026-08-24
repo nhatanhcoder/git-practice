@@ -116,6 +116,12 @@ nobody mistakes a mock for a finished feature. See `working-rules.md` § Definit
   installed, Git-ignored vendored skills consistently in local and CI runs. The project-owned
   `design-promote` skill is tracked. Added a regression test; no feature behavior changed.
 
+- ✅ **`ai/` directory translated to English** (antigravity · 2026-08-24). Translated remaining
+  Vietnamese prose in `ai/rules/working-rules.md`, `ai/known-issues/KNOWN_ISSUES.md`,
+  `ai/PROGRESS.md`, and `ai/context/sessions/2026-08-19-claude-cowork.md`. Purely a language
+  pass — no rules, steps, or technical content changed. Intentional Vietnamese remnants kept:
+  OS paths (`Máy tính`), UI labels (`Tài khoản`), VND notation (`=1đ`).
+
 - 🔶 **`/admin/users` + `/admin/users/[userId]`** — built 2026-08-13 by `claude` from
   `docs/front-end-design-docs/specs/admin-pages/admin-users-list.spec.md` and
   `admin-user-detail.spec.md`.
@@ -246,7 +252,7 @@ replaces coverage %.
   ADR-012 payroll · ADR-013 tuition · ADR-014 Gemini key
 - ⬜ `packages/types` — transport contract (OpenAPI/Zod). Nest DTOs implement it,
   **not** generated from Nest DTOs
-- ⬜ `turbo.json` (BUILD-001) — có 2 app rồi, không hoãn thêm được
-- ⬜ Phase 1 hạ tầng: envelope interceptor · exception filter · error enum ·
+- ⬜ `turbo.json` (BUILD-001) — already have 2 apps, cannot defer any longer
+- ⬜ Phase 1 infra: envelope interceptor · exception filter · error enum ·
   Prisma + migration `User` · Swagger `/api` · `/health` + `/ready` · CI + migration rehearsal
-- ⬜ Phase 2: module Auth
+- ⬜ Phase 2: Auth module
