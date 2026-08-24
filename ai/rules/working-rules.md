@@ -16,8 +16,8 @@ file owns which, so you edit one place and not four.
 3  Claim in ai/PROGRESS.md   -> ⬜ becomes 🔶 (agent · date), commit that line ALONE
 4  Analyze -> Plan -> STOP   -> wait for the human's approval
 5  Read contract + spec + _DESIGN-SYSTEM -> write code   <──┐
-6  Verify                    -> FAST: build + 1 screenshot. Full lane chỉ cho
-                               auth/tiền/component dùng chung/prod — xem "Verify" bên dưới
+6  Verify                    -> FAST: build + 1 screenshot. Full lane only for
+                                auth/money/shared components/prod — see "Verify" below
       │                                                     │
       └── human dislikes the UI? ───────────────────────────┘  loop 5–6, no doc changes
 7  Record                    -> PROGRESS · KNOWN_ISSUES · contract/spec/_INDEX status
@@ -27,25 +27,25 @@ file owns which, so you edit one place and not four.
    /design-promote <screen>   ← HUMAN-TRIGGERED, NOT PART OF THE TASK ABOVE
 ```
 
-### Hai loại task — bước 7 không bao giờ được bỏ
+### Two task types — step 7 is never skipped
 
-Sơ đồ trên viết cho task **build màn hình**. Không phải task nào cũng vậy, nhưng
-**bước 7 (Record) áp dụng cho mọi loại task, không có ngoại lệ.**
+The diagram above is written for **screen-build** tasks. Not every task follows the same
+steps, but **step 7 (Record) applies to every task type, no exceptions.**
 
-| Loại task | Các bước | Bước 7 nghĩa là |
+| Task type | Steps | Step 7 means |
 |---|---|---|
-| **Code / màn hình** | 1–8 đủ | PROGRESS · KNOWN_ISSUES · contract `status:` · `_INDEX` row · spec frontmatter · session file |
-| **Docs / spec / ADR** | 1–4, 7, 8 (bỏ 5–6) | PROGRESS · KNOWN_ISSUES · **`_INDEX` của bộ doc vừa viết** · session file |
-| **Rule / tooling** | 1–4, 7, 8 | PROGRESS · session file · **và check tương ứng trong `scripts/check-docs.mjs`** |
-| **Sửa một dòng** | 4, 7 rút gọn | một dòng trong session file là đủ |
+| **Code / screen** | 1–8 all | PROGRESS · KNOWN_ISSUES · contract `status:` · `_INDEX` row · spec frontmatter · session file |
+| **Docs / spec / ADR** | 1–4, 7, 8 (skip 5–6) | PROGRESS · KNOWN_ISSUES · **`_INDEX` of the doc set just written** · session file |
+| **Rule / tooling** | 1–4, 7, 8 | PROGRESS · session file · **and the corresponding check in `scripts/check-docs.mjs`** |
+| **One-line fix** | 4, 7 (abbreviated) | a single line in the session file is enough |
 
-**"Task này không phải build màn nên Definition of Done không áp dụng" là sai.** Đã xảy ra
-2026-08-19: một session viết 8 module spec backend (~3.900 dòng) và không cập nhật
-`PROGRESS.md`, `KNOWN_ISSUES.md` hay session file nào — vì DoD lúc đó chỉ nói về màn hình,
-mock data và screenshot. Người dùng phải hỏi mới phát hiện.
+**"This task isn't a screen build so Definition of Done doesn't apply" is wrong.** It happened
+on 2026-08-19: a session wrote 8 backend module specs (~3,900 lines) and updated neither
+`PROGRESS.md`, `KNOWN_ISSUES.md`, nor any session file — because the DoD at the time only
+mentioned screens, mock data, and screenshots. The user had to ask before it was noticed.
 
-Viết doc **cũng** làm agent sau hiểu sai nếu không ghi lại. Một bộ spec không có dòng nào
-trong PROGRESS thì agent sau không biết nó tồn tại.
+Writing docs **also** misleads the next agent if not recorded. A spec set with no line in
+PROGRESS is a spec set the next agent doesn't know exists.
 
 **Never run `/design-promote` yourself.** It is not step 9 of your task — your task ended at
 step 8. The human runs it, after the merge, possibly days later, and often **not at all**
@@ -104,8 +104,8 @@ A task is not done when the code runs. It is done when the next agent cannot be 
 
 **Run `pnpm check:docs` before opening the PR.** It is 7 mechanical checks over the docs,
 zero dependencies, under a second. CI runs the same thing and will block the merge, so
-finding it locally is strictly cheaper. See `multi-agent-workflow.md` §15. Cái này không
-bao giờ được bỏ — nó chạy nhanh hơn thời gian đọc câu này. (Làm batch: một lần/batch là đủ.)
+finding it locally is strictly cheaper. See `multi-agent-workflow.md` §15. This is never
+skipped — it runs faster than the time it takes to read this sentence. (Batch work: once per batch is enough.)
 
 **Before claiming anything is finished:**
 
@@ -116,14 +116,14 @@ bao giờ được bỏ — nó chạy nhanh hơn thời gian đọc câu này. 
 3. **Doc status flags updated** — page contract `status:`, `docs/front-end-design-docs/pages/_INDEX.md` row, spec
    frontmatter. A contract still reading `contracted` for a screen that exists sends the next
    agent to rebuild it. This happened on 2026-08-13 and was caught a day later by accident.
-4. **Session file written** — `ai/context/sessions/<YYYY-MM-DD>-<agent>.md`, dùng template ở
-   `multi-agent-workflow.md` §8. **Không** ghi thẳng vào `ai/context/HANDOFF.md`; HANDOFF do
-   người gộp lại ở merge window, tối đa 5 entry.
-   Trước đây quy định này chỉ nằm trong `multi-agent-workflow.md` — file mà agent chỉ mở khi
-   biết có agent khác chạy song song. Agent làm một mình không bao giờ đọc tới, nên không bao
-   giờ viết session file. Giờ nó nằm ở đây, trong danh sách bắt buộc.
-5. **Nếu đây là task docs**: cập nhật `_INDEX.md` của chính bộ doc vừa viết. Một file spec
-   không có dòng trong index của nó là file không ai tìm thấy.
+4. **Session file written** — `ai/context/sessions/<YYYY-MM-DD>-<agent>.md`, using the template in
+   `multi-agent-workflow.md` §8. **Do not** write directly into `ai/context/HANDOFF.md`; HANDOFF is
+   consolidated by the human at merge windows, max 5 entries.
+   Previously this rule only existed in `multi-agent-workflow.md` — a file agents only open when
+   they know another agent is running in parallel. A solo agent never reads it, so it never
+   wrote session files. Now it lives here, in the mandatory checklist.
+5. **If this is a docs task**: update the `_INDEX.md` of the doc set just written. A spec file
+   with no line in its own index is a file no one will find.
 
 **Never mark `✅` for a screen backed by mock data.** Use `🔶` with a note. `✅` means a real
 user can complete the flow against a real API. Approving a user by mutating React state and
@@ -146,51 +146,52 @@ only to fake an endpoint say so on line 1.
 Verification is a skim, not an audit. It exists to catch the obvious, not to prove
 correctness. Slow verification does not get run, and a check nobody runs is worth nothing.
 
-> Khôi phục 2026-08-19. Bản này từng được viết ở branch `chore/fast-verify-rule` rồi **mất
-> khi chuyển branch vì chưa commit**. Nếu bạn thấy mục này lại biến thành
-> "Verify — one pass, then stop", nghĩa là nó bị mất lần nữa — đây là bản đúng.
+> Restored 2026-08-19. This version was previously written on branch `chore/fast-verify-rule`
+> and **lost on branch switch because it was never committed**. If you see this section revert
+> to "Verify — one pass, then stop", it was lost again — this is the correct version.
 
-**Mặc định — FAST LANE. Một lệnh, một cái nhìn:**
+**Default — FAST LANE. One command, one glance:**
 
 ```
-pnpm --filter web build          # KHÔNG dùng `pnpm build` — thiếu turbo.json (BUILD-001)
+pnpm --filter web build          # DO NOT use `pnpm build` — turbo.json is missing (BUILD-001)
 ```
 
-Rồi **một screenshot desktop, trạng thái Ready** — và thật sự đọc nó. Hết.
+Then **one desktop screenshot, Ready state** — and actually read it. That's it.
 
-Dán output build thật. "Build passed" mà không có output thì không tính là đã chạy.
+Paste the real build output. "Build passed" with no output does not count as having run it.
 
-Bỏ trong fast lane: unit test, ảnh 375px, screenshot từng state. Mọi state vẫn phải **tồn
-tại** trong code và mở được qua REVIEW-STATE switcher (`WEB-004`) — bạn bỏ việc *nhìn*, không
-bỏ việc *viết*. **Liệt kê những state không ai nhìn** để người dùng tự lật trong trình duyệt
-mất mười giây.
+Skipped in fast lane: unit tests, 375px screenshots, per-state screenshots. All states must
+still **exist** in code and be reachable via the REVIEW-STATE switcher (`WEB-004`) — you skip
+*looking*, not *writing*. **List the states no one looked at** so the user can flip through
+them in the browser in ten seconds.
 
-Làm nhiều màn một lượt? Build từng màn, nhưng **screenshot dồn một lần ở cuối**, và
-`pnpm check:docs` chạy một lần cho cả batch. Screenshot là thao tác đắt nhất của agent; chụp
-mười lần riêng lẻ tốn gấp mười lần chụp gộp.
+Building multiple screens at once? Build each one, but **batch all screenshots at the end**,
+and run `pnpm check:docs` once for the whole batch. Screenshots are the most expensive agent
+operation; capturing ten individually costs ten times more than capturing them together.
 
-**Lỗi thì sửa và đi tiếp.** Build vỡ → sửa, chạy tiếp. Chỉ dừng hỏi khi cùng một thứ vỡ lần
-thứ hai, hoặc khi bản sửa đụng component dùng chung mà các màn đã build phụ thuộc. Vòng lặp
-sửa → chụp lại → sửa mới là thứ đốt session, không phải việc kiểm tra.
+**Errors: fix and move on.** Build breaks → fix it, keep going. Only stop to ask when the
+same thing breaks a second time, or when the fix touches a shared component that other
+already-built screens depend on. The fix → re-screenshot → fix again loop is what burns
+sessions, not the verification itself.
 
-**FULL LANE — bốn trường hợp không được lướt.** Chạy đủ ba lệnh máy (`build`,
-`node --test apps/web/scripts/*.test.mjs`, `pnpm check:docs`), cả hai screenshot
-(desktop + 375px), và viết test cho đường code vừa đụng:
+**FULL LANE — four cases where you must not skim.** Run all three machine commands (`build`,
+`node --test apps/web/scripts/*.test.mjs`, `pnpm check:docs`), both screenshots
+(desktop + 375px), and write tests for the code path you just touched:
 
-1. **auth, RBAC, hoặc ranh giới quyền** — lướt qua không nhìn thấy thiếu ownership check
-2. **tiền hoặc số học payroll** — một tổng sai trông y hệt một tổng đúng trong screenshot
-3. **component dùng chung** (admin shell, table, `status.ts`) — một lỗi nhân lên mọi màn
-4. **lên production**, hoặc migration Prisma
+1. **auth, RBAC, or permission boundaries** — skimming misses a missing ownership check
+2. **money or payroll arithmetic** — a wrong total looks identical to a correct one in a screenshot
+3. **shared components** (admin shell, table, `status.ts`) — one bug multiplies across every screen
+4. **going to production**, or a Prisma migration
 
-Fast lane dành cho việc dựng màn trên mock data. Nó **không** phải giấy phép để ship module
-tài chính bằng một cái liếc.
+Fast lane is for building screens on mock data. It is **not** a licence to ship a financial
+module with a glance.
 
-`next build` từng pass trong khi lỗi sticky header (`WEB-001`) ship một header đè lên hàng
-đầu tiên. Compile chứng minh kiểu dữ liệu, không chứng minh tính đúng — đó là rủi ro fast
-lane **cố ý** chấp nhận để đổi lấy tốc độ. Nói rõ điều đó trong báo cáo thay vì ngụ ý đã kiểm
-nhiều hơn thực tế.
+`next build` once passed while the sticky header bug (`WEB-001`) shipped a header covering
+the first row. Compilation proves type safety, not correctness — that is the risk fast lane
+**intentionally** accepts in exchange for speed. State that clearly in the report instead of
+implying more was checked than actually was.
 
-Task logic không có UI: build là toàn bộ fast lane; thêm test nếu đường code đó chưa có.
+Logic-only tasks with no UI: build is the entire fast lane; add tests if the code path has none.
 
 ### Work outside the sprint plan
 
@@ -255,7 +256,7 @@ pushed**:
 ```
 
 See `.agents/skills/design-promote/SKILL.md`. Praise is not the command. "Looks good",
-"đẹp đấy", "ok tiếp đi" all mean *keep iterating*. Until `/design-promote` runs, the
+"looks great", "ok keep going" all mean *keep iterating*. Until `/design-promote` runs, the
 screen on disk is a draft and the token files still describe the old baseline.
 
 This is what keeps one design system: a skill may propose any palette it likes, but nothing

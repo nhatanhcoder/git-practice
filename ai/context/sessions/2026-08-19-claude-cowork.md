@@ -1,67 +1,67 @@
-## [2026-08-19] — Backend module specs cho toàn bộ Admin — claude (Cowork) — branch `chore/fast-verify-rule`
+## [2026-08-19] — Backend module specs for all Admin — claude (Cowork) — branch `chore/fast-verify-rule`
 
 **Done**:
-- `docs/api/modules/` — 8 module spec + `_INDEX.md` + `_TEMPLATE.md`, ~3.900 dòng
-- `docs/BACKEND_PLAN.md` — kế hoạch backend độc lập cho người mới, qua 3 vòng phản biện
-- `ai/rules/working-rules.md` — Skill Rules · FE iterate · fast verify lane · sơ đồ 8 bước
-  có vòng lặp 5↔6 và tách `/design-promote` ra ngoài
-- `AGENTS.md` + `CLAUDE.md` — viết lại Skill precedence (giống hệt nhau)
-- `.agents/skills/design-promote/` + `.agents/skills/build-screen/` — 2 skill mới
-- `root-design-fe.md` + `pages/_INDEX.md` + 3 spec — bootstrap `design_baseline: v1`
-- `KNOWN_ISSUES.md` — 6 issue mới: API-002/003/004, DOC-005/006/007
-- `PROGRESS.md` — sửa doc drift 5 quyết định + thêm mục Backend module spec
+- `docs/api/modules/` — 8 module specs + `_INDEX.md` + `_TEMPLATE.md`, ~3,900 lines
+- `docs/BACKEND_PLAN.md` — standalone backend plan for newcomers, went through 3 rounds of critique
+- `ai/rules/working-rules.md` — Skill Rules · FE iterate · fast verify lane · 8-step diagram
+  with loop 5↔6 and `/design-promote` separated out
+- `AGENTS.md` + `CLAUDE.md` — rewrote Skill precedence (identical in both)
+- `.agents/skills/design-promote/` + `.agents/skills/build-screen/` — 2 new skills
+- `root-design-fe.md` + `pages/_INDEX.md` + 3 specs — bootstrap `design_baseline: v1`
+- `KNOWN_ISSUES.md` — 6 new issues: API-002/003/004, DOC-005/006/007
+- `PROGRESS.md` — fixed doc drift for 5 decisions + added Backend module spec section
 
-- **Vòng 2 (sau khi người dùng hỏi "ko update handoff các thứ à?")**:
-  - `PROGRESS.md` · `HANDOFF.md` · `KNOWN_ISSUES.md` (6 issue mới) · session file này ·
-    `AGENTS.md` + `CLAUDE.md` trỏ tới `docs/api/modules/`
-  - Phát hiện **doc drift**: 5 quyết định nghiệp vụ đã duyệt 2026-08-16 trong HANDOFF nhưng
-    PROGRESS vẫn ghi "chưa chốt" suốt 3 ngày
-- **Vòng 3 (sau khi người dùng hỏi rule thiếu gì)**: sửa chính cái rule đã bị bỏ qua —
-  bảng "Hai loại task" trong § The flow · session file vào DoD mục 4 · index bộ doc vào mục 5 ·
-  CI step `Record step was not skipped` · khôi phục rule fast-verify đã mất
+- **Round 2 (after user asked "you're not updating handoff etc?"):**
+  - `PROGRESS.md` · `HANDOFF.md` · `KNOWN_ISSUES.md` (6 new issues) · this session file ·
+    `AGENTS.md` + `CLAUDE.md` pointing to `docs/api/modules/`
+  - Discovered **doc drift**: 5 business decisions approved on 2026-08-16 in HANDOFF but
+    PROGRESS still marked them as "unsettled" for 3 days
+- **Round 3 (after user asked what rules were missing)**: fixed the very rules that were being skipped —
+  "Two task types" table in § The flow · session file added to DoD item 4 · doc index added to item 5 ·
+  CI step `Record step was not skipped` · restored the lost fast-verify rule
 
-- **Vòng 4**: `pnpm check:docs` bắt **15 mã lỗi** trong spec không có trong registry.
-  Ba loại khác nhau, sửa khác nhau:
-  - **(a) spec bịa tên trong khi mã đúng đã có** — `CLASS_CODE_INVALID` →
+- **Round 4**: `pnpm check:docs` caught **15 error codes** in specs not present in the registry.
+  Three different categories, different fixes:
+  - **(a) spec invented names while the correct code already existed** — `CLASS_CODE_INVALID` →
     `CLASS_ENROLL_CODE_INVALID`, `CLASS_ARCHIVED` → `CLASS_ALREADY_ARCHIVED`
-  - **(b) lỗ hổng thật trong `API_ERROR_CODES.md`** — `DUPLICATE_ENTRY` và
-    `INTERNAL_SERVER_ERROR` được `GlobalExceptionFilter` mẫu ở §5 phát ra từ đầu nhưng
-    registry §3 chưa bao giờ đăng ký. Đã thêm mục *Fallback Errors*
-  - **(c) nhắc-để-cấm, không phải dùng** — `AUTH_TOKEN_REUSED` là ví dụ phản diện; checker
-    quét backtick nên hiểu nhầm. Bỏ backtick là xong
-  Thêm `TOO_MANY_REQUESTS` + `PAYROLL_PERIOD_DUPLICATE` vào mục *proposed, not agreed*.
+  - **(b) real gaps in `API_ERROR_CODES.md`** — `DUPLICATE_ENTRY` and
+    `INTERNAL_SERVER_ERROR` were emitted by the `GlobalExceptionFilter` template in §5 from the start but
+    the registry §3 had never registered them. Added *Fallback Errors* section
+  - **(c) mentioned-to-prohibit, not meant to be used** — `AUTH_TOKEN_REUSED` is a counter-example;
+    the checker scans backticks so it misread it. Removing backticks fixed it
+  Added `TOO_MANY_REQUESTS` + `PAYROLL_PERIOD_DUPLICATE` under *proposed, not agreed*.
 
-**In progress** (và vì sao chưa xong):
-- `PR_BODY.md` nằm ở root repo, PR **chưa được tạo** — `device_bash` phía máy người dùng
-  chết giữa session, không chạy được git từ agent
+**In progress** (and why it's unfinished):
+- `PR_BODY.md` sits at repo root, PR **not yet created** — `device_bash` on the user's machine
+  died mid-session, git could not be run from the agent
 
 **Contract/temporary decisions to preserve**:
-- Template module spec = **16 mục cố định**, mục 4 (invariant) và mục 15 (test matrix) là
-  một cặp — mọi invariant phải có test. Đây là invariant gate, thay coverage %.
-- Spec **không tự quyết** khi tài liệu nguồn mâu thuẫn — ghi nguyên trạng vào mục 16.
-- Không bịa mã lỗi. Nhánh lỗi thiếu mã đánh ⛔ ở mục 9.
-- Module chia theo **transaction boundary**, không theo bảng.
-- Fast verify lane là mặc định; full lane bắt buộc cho auth · tiền · component dùng chung ·
+- Module spec template = **16 fixed sections**, section 4 (invariant) and section 15 (test matrix) are
+  a pair — every invariant must have a test. This is the invariant gate, replacing coverage %.
+- Specs **do not self-decide** when source documents contradict — record the status quo in section 16.
+- Never invent error codes. Error branches without a code are marked ⛔ in section 9.
+- Modules are split by **transaction boundary**, not by table.
+- Fast verify lane is the default; full lane is mandatory for auth · money · shared components ·
   production/migration.
 
 **Needs from the other lane**: —
 
 **Blocker / needs follow-up**:
-- Biểu diễn tiền (ADR-010) chưa từng được hỏi — chặn module 05, 06
-- SCOPE-01 Classes/Enrollment — chặn module 03, 04, 05
-- API-002 hai công thức đọc rate — chặn mọi phép tính tiền
-- 5 quyết định 16/08 chưa thành ADR
-- Working tree còn nhiều thay đổi chưa commit, chưa tách branch
-- **Bài học 1**: rule fast-verify mất vì viết xong không commit ngay. Commit từng phần,
-  đừng gom cuối session.
-- **Bài học 2**: khi giao việc cho subagent, file "sự thật đã xác minh" phải **đầy đủ**.
-  `_FACTS.md` tôi soạn không chép mục `Class Errors` của `API_ERROR_CODES.md`, nên agent
-  viết spec `03` bịa ra hai mã trong khi mã đúng đã tồn tại. Agent không sai — nó không có
-  cách nào biết. **Chép thiếu nguồn thì agent bịa, và nó bịa rất tự tin.**
-- **Bài học 3**: `pnpm check:docs` bắt được cả ba loại lỗi trên trong dưới một giây. Chạy nó
-  TRƯỚC khi commit, không phải để CI bắt.
+- Money representation (ADR-010) has never been asked — blocks modules 05, 06
+- SCOPE-01 Classes/Enrollment — blocks modules 03, 04, 05
+- API-002 two contradictory rate-reading formulas — blocks all money calculations
+- 5 decisions from 16/08 are not yet ADRs
+- Working tree still has many uncommitted changes, branch not yet split
+- **Lesson 1**: the fast-verify rule was lost because it wasn't committed immediately after writing. Commit incrementally,
+  don't batch at end of session.
+- **Lesson 2**: when delegating work to a subagent, the "verified facts" file must be **complete**.
+  The `_FACTS.md` I prepared did not copy the `Class Errors` section from `API_ERROR_CODES.md`, so the agent
+  writing spec `03` invented two codes while the correct ones already existed. The agent wasn't wrong — it had
+  no way of knowing. **Incomplete source material means the agent invents, and it invents confidently.**
+- **Lesson 3**: `pnpm check:docs` caught all three error categories above in under one second. Run it
+  BEFORE committing, don't wait for CI to catch it.
 
 **Next steps**:
 1. ADR-010 → ADR-014
-2. Chốt SCOPE-01 và API-002
-3. Phase 1 hạ tầng, rồi Phase 2 Auth (`01-auth.md` là module duy nhất `accepted`)
+2. Lock down SCOPE-01 and API-002
+3. Phase 1 infra, then Phase 2 Auth (`01-auth.md` is the only `accepted` module)
