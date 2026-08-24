@@ -1,0 +1,77 @@
+// PostgreSQL schema — HSK platform
+//
+// SCOPE OF THIS FILE: only the `users` table.
+//
+// This is deliberate, not unfinished work. `docs/api/modules/01-auth.md` §12 says
+// "No coding before the RefreshToken table is locked" — that table has no ENTITY
+// spec and three of its columns (familyId, replacedById, revokedReason) are marked
+// *proposed* in the spec itself. Modules 03–06 are blocked by SCOPE-01, API-002 and
+// the money-representation decision (ADR-010, never asked). Adding those tables now
+// would be inventing a schema the docs do not authorise.
+//
+// Source of truth for User: docs/entities/postgres/ENTITY_USER.md
+//                         + docs/api/modules/01-auth.md (status: accepted)
+// NOT docs/shared/DATABASE_SCHEMA.md — it is dated 2026-07-10 and contradicts both
+// (cuid vs uuid, fullName vs nickname, preferredLanguage vs bio/lastLoginAt).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  admin
+  teacher
+  student
+
+  @@map("user_role")
+}
+
+enum UserStatus {
+  pending
+  active
+  suspended
+
+  @@map("user_status")
+}
+
+model User {
+  id String @id @default(uuid()) @db.Uuid
+
+  // 01-auth.md §12 requires a locked decision on case-insensitive email
+  // uniqueness, listing three options. `citext` is chosen: it is the only one
+  // enforced by the database itself, so a future service, script or manual
+  // INSERT cannot bypass it the way app-layer lowercasing can. Cost: the
+  // migration needs `CREATE EXTENSION citext` (available on Supabase).
+  // Reversible right now because no data exists — not later.
+  email        String @unique @db.Citext
+  passwordHash String @map("password_hash")
+
+  role   UserRole
+  status UserStatus @default(pending)
+
+  // C1 resolved 2026-08-20: the column is `nickname`, not `fullName`.
+  // API_AUTH.md and the FE register/profile forms still say `fullName` and must
+  // be brought in line — this schema is the side that was chosen.
+  nickname  String? @db.VarChar(100)
+  avatarUrl String? @map("avatar_url")
+
+  // Student only. Range 1–9 (DOC-004 resolved 2026-08-11 — never 1–6).
+  // Not constrained here: Prisma cannot express CHECK. The migration adds it.
+  hskLevelGoal Int? @map("hsk_level_goal")
+
+  // Teacher only.
+  bio String?
+
+  lastLoginAt DateTime? @map("last_login_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  @@index([status])
+  @@index([role, status])
+  @@map("users")
+}

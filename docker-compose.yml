@@ -1,0 +1,42 @@
+# Local development database for the HSK platform.
+#
+#   docker compose up -d      start
+#   docker compose logs -f db follow logs
+#   docker compose down       stop (data is kept in the named volume)
+#   docker compose down -v    stop AND delete all data
+#
+# MongoDB is NOT here on purpose — it runs on Atlas (see .env.example).
+# Only PostgreSQL is local.
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: hsk-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-hsk}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-hsk_local_dev}
+      POSTGRES_DB: ${POSTGRES_DB:-hsk_dev}
+      # Deterministic collation. Without this the image picks the host locale,
+      # and two developers get different ORDER BY results on Chinese text.
+      POSTGRES_INITDB_ARGS: "--locale=C.UTF-8 --encoding=UTF8"
+    ports:
+      # Host port is configurable: a native Postgres already listening on 5432
+      # is common on Windows. Set POSTGRES_PORT=5433 in .env if `up` fails with
+      # "port is already allocated".
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      # `pg_isready` alone returns true while the DB is still running init
+      # scripts, so anything waiting on it can connect too early. Querying the
+      # actual database is the honest check.
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-hsk} -d ${POSTGRES_DB:-hsk_dev} -q"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+volumes:
+  pgdata:
+    name: hsk-pgdata
