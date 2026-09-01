@@ -48,10 +48,10 @@ for the S2 slice (Classes + Lessons); everything else is not yet mapped.
 
 | Route | Feature | Contract | Status | Design | Blocked on |
 |---|---|---|---|---|---|
-| `/teacher` | TODO(feature-id) | [teacher-dashboard](./teacher-pages/teacher-dashboard.md) | contracted | — | no dashboard-aggregation endpoint |
-| `/teacher/classes` | T-CLASS-1,2,5 | [teacher-classes-list](./teacher-pages/teacher-classes-list.md) | contracted | — | `API-006`: route mismatch vs FLOW_ENROLLMENT.md |
-| `/teacher/classes/[classId]` | T-CLASS-3,4,6 | [teacher-class-detail](./teacher-pages/teacher-class-detail.md) | contracted | — | average score field; attendance rate (S5) |
-| `/teacher/classes/[classId]/lessons` | T-LESSON-1,2,4,5 | [teacher-lessons-list](./teacher-pages/teacher-lessons-list.md) | contracted | — | **`API-007`: no Lessons API at all** — every action is ⛔ |
+| `/teacher` | TODO(feature-id) | [teacher-dashboard](./teacher-pages/teacher-dashboard.md) | built | v1 | no dashboard-aggregation endpoint (KPI row deferred by contract) |
+| `/teacher/classes` | T-CLASS-1,2,5 | [teacher-classes-list](./teacher-pages/teacher-classes-list.md) | built | v1 | `API-006`: route mismatch vs FLOW_ENROLLMENT.md |
+| `/teacher/classes/[classId]` | T-CLASS-3,4,6 | [teacher-class-detail](./teacher-pages/teacher-class-detail.md) | built | v1 | average score field; attendance rate (S5) |
+| `/teacher/classes/[classId]/lessons` | T-LESSON-1,2,4,5 | [teacher-lessons-list](./teacher-pages/teacher-lessons-list.md) | built | v1 | **`API-007`: no Lessons API at all** — every action is ⛔ (screen is local-mock only) |
 
 Question Bank, Assignments, Grading, Sessions, Analytics, Income: _not yet mapped._
 

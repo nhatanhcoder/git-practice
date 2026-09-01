@@ -2,7 +2,7 @@
 feature: TODO(feature-id) — FEATURES_TEACHER.md has no Dashboard section (unlike Admin's A-DASH-*)
 role: teacher
 route: /teacher
-status: contracted
+status: built
 last_updated: 2026-09-01
 ---
 

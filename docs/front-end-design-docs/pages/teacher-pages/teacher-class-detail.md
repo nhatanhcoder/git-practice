@@ -2,7 +2,7 @@
 feature: T-CLASS-3, T-CLASS-4, T-CLASS-6
 role: teacher
 route: /teacher/classes/[classId]
-status: contracted
+status: built
 last_updated: 2026-09-01
 ---
 

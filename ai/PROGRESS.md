@@ -70,11 +70,18 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
   **`/teacher/classes/[classId]/lessons` is contracted but every action is `⛔` blocked** —
   `API_TEACHER.md` turns out to have no Lessons section at all (`KNOWN_ISSUES.md` `API-007`);
   do not build this screen until that API exists.
-- 🔶 (opencode · 2026-09-01) **Building the 3 unblocked Teacher screens** from the contracts
-  above: `/teacher`, `/teacher/classes`, `/teacher/classes/[classId]` in `apps/web/**`,
-  Admin-screen pattern, fully mocked. Lessons screen built behind MOCK markers too (its
-  actions stay local-only, matching the `⛔` contract). Lane: `apps/web/**` = codex's lane;
-  solo agent, flip recorded here per `multi-agent-workflow.md` §1.
+- 🔶 (opencode · 2026-09-01) **Built the 4 Teacher S2 screens** from the contracts above:
+  `/teacher` (dashboard, class-card grid, no KPI row per contract), `/teacher/classes`
+  (filter + table + create modal + archive), `/teacher/classes/[classId]` (header, code
+  panel with copy/regenerate, roster with "—" for avg score & attendance),
+  `/teacher/classes/[classId]/lessons` (drag + button reorder, create/edit/delete modals —
+  every action MOCK(⛔) local-only, API-007). Pattern: Admin screens (CSS modules,
+  `status.ts` badges, REVIEW-STATE switcher, mobile card lists); shared
+  `components/teacher/teacher-shell` + `teacher-widgets`; mock data in
+  `lib/teacher-data.ts`. **Fully mocked, no API calls.** `pnpm --filter web build` exit 0
+  (28 routes), `check:docs` 8/8. Contracts → `built`, `_INDEX` Design = v1. Lane:
+  `apps/web/**` = codex's lane; solo agent, flip recorded here per
+  `multi-agent-workflow.md` §1. Does NOT satisfy S2 DoD (needs the real join-class flow).
 - **DoD**: Teacher creates class → student joins via code → teacher sees the student in the list
 
 ## Sprint 3 — Question Bank & Assignments
