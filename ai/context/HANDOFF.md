@@ -31,6 +31,32 @@
 
 ---
 
+## [2026-09-01] — Branch audit, commit, PR #13 — Claude Code
+
+**Context**: user's first request pointed at a stray checkout
+(`C:\Users\nhata\OneDrive\Máy tính\Real` — the "third source" flagged in the
+2026-08-13 entry below; still not deleted). Redirected to the real repo here.
+
+**Done**:
+- Audited all 12 local branches vs `main` (ahead/behind/merged); `main` in sync
+  with `origin/main`. Full detail in `ai/context/sessions/2026-09-01-claude-code-branch-audit-pr.md`.
+- Committed the working tree the 2026-08-31-merge Cowork session left staged/uncommitted
+  (split into 2 commits: docs merge, and the Student mockup), pushed, opened
+  [PR #13](https://github.com/nhatanhcoder/git-practice/pull/13) `docs/merge-2026-08-31-claude-ai` → `main`.
+  Verified first: `check-docs.mjs` 8/8, `pnpm --filter web build` green.
+
+**Blocker / needs follow-up**:
+- `chore/fast-verify-rule` has 2 commits not in `main` (an `/admin/dashboard` mockup) — undecided, not touched.
+- `_backup/`, `_to_delete/`, `finish-pull.ps1` still untracked in the working tree (leftover
+  2026-08-25 cleanup scratch) — left alone, owner should confirm deletion.
+- The stray OneDrive checkout noted 2026-08-13 is still there.
+
+**Next steps**:
+- Review/merge PR #13.
+- Decide `chore/fast-verify-rule` and the `_backup`/`_to_delete` cleanup.
+
+---
+
 ## [2026-09-01] — Verify + merge the 2026-08-31 claude.ai doc review — Claude (Cowork, device mount) — branch `docs/merge-2026-08-31-claude-ai`
 
 **Context**: a 2026-08-31 Claude.ai session produced 11 rewritten docs. It had **no repo access**
@@ -270,41 +296,7 @@ Merged by hand instead; nothing was overwritten.
 
 ---
 
-## [2026-08-13] — FE design pipeline + scaffold Next.js — Claude Code
-
-**Done**:
-- `ai/skills/flow-mapper.md` + `ai/skills/page-designer.md` written (previously empty 0-byte files)
-- Admin: 13 Page Contracts + `admin-flow.md` (UI flow + API map) + `pages/_INDEX.md`
-- Admin: 13 Design Specs + `specs/_DESIGN-SYSTEM.md` (shared section, pasted once)
-- `AGENTS.md` / `CLAUDE.md` point to the 2 skills; `.gitignore` recreated (did not exist before)
-- ADR-007 (chart palette), ADR-008 (append-only rates)
-- Scaffold `apps/web`: Next 14 + TS + Tailwind + pnpm workspace, `pnpm install` runs
-
-**In progress**:
-- No screen coded yet. `apps/web` is still the default create-next-app scaffold
-- Token files (`tailwind.config.ts`, `globals.css`, `lib/status.ts`, `components/`,
-  `app/admin/layout.tsx`) **not written** — must be written before coding `/admin/users`
-
-**Temporary decisions to preserve**:
-- Spec = page description + API mapping. Standard tokens/components live in `specs/_DESIGN-SYSTEM.md`;
-  the page spec **does not repeat them**. Reason: Claude Design cannot read the repo, it only sees pasted files
-- `ui-ux-pro-max`: take layout/interaction only, **do not run `--design-system`**, do not take
-  its palette/fonts
-- `taste-skill`: public pages only, not for authenticated dashboards
-
-**Blocker / needs follow-up**:
-- `.git/index.lock` still stuck; worktree lives **inside** the repo at `.claude/worktrees/`
-  duplicating 88 .md files (copies are stale). Must `git worktree remove` then recreate **outside** the repo
-- OneDrive synced a duplicate copy at `C:\Users\nhata\OneDrive\Máy tính\Real` — a third
-  source, should be deleted
-- Missing APIs + 5 unsettled business decisions → see `## Needs from the other lane` in `ai/PROGRESS.md`
-
-**Next steps**:
-1. Clean up git lock + worktree
-2. Write token files into `apps/web`
-3. Code `/admin/users` so it runs, then **fix the spec template** from what was learned
-4. Only then map Teacher + Student (fixing the template at 13 files means fixing 13; waiting means fixing 39)
-
----
-
-_(older entries removed per the 5-entry cap — they remain in git history.)_
+_(older entries removed per the 5-entry cap — they remain in git history. The
+2026-08-13 entry's still-open note — a stray OneDrive checkout at
+`C:\Users\nhata\OneDrive\Máy tính\Real` should be deleted — is carried forward
+in the 2026-09-01 "Branch audit" entry above until it's actually resolved.)_
