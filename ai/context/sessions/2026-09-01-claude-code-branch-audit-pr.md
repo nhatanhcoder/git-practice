@@ -30,13 +30,29 @@ mirror with no `apps/`). Redirected to the real repo at `D:\PersonalProject\Real
 - `finish-pull.ps1` — one-time script from that same cleanup; its own header says
   the `.git` lock removal it existed for is already done.
 
+**Update (later same session)**:
+- User confirmed cleanup: deleted `_backup/`, `_to_delete/`, `finish-pull.ps1` (were
+  untracked, never committed).
+- Checked why `PROJECT_KNOWLEDGE.md`/`COWORK_BOOTSTRAP.md` sit at repo root instead of
+  under `ai/`/`docs/`: intentional — they're root-level entry-point docs like
+  `AGENTS.md`/`CLAUDE.md`, and `project-brain.md` links to them directly. Not a mistake.
+- While checking, found `BUILD-001` was actually already fixed (turbo.json tracked in
+  `b33e3ac`) but `KNOWN_ISSUES.md`/`project-brain.md`/`COWORK_BOOTSTRAP.md` still said
+  open/untracked — closed it in commit `0d58b34`, pushed to PR #13.
+- Read `chore/fast-verify-rule`'s 2 commits: its `/admin/dashboard` mockup (A-DASH-1,2,4)
+  is a duplicate of the same feature already merged via PR #8 (`feat/admin-antigravity-2026-08-16`,
+  same feature IDs, same day) at a different route path. Superseded, not useful to merge.
+  User confirmed — deleted the branch (`git branch -D`, local only, never pushed).
+- User merged **PR #13** on GitHub. Its merge commit (`222f00d`) landed *before* commit
+  `0d58b34` reached it, so `main` came out of the merge with `turbo.json` tracked (bug
+  actually fixed) but the three docs saying it wasn't (stale again). Verified `main` post-merge:
+  `check-docs.mjs` 8/8, `pnpm --filter web build` green.
+- Cherry-picked `0d58b34` onto a fresh branch `docs/close-build-001`, reworded it to point
+  at the real merge commit, opened [PR #14](https://github.com/nhatanhcoder/git-practice/pull/14).
+  Deleted the now-merged `docs/merge-2026-08-31-claude-ai` branch locally.
+
 **Blocker / needs follow-up**:
-- `_backup/`, `_to_delete/`, `finish-pull.ps1` are still sitting in the working tree
-  untracked. Owner should confirm they're safe to delete (they look like leftover
-  scratch from 2026-08-25) — not deleted this session since that's destructive.
-- `chore/fast-verify-rule` (2 unmerged commits, admin dashboard mockup) — decide
-  whether to open a PR for it or discard the branch.
+- [PR #14](https://github.com/nhatanhcoder/git-practice/pull/14) still needs review/merge.
 
 **Next steps**:
-- Review/merge [PR #13](https://github.com/nhatanhcoder/git-practice/pull/13).
-- Decide on `chore/fast-verify-rule` and the `_backup`/`_to_delete` cleanup.
+- Review/merge [PR #14](https://github.com/nhatanhcoder/git-practice/pull/14).
