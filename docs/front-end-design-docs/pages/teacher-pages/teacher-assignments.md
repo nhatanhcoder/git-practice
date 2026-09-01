@@ -2,7 +2,7 @@
 feature: T-ASGN-1, T-ASGN-2, T-ASGN-3, T-ASGN-4, T-ASGN-5
 role: teacher
 route: /teacher/assignments
-status: contracted
+status: built
 last_updated: 2026-09-01
 ---
 

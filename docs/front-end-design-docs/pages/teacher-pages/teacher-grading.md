@@ -2,7 +2,7 @@
 feature: T-GRADE-1, T-GRADE-2, T-GRADE-3, T-GRADE-4, T-GRADE-5
 role: teacher
 route: /teacher/grading
-status: contracted
+status: built
 last_updated: 2026-09-01
 ---
 

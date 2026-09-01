@@ -107,57 +107,57 @@ either and no contracted screen — it belongs with the Assignment screens, not 
 ## 3b. v2 trees — S3–S6 branches (2026-09-01)
 
 ```
-/teacher/questions  Question Bank              GET /questions
+/teacher/questions  Question Bank              GET /teacher/questions
 │
-├── "Tạo câu hỏi" → Modal → Submit → List (new row)   POST /questions
-├── row menu → Sửa → Modal → same                      PATCH /questions/:id
-├── row menu → Xoá → Confirm → List (usage = 0 only)   DELETE /questions/:id
+├── "Tạo câu hỏi" → Modal → Submit → List (new row)   POST /teacher/questions
+├── row menu → Sửa → Modal → same                      PATCH /teacher/questions/:id
+├── row menu → Xoá → Confirm → List (usage = 0 only)   DELETE /teacher/questions/:id
 └── row menu → Xem trước → Drawer (no route change)
 
-/teacher/assignments  Assignments & Tests     GET /assignments
+/teacher/assignments  Assignments & Tests     GET /teacher/assignments
 │
-├── "Tạo bài tập" → 2-step Modal → List (new row)      POST /assignments
-├── row menu → Sửa (no submissions) → Modal            PATCH /assignments/:id
-├── row menu → Xoá (no submissions) → Confirm          DELETE /assignments/:id
+├── "Tạo bài tập" → 2-step Modal → List (new row)      POST /teacher/assignments
+├── row menu → Sửa (no submissions) → Modal            PATCH /teacher/assignments/:id
+├── row menu → Xoá (no submissions) → Confirm          DELETE /teacher/assignments/:id
 └── Row click → Stats Drawer (no route change)
 
-/teacher/grading  Grading Queue                GET /attempts?status=submitted
+/teacher/grading  Grading Queue                GET /teacher/attempts?status=submitted
 │
 └── Row click → Grading Drawer (no route change)
-    ├── per Writing question → "AI gợi ý"               POST /attempts/:id/ai-suggest
-    └── "Hoàn thành chấm" → Queue (row graded)          PATCH /attempts/:id/grade
+    ├── per Writing question → "AI gợi ý"               POST /teacher/attempts/:id/ai-suggest
+    └── "Hoàn thành chấm" → Queue (row graded)          PATCH /teacher/attempts/:id/grade
 
-/teacher/sessions  Sessions & Attendance       GET /sessions
+/teacher/sessions  Sessions & Attendance       GET /teacher/sessions
 │
-├── "Tạo buổi học" → Modal → List (scheduled)          POST /sessions
-├── "Bắt đầu" (scheduled) → same (actualStart)         PATCH /sessions/:id/start
-├── "Điểm danh" → Drawer (roster statuses)             POST /sessions/:id/attendance
-├── "Gửi duyệt" (started) → Confirm → List             PATCH /sessions/:id/submit
+├── "Tạo buổi học" → Modal → List (scheduled)          POST /teacher/sessions
+├── "Bắt đầu" (scheduled) → same (actualStart)         PATCH /teacher/sessions/:id/start
+├── "Điểm danh" → Drawer (roster statuses)             POST /teacher/sessions/:id/attendance
+├── "Gửi duyệt" (started) → Confirm → List             PATCH /teacher/sessions/:id/submit
 │     (payload: topic + notes + actual times + attendance; → completed_pending)
 └── rejected → "Xem lý do" → Modal (reason)
 
-/teacher/income  Income (view-only)            GET /payroll
+/teacher/income  Income (view-only)            GET /teacher/payroll
 │
-└── Row click → Period Drawer                         GET /payroll/:id
+└── Row click → Period Drawer                         GET /teacher/payroll/:id
 ```
 
 ### v2 transition table
 
 | # | From | Action | To | API | Errors |
 |---|---|---|---|---|---|
-| 14 | `/teacher/questions` | create | same | `POST /questions` | `TODO(error-code)` |
-| 15 | `/teacher/questions` | edit | same | `PATCH /questions/:id` | `TODO(error-code)` |
-| 16 | `/teacher/questions` | delete (unused only) | same | `DELETE /questions/:id` | `TODO(error-code)` |
-| 17 | `/teacher/assignments` | create | same | `POST /assignments` | `TODO(error-code)` |
-| 18 | `/teacher/assignments` | edit (0 submissions) | same | `PATCH /assignments/:id` | `TODO(error-code)` |
-| 19 | `/teacher/assignments` | delete (0 submissions) | same | `DELETE /assignments/:id` | `TODO(error-code)` |
-| 20 | `/teacher/grading` | AI suggest | drawer | `POST /attempts/:id/ai-suggest` | `TODO(error-code)` |
-| 21 | `/teacher/grading` | finish grading | same (row graded) | `PATCH /attempts/:id/grade` | `TODO(error-code)` |
-| 22 | `/teacher/sessions` | create | same | `POST /sessions` | `TODO(error-code)` |
-| 23 | `/teacher/sessions` | start | same | `PATCH /sessions/:id/start` | `TODO(error-code)` |
-| 24 | `/teacher/sessions` | attendance | drawer | `POST /sessions/:id/attendance` | `TODO(error-code)` |
-| 25 | `/teacher/sessions` | submit | same | `PATCH /sessions/:id/submit` | `TODO(error-code)` |
-| 26 | `/teacher/income` | open period | drawer | `GET /payroll/:id` | — |
+| 14 | `/teacher/questions` | create | same | `POST /teacher/questions` | `TODO(error-code)` |
+| 15 | `/teacher/questions` | edit | same | `PATCH /teacher/questions/:id` | `TODO(error-code)` |
+| 16 | `/teacher/questions` | delete (unused only) | same | `DELETE /teacher/questions/:id` | `TODO(error-code)` |
+| 17 | `/teacher/assignments` | create | same | `POST /teacher/assignments` | `TODO(error-code)` |
+| 18 | `/teacher/assignments` | edit (0 submissions) | same | `PATCH /teacher/assignments/:id` | `TODO(error-code)` |
+| 19 | `/teacher/assignments` | delete (0 submissions) | same | `DELETE /teacher/assignments/:id` | `TODO(error-code)` |
+| 20 | `/teacher/grading` | AI suggest | drawer | `POST /teacher/attempts/:id/ai-suggest` | `TODO(error-code)` |
+| 21 | `/teacher/grading` | finish grading | same (row graded) | `PATCH /teacher/attempts/:id/grade` | `TODO(error-code)` |
+| 22 | `/teacher/sessions` | create | same | `POST /teacher/sessions` | `TODO(error-code)` |
+| 23 | `/teacher/sessions` | start | same | `PATCH /teacher/sessions/:id/start` | `TODO(error-code)` |
+| 24 | `/teacher/sessions` | attendance | drawer | `POST /teacher/sessions/:id/attendance` | `TODO(error-code)` |
+| 25 | `/teacher/sessions` | submit | same | `PATCH /teacher/sessions/:id/submit` | `TODO(error-code)` |
+| 26 | `/teacher/income` | open period | drawer | `GET /teacher/payroll/:id` | — |
 
 Drawers/modals are nodes **without** a route change (flow-map vocabulary).
 

@@ -2,7 +2,7 @@
 feature: T-SES-1, T-SES-2, T-SES-3, T-SES-4, T-SES-5, T-SES-6, T-SES-7
 role: teacher
 route: /teacher/sessions
-status: contracted
+status: built
 last_updated: 2026-09-01
 ---
 

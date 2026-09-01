@@ -52,11 +52,11 @@ for the S2 slice (Classes + Lessons); everything else is not yet mapped.
 | `/teacher/classes` | T-CLASS-1,2,5 | [teacher-classes-list](./teacher-pages/teacher-classes-list.md) | built | v1 | `API-006`: route mismatch vs FLOW_ENROLLMENT.md |
 | `/teacher/classes/[classId]` | T-CLASS-3,4,6 | [teacher-class-detail](./teacher-pages/teacher-class-detail.md) | built | v1 | average score field; attendance rate (S5) |
 | `/teacher/classes/[classId]/lessons` | T-LESSON-1,2,4,5 | [teacher-lessons-list](./teacher-pages/teacher-lessons-list.md) | built | v1 | **`API-007`: no Lessons API at all** — every action is ⛔ (screen is local-mock only) |
-| `/teacher/questions` | T-QB-1,2,4,5,6 | [teacher-question-bank](./teacher-pages/teacher-question-bank.md) | contracted | — | error codes TODO; audio upload mocked |
-| `/teacher/assignments` | T-ASGN-1..5 | [teacher-assignments](./teacher-pages/teacher-assignments.md) | contracted | — | error codes TODO |
-| `/teacher/grading` | T-GRADE-1..5 | [teacher-grading](./teacher-pages/teacher-grading.md) | contracted | — | error codes TODO |
-| `/teacher/sessions` | T-SES-1..7 | [teacher-sessions](./teacher-pages/teacher-sessions.md) | contracted | — | error codes TODO |
-| `/teacher/income` | T-INC-1,2,3 | [teacher-income](./teacher-pages/teacher-income.md) | contracted | — | none — both endpoints defined |
+| `/teacher/questions` | T-QB-1,2,4,5,6 | [teacher-question-bank](./teacher-pages/teacher-question-bank.md) | built | v1 | error codes TODO; audio upload mocked |
+| `/teacher/assignments` | T-ASGN-1..5 | [teacher-assignments](./teacher-pages/teacher-assignments.md) | built | v1 | error codes TODO |
+| `/teacher/grading` | T-GRADE-1..5 | [teacher-grading](./teacher-pages/teacher-grading.md) | built | v1 | error codes TODO |
+| `/teacher/sessions` | T-SES-1..7 | [teacher-sessions](./teacher-pages/teacher-sessions.md) | built | v1 | error codes TODO |
+| `/teacher/income` | T-INC-1,2,3 | [teacher-income](./teacher-pages/teacher-income.md) | built | v1 | none — both endpoints defined |
 
 Question Bank, Assignments, Grading, Sessions, Analytics, Income: _not yet mapped._
 

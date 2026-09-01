@@ -2,7 +2,7 @@
 feature: T-QB-1, T-QB-2, T-QB-4, T-QB-5, T-QB-6
 role: teacher
 route: /teacher/questions
-status: contracted
+status: built
 last_updated: 2026-09-01
 ---
 

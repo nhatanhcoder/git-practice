@@ -88,6 +88,14 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
   per FLOW_SESSION_ATTENDANCE), `/teacher/income` (T-INC, view-only). Contracts + flow-map
   v2 section written this session; all error codes recorded as `TODO(error-code)` — none
   invented. Screens fully mocked, Admin pattern. Lane: same flip as above.
+  **BUILT same session** — all 5 screens live in `apps/web/**` (build exit 0, 33 routes,
+  check-docs 8/8): question bank with skill/sub-type/HSK filters + create/edit modal
+  (delete gated by usageCount per F3.6), assignments 2-step create wizard + question picker
+  + submission-stats drawer (edit/delete locked when submittedCount>0 per T-ASGN-5), grading
+  queue + drawer with per-question score/feedback + writing-only AI-suggest mock + finish
+  gating, sessions with scheduled→completed_pending machine (start/attendance/submit) +
+  rejection-reason modal, income view-only with period drawer (money display-only, from
+  envelope totals — no client arithmetic). Sidebar: 7 live items + Analytics disabled (S5).
 - **DoD**: Teacher creates class → student joins via code → teacher sees the student in the list
 
 ## Sprint 3 — Question Bank & Assignments

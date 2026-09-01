@@ -2,7 +2,7 @@
 feature: T-INC-1, T-INC-2, T-INC-3
 role: teacher
 route: /teacher/income
-status: contracted
+status: built
 last_updated: 2026-09-01
 ---
 
