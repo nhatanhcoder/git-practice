@@ -406,6 +406,44 @@ that assumes either answer.
 
 ---
 
+### [SCOPE-03] Teacher role scope: full management vs read-only
+
+**Severity**: High
+**Status**: ✅ Resolved 2026-09-01 (owner-confirmed) — **full management. `(Read Only)` on
+`client-demand.txt` labels the document, not the role.**
+
+**Description**: A parallel Cowork/device-mount session raised a conflict between "client-demand"
+(Teacher read-only) and this repo's RBAC/API/roadmap docs (Teacher full management), as part of a
+16-item plan for Teacher FE+BE work. That session could not commit (no git identity in its
+sandbox), so the conflict itself was never written to the repo.
+
+**First pass (wrong — see Correction)**: searched `ai/`, `docs/`, `PROJECT_KNOWLEDGE.md` and
+`COWORK_BOOTSTRAP.md` for "client-demand" with `grep --include="*.md"`, found nothing, and closed
+this as Resolved on `docs/shared/RBAC_MATRIX.md` + `docs/api/API_TEACHER.md` +
+`docs/roadmap/SPRINT_PLAN.md` all agreeing on full management. **The search missed
+`docs/actors/teacher/client-demand.txt` — a `.txt` file, excluded by the `*.md` glob** — which is
+the actual client-demand document the other session meant.
+
+**Correction (same day)**: `docs/actors/teacher/client-demand.txt` line 5 reads
+`Access level: Client Demand (Read Only)`, and its Sprint 1–3 items are worded as view-only
+("Xem danh sách lớp...", "Xem bài nộp của học sinh...", "Xem thống kê lớp..."). Taken alone this
+does contradict full management. But the identical header appears on
+`docs/actors/admin/client-demand.txt` and `docs/actors/student/client-demand.txt` too, and Admin's
+already-built system (14 screens: user approve/suspend, invoice generation, pay-rate edits, ...)
+is definitively not read-only — so `(Read Only)` most likely labels the **document** (a frozen
+client-supplied source text, not to be edited) rather than the **role's** permission level. Under
+that reading, `docs/actors/teacher/FEATURES_TEACHER.md` and `PERMISSIONS_TEACHER.md` — which sit
+right next to `client-demand.txt` in the same folder and should be the derived spec from it — both
+describe full CRUD (`✅ Create / update / archive a class`, etc.), consistent with RBAC/API/roadmap.
+
+**Owner decision (2026-09-01)**: `(Read Only)` labels the document (frozen client source text),
+not the role. Teacher keeps full management as `RBAC_MATRIX.md` / `API_TEACHER.md` /
+`FEATURES_TEACHER.md` / `PERMISSIONS_TEACHER.md` already describe. Teacher Page Contracts get
+create/edit/regenerate-code affordances, not view-only screens. Do not re-litigate without new
+evidence.
+
+---
+
 ### [DOC-011] `backend/data/content/` does not exist in this repo
 
 **Severity**: Critical

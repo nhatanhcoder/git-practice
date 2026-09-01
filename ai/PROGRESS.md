@@ -313,6 +313,14 @@ _(discovered while mapping the Admin UI — 2026-08-13)_
       Two options + recommendation: `docs/api/modules/03-classes-enrollment.md` §16
 - [ ] **C2 — two rate-reading formulas contradict each other** (see `API-002` in KNOWN_ISSUES).
       → blocks every money calculation
+- [x] **SCOPE-03 — Teacher role scope resolved 2026-09-01 (owner-confirmed): full management.**
+      `docs/actors/teacher/client-demand.txt` says `Access level: Client Demand (Read Only)`,
+      which reads like a role restriction but turned out to label the *document* (frozen
+      client source text — Admin's `client-demand.txt` carries the identical header and Admin
+      is definitely not read-only), not the *role*. Owner confirmed: Teacher keeps full
+      management, matching `RBAC_MATRIX.md` / `API_TEACHER.md` / `FEATURES_TEACHER.md` /
+      `PERMISSIONS_TEACHER.md`. See `KNOWN_ISSUES.md` `SCOPE-03`. Unblocks Teacher Page
+      Contracts with create/edit/regenerate-code affordances.
 
 ---
 
