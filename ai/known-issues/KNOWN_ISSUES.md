@@ -402,6 +402,32 @@ that assumes either answer.
 
 ---
 
+### [SCOPE-03] Teacher role scope: full management vs read-only
+
+**Severity**: High
+**Status**: ✅ Resolved 2026-09-01 — **full management, per RBAC**
+
+**Description**: A parallel Cowork/device-mount session raised a conflict between "client-demand"
+(Teacher read-only) and this repo's RBAC/API/roadmap docs (Teacher full management), as part of a
+16-item plan for Teacher FE+BE work. That session could not commit (no git identity in its
+sandbox), so the conflict, and the "client-demand" evidence behind it, were never written to the
+repo — nothing to verify it against.
+
+**Resolution**: checked the three independent repo sources against each other — all three already
+agree with no conflict between them:
+- `docs/shared/RBAC_MATRIX.md` lines 28–41 — Teacher: `Class` create/update/archive = 🔒
+  (own scope), `Assignment` create/update/delete = 🔒, `ClassSession` create/log = 🔒.
+- `docs/api/API_TEACHER.md` — full CRUD across Classes, Lessons, Question Bank, Assignments,
+  Grading, Sessions.
+- `docs/roadmap/SPRINT_PLAN.md` S2–S8 — Teacher builds/edits these resources directly in every
+  sprint that touches them.
+
+No repo document supports Teacher read-only. Owner confirmed **full management per RBAC** — do
+not narrow Teacher's routes to read-only. If "client-demand" resurfaces, it needs to be written
+down with specifics (which resource, which action) before it can override this.
+
+---
+
 ### [DOC-011] `backend/data/content/` does not exist in this repo
 
 **Severity**: Critical
