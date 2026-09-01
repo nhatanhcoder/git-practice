@@ -38,12 +38,15 @@ read-only) is in the `SCOPE-03` entry itself now, not duplicated here.
 Requirement source docs live as `.txt` under `docs/actors/*/client-demand.txt` — check those
 by name, don't rely on an extension-filtered grep turning up nothing as proof they don't exist.
 
+**Owner decision (same session)**: `(Read Only)` labels the document, not the role. Teacher keeps
+**full management**. `SCOPE-03` closed for real this time, with the owner's own confirmation this
+time rather than my inference.
+
 **Blocker / needs follow-up**:
-- `SCOPE-03` needs the owner to say which reading is correct before Teacher Page Contracts are
-  written — full CRUD screens or view-only screens is a different contract either way.
 - The other session's uncommitted Teacher-planning work is still stuck in its sandbox — someone
   needs to either finish it there and commit on Windows, or redo it here.
 - Items 2 (unify `/api/v1/teacher/**`), 5–16 of that session's list are still open.
 
 **Next steps**:
-- Owner to resolve `SCOPE-03` (full CRUD vs. view-only) before any Teacher Page Contract is written.
+- Proceed to Teacher Page Contracts + Flow Map (docs only, per owner: "update docs lại để khớp
+  thôi, tôi không cần bạn code") — see `ai/context/sessions/2026-09-01-teacher-page-contracts.md`.

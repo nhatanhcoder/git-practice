@@ -405,8 +405,8 @@ that assumes either answer.
 ### [SCOPE-03] Teacher role scope: full management vs read-only
 
 **Severity**: High
-**Status**: 🔶 Reopened 2026-09-01 — see **Correction** below. Was marked Resolved for a few
-hours on the evidence available at the time; that evidence turned out to be incomplete.
+**Status**: ✅ Resolved 2026-09-01 (owner-confirmed) — **full management. `(Read Only)` on
+`client-demand.txt` labels the document, not the role.**
 
 **Description**: A parallel Cowork/device-mount session raised a conflict between "client-demand"
 (Teacher read-only) and this repo's RBAC/API/roadmap docs (Teacher full management), as part of a
@@ -432,13 +432,11 @@ that reading, `docs/actors/teacher/FEATURES_TEACHER.md` and `PERMISSIONS_TEACHER
 right next to `client-demand.txt` in the same folder and should be the derived spec from it — both
 describe full CRUD (`✅ Create / update / archive a class`, etc.), consistent with RBAC/API/roadmap.
 
-**Still open**: this reading is plausible, not confirmed — nothing in the repo defines what
-`(Read Only)` on these headers actually means, and `client-demand.txt`'s Sprint 1–3 wording is
-genuinely scoped to viewing/reporting, with no explicit ask for Teacher to create a class or
-assignment. It is equally plausible that `client-demand.txt` is the original, narrower client ask
-and `FEATURES_TEACHER.md`/RBAC/API were expanded past it later without the owner re-confirming
-the expansion. **Owner needs to say which reading is correct** before Teacher Page Contracts are
-written, since it decides whether those screens get create/edit affordances or are view-only.
+**Owner decision (2026-09-01)**: `(Read Only)` labels the document (frozen client source text),
+not the role. Teacher keeps full management as `RBAC_MATRIX.md` / `API_TEACHER.md` /
+`FEATURES_TEACHER.md` / `PERMISSIONS_TEACHER.md` already describe. Teacher Page Contracts get
+create/edit/regenerate-code affordances, not view-only screens. Do not re-litigate without new
+evidence.
 
 ---
 
