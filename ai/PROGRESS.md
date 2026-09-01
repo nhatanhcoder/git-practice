@@ -70,6 +70,11 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
   **`/teacher/classes/[classId]/lessons` is contracted but every action is `⛔` blocked** —
   `API_TEACHER.md` turns out to have no Lessons section at all (`KNOWN_ISSUES.md` `API-007`);
   do not build this screen until that API exists.
+- 🔶 (opencode · 2026-09-01) **Building the 3 unblocked Teacher screens** from the contracts
+  above: `/teacher`, `/teacher/classes`, `/teacher/classes/[classId]` in `apps/web/**`,
+  Admin-screen pattern, fully mocked. Lessons screen built behind MOCK markers too (its
+  actions stay local-only, matching the `⛔` contract). Lane: `apps/web/**` = codex's lane;
+  solo agent, flip recorded here per `multi-agent-workflow.md` §1.
 - **DoD**: Teacher creates class → student joins via code → teacher sees the student in the list
 
 ## Sprint 3 — Question Bank & Assignments
