@@ -313,12 +313,16 @@ _(discovered while mapping the Admin UI — 2026-08-13)_
       Two options + recommendation: `docs/api/modules/03-classes-enrollment.md` §16
 - [ ] **C2 — two rate-reading formulas contradict each other** (see `API-002` in KNOWN_ISSUES).
       → blocks every money calculation
-- [x] **SCOPE-03 — Teacher role scope resolved 2026-09-01: full management, per RBAC.**
-      A parallel session raised "Teacher read-only per client-demand" against this repo's
-      RBAC/API/roadmap docs; that claim was never written down anywhere to verify. All three
-      repo sources (`RBAC_MATRIX.md`, `API_TEACHER.md`, `SPRINT_PLAN.md`) already agreed on
-      full management — no repo conflict existed. See `KNOWN_ISSUES.md` `SCOPE-03`. Unblocks
-      Teacher Flow Map + Page Contracts.
+- [ ] **SCOPE-03 — Teacher role scope: full management vs read-only. Reopened 2026-09-01.**
+      `docs/actors/teacher/client-demand.txt` (missed by an `*.md`-only search on the first
+      pass) says `Access level: Client Demand (Read Only)` and its Sprint 1–3 items are
+      view-only wording. `RBAC_MATRIX.md` / `API_TEACHER.md` / `SPRINT_PLAN.md` /
+      `FEATURES_TEACHER.md` / `PERMISSIONS_TEACHER.md` all say full CRUD. Best guess is that
+      `(Read Only)` labels the document (frozen client source text), not the role — Admin's
+      `client-demand.txt` carries the identical header and Admin is definitely not read-only —
+      but that is a guess, not confirmed. **Blocks Teacher Page Contracts**: whether the
+      screens get create/edit affordances depends on the answer. See `KNOWN_ISSUES.md`
+      `SCOPE-03`.
 
 ---
 

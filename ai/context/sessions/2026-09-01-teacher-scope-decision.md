@@ -25,14 +25,25 @@ client-demand" before it would write a coding plan.
   `ai/PROGRESS.md` § Still unsettled, so the decision survives regardless of which session
   continues the Teacher work next.
 
+**Correction (same session, before this branch was merged)**: the "Resolved" call above was wrong.
+The search for "client-demand" used `grep --include="*.md"`, which silently skipped
+`docs/actors/teacher/client-demand.txt` — a `.txt` file, and the actual document the other
+session's report meant. It says `Access level: Client Demand (Read Only)` and its Sprint 1–3
+items are worded as view-only. Reopened `SCOPE-03` rather than leave a confidently-wrong
+"Resolved" in the repo. Full analysis (including why `(Read Only)` most likely labels the document
+rather than the role — Admin's `client-demand.txt` has the identical header and Admin is not
+read-only) is in the `SCOPE-03` entry itself now, not duplicated here.
+
+**Lesson**: a `--include="*.md"` grep across `ai/`/`docs/` is not a complete search of this repo.
+Requirement source docs live as `.txt` under `docs/actors/*/client-demand.txt` — check those
+by name, don't rely on an extension-filtered grep turning up nothing as proof they don't exist.
+
 **Blocker / needs follow-up**:
+- `SCOPE-03` needs the owner to say which reading is correct before Teacher Page Contracts are
+  written — full CRUD screens or view-only screens is a different contract either way.
 - The other session's uncommitted Teacher-planning work is still stuck in its sandbox — someone
-  needs to either finish it there and commit on Windows, or redo it here now that `SCOPE-03` no
-  longer blocks it.
-- Items 2 (unify `/api/v1/teacher/**`), 3 (client-demand/RBAC/feature/roadmap conflict — now
-  effectively closed by this resolution), 5–16 of that session's list are still open. Not started
-  here — asked the user which to do next rather than assuming.
+  needs to either finish it there and commit on Windows, or redo it here.
+- Items 2 (unify `/api/v1/teacher/**`), 5–16 of that session's list are still open.
 
 **Next steps**:
-- User to say whether to continue the Teacher planning (routes, missing contracts, Flow Map, Page
-  Contracts) in this session, or hand it back to the other one.
+- Owner to resolve `SCOPE-03` (full CRUD vs. view-only) before any Teacher Page Contract is written.
