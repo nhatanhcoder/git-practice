@@ -1,0 +1,37 @@
+.stateSwitcher{position:fixed;top:64px;right:20px;z-index:60;display:flex;align-items:center;gap:4px;padding:4px;border:1px solid #cbd5e1;border-radius:8px;background:rgba(255,255,255,.94);box-shadow:0 4px 12px rgba(15,23,42,.1);font:10px ui-monospace,monospace;text-transform:uppercase}
+.stateSwitcher span{padding:0 6px;color:#64748b;font-weight:600}
+.stateSwitcher button{padding:5px 7px;border:0;border-radius:5px;background:transparent;color:#475569;font:inherit;cursor:pointer}
+.stateSwitcher .stateActive{background:#0f172a;color:#fff}
+.statusPill{display:inline-flex;align-items:center;gap:6px;padding:2px 10px;border-radius:9999px;font-size:12px;font-weight:500;line-height:1.6;white-space:nowrap}
+.statusPill i{width:5px;height:5px;border-radius:50%;background:currentColor}
+.copyChip{display:inline-flex;align-items:center;gap:7px;height:30px;padding:0 10px;border:1px solid #cbd5e1;border-radius:6px;background:#fff;color:#0f172a;cursor:pointer;font:inherit}
+.copyChip:hover{border-color:#2563eb;background:#f8fafc}
+.copyChip code{color:#0f172a;font-size:12.5px;font-weight:600;letter-spacing:.04em;font-variant-numeric:tabular-nums}
+.copyChip svg{color:#64748b}
+.copyChipDone{border-color:#16a34a;background:#f0fdf4}
+.copyChipDone svg{color:#16a34a}
+.toast{position:fixed;right:24px;bottom:24px;z-index:90;display:flex;align-items:center;gap:8px;padding:10px 18px;border-radius:8px;background:#0f172a;color:#fff;box-shadow:0 6px 20px rgba(15,23,42,.15);font-size:13.5px;font-weight:500}
+.modalBackdrop{position:fixed;inset:0;z-index:80;display:grid;place-items:center;padding:16px;background:rgba(15,23,42,.4)}
+.modal{width:min(440px,100%);max-height:calc(100vh - 32px);overflow-y:auto;padding:24px;border-radius:8px;background:#fff;box-shadow:0 20px 25px -5px rgba(15,23,42,.15)}
+.modalWide{width:min(520px,100%)}
+.modalHead{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.modalHead h2{margin:0;font-family:Lexend,sans-serif;font-size:17px;font-weight:600}
+.modalClose{display:grid;width:32px;height:32px;place-items:center;border:0;border-radius:6px;background:transparent;color:#475569;cursor:pointer}
+.modalClose:hover{background:#f1f5f9}
+.field{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
+.field>span{color:#475569;font-size:12px;font-weight:600}
+.field input,.field select,.field textarea{padding:9px 11px;border:1px solid #cbd5e1;border-radius:6px;background:#fff;color:#0f172a;font:inherit;font-size:13.5px}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:#2563eb;box-shadow:0 0 0 2px rgba(37,99,235,.14);outline:0}
+.hint{margin:0 0 4px;color:#64748b;font-size:12px}
+.confirmText{margin:0 0 16px;color:#475569;font-size:13.5px;line-height:1.55}
+.modalActions{display:flex;justify-content:flex-end;gap:10px;margin-top:18px}
+.modalActions button{height:38px;padding:0 16px;border-radius:6px;font-weight:600;cursor:pointer}
+.cancelButton{border:0;background:#f1f5f9;color:#475569}
+.primaryButton{border:0;background:#0f172a;color:#fff}
+.primaryButton:disabled{cursor:not-allowed;opacity:.5}
+.dangerButton{border:0;background:#dc2626;color:#fff}
+@media(max-width:767px){
+.stateSwitcher{position:static;max-width:calc(100vw - 32px);margin:0 16px 12px;overflow-x:auto}
+.stateSwitcher span{display:none}
+.toast{right:16px;bottom:16px;left:16px;justify-content:center}
+}

@@ -1,0 +1,51 @@
+.appShell{display:flex;min-height:100vh;background:#f8fafc;color:#0f172a}
+.sidebar{position:sticky;top:0;z-index:40;display:flex;flex:0 0 240px;flex-direction:column;width:240px;height:100vh;background:#0f172a;transition:transform .2s ease}
+.brand{display:flex;align-items:center;gap:10px;padding:18px 20px;border-bottom:1px solid rgba(255,255,255,.08);color:#fff;font-family:Lexend,sans-serif;font-size:15px;font-weight:600}
+.brandMark{display:grid;width:30px;height:30px;place-items:center;border-radius:6px;background:#2563eb;font-size:16px}
+.closeNav{display:none;margin-left:auto;border:0;background:transparent;color:#94a3b8}
+.nav{display:flex;flex:1;flex-direction:column;gap:4px;padding:14px 12px;overflow-y:auto}
+.navItem{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:8px;color:#94a3b8;font-size:13.5px;font-weight:500;text-decoration:none;transition:background-color .15s,color .15s}
+.navItem:hover{background:rgba(255,255,255,.06);color:#fff}
+.navActive{background:rgba(37,99,235,.22);color:#fff}
+.navActive svg{color:#93c5fd}
+.navDisabled{cursor:default;opacity:.55}
+.navDisabled:hover{background:transparent;color:#94a3b8}
+.navDisabled small{margin-left:auto;padding:1px 6px;border-radius:4px;background:rgba(255,255,255,.08);color:#94a3b8;font-size:10px;font-weight:600}
+.navGroup{margin:14px 12px 2px;color:#64748b;font-size:10px;font-weight:700;letter-spacing:.1em}
+.sidebarFooter{display:flex;align-items:center;gap:10px;padding:16px 20px;border-top:1px solid rgba(255,255,255,.08);color:#94a3b8;font-size:12px}
+.sidebarFooter strong{display:block;color:#fff;font-size:12.5px}
+.navBackdrop{position:fixed;inset:0;z-index:35;border:0;background:rgba(15,23,42,.4)}
+.mainColumn{display:flex;flex:1;min-width:0;flex-direction:column}
+.topbar{position:sticky;top:0;z-index:30;display:flex;height:56px;align-items:center;justify-content:space-between;padding:0 28px;border-bottom:1px solid #e2e8f0;background:#fff}
+.breadcrumb{display:flex;align-items:center;gap:2px;color:#475569;font-size:13px;min-width:0;overflow:hidden}
+.breadcrumb a{color:inherit;text-decoration:none;white-space:nowrap}
+.breadcrumb a:hover{color:#2563eb}
+.breadcrumb strong{color:#0f172a;font-weight:600;white-space:nowrap}
+.crumbPair{display:flex;align-items:center;gap:2px;min-width:0}
+.menuButton{display:none;padding:6px;border:0;border-radius:6px;background:transparent;color:#475569}
+.headerActions{display:flex;align-items:center;gap:14px;flex-shrink:0}
+.iconButton{position:relative;display:grid;width:36px;height:36px;place-items:center;border:0;border-radius:8px;background:transparent;color:#475569}
+.iconButton:hover{background:#f8fafc;color:#0f172a}
+.notificationDot{position:absolute;top:8px;right:9px;width:6px;height:6px;border:1.5px solid #fff;border-radius:50%;background:#dc2626}
+.headerDivider{width:1px;height:22px;background:#e2e8f0}
+.profileButton{display:flex;align-items:center;gap:10px;padding:4px 8px;border:0;border-radius:8px;background:transparent;color:#0f172a;cursor:default}
+.profileChevron{transform:rotate(90deg);color:#475569}
+.headerAvatar{display:grid;width:32px;height:32px;place-items:center;border-radius:50%;background:#d1fae5;color:#065f46;font-size:12px;font-weight:600}
+.profileText{display:flex;flex-direction:column;align-items:flex-start}
+.profileText strong{font-size:13.5px}
+.profileText small{color:#64748b;font-size:11.5px}
+.content{width:100%;max-width:1360px;margin:0 auto;padding:28px 32px 64px}
+@media(max-width:1024px){.content{padding:24px}}
+@media(max-width:767px){
+.appShell{display:block;width:100%;max-width:100vw;overflow-x:hidden}
+.sidebar{position:fixed;inset:0 auto 0 0;z-index:40;transform:translateX(-100%)}
+.sidebarOpen{transform:translateX(0)}
+.closeNav{display:block}
+.mainColumn{width:100%;max-width:100vw}
+.topbar{padding:0 14px}
+.menuButton{display:grid}
+.crumbPair:not(:last-child){display:none}
+.profileText,.profileChevron,.headerDivider{display:none}
+.content{max-width:100%;padding:20px 16px 48px}
+}
+@media(prefers-reduced-motion:reduce){.appShell *{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
