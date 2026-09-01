@@ -2,7 +2,7 @@
 
 > **Tech**: Next.js 14 + NestJS + PostgreSQL (Supabase) + MongoDB Atlas  
 > **Actors**: Admin · Teacher · Student  
-> Last updated: 2026-07
+> Last updated: 2026-09-01
 
 ---
 
@@ -10,15 +10,17 @@
 
 ```
 docs/
-├── shared/          → Foundational knowledge, applies to every actor
-├── actors/          → Business view by role (Admin / Teacher / Student)
-├── entities/        → Data view (PostgreSQL + MongoDB)
-├── banks/           → Shared systems: Question Bank, Assignment Bank, Lesson Bank
-├── api/             → API contracts (conventions + endpoint specs)
-├── flows/           → Cross-actor / cross-entity processes (sequence diagrams)
-├── roadmap/         → Sprint plan
-├── testing/         → Test strategy + test cases
-└── diagrams/        → Mermaid source files (ERD, RBAC, architecture)
+├── shared/                → Foundational knowledge, applies to every actor
+├── actors/                → Business view by role (Admin / Teacher / Student)
+├── entities/              → Data view (PostgreSQL + MongoDB)
+├── banks/                 → Shared systems: Question Bank, Assignment Bank, Lesson Bank
+├── api/                   → API contracts (conventions + endpoint specs)
+├── flows/                 → Cross-actor / cross-entity processes (sequence diagrams)
+├── front-end-design-docs/ → FE view: page contracts, flow maps, design system
+├── prompts/               → Product-build prompt sets (student-product)
+├── roadmap/               → Sprint plan
+├── testing/               → Test strategy + test cases
+└── diagrams/              → Mermaid source files (ERD, RBAC, architecture)
 ```
 
 ---
@@ -71,11 +73,16 @@ docs/
 
 > Quick lookup table: [entities/_INDEX.md](entities/_INDEX.md)
 
+> ⚠️ The lists below are a quick glance only and drift easily — **[entities/_INDEX.md](entities/_INDEX.md) is authoritative** for the full set and each entity's status.
+
 ### 🐘 PostgreSQL
-`ENTITY_USER` · `ENTITY_CLASS` · `ENTITY_CLASS_ENROLLMENT` · `ENTITY_ASSIGNMENT` · `ENTITY_ATTEMPT` · `ENTITY_ATTEMPT_ANSWER` · `ENTITY_CLASS_SESSION` · `ENTITY_SESSION_ATTENDANCE` · `ENTITY_TEACHER_PAY_RATE` · `ENTITY_PAYROLL_PERIOD` · `ENTITY_STUDENT_TUITION_RATE` · `ENTITY_STUDENT_INVOICE` · `ENTITY_TUITION_PAYMENT` · `ENTITY_NOTIFICATION`
+`ENTITY_USER` · `ENTITY_CLASS` · `ENTITY_CLASS_ENROLLMENT` · `ENTITY_LESSON` · `ENTITY_LESSON_ASSIGNMENT` · `ENTITY_ASSIGNMENT` · `ENTITY_ATTEMPT` · `ENTITY_ATTEMPT_ANSWER` · `ENTITY_CLASS_SESSION` · `ENTITY_SESSION_ATTENDANCE` · `ENTITY_TEACHER_PAY_RATE` · `ENTITY_PAYROLL_PERIOD` · `ENTITY_STUDENT_TUITION_RATE` · `ENTITY_STUDENT_INVOICE` · `ENTITY_TUITION_PAYMENT` · `ENTITY_NOTIFICATION`
 
 ### 🍃 MongoDB
-`ENTITY_QUESTION` · `ENTITY_FLASHCARD` · `ENTITY_USER_FLASHCARD_STATE` · `ENTITY_LESSON` ⚠️
+`ENTITY_QUESTION` · `ENTITY_FLASHCARD` · `ENTITY_USER_FLASHCARD_STATE`
+
+> `Lesson` was moved from MongoDB to PostgreSQL — see `entities/_INDEX.md` (the MongoDB
+> `ENTITY_LESSON.md` is deprecated, ADR-003 superseded).
 
 ---
 
@@ -99,6 +106,34 @@ docs/
 | [API_TEACHER.md](api/API_TEACHER.md) | Teacher endpoints |
 | [API_STUDENT.md](api/API_STUDENT.md) | Student endpoints |
 | [API_ERROR_CODES.md](api/API_ERROR_CODES.md) | Global error code table |
+
+---
+
+## 🎨 front-end-design-docs/ — FE screen design
+
+> The FE pipeline: **flow-mapper** turns a feature into a Page Contract + a per-role Flow Map,
+> then **page-designer** turns a contract into a spec for the design tool. See the two skills at
+> `.agents/skills/flow-mapper/` and `.agents/skills/page-designer/`.
+
+| File | Contents |
+|------|---------|
+| [pages/_INDEX.md](front-end-design-docs/pages/_INDEX.md) | **Start here** — one row per screen (route · feature · contract · status), with each role's Flow Map linked at the top of its section |
+| [root-design-fe.md](front-end-design-docs/root-design-fe.md) | Design tokens, layout shell, component conventions — the single design source |
+| [specs/_DESIGN-SYSTEM.md](front-end-design-docs/specs/_DESIGN-SYSTEM.md) | Shared design-system file pasted alongside each page spec |
+| `pages/admin-pages/` | Admin page contracts + `admin-flow.md` (13 screens, built) |
+| `pages/teacher-pages/` | Teacher page contracts + `teacher-flow.md` (S2–S6 screens, built) |
+| `specs/admin-pages/` | Admin page specs (per-screen design specs) |
+| [STUDENT_UI_UX.md](front-end-design-docs/STUDENT_UI_UX.md) | Student UI/UX notes (student `/student/**` mockups came via `prompts/student-product/`, not this contract pipeline) |
+
+> Student screens are **not yet mapped** through this pipeline — see the note in `pages/_INDEX.md`.
+
+---
+
+## 🧩 prompts/ — Product-build prompt sets
+
+| Path | Contents |
+|------|---------|
+| [student-product/](prompts/student-product/) | The prompt set used to build the `/student/**` mockups (dashboard, learning path, grammar, foundation, exams, SRS, etc.) |
 
 ---
 
@@ -149,33 +184,33 @@ docs/
 | [architecture-layers.mmd](diagrams/architecture-layers.mmd) | 5-layer architecture |
 | [rbac-matrix.mmd](diagrams/rbac-matrix.mmd) | RBAC matrix visualization |
 
-Đọc AGENTS.md + 5 file always-loaded, rồi file mới nhất trong ai/context/sessions/.
+---
+
+## 🤖 Agent quick-reference (session workflow)
+
+> Full rules live in `ai/rules/working-rules.md`; this is the short form.
+
+Đọc AGENTS.md + 5 file always-loaded, rồi file mới nhất trong `ai/context/sessions/`.
 
 Trước khi làm, trả lời 3 câu:
   - Phiên trước dở dang gì?
   - Việc này là CODE hay DOCS?
-  - Có đụng DB schema / auth / RBAC / tiền không?  (có = chờ tôi duyệt, không ngoại lệ)
+  - Có đụng DB schema / auth / RBAC / tiền không?  (có = chờ duyệt, không ngoại lệ)
 
-FLOW
-  CODE:  branch → claim PROGRESS 🔶 → plan → CHỜ DUYỆT → code → verify → RECORD → PR
-  DOCS:  branch → plan → CHỜ DUYỆT → viết → check:docs → RECORD → PR
+**FLOW**
+  - CODE:  branch → claim PROGRESS 🔶 → plan → CHỜ DUYỆT → code → verify → RECORD → PR
+  - DOCS:  branch → plan → CHỜ DUYỆT → viết → check:docs → RECORD → PR
 
-RECORD (cả hai loại, không bỏ):
-  ai/PROGRESS.md · KNOWN_ISSUES.md · ai/context/sessions/<ngày>-<tên>.md · status flag doc vừa đụng
+**RECORD** (cả hai loại, không bỏ):
+  `ai/PROGRESS.md` · `ai/known-issues/KNOWN_ISSUES.md` · `ai/context/sessions/<ngày>-<tên>.md` · status flag của doc vừa đụng
 
-LUẬT
+**LUẬT**
   - `node scripts/check-docs.mjs` trước khi commit. `pnpm --filter web build`, không dùng build ở root.
   - Commit từng phần ngay. Gom cuối phiên = mất khi đổi branch.
   - Không bịa mã lỗi / field / endpoint. Thiếu thì ghi ⛔ và nói ra.
   - Doc mâu thuẫn → ghi lại mâu thuẫn, đừng tự chọn. Tin entity spec hơn feature doc.
   - Giao subagent: chép đủ nguồn. Thiếu nguồn thì nó bịa.
-  - Dùng skill tự do. Cài skill mới thì hỏi. Không tự chạy /design-promote.
+  - Dùng skill tự do. Cài skill mới thì hỏi. Không tự chạy `/design-promote`.
   - Lỡ bỏ bước: dừng, nói ra, làm bù ngay.
 
-KẾT PHIÊN — đúng 4 dòng:
-  Đã làm:         
-  Đã ghi vào:      <file thật, hoặc KHÔNG>
-  Còn chặn:        
-  Bạn cần làm:     
-
-VIỆC:
+**KẾT PHIÊN** — đúng 4 dòng: `Đã làm:` · `Đã ghi vào:` (file thật, hoặc KHÔNG) · `Còn chặn:` · `Bạn cần làm:`
