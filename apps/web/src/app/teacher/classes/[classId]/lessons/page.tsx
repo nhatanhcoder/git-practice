@@ -4,7 +4,7 @@
 // Lessons section at all — see the contract's "Blocked on" and KNOWN_ISSUES API-007.
 // Do NOT wire these to real endpoints until a Lessons API exists.
 
-import { use, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -46,9 +46,9 @@ interface LessonDraft {
 export default function TeacherLessonsPage({
   params,
 }: {
-  params: Promise<{ classId: string }>;
+  params: { classId: string };
 }) {
-  const { classId } = use(params);
+  const { classId } = params;
   const router = useRouter();
   const cls = mockTeacherClasses.find((c) => c.id === classId) ?? null;
   const [lessons, setLessons] = useState<ClassLesson[]>(cls ? mockClassLessons[cls.id] ?? [] : []);

@@ -4,7 +4,7 @@
 // until /api/v1/teacher/classes/:id endpoints exist. "Average score" and "attendance
 // rate" render as "—" per the contract (no aggregation field / Sprint 5 deferral).
 
-import { use, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -39,9 +39,9 @@ import styles from "./detail.module.css";
 export default function TeacherClassDetailPage({
   params,
 }: {
-  params: Promise<{ classId: string }>;
+  params: { classId: string };
 }) {
-  const { classId } = use(params);
+  const { classId } = params;
   const router = useRouter();
   const source = mockTeacherClasses.find((c) => c.id === classId) ?? null;
   const [cls, setCls] = useState<TeacherClass | null>(source);
