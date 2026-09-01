@@ -31,29 +31,31 @@
 
 ---
 
-## [2026-09-01] — Branch audit, commit, PR #13 — Claude Code
+## [2026-09-01] — Branch audit, PR #13 merged, PR #14 opened — Claude Code
 
 **Context**: user's first request pointed at a stray checkout
 (`C:\Users\nhata\OneDrive\Máy tính\Real` — the "third source" flagged in the
 2026-08-13 entry below; still not deleted). Redirected to the real repo here.
+Full detail in `ai/context/sessions/2026-09-01-claude-code-branch-audit-pr.md`.
 
 **Done**:
-- Audited all 12 local branches vs `main` (ahead/behind/merged); `main` in sync
-  with `origin/main`. Full detail in `ai/context/sessions/2026-09-01-claude-code-branch-audit-pr.md`.
-- Committed the working tree the 2026-08-31-merge Cowork session left staged/uncommitted
-  (split into 2 commits: docs merge, and the Student mockup), pushed, opened
-  [PR #13](https://github.com/nhatanhcoder/git-practice/pull/13) `docs/merge-2026-08-31-claude-ai` → `main`.
-  Verified first: `check-docs.mjs` 8/8, `pnpm --filter web build` green.
+- Audited all 12 local branches vs `main`; committed the working tree the
+  2026-08-31-merge Cowork session left staged (docs merge + Student mockup, 2 commits),
+  opened and got **PR #13 merged** (`222f00d`).
+- User-confirmed cleanup: deleted `_backup/`, `_to_delete/`, `finish-pull.ps1` (untracked
+  scratch). Deleted `chore/fast-verify-rule` — its `/admin/dashboard` commit duplicated
+  work already merged via PR #8 under a different route path.
+- PR #13's merge landed one commit before a `BUILD-001` doc-status fix reached it, so
+  `main` came out with `turbo.json` actually tracked but the docs still saying it wasn't.
+  Re-verified on `main` (`check-docs.mjs` 8/8, `pnpm --filter web build` green), opened
+  [PR #14](https://github.com/nhatanhcoder/git-practice/pull/14) with the correct fix.
 
 **Blocker / needs follow-up**:
-- `chore/fast-verify-rule` has 2 commits not in `main` (an `/admin/dashboard` mockup) — undecided, not touched.
-- `_backup/`, `_to_delete/`, `finish-pull.ps1` still untracked in the working tree (leftover
-  2026-08-25 cleanup scratch) — left alone, owner should confirm deletion.
+- [PR #14](https://github.com/nhatanhcoder/git-practice/pull/14) needs review/merge.
 - The stray OneDrive checkout noted 2026-08-13 is still there.
 
 **Next steps**:
-- Review/merge PR #13.
-- Decide `chore/fast-verify-rule` and the `_backup`/`_to_delete` cleanup.
+- Review/merge PR #14.
 
 ---
 

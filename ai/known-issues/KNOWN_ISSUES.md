@@ -135,12 +135,16 @@ page and looking at it — build success is not render correctness.
 ### [BUILD-001] `turbo.json` missing — `pnpm dev` / `pnpm build` fail at repo root
 
 **Severity**: High
-**Status**: Open — **still open on a clean clone** (verified 2026-09-01)
+**Status**: Resolved 2026-09-01 — `turbo.json` tracked in commit `b33e3ac` (PR #13)
 
 **Update 2026-09-01**: a `turbo.json` now exists in the working tree, but `git ls-files turbo.json`
 returns nothing — it is **untracked**, so it does not exist for CI or for anyone who clones. The
 eslint/prettier half is done (`eslint.config.mjs`, `.prettierrc`, `.npmrc` are present). Fix is now
 one line: `git add turbo.json` in its own commit.
+
+**Resolution**: `git add turbo.json` done in commit `b33e3ac`, landed on `main` via PR #13
+(merge commit `222f00d`). Confirmed on `main`: `git ls-files turbo.json` returns the file,
+and `pnpm --filter web build` runs clean. Re-open if a clean clone still fails.
 
 **Description**: Root `package.json` defines `dev`, `build`, `lint`, `type-check` as
 `turbo run <task>`, and `turbo` is in devDependencies, but there is **no `turbo.json`**.
