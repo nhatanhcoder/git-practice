@@ -6,12 +6,13 @@ import { useEffect, useState, type ReactNode } from "react";
 import {
   Bell,
   BookOpen,
-  Briefcase,
+  CalendarDays,
+  ChartLine,
   ChevronRight,
   ClipboardList,
+  FileCheck,
   GraduationCap,
   LayoutDashboard,
-  Layers,
   Menu,
   Wallet,
   X,
@@ -27,14 +28,15 @@ interface Crumb {
 const nav = [
   { href: "/teacher", label: "Tổng quan", icon: LayoutDashboard },
   { href: "/teacher/classes", label: "Lớp học", icon: GraduationCap },
+  { href: "/teacher/questions", label: "Ngân hàng câu hỏi", icon: BookOpen },
+  { href: "/teacher/assignments", label: "Bài tập & Đề", icon: ClipboardList },
+  { href: "/teacher/grading", label: "Chấm bài", icon: FileCheck },
+  { href: "/teacher/sessions", label: "Buổi học & Điểm danh", icon: CalendarDays },
+  { href: "/teacher/income", label: "Thu nhập", icon: Wallet },
 ];
 
 const futureNav = [
-  { label: "Ngân hàng câu hỏi", icon: BookOpen, sprint: "S3" },
-  { label: "Bài tập & Đề", icon: ClipboardList, sprint: "S3" },
-  { label: "Chấm bài", icon: Layers, sprint: "S4" },
-  { label: "Buổi học & Điểm danh", icon: Briefcase, sprint: "S6" },
-  { label: "Thu nhập", icon: Wallet, sprint: "S6" },
+  { label: "Phân tích lớp học", icon: ChartLine, sprint: "S5" },
 ];
 
 export function TeacherShell({
