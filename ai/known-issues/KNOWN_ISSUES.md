@@ -520,9 +520,72 @@ this is a real gap rather than a stylistic difference.
 **Renamed**: raised as `API-003` by the 2026-08-31 session; `API-003` was already taken by the
 payroll-period cancellation issue.
 
-**Workaround**: the old version is preserved at `_backup/env.example.local`.
+**Workaround**: the old version was preserved at `_backup/env.example.local` — that file was
+deleted 2026-09-01 (untracked scratch, never committed, not recoverable from git). The variable
+**names** are not lost — they're listed in the Description above — only the old example values
+and comments are gone. Reconstruct from `docs/api/modules/01-auth.md` (the accepted spec), not
+from memory of the deleted file.
 
 **Fix Plan**: do not touch auth until the block is agreed and restored.
+
+---
+
+### [API-006] `API_TEACHER.md` and `FLOW_ENROLLMENT.md` disagree on Class routes
+
+**Severity**: Medium
+**Status**: Open
+
+**Description**: found while writing the Teacher Page Contracts (`teacher-classes-list.md`,
+`teacher-class-detail.md`). Two docs describe the same Class endpoints differently:
+
+| | `docs/api/API_TEACHER.md` | `docs/flows/FLOW_ENROLLMENT.md` §2.3/§7 (Teacher routes) |
+|---|---|---|
+| Prefix | `/api/v1/teacher/classes` | bare `/classes` — no `/teacher` prefix (Admin's routes in the same doc, §4, *are* prefixed: `/api/v1/admin/classes`) |
+| Archive | `PATCH /api/v1/teacher/classes/:id/archive` | `POST /classes/:id/archive` |
+| Student list | embedded in `GET .../classes/:id` | separate `GET /classes/:id/students` |
+| FE create/edit | modal (this session's Teacher Page Contracts) | separate pages, per §5: `/teacher/classes/create`, `/teacher/classes/:id/edit` |
+
+The Teacher Page Contracts follow `API_TEACHER.md`, per flow-mapper's `§2` read order (the
+role's `API_<ROLE>.md` is the designated endpoint source; `docs/flows/` is only consulted for
+cross-actor ordering). This is a **documentation** conflict, not yet a build-time one — neither
+side is implemented in `apps/api` yet (only `apps/api`'s `User` module exists, per PR #12).
+
+**Fix Plan**: whoever writes the `ClassesModule` (Sprint 2 backend) picks one convention and
+updates the losing doc. Recommend `API_TEACHER.md`'s role-prefixed paths, since every other
+`API_<ROLE>.md` in this repo (Admin, Student) follows that convention and `FLOW_ENROLLMENT.md`
+reads as an earlier design note that predates it — but this is a recommendation, not a decision;
+do not silently pick a side without saying so in the commit.
+
+---
+
+### [API-007] `API_TEACHER.md` has no Lessons section — no endpoints exist at all
+
+**Severity**: High
+**Status**: Open — **blocks `teacher-lessons-list.md` entirely**
+
+**Description**: found writing the Teacher Page Contracts, the hard way. An early draft of
+`teacher-lessons-list.md` cited five Lesson endpoints (`GET`/`POST .../lessons`,
+`PATCH`/`DELETE /lessons/:id`, `PATCH .../lessons/reorder`) as if they existed in
+`API_TEACHER.md`. They don't — `API_TEACHER.md` has exactly six sections (Classes, Question
+Bank, Assignments, Grading, Sessions, Income) and none of them is Lessons. The cited paths were
+reconstructed from memory of a different checkout read earlier in the same session, not from
+this file. `check-docs.mjs`'s `endpoint-undefined` check caught it before commit.
+
+`FEATURES_TEACHER.md` T-LESSON-1 through T-LESSON-5 describe the feature; `RBAC_MATRIX.md` and
+`PERMISSIONS_TEACHER.md` have no row for Lesson either, so ownership (does a teacher managing a
+lesson need to own the parent class?) is undocumented, not just unimplemented.
+
+**Fix Plan**: write a Lessons section in `API_TEACHER.md` (create/list/update/delete/reorder,
+matching `FEATURES_TEACHER.md` T-LESSON-1/2/4/5, plus the attach/detach-assignment pair for
+T-LESSON-3) and add the matching `LESSON_*` family to `API_ERROR_CODES.md`. Add a Lesson row to
+`RBAC_MATRIX.md`/`PERMISSIONS_TEACHER.md` while at it. Until then,
+`docs/front-end-design-docs/pages/teacher-pages/teacher-lessons-list.md` and the Lesson branch
+of `teacher-flow.md` describe a screen that cannot be built against anything real.
+
+**Lesson for future sessions**: re-verify file contents against the actual working directory
+before citing them, even within the same session — do not reuse a reading from an earlier point
+in the conversation if the working directory could have changed (here, an earlier turn had read
+the same-named file in a *different* repo checkout entirely).
 
 ---
 

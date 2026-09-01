@@ -42,10 +42,23 @@ last_updated: 2026-08-14
 | `/admin/profile` | A-AUTH-4,5,6 | [admin-profile](./admin-pages/admin-profile.md) | built | v1 | — (endpoints defined in [API_AUTH.md](../../api/API_AUTH.md)) |
 
 ## Teacher
-_Not yet mapped._
+
+**▶ [Teacher UI Flow + API Map](./teacher-pages/teacher-flow.md)** — screen-to-screen traversal
+for the S2 slice (Classes + Lessons); everything else is not yet mapped.
+
+| Route | Feature | Contract | Status | Design | Blocked on |
+|---|---|---|---|---|---|
+| `/teacher` | TODO(feature-id) | [teacher-dashboard](./teacher-pages/teacher-dashboard.md) | contracted | — | no dashboard-aggregation endpoint |
+| `/teacher/classes` | T-CLASS-1,2,5 | [teacher-classes-list](./teacher-pages/teacher-classes-list.md) | contracted | — | `API-006`: route mismatch vs FLOW_ENROLLMENT.md |
+| `/teacher/classes/[classId]` | T-CLASS-3,4,6 | [teacher-class-detail](./teacher-pages/teacher-class-detail.md) | contracted | — | average score field; attendance rate (S5) |
+| `/teacher/classes/[classId]/lessons` | T-LESSON-1,2,4,5 | [teacher-lessons-list](./teacher-pages/teacher-lessons-list.md) | contracted | — | **`API-007`: no Lessons API at all** — every action is ⛔ |
+
+Question Bank, Assignments, Grading, Sessions, Analytics, Income: _not yet mapped._
 
 ## Student
-_Not yet mapped._
+_Not yet mapped._ (the built `/student/**` screens were produced from
+`docs/prompts/student-product/` as mockups, outside this contract pipeline — see
+`ai/context/HANDOFF.md` 2026-09-01.)
 
 ---
 
