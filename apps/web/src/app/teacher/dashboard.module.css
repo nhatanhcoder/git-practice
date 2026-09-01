@@ -1,0 +1,36 @@
+.head{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;margin-bottom:24px}
+.eyebrow{margin:0 0 4px;color:#2563eb;font-size:11px;font-weight:600;letter-spacing:.08em}
+.head h1{margin:0;color:#0f172a;font-family:Lexend,sans-serif;font-size:26px;font-weight:600;line-height:1.2}
+.subtitle{margin:4px 0 0;color:#475569;font-size:14px}
+.primaryButton{display:inline-flex;height:38px;align-items:center;gap:7px;padding:0 16px;border:0;border-radius:6px;background:#0f172a;color:#fff;font-size:13px;font-weight:600;cursor:pointer}
+.primaryButton:hover{background:#1e293b}
+.sectionHead{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.sectionHead h2{margin:0;font-family:Lexend,sans-serif;font-size:17px;font-weight:600}
+.seeAll{padding:6px 10px;border:0;border-radius:6px;background:transparent;color:#2563eb;font-size:13px;font-weight:600;cursor:pointer}
+.seeAll:hover{background:#eff6ff}
+.cardGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:16px}
+.classCard{display:flex;flex-direction:column;padding:18px;border:1px solid #e2e8f0;border-radius:8px;background:#fff;box-shadow:0 1px 2px rgba(15,23,42,.05);text-align:left;cursor:pointer;transition:box-shadow .15s,transform .15s}
+.classCard:hover{box-shadow:0 4px 12px rgba(15,23,42,.1);transform:translateY(-1px)}
+.cardTop{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.levelBadge{display:inline-flex;padding:2px 9px;border-radius:5px;background:#eff6ff;color:#2563eb;font-size:11.5px;font-weight:700;letter-spacing:.02em}
+.classCard h3{margin:0 0 6px;color:#0f172a;font-family:Lexend,sans-serif;font-size:15px;font-weight:600;line-height:1.35}
+.cardDesc{display:-webkit-box;flex:1;margin:0 0 12px;overflow:hidden;-webkit-box-orient:vertical;-webkit-line-clamp:2;color:#64748b;font-size:12.5px;line-height:1.45}
+.cardMeta{display:flex;align-items:center;justify-content:space-between;border-top:1px solid #e2e8f0;padding-top:10px;color:#64748b;font-size:12px}
+.cardMeta span{display:inline-flex;align-items:center;gap:5px}
+.newCard{display:flex;min-height:150px;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:18px;border:1.5px dashed #cbd5e1;border-radius:8px;background:transparent;color:#64748b;font-size:13px;font-weight:600;cursor:pointer}
+.newCard:hover{border-color:#2563eb;color:#2563eb;background:#f8fafc}
+.cardSkeleton{height:170px;border:1px solid #e2e8f0;border-radius:8px;background:linear-gradient(90deg,#e2e8f0 25%,#f8fafc 50%,#e2e8f0 75%);background-size:200% 100%;animation:shimmer 1.4s infinite}
+.emptyState{display:flex;min-height:340px;flex-direction:column;align-items:center;justify-content:center;padding:40px;border:1px dashed #cbd5e1;border-radius:8px;background:#fff;text-align:center}
+.emptyState>svg{color:#94a3b8;opacity:.45}
+.emptyState h2{margin:16px 0 6px;font-family:Lexend,sans-serif;font-size:18px}
+.emptyState p{margin:0 0 18px;color:#64748b}
+.errorBanner{display:flex;align-items:center;gap:12px;margin-bottom:16px;padding:13px 15px;border:1px solid #fecaca;border-radius:8px;background:#fff7f7;color:#b91c1c}
+.errorBanner div{display:flex;flex:1;flex-direction:column}
+.errorBanner span{color:#7f1d1d;font-size:13px}
+.errorBanner button{padding:7px 13px;border:1px solid #fecaca;border-radius:6px;background:#fff;color:#b91c1c;font-weight:600;cursor:pointer}
+@keyframes shimmer{to{background-position:-200% 0}}
+@media(max-width:767px){
+.head{align-items:flex-start;flex-direction:column;gap:14px}
+.head h1{font-size:24px}
+.cardGrid{grid-template-columns:1fr}
+}
