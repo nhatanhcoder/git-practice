@@ -82,6 +82,12 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
   (28 routes), `check:docs` 8/8. Contracts → `built`, `_INDEX` Design = v1. Lane:
   `apps/web/**` = codex's lane; solo agent, flip recorded here per
   `multi-agent-workflow.md` §1. Does NOT satisfy S2 DoD (needs the real join-class flow).
+- 🔶 (opencode · 2026-09-01) **Contracts + build for the remaining 5 Teacher areas**
+  (completes the sidebar): `/teacher/questions` (T-QB), `/teacher/assignments` (T-ASGN),
+  `/teacher/grading` (T-GRADE, AI-suggest mock), `/teacher/sessions` (T-SES, state machine
+  per FLOW_SESSION_ATTENDANCE), `/teacher/income` (T-INC, view-only). Contracts + flow-map
+  v2 section written this session; all error codes recorded as `TODO(error-code)` — none
+  invented. Screens fully mocked, Admin pattern. Lane: same flip as above.
 - **DoD**: Teacher creates class → student joins via code → teacher sees the student in the list
 
 ## Sprint 3 — Question Bank & Assignments

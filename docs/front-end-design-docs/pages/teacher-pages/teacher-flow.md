@@ -9,8 +9,9 @@ related:
 
 # Teacher — UI Flow + API Map
 
-> Screen-to-screen traversal for the S2 slice (Classes + Lessons) only — Question Bank,
-> Assignments, Grading, Sessions, Analytics and Income are not contracted yet.
+> Screen-to-screen traversal. **v1 (S2 slice): Classes + Lessons.** **v2 (2026-09-01):
+> Question Bank, Assignments, Grading, Sessions, Income contracted.** Analytics is the
+> only FEATURES_TEACHER area still unmapped.
 > Every node is a route, every edge is a user action, every edge carries the endpoint it fires.
 > `⛔` marks an endpoint that does not exist yet in `docs/api/API_TEACHER.md`.
 > Endpoints are shown without the `/api/v1/teacher` prefix for brevity — see each Page Contract
@@ -103,11 +104,80 @@ either and no contracted screen — it belongs with the Assignment screens, not 
 
 ---
 
+## 3b. v2 trees — S3–S6 branches (2026-09-01)
+
+```
+/teacher/questions  Question Bank              GET /questions
+│
+├── "Tạo câu hỏi" → Modal → Submit → List (new row)   POST /questions
+├── row menu → Sửa → Modal → same                      PATCH /questions/:id
+├── row menu → Xoá → Confirm → List (usage = 0 only)   DELETE /questions/:id
+└── row menu → Xem trước → Drawer (no route change)
+
+/teacher/assignments  Assignments & Tests     GET /assignments
+│
+├── "Tạo bài tập" → 2-step Modal → List (new row)      POST /assignments
+├── row menu → Sửa (no submissions) → Modal            PATCH /assignments/:id
+├── row menu → Xoá (no submissions) → Confirm          DELETE /assignments/:id
+└── Row click → Stats Drawer (no route change)
+
+/teacher/grading  Grading Queue                GET /attempts?status=submitted
+│
+└── Row click → Grading Drawer (no route change)
+    ├── per Writing question → "AI gợi ý"               POST /attempts/:id/ai-suggest
+    └── "Hoàn thành chấm" → Queue (row graded)          PATCH /attempts/:id/grade
+
+/teacher/sessions  Sessions & Attendance       GET /sessions
+│
+├── "Tạo buổi học" → Modal → List (scheduled)          POST /sessions
+├── "Bắt đầu" (scheduled) → same (actualStart)         PATCH /sessions/:id/start
+├── "Điểm danh" → Drawer (roster statuses)             POST /sessions/:id/attendance
+├── "Gửi duyệt" (started) → Confirm → List             PATCH /sessions/:id/submit
+│     (payload: topic + notes + actual times + attendance; → completed_pending)
+└── rejected → "Xem lý do" → Modal (reason)
+
+/teacher/income  Income (view-only)            GET /payroll
+│
+└── Row click → Period Drawer                         GET /payroll/:id
+```
+
+### v2 transition table
+
+| # | From | Action | To | API | Errors |
+|---|---|---|---|---|---|
+| 14 | `/teacher/questions` | create | same | `POST /questions` | `TODO(error-code)` |
+| 15 | `/teacher/questions` | edit | same | `PATCH /questions/:id` | `TODO(error-code)` |
+| 16 | `/teacher/questions` | delete (unused only) | same | `DELETE /questions/:id` | `TODO(error-code)` |
+| 17 | `/teacher/assignments` | create | same | `POST /assignments` | `TODO(error-code)` |
+| 18 | `/teacher/assignments` | edit (0 submissions) | same | `PATCH /assignments/:id` | `TODO(error-code)` |
+| 19 | `/teacher/assignments` | delete (0 submissions) | same | `DELETE /assignments/:id` | `TODO(error-code)` |
+| 20 | `/teacher/grading` | AI suggest | drawer | `POST /attempts/:id/ai-suggest` | `TODO(error-code)` |
+| 21 | `/teacher/grading` | finish grading | same (row graded) | `PATCH /attempts/:id/grade` | `TODO(error-code)` |
+| 22 | `/teacher/sessions` | create | same | `POST /sessions` | `TODO(error-code)` |
+| 23 | `/teacher/sessions` | start | same | `PATCH /sessions/:id/start` | `TODO(error-code)` |
+| 24 | `/teacher/sessions` | attendance | drawer | `POST /sessions/:id/attendance` | `TODO(error-code)` |
+| 25 | `/teacher/sessions` | submit | same | `PATCH /sessions/:id/submit` | `TODO(error-code)` |
+| 26 | `/teacher/income` | open period | drawer | `GET /payroll/:id` | — |
+
+Drawers/modals are nodes **without** a route change (flow-map vocabulary).
+
+---
+
 ## 4. Entity state transitions driven by this flow
 
 ```
-Class   active ──archive──► archived
+Class    active ──archive──► archived
                               (one-way — no unarchive endpoint in API_TEACHER.md)
+
+Session  scheduled ──submit (topic+times+attendance)──► completed_pending
+              │                                            │
+              │                            ┌───────────────┤ (admin side, not this flow)
+              │                            ▼               ▼
+              │                        approved         rejected ──(edit+resubmit: deferred)──►
+              └─ start/end record actual times;           (feeds PayrollPeriod when finalized)
+                 they do not change the status enum
+
+Attempt  in_progress ──submit (student)──► submitted ──grade──► graded
 ```
 
 Lesson has no status enum in this slice — only `orderIndex`. Reordering is a position change,
@@ -123,4 +193,6 @@ not a state transition.
 | **An entire Lessons API** — `API_TEACHER.md` has no Lessons section at all | transitions 9–13 in full; the whole `.../lessons` branch in §2 |
 | `RBAC_MATRIX.md` / `PERMISSIONS_TEACHER.md` row for Lesson | confirming the ownership rule used in `teacher-lessons-list.md`, currently inferred from Class |
 | Class create/archive error codes beyond `CLASS_NOT_FOUND`/`CLASS_ACCESS_DENIED`/`CLASS_ALREADY_ARCHIVED` (transitions 3–4 are `TODO(error-code)`) | precise error handling on class creation |
+| Error codes for Question/Assignment/Attempt/Session actions (v2 transitions 14–25 are all `TODO(error-code)`) | precise error handling on all S3–S6 screens |
+| Analytics screens (T-ANL-1..4) — not contracted | the last unmapped FEATURES_TEACHER area |
 | Reconcile `API_TEACHER.md` (role-prefixed, archive = `PATCH`) vs. `docs/flows/FLOW_ENROLLMENT.md` (bare `/classes`, archive = `POST`) — `KNOWN_ISSUES.md` `API-006` | which convention the backend actually implements — this flow follows `API_TEACHER.md` per flow-mapper's read order, not resolved here |
