@@ -107,6 +107,29 @@ zero dependencies, under a second. CI runs the same thing and will block the mer
 finding it locally is strictly cheaper. See `multi-agent-workflow.md` §15. This is never
 skipped — it runs faster than the time it takes to read this sentence. (Batch work: once per batch is enough.)
 
+**PR title must carry its own meaning.** Someone who has never seen the branch or the
+conversation that produced it must be able to read the title alone and know what the PR
+is *for* — the objective, not just the mechanism. `chore: update docs`, `fix: bug`, `misc
+changes` tell the reader nothing; they force a full diff read to find out what actually
+happened. Follow the Conventional Commits format from `docs/shared/CONVENTIONS.md`
+(`<type>(<scope>): <description>`), and make the `<description>` state the outcome:
+
+```
+Bad:  docs: update files
+Good: docs: close BUILD-001 now that turbo.json is on main
+
+Bad:  fix: bug
+Good: fix(classes): stop duplicate enrollment codes on retry
+
+Bad:  chore: changes
+Good: chore: normalise CRLF line endings via .gitattributes
+```
+
+If the PR bundles unrelated work, that is a sign it should be two PRs, not a hint to write
+a vaguer title to cover both. The same standard applies to the branch name and to each
+commit message inside the PR — a reader scanning `git log --oneline` should not have to
+open a commit to know what it did.
+
 **Before claiming anything is finished:**
 
 1. **`ai/PROGRESS.md` reflects it.** Mark the item, or add it under `## Off-sprint / spike`
