@@ -60,6 +60,16 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
 - ⬜ F2.4 Leave class
 - ⬜ F2.5 View student list in a class
 - ⬜ F2.6 View Student's class list
+- 🔶 (claude · 2026-09-01) **Teacher Page Contracts for this sprint's slice** —
+  `/teacher`, `/teacher/classes`, `/teacher/classes/[classId]`,
+  `/teacher/classes/[classId]/lessons` contracted (not built). See
+  `docs/front-end-design-docs/pages/teacher-pages/` and its `teacher-flow.md`.
+  Note: these cite `T-CLASS-*`/`T-LESSON-*` (from `docs/actors/teacher/FEATURES_TEACHER.md`),
+  a different ID scheme than this section's `F2.*` — same features, two numbering schemes
+  never reconciled. Do not treat them as different scope.
+  **`/teacher/classes/[classId]/lessons` is contracted but every action is `⛔` blocked** —
+  `API_TEACHER.md` turns out to have no Lessons section at all (`KNOWN_ISSUES.md` `API-007`);
+  do not build this screen until that API exists.
 - **DoD**: Teacher creates class → student joins via code → teacher sees the student in the list
 
 ## Sprint 3 — Question Bank & Assignments
