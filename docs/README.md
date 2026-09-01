@@ -148,3 +148,34 @@ docs/
 | [erd.mmd](diagrams/erd.mmd) | Entity Relationship Diagram (Mermaid) |
 | [architecture-layers.mmd](diagrams/architecture-layers.mmd) | 5-layer architecture |
 | [rbac-matrix.mmd](diagrams/rbac-matrix.mmd) | RBAC matrix visualization |
+
+Đọc AGENTS.md + 5 file always-loaded, rồi file mới nhất trong ai/context/sessions/.
+
+Trước khi làm, trả lời 3 câu:
+  - Phiên trước dở dang gì?
+  - Việc này là CODE hay DOCS?
+  - Có đụng DB schema / auth / RBAC / tiền không?  (có = chờ tôi duyệt, không ngoại lệ)
+
+FLOW
+  CODE:  branch → claim PROGRESS 🔶 → plan → CHỜ DUYỆT → code → verify → RECORD → PR
+  DOCS:  branch → plan → CHỜ DUYỆT → viết → check:docs → RECORD → PR
+
+RECORD (cả hai loại, không bỏ):
+  ai/PROGRESS.md · KNOWN_ISSUES.md · ai/context/sessions/<ngày>-<tên>.md · status flag doc vừa đụng
+
+LUẬT
+  - `node scripts/check-docs.mjs` trước khi commit. `pnpm --filter web build`, không dùng build ở root.
+  - Commit từng phần ngay. Gom cuối phiên = mất khi đổi branch.
+  - Không bịa mã lỗi / field / endpoint. Thiếu thì ghi ⛔ và nói ra.
+  - Doc mâu thuẫn → ghi lại mâu thuẫn, đừng tự chọn. Tin entity spec hơn feature doc.
+  - Giao subagent: chép đủ nguồn. Thiếu nguồn thì nó bịa.
+  - Dùng skill tự do. Cài skill mới thì hỏi. Không tự chạy /design-promote.
+  - Lỡ bỏ bước: dừng, nói ra, làm bù ngay.
+
+KẾT PHIÊN — đúng 4 dòng:
+  Đã làm:         
+  Đã ghi vào:      <file thật, hoặc KHÔNG>
+  Còn chặn:        
+  Bạn cần làm:     
+
+VIỆC:

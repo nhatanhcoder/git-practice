@@ -31,6 +31,72 @@
 
 ---
 
+## [2026-09-01] — Verify + merge the 2026-08-31 claude.ai doc review — Claude (Cowork, device mount) — branch `docs/merge-2026-08-31-claude-ai`
+
+**Context**: a 2026-08-31 Claude.ai session produced 11 rewritten docs. It had **no repo access**
+and worked from claude.ai Project copies last synced in July. Its versions of `KNOWN_ISSUES.md`
+(192 vs 397 lines), `PROGRESS.md` (107 vs 295), `HANDOFF.md` (140 vs 259), `working-rules.md`
+(68 vs 313) and `multi-agent-workflow.md` (259 vs 577) were all **shorter than the repo's**, and
+it reissued `API-003`, `DOC-006`, `DOC-007` and `SCOPE-01` — all live IDs here — for unrelated
+problems. **Copying them in would have deleted ~15 real issues and corrupted the ID namespace.**
+Merged by hand instead; nothing was overwritten.
+
+**Done**:
+- **Added `PROJECT_KNOWLEDGE.md`** (root, 644 lines) — did not exist in the repo. Register IDs
+  renamed `C##` → `CR-##` (PROGRESS already uses `C1`/`C2`/`C3` for module blockers) and
+  `SCOPE-01` → `SCOPE-02` (taken). §9 rewritten against verified evidence, plus a new §9.1
+  recording what the verification changed.
+- **Added `COWORK_BOOTSTRAP.md`** (root) — rewritten, not copied; leads with "the repo is the
+  source of truth" and the `DOC-011` finding.
+- **`KNOWN_ISSUES.md` 397 → 599 lines, append only**: `SCOPE-02`, `DOC-011`, `DOC-008`, `DOC-009`,
+  `DOC-010`, `DOC-012`, `API-005`, `GIT-003`, `DEBT-003`. Updated `BUILD-001` (turbo.json exists
+  but untracked), closed `GIT-002`, added the append-only/no-reuse rule to the header.
+- **`PROGRESS.md`**: Sprint 0 re-verified against the working tree; added Sprint 5b (F9–F16,
+  blocked); flagged the `DECISIONS.md` citations; noted the sprint-count mismatch.
+- **`working-rules.md`**: new § Conflict Rules — check §9 first, repo beats copy, KNOWN_ISSUES is
+  append-only, sprint numbers come from `SPRINT_PLAN.md`.
+- **`project-brain.md`**: links to §8/§9 and the bootstrap; `SCOPE-02` warning; storage evidence
+  split recorded; Current Status corrected.
+- **`AI_CHAT_LOG.md`**: logged both sessions; corrected the false claim that `DECISIONS.md` exists.
+
+**Conflicts closed on repo evidence**:
+- **CR-2 → 10 sprints (S0–S9)**. `SPRINT_PLAN.md` has ten sections; the 8-sprint shape in
+  `PROGRESS.md` and `PROJECT_KNOWLEDGE.md` §6 is stale → `DOC-012`.
+- **CR-6 → one backend, `apps/api/`**. No `backend/` directory exists.
+- **CR-19 → `packages/types`**, per `pnpm-workspace.yaml` and `PROGRESS.md`. `packages/` does not
+  exist yet, so this is a naming decision, not a rename. `packages/shared-types` was invented.
+- **CR-7 partly false** — the claim that the repo root "already contains a `packages/` directory"
+  is wrong; `packages/` is absent.
+- **CR-1 (HSK 1–9)** was already settled here on **2026-08-11**, on stronger evidence than the
+  2026-08-31 re-derivation. No change.
+
+**Blocker / needs follow-up**:
+- **`DOC-011` (critical)** — `backend/data/content/` and its 10 JSON files are **not in this
+  repository**. `PROJECT_KNOWLEDGE.md` §8, `SCOPE-02` and `DEBT-003` all depend on content nobody
+  here can read. Owner: where does it live?
+- **`SCOPE-02`** — LMS vs self-study. Weaker than it looked; may dissolve once `DOC-011` is answered.
+- **`CR-3`** storage — evidence favours Supabase Storage (incl. the only accepted module spec),
+  Cloudinary survives in older shared docs. Needs a decision, then a sweep.
+- **`API-005`** — auth block missing from `.env.example`. Do not touch auth until agreed.
+- **`DOC-012`** — renumbering sprints across three files; deliberately left for its own commit.
+
+**Temporary decisions to preserve**:
+- Sprint 5b is a **placeholder position**, and it does not appear in `SPRINT_PLAN.md` at all.
+- The register lives in `PROJECT_KNOWLEDGE.md` §9 under `CR-##`. Do not reintroduce bare `C##` —
+  it collides with the module-blocker table in `PROGRESS.md`.
+
+**Next steps**:
+1. `git commit` **on Windows** — the sandbox has no git identity (`user.name`/`user.email` unset)
+   and will not sign on the owner's behalf. Files are staged on `docs/merge-2026-08-31-claude-ai`.
+   ⚠️ ADR-011/ADR-015 and the 2026-08-25 session file were **already staged from 2026-08-25** and
+   carried onto this branch — commit them separately if you want a clean history.
+2. Answer `DOC-011`, then `SCOPE-02`.
+3. `git add turbo.json` in its own commit (`BUILD-001`).
+4. `git add --renormalize .` — still not run (`GIT-001`, ~118 phantom-modified files).
+5. Sweep `DOC-004` (HSK 1–6) and `DOC-009` (5433 / 27018 / local Mongo).
+
+---
+
 ## [2026-08-20] — Full docs/api translation to English — Antigravity — branch `chore/record-enforcement`
 
 **Done**:
@@ -241,19 +307,4 @@
 
 ---
 
-## [2026-08-11] — Resolve HSK 1–6 vs 1–9 conflict — Claude Code
-
-**Done**:
-- **HSK level range confirmed = 1–9** (user-confirmed 2026-08-11). Reverted the incorrect 2026-07-27 change: `project-brain.md` and this file now say 1–9, matching all of `docs/`. No `docs/` files needed changing — they were already correct.
-- Fixed broken path references to `ai/rules/coding-rules.md` → the file is actually `ai/rules/working-rules.md` (fixed in `CLAUDE.md`, `AGENTS.md`, `project-brain.md`, and the 07-27 entry below).
-
-**Temporary decisions to preserve**:
-- None.
-
-**Blocker / needs follow-up**:
-- 3 untracked docs are still uncommitted: `docs/entities/postgres/ENTITY_AI_USAGE_LOG.md`, `docs/shared/decisions/005-server-authoritative-exam.md`, `006-external-cron-scheduler.md`. Neither is referenced from `docs/entities/_INDEX.md` / the ADR list yet — check before Sprint 3/4.
-
-**Next steps**:
-- Sprint 0 per `docs/roadmap/SPRINT_PLAN.md` — plan presented, awaiting approval. Still no code in the repo.
-
----
+_(older entries removed per the 5-entry cap — they remain in git history.)_

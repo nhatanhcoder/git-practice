@@ -1,6 +1,11 @@
 # ⚠️ KNOWN_ISSUES.md — Known Issues & Limitations
 
 > Replaces Jira for a solo dev. Track bugs, limitations, and technical debt here.
+> **Append only.** Prefix IDs by lane: `API-###`, `WEB-###`, `GIT-###`, `DOC-###`, `BUILD-###`,
+> `DEBT-###`, `SCOPE-##`. **Never renumber and never reuse an ID** — check the list below before
+> assigning one. (A 2026-08-31 chat session, working from a stale copy, reissued `API-003`,
+> `DOC-006`, `DOC-007` and `SCOPE-01` for unrelated problems; those were renumbered on merge.)
+> Last reviewed: 2026-09-01 against the working tree at HEAD `d277ca1`.
 
 ---
 
@@ -130,7 +135,12 @@ page and looking at it — build success is not render correctness.
 ### [BUILD-001] `turbo.json` missing — `pnpm dev` / `pnpm build` fail at repo root
 
 **Severity**: High
-**Status**: Open
+**Status**: Open — **still open on a clean clone** (verified 2026-09-01)
+
+**Update 2026-09-01**: a `turbo.json` now exists in the working tree, but `git ls-files turbo.json`
+returns nothing — it is **untracked**, so it does not exist for CI or for anyone who clones. The
+eslint/prettier half is done (`eslint.config.mjs`, `.prettierrc`, `.npmrc` are present). Fix is now
+one line: `git add turbo.json` in its own commit.
 
 **Description**: Root `package.json` defines `dev`, `build`, `lint`, `type-check` as
 `turbo run <task>`, and `turbo` is in devDependencies, but there is **no `turbo.json`**.
@@ -171,7 +181,7 @@ git commit -m "chore: normalise line endings via .gitattributes"
 ### [GIT-002] `.idea/` still tracked despite being gitignored
 
 **Severity**: Low
-**Status**: Open
+**Status**: ✅ Resolved — verified 2026-08-25 and again 2026-09-01; `.idea/` is no longer tracked.
 
 **Description**: `.gitignore` lists `.idea/`, but the files were committed before that, so
 git keeps tracking them and they show as modified forever.
@@ -368,6 +378,178 @@ the missing codes. No module is allowed to invent its own codes.
 
 ---
 
+### [SCOPE-02] Product model is undecided: LMS vs single-user self-study
+
+**Severity**: Critical
+**Status**: Open — **blocks roadmap planning**
+
+**Description**: Every doc in this repo describes a multi-role LMS (Admin/Teacher/Student,
+classes, assignments, attendance, payroll, tuition). `PROJECT_KNOWLEDGE.md` §8 (F9–F16) describes
+a single-user self-study app — 10 static JSON content packs, XP, badges, imperial-exam ranks, a
+leaderboard of 20 simulated rivals, one demo progress profile. These are two different products,
+not two versions of one. Schema, RBAC and sprint order all depend on the answer.
+
+**Renamed**: raised as `SCOPE-01` by the 2026-08-31 session, which did not know `SCOPE-01` was
+already in use in `ai/PROGRESS.md` for the Classes/Enrollment scope question.
+
+**Important qualifier (2026-09-01)**: the self-study half rests entirely on
+`backend/data/content/`, which **is not in this repository** — see `DOC-011`. Until those files
+are located this may not be a conflict at all, just a spec for a different project that got
+merged into these docs.
+
+**Fix Plan**: locate the content (`DOC-011`) first, then the owner decides. Do not start work
+that assumes either answer.
+
+---
+
+### [DOC-011] `backend/data/content/` does not exist in this repo
+
+**Severity**: Critical
+**Status**: Open — **needs the owner**
+
+**Description**: `PROJECT_KNOWLEDGE.md` §8 and `COWORK_BOOTSTRAP.md` are both written around 10
+static JSON files at `backend/data/content/` (`grammar.json`, `writing.json`, `lego.json`,
+`exams.json`, `workplace.json`, `learning-path.json`, `badges.json`, `levels.json`,
+`leaderboard.json`, `foundation.json`) plus `backend/data/progress.default.json`.
+
+Verified 2026-09-01: there is **no `backend/` directory, no `content/` directory, and none of
+those filenames** anywhere in `D:\PersonalProject\Real` (excluding `node_modules`). The repo
+has exactly two apps, `apps/api` and `apps/web`.
+
+**Consequences**:
+- §8 (F9–F16) documents content nobody in this repo can read — it is a proposal, not a spec
+- `SCOPE-02` rests on evidence that is not here
+- The HSK 1–9 decision was re-justified on 2026-08-31 using these files; that justification is
+  unverifiable here. It does not matter — the range was already settled 2026-08-11 on repo
+  evidence (entity specs, `GLOSSARY.md`, `DATABASE_SCHEMA.md`, `CONVENTIONS.md`, `SPRINT_PLAN.md`)
+- `DEBT-003` (content data defects) cannot be actioned
+
+**Fix Plan**: the owner says where the content lives — another repo, an un-pushed local folder,
+or an older project. Then either bring it in under a decided path or delete §8. Do not plan
+F9–F16 until then.
+
+---
+
+### [DOC-008] `DECISIONS.md` is referenced but does not exist
+
+**Severity**: Medium
+**Status**: Open
+
+**Description**: `ai/PROGRESS.md` cites `DECISIONS.md` #3, #4 and #5 as the authority for the
+sprint structure, the question sub-type scope, and whether Sprint 6 is in scope.
+`ai/AI_CHAT_LOG.md` claims the file was created on 2026-07-18. The 2026-07-27 session removed a
+stale `ai/DECISIONS.md` reference from `AGENTS.md`, noting the file does not exist.
+
+Verified 2026-09-01: `find` across the repo returns no `DECISIONS.md`. Three documents point at a
+file nobody can read, and three real decisions have no recorded rationale — including the one
+currently holding all of Sprint 6 at `⏸`.
+
+**Fix Plan**: drop the references and record those three decisions as ADRs in
+`docs/shared/decisions/`, which is where architecture decisions already live. Do not create
+`DECISIONS.md` — it would be a second, competing decision store.
+
+---
+
+### [DOC-009] Stale local-infrastructure references (`5433`, `27018`, local Mongo)
+
+**Severity**: Medium
+**Status**: Open
+
+**Description**: Docs describing "Postgres 5433, Mongo 27018" predate PR #12, which renamed the
+Postgres service to `db`, switched the port to `${POSTGRES_PORT:-5432}`, renamed the database to
+`hsk_dev`, and dropped the local MongoDB container in favour of Atlas.
+
+**Fix Plan**: `grep -rn "5433\|27018" docs/ ai/ *.md` and fix every hit outside historical log
+entries.
+
+---
+
+### [DOC-010] `ai/PROGRESS.md` Sprint 0 does not match the working tree
+
+**Severity**: Medium
+**Status**: In Progress — corrected 2026-09-01, needs a second pass after the next merge
+
+**Description**: Sprint 0 was last verified 2026-08-14 and PR #12 has landed since. Verified
+2026-09-01:
+
+| Claim in `PROGRESS.md` (pre-fix) | Reality |
+|---|---|
+| `turbo.json` MISSING | exists on disk, **untracked** — see `BUILD-001` |
+| `apps/api/` does not exist | **exists** — NestJS scaffold, `prisma/schema.prisma`, `seed.ts`, health module, migration `20260820000000_init_users` |
+| `packages/types` directory missing | correct — **`packages/` does not exist at all** |
+| eslint ❌ / prettier ❌ | both exist (`eslint.config.mjs`, `.prettierrc`) |
+| husky ❌ | correct, still absent |
+
+The 2026-08-31 session asserted the opposite error — that the repo root "already contains a
+`packages/` directory". It does not.
+
+**Fix Plan**: re-verify item by item after each merge to `main`, not once per month.
+
+---
+
+### [DOC-012] Sprint count: `PROGRESS.md` and `PROJECT_KNOWLEDGE.md` §6 use 8 sprints, the plan has 10
+
+**Severity**: Medium
+**Status**: Open
+
+**Description**: `docs/roadmap/SPRINT_PLAN.md` is the authority and contains **S0–S9**, with
+Sprint 7 = Invoicing + Notifications, Sprint 8 = Skill Drill + Quiz Room + Leaderboard, Sprint 9 =
+Testing + Polish + Launch. `ai/context/project-brain.md` agrees.
+
+`ai/PROGRESS.md` and `PROJECT_KNOWLEDGE.md` §6 both run S0–S7 and both label S7 "Testing &
+Deploy", which is really S9. Anyone planning "Sprint 7" from `PROGRESS.md` will build the wrong
+thing.
+
+**Fix Plan**: renumber both against `SPRINT_PLAN.md`. Not done in the 2026-09-01 merge because it
+changes item identity across three files and deserves its own reviewed commit.
+
+---
+
+### [API-005] `.env.example` is missing the entire auth block
+
+**Severity**: High
+**Sprint**: Sprint 1
+**Status**: Open — **needs the owner's decision**
+
+**Description**: The `.env.example` that came in with PR #12 contains none of
+`JWT_ACCESS_SECRET`, `JWT_REFRESH_SECRET`, `JWT_ACCESS_TTL`, `JWT_REFRESH_TTL`, `BCRYPT_ROUNDS`,
+`COOKIE_DOMAIN`, `COOKIE_SECURE`, `CORS_ORIGIN`, `NEXT_PUBLIC_API_URL`. The older local version
+had all of them. `docs/api/modules/01-auth.md` is the only module spec in `accepted` status, so
+this is a real gap rather than a stylistic difference.
+
+**Renamed**: raised as `API-003` by the 2026-08-31 session; `API-003` was already taken by the
+payroll-period cancellation issue.
+
+**Workaround**: the old version is preserved at `_backup/env.example.local`.
+
+**Fix Plan**: do not touch auth until the block is agreed and restored.
+
+---
+
+### [GIT-003] Device mount forbids `unlink`, breaking git operations
+
+**Severity**: High
+**Status**: Open (environmental — no fix, only a workaround)
+
+**Description**: When the repo is reached through a device mount, `rm`/`unlink` returns
+`Operation not permitted`, but `mv` (rename) works. Git can create new files but cannot replace
+existing ones, so `git pull` / `merge` / `checkout <branch>` leave a half-applied working tree:
+new files appear untracked, the index is unchanged, and HEAD does not move.
+
+**Reproduce**: `git pull` from a sandbox with the repo on a device mount. Observed 2026-08-25 —
+54 files failed with `unable to unlink old '<path>'`.
+
+**Workaround**:
+- Clear a stuck `.git/index.lock` with `mv`, not `rm`
+- Sync manually: `git show origin/main:<path> > <path>` per file (overwrites in place, no unlink)
+  → `git update-ref refs/heads/main` → `git reset` (mixed)
+- Verify with `git diff HEAD` (empty) and `git fsck`
+- `git checkout -b <new-branch>` **is** safe — it creates a ref and touches no files
+- The sandbox has **no git identity** and will not sign commits on the owner's behalf. It can
+  stage; `git commit` happens on Windows.
+
+---
+
 ## Technical Debt
 
 ### [DEBT-001] No cross-DB transactions
@@ -392,6 +574,26 @@ the missing codes. No module is allowed to invent its own codes.
 
 ---
 
+### [DEBT-003] Content data defects in the F9–F16 source files
+
+**Severity**: Low
+**Status**: Open — **blocked by `DOC-011`** (the files are not in this repo)
+
+**Description**: Counting and balance problems reported by the 2026-08-31 session while writing
+`PROJECT_KNOWLEDGE.md` §8. Recorded here so they are not rediscovered; **not verifiable from this
+repo**, since the files are missing.
+- `grammar.json` declares 60 points; the per-level counts sum to 51
+- `与其…不如…` appears under both HSK 5 and HSK 8 — one must go
+- `writing.json` declares 60 characters; the per-level counts sum to about 65
+- `levels.json` XP curve is uneven: Cử nhân 24,000 → Cống sĩ 26,400 is a 2,400 gap, while
+  Cống sĩ → Tiến sĩ is 25,600
+- HSK 7–9 content is thin: 3–4 grammar points and ~2 characters per level
+
+**Fix Plan**: authoring work, not engineering. Locate the files first (`DOC-011`).
+
+---
+
 ## Resolved Issues
 
-*(To be updated as bugs are fixed)*
+- **`GIT-002`** `.idea/` tracked in git — resolved, verified 2026-08-25 and 2026-09-01.
+  (Entries stay in place above with a resolved status; this list is the index.)

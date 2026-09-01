@@ -4,7 +4,7 @@
 >
 > **Problem this file solves**: these chat sessions do *not* automatically know about each other. Asking Claude.ai today and ChatGPT tomorrow about the same problem without logging it → you risk getting two different answers and not knowing which one was applied, or repeating a question that already has an answer.
 >
-> **Most important principle**: any conclusion with lasting value from here must be **moved into DECISIONS.md / PROGRESS.md** — the AI chat tool itself (Claude.ai, ChatGPT...) can't read this file in a later session without persistent memory, so don't let a decision live only here.
+> **Most important principle**: any conclusion with lasting value from here must be **moved into PROGRESS.md / KNOWN_ISSUES.md / PROJECT_KNOWLEDGE.md** (`DECISIONS.md` is referenced across the repo but has never existed — DOC-008) — the AI chat tool itself (Claude.ai, ChatGPT...) can't read this file in a later session without persistent memory, so don't let a decision live only here.
 
 ---
 
@@ -12,7 +12,9 @@
 
 | Date | Tool | Topic | Conclusion / decision | Moved to DECISIONS/PROGRESS? | Link (if shareable) |
 |---|---|---|---|---|---|
-| 2026-07-18 | Claude.ai | Design a tracking file set for the project | Created AGENTS.md, CLAUDE.md, DECISIONS.md, PROGRESS.md, HANDOFF.md, AI_CHAT_LOG.md | ✅ (these files themselves) | — |
+| 2026-07-18 | Claude.ai | Design a tracking file set for the project | Created AGENTS.md, CLAUDE.md, DECISIONS.md, PROGRESS.md, HANDOFF.md, AI_CHAT_LOG.md ⚠️ **DECISIONS.md was never actually created — see DOC-008** | ✅ (these files themselves) | — |
+| 2026-08-31 | Claude Opus 5 (Claude.ai) | Merge F9–F16 learning content into the docs; full conflict review + English translation | Drafted PROJECT_KNOWLEDGE.md §8 (F9–F16) and §9 (conflict register); re-derived HSK 1–9; proposed widening the skill enum 3→7 and 7 new Postgres progress tables. **Ran without repo access** — rewrote 5 tracked files from stale July copies and reused live issue IDs | 🟡 Partly — see the 2026-09-01 row | — |
+| 2026-09-01 | Claude Opus 5 (Cowork, device mount) | Verify that session against the real repo and merge what survived | Kept the repo versions of KNOWN_ISSUES/PROGRESS/HANDOFF/working-rules/multi-agent-workflow; merged only new material under new IDs (SCOPE-02, DOC-008…012, API-005, GIT-003, DEBT-003, CR-## register). Closed CR-2 (10 sprints), CR-6 (one backend), CR-19 (`packages/types`), CR-7 (partly false). Found `backend/data/content/` **absent from the repo** → DOC-011 | ✅ PROJECT_KNOWLEDGE.md §9, KNOWN_ISSUES.md, PROGRESS.md Sprint 0 + 5b, working-rules § Conflict Rules | — |
 | | | | | | |
 
 **How to fill in the "Tool" column**: include name + version if you remember it (e.g. `Claude Opus 4.8`, `ChatGPT-5.2`, `Gemini 3 Pro`) — since different models can give different answers, this is useful for cross-checking later.
