@@ -1,0 +1,62 @@
+.titleRow{margin-bottom:24px}
+.eyebrow{margin:0 0 4px;color:#2563eb;font-size:11px;font-weight:600;letter-spacing:.08em}
+.titleRow h1{margin:0;color:#0f172a;font-family:Lexend,sans-serif;font-size:26px;font-weight:600;line-height:1.2}
+.subtitle{margin:4px 0 0;color:#475569;font-size:14px}
+.statStrip{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px}
+.statCard{display:flex;align-items:center;gap:12px;padding:16px;border:1px solid #e2e8f0;border-radius:8px;background:#fff;box-shadow:0 1px 2px rgba(15,23,42,.05)}
+.statIcon{display:grid;width:40px;height:40px;flex-shrink:0;place-items:center;border-radius:8px;background:#eff6ff;color:#2563eb}
+.statCard div{display:flex;flex-direction:column;min-width:0}
+.statCard small{color:#64748b;font-size:11.5px;font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+.statCard strong{overflow:hidden;color:#0f172a;font-family:Lexend,sans-serif;font-size:17px;font-weight:600;text-overflow:ellipsis;white-space:nowrap;font-variant-numeric:tabular-nums}
+.statCard em{color:#64748b;font-size:11.5px;font-style:normal}
+.errorBanner{display:flex;align-items:center;gap:12px;margin-bottom:16px;padding:13px 15px;border:1px solid #fecaca;border-radius:8px;background:#fff7f7;color:#b91c1c;flex-wrap:wrap}
+.errorBanner button{padding:7px 13px;border:1px solid #fecaca;border-radius:6px;background:#fff;color:#b91c1c;font-weight:600;cursor:pointer}
+.tableCard{overflow:hidden;border:1px solid #e2e8f0;border-radius:8px;background:#fff;box-shadow:0 1px 2px rgba(15,23,42,.05)}
+.tableWrap{width:100%}
+.table{width:100%;border-collapse:collapse;text-align:left;table-layout:fixed}
+.table th{height:40px;padding:0 16px;border-bottom:1px solid #e2e8f0;background:#f8fafc;color:#475569;font-size:11.5px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;white-space:nowrap}
+.table th:nth-child(1){width:22%}.table th:nth-child(2){width:20%}.table th:nth-child(3){width:14%}.table th:nth-child(4){width:20%}.table th:nth-child(5){width:24%}
+.table td{padding:13px 16px;border-bottom:1px solid #e2e8f0;color:#334155;font-size:13.5px;vertical-align:middle}
+.table tbody tr{cursor:pointer;transition:background-color .12s}
+.table tbody tr:hover,.table tbody tr:focus{background:#f8fafc;outline:0}
+.table tbody tr:last-child td{border-bottom:0}
+.periodName{color:#0f172a;font-family:Lexend,sans-serif;font-weight:600}
+.numeric{font-variant-numeric:tabular-nums}
+.skeletonRow{display:grid;height:56px;grid-template-columns:22% 20% 24% 20%;align-items:center;gap:18px;padding:0 16px;border-bottom:1px solid #e2e8f0}
+.skeletonRow span{height:12px;border-radius:4px;background:linear-gradient(90deg,#e2e8f0 25%,#f8fafc 50%,#e2e8f0 75%);background-size:200% 100%;animation:shimmer 1.4s infinite}
+.emptyState{display:flex;min-height:300px;flex-direction:column;align-items:center;justify-content:center;padding:40px;text-align:center}
+.emptyState>svg{color:#94a3b8;opacity:.45}
+.emptyState h2{margin:16px 0 6px;font-family:Lexend,sans-serif;font-size:18px}
+.emptyState p{margin:0;color:#64748b;max-width:380px}
+.mobileList{display:none}
+.mobileCard{padding:16px;border-bottom:1px solid #e2e8f0;cursor:pointer}
+.mobileCardHead{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.mobileMeta{margin:8px 0 0;color:#64748b;font-size:12.5px}
+.drawerBackdrop{position:fixed;inset:0;z-index:70}
+.drawerScrim{position:absolute;inset:0;border:0;background:rgba(15,23,42,.4);cursor:default}
+.drawer{position:absolute;top:0;bottom:0;right:0;display:flex;width:100%;max-width:560px;flex-direction:column;background:#fff;box-shadow:-12px 0 40px rgba(15,23,42,.18)}
+.drawerHead{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;border-bottom:1px solid #e2e8f0;padding:16px 20px}
+.drawerHead h2{margin:0 0 6px;font-family:Lexend,sans-serif;font-size:16px;font-weight:600}
+.drawerHead p{display:flex;align-items:center;gap:6px;margin:0;color:#64748b;font-size:12px}
+.drawerClose{display:grid;width:32px;height:32px;flex-shrink:0;place-items:center;border:0;border-radius:6px;background:transparent;color:#475569;cursor:pointer}
+.drawerClose:hover{background:#f1f5f9}
+.drawerBody{flex:1;overflow-y:auto;padding:16px 20px}
+.sessionTable{width:100%;border-collapse:collapse;text-align:left}
+.sessionTable th{height:36px;border-bottom:1px solid #e2e8f0;color:#64748b;font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;white-space:nowrap}
+.sessionTable td{padding:10px 8px;border-bottom:1px solid #e2e8f0;color:#334155;font-size:12.5px;vertical-align:top}
+.sessionTable tbody tr:last-child td{border-bottom:0}
+.sessionCell{display:flex;min-width:0;flex-direction:column}
+.sessionCell strong{color:#0f172a;font-size:12.5px;font-weight:600}
+.sessionCell small{color:#64748b;font-size:11.5px}
+.drawerFoot{display:flex;align-items:baseline;justify-content:space-between;border-top:1px solid #e2e8f0;padding:14px 20px;color:#475569;font-size:13px}
+.drawerFoot strong{color:#0f172a;font-family:Lexend,sans-serif;font-size:19px;font-weight:600;font-variant-numeric:tabular-nums}
+@keyframes shimmer{to{background-position:-200% 0}}
+@media(max-width:1024px){.statStrip{grid-template-columns:1fr}}
+@media(max-width:767px){
+.titleRow h1{font-size:24px}
+.statStrip{grid-template-columns:1fr}
+.tableWrap{display:none}
+.mobileList{display:block}
+.drawer{max-width:100%}
+.errorBanner button{margin-left:0}
+}
