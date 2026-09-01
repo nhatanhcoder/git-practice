@@ -1,0 +1,76 @@
+.titleRow{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;margin-bottom:20px}
+.eyebrow{margin:0 0 4px;color:#2563eb;font-size:11px;font-weight:600;letter-spacing:.08em}
+.titleRow h1{margin:0;color:#0f172a;font-family:Lexend,sans-serif;font-size:25px;font-weight:600;line-height:1.25}
+.subtitle{margin:4px 0 0;color:#475569;font-size:13.5px}
+.primaryButton{display:inline-flex;height:38px;align-items:center;gap:7px;padding:0 16px;border:0;border-radius:6px;background:#0f172a;color:#fff;font-size:13px;font-weight:600;cursor:pointer}
+.primaryButton:hover{background:#1e293b}
+.primaryButton:disabled{cursor:not-allowed;opacity:.5}
+.tabRow{display:flex;gap:4px;margin-bottom:16px;border-bottom:1px solid #e2e8f0}
+.tab{display:inline-flex;align-items:center;padding:10px 16px;border-bottom:2px solid transparent;color:#475569;font-size:13.5px;font-weight:600;text-decoration:none;cursor:pointer}
+.tab:hover{color:#0f172a}
+.tabActive{border-bottom-color:#2563eb;color:#2563eb}
+.listCard{overflow:visible;border:1px solid #e2e8f0;border-radius:8px;background:#fff;box-shadow:0 1px 2px rgba(15,23,42,.05)}
+.lessonList{margin:0;padding:0;list-style:none}
+.lessonRow{display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid #e2e8f0;background:#fff;transition:background-color .12s}
+.lessonRow:last-child{border-bottom:0}
+.lessonRow:hover{background:#f8fafc}
+.rowDragging{opacity:.45}
+.rowDisabled{cursor:not-allowed}
+.dragHandle{display:grid;color:#94a3b8;cursor:grab}
+.dragHandle:active{cursor:grabbing}
+.orderNo{width:24px;text-align:right;color:#64748b;font-size:12.5px;font-weight:700;font-variant-numeric:tabular-nums}
+.contentType{display:grid;width:34px;height:34px;place-items:center;border-radius:6px;background:#eff6ff;color:#2563eb;flex-shrink:0}
+.lessonInfo{display:flex;min-width:0;flex:1;flex-direction:column}
+.lessonInfo strong{overflow:hidden;color:#0f172a;font-size:13.5px;font-weight:600;text-overflow:ellipsis;white-space:nowrap}
+.lessonInfo small{overflow:hidden;color:#64748b;font-size:12px;text-overflow:ellipsis;white-space:nowrap}
+.rowActions{display:flex;align-items:center;gap:2px;flex-shrink:0}
+.moveButton{display:grid;width:30px;height:30px;place-items:center;border:0;border-radius:5px;background:transparent;color:#64748b;cursor:pointer}
+.moveButton:hover:not(:disabled){background:#e2e8f0;color:#0f172a}
+.moveButton:disabled{opacity:.3;cursor:not-allowed}
+.menuWrap{position:relative}
+.moreButton{display:grid;width:34px;height:34px;place-items:center;border:0;border-radius:6px;background:transparent;color:#475569;cursor:pointer}
+.moreButton:hover{background:#e2e8f0}
+.actionMenu{position:absolute;top:40px;right:0;z-index:20;width:132px;padding:5px;border:1px solid #e2e8f0;border-radius:7px;background:#fff;box-shadow:0 10px 30px rgba(15,23,42,.13);text-align:left}
+.actionMenu button{display:flex;width:100%;align-items:center;gap:8px;padding:8px 9px;border:0;border-radius:5px;background:transparent;color:#334155;font-size:13px;text-align:left;cursor:pointer}
+.actionMenu button:hover{background:#f1f5f9}
+.actionMenu .dangerAction{color:#dc2626}
+.skeletonRow{display:grid;height:58px;grid-template-columns:40px 34px 1fr 100px;align-items:center;gap:12px;padding:0 16px;border-bottom:1px solid #e2e8f0}
+.skeletonRow span{height:12px;border-radius:4px;background:linear-gradient(90deg,#e2e8f0 25%,#f8fafc 50%,#e2e8f0 75%);background-size:200% 100%;animation:shimmer 1.4s infinite}
+.emptyState{display:flex;min-height:300px;flex-direction:column;align-items:center;justify-content:center;padding:40px;text-align:center}
+.emptyState>svg{color:#94a3b8;opacity:.45}
+.emptyState h2{margin:16px 0 6px;font-family:Lexend,sans-serif;font-size:18px}
+.emptyState p{margin:0 0 18px;color:#64748b}
+.errorBanner{display:flex;align-items:center;gap:12px;margin-bottom:16px;padding:13px 15px;border:1px solid #fecaca;border-radius:8px;background:#fff7f7;color:#b91c1c}
+.errorBanner div{display:flex;flex:1;flex-direction:column}
+.errorBanner span{color:#7f1d1d;font-size:13px}
+.errorBanner button{padding:7px 13px;border:1px solid #fecaca;border-radius:6px;background:#fff;color:#b91c1c;font-weight:600;cursor:pointer}
+.notFound{display:flex;min-height:340px;flex-direction:column;align-items:center;justify-content:center;padding:40px;border:1px dashed #cbd5e1;border-radius:8px;background:#fff;text-align:center}
+.notFound>svg{color:#94a3b8;opacity:.45}
+.notFound h2{margin:16px 0 6px;font-family:Lexend,sans-serif;font-size:18px}
+.notFound p{margin:0 0 18px;color:#64748b}
+.modalBackdrop{position:fixed;inset:0;z-index:80;display:grid;place-items:center;padding:16px;background:rgba(15,23,42,.4)}
+.modal{width:min(460px,100%);max-height:calc(100vh - 32px);overflow-y:auto;padding:24px;border-radius:8px;background:#fff;box-shadow:0 20px 25px -5px rgba(15,23,42,.15)}
+.modal h2{margin:0 0 16px;font-family:Lexend,sans-serif;font-size:17px;font-weight:600}
+.field{display:flex;flex-direction:column;gap:6px;margin:0 0 14px;border:0;padding:0}
+.field>span{color:#475569;font-size:12px;font-weight:600}
+.field input,.field textarea{padding:9px 11px;border:1px solid #cbd5e1;border-radius:6px;background:#fff;color:#0f172a;font:inherit;font-size:13.5px}
+.field input:focus,.field textarea:focus{border-color:#2563eb;box-shadow:0 0 0 2px rgba(37,99,235,.14);outline:0}
+.contentTypePicker{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.typeOption{display:inline-flex;height:40px;align-items:center;justify-content:center;gap:8px;border:1px solid #cbd5e1;border-radius:6px;background:#fff;color:#334155;font-size:13px;font-weight:600;cursor:pointer}
+.typeOption:hover{border-color:#94a3b8}
+.typeActive{border-color:#2563eb;background:#eff6ff;color:#2563eb}
+.hint{margin:0 0 4px;color:#92400e;font-size:12px}
+.warnNote{margin:0;padding:10px 12px;border-radius:6px;background:#fffbeb;color:#92400e;font-size:12.5px;line-height:1.5}
+.modalActions{display:flex;justify-content:flex-end;gap:10px;margin-top:18px}
+.modalActions button{height:38px;padding:0 16px;border-radius:6px;font-weight:600;cursor:pointer}
+.cancelButton{border:0;background:#f1f5f9;color:#475569}
+@keyframes shimmer{to{background-position:-200% 0}}
+@media(max-width:767px){
+.titleRow{align-items:flex-start;flex-direction:column;gap:14px}
+.titleRow h1{font-size:22px}
+.dragHandle{display:none}
+.lessonRow{flex-wrap:wrap}
+.lessonInfo{flex-basis:calc(100% - 90px)}
+.errorBanner{align-items:flex-start;flex-wrap:wrap}
+.errorBanner button{margin-left:31px}
+}

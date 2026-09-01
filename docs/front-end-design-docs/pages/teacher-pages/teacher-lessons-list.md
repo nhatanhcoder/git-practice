@@ -2,7 +2,7 @@
 feature: T-LESSON-1, T-LESSON-2, T-LESSON-4, T-LESSON-5
 role: teacher
 route: /teacher/classes/[classId]/lessons
-status: contracted
+status: built
 last_updated: 2026-09-01
 ---
 

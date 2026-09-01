@@ -70,6 +70,32 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
   **`/teacher/classes/[classId]/lessons` is contracted but every action is `⛔` blocked** —
   `API_TEACHER.md` turns out to have no Lessons section at all (`KNOWN_ISSUES.md` `API-007`);
   do not build this screen until that API exists.
+- 🔶 (opencode · 2026-09-01) **Built the 4 Teacher S2 screens** from the contracts above:
+  `/teacher` (dashboard, class-card grid, no KPI row per contract), `/teacher/classes`
+  (filter + table + create modal + archive), `/teacher/classes/[classId]` (header, code
+  panel with copy/regenerate, roster with "—" for avg score & attendance),
+  `/teacher/classes/[classId]/lessons` (drag + button reorder, create/edit/delete modals —
+  every action MOCK(⛔) local-only, API-007). Pattern: Admin screens (CSS modules,
+  `status.ts` badges, REVIEW-STATE switcher, mobile card lists); shared
+  `components/teacher/teacher-shell` + `teacher-widgets`; mock data in
+  `lib/teacher-data.ts`. **Fully mocked, no API calls.** `pnpm --filter web build` exit 0
+  (28 routes), `check:docs` 8/8. Contracts → `built`, `_INDEX` Design = v1. Lane:
+  `apps/web/**` = codex's lane; solo agent, flip recorded here per
+  `multi-agent-workflow.md` §1. Does NOT satisfy S2 DoD (needs the real join-class flow).
+- 🔶 (opencode · 2026-09-01) **Contracts + build for the remaining 5 Teacher areas**
+  (completes the sidebar): `/teacher/questions` (T-QB), `/teacher/assignments` (T-ASGN),
+  `/teacher/grading` (T-GRADE, AI-suggest mock), `/teacher/sessions` (T-SES, state machine
+  per FLOW_SESSION_ATTENDANCE), `/teacher/income` (T-INC, view-only). Contracts + flow-map
+  v2 section written this session; all error codes recorded as `TODO(error-code)` — none
+  invented. Screens fully mocked, Admin pattern. Lane: same flip as above.
+  **BUILT same session** — all 5 screens live in `apps/web/**` (build exit 0, 33 routes,
+  check-docs 8/8): question bank with skill/sub-type/HSK filters + create/edit modal
+  (delete gated by usageCount per F3.6), assignments 2-step create wizard + question picker
+  + submission-stats drawer (edit/delete locked when submittedCount>0 per T-ASGN-5), grading
+  queue + drawer with per-question score/feedback + writing-only AI-suggest mock + finish
+  gating, sessions with scheduled→completed_pending machine (start/attendance/submit) +
+  rejection-reason modal, income view-only with period drawer (money display-only, from
+  envelope totals — no client arithmetic). Sidebar: 7 live items + Analytics disabled (S5).
 - **DoD**: Teacher creates class → student joins via code → teacher sees the student in the list
 
 ## Sprint 3 — Question Bank & Assignments
