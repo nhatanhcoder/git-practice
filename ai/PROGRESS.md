@@ -1,6 +1,11 @@
 # PROGRESS.md — Project Progress
 
-> Sprint structure follows PROJECT_KNOWLEDGE.md (see DECISIONS.md #3 — not yet officially finalized).
+> Sprint structure below follows `PROJECT_KNOWLEDGE.md` §6, which is an **8-sprint (S0–S7)**
+> shape. ⚠️ `docs/roadmap/SPRINT_PLAN.md` — the authority — has **10 sprints (S0–S9)**, and
+> "Sprint 7" here is really Sprint 9 there. Renumbering is tracked as **DOC-012**; until it is
+> done, quote sprint numbers from `SPRINT_PLAN.md`, not from this file.
+> ⚠️ `DECISIONS.md` #3 was cited as the authority for this structure. **That file does not exist**
+> anywhere in the repo (verified 2026-09-01) — see **DOC-008**.
 > **Initial state**: it has not been verified whether any real code exists in the repo yet — everything stays `⬜` until checked against reality. Don't trust this file's status more than actual code; if in doubt, run `pnpm build` / open the repo to check before reporting something as "done".
 >
 > Legend: `⬜ Not started` · `🔶 In progress` · `✅ Done` · `⛔ Blocked` · `⏸ Deferred/out of scope`
@@ -12,18 +17,29 @@
 ---
 
 ## Sprint 0 — Foundation
-_(verified against the repo 2026-08-14 — do not mark anything here without checking disk)_
-- 🔶 pnpm workspace ✅ / **`turbo.json` MISSING** — root `package.json` runs `turbo run dev`,
-      so `pnpm dev` and `pnpm build` fail at the repo root today / eslint ❌ / prettier ❌ /
-      husky ❌
-- ⬜ NestJS app (`apps/api`) + Prisma + Mongoose + Swagger + Global Pipes/Filters — `apps/api/` does not exist
+_(re-verified against the working tree 2026-09-01, after PR #12 — do not mark anything here
+without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
+- 🔶 pnpm workspace ✅ / eslint ✅ (`eslint.config.mjs`) / prettier ✅ (`.prettierrc`) /
+      **`turbo.json` exists on disk but is UNTRACKED in git** — `git ls-files turbo.json` is
+      empty, so `pnpm dev` / `pnpm build` still fail on a clean clone and in CI (`BUILD-001`;
+      one-line fix: `git add turbo.json`) / husky ❌
+- 🔶 NestJS app (`apps/api`) **now exists** (PR #12, 2026-08-20): `src/main.ts`,
+      `app.module.ts`, `src/health/`, `src/prisma/`, `nest-cli.json`, `prisma/schema.prisma`,
+      `prisma/seed.ts`, `scripts/check-db.ts`, migration `20260820000000_init_users`.
+      **Mongoose ❌, Swagger ❌, global pipes/filters ❌** — not present in `app.module.ts`.
+      Implements no features; only Auth (`01-auth.md`) is ready to code
 - 🔶 Next.js app (`apps/web`) ✅ Next 14 + TS + Tailwind scaffolded and building.
       **Axios interceptors ❌, Zustand skeleton ❌, shadcn/ui ❌** — `axios`,
       `@tanstack/react-query` and `zustand` are in `package.json` but **not imported by a
       single file**
-- ⬜ Supabase PostgreSQL + MongoDB Atlas init, first migration + seed script
-- ⬜ `packages/types` — declared in `pnpm-workspace.yaml`, directory missing. Blocks the whole
-      contract-first mechanism (`multi-agent-workflow.md` §4)
+- ⬜ Supabase PostgreSQL + MongoDB Atlas init, first migration + seed script — the local
+      migration exists; hosted instances unverified. PR #12 dropped the local Mongo container
+      in favour of Atlas and renamed the Postgres service to `db` on `${POSTGRES_PORT:-5432}`,
+      database `hsk_dev` (docs still say 5433/27018 — `DOC-009`)
+- ⬜ `packages/types` — `pnpm-workspace.yaml` declares `packages/*`, but **`packages/` does not
+      exist at all** (not an empty directory — absent). Blocks the whole contract-first
+      mechanism (`multi-agent-workflow.md` §4). Naming settled: `packages/types`, not
+      `packages/shared-types` (`PROJECT_KNOWLEDGE.md` §9 CR-19)
 - ⬜ `.gitattributes` normalisation run (`git add --renormalize .`) — file added 2026-08-14,
       **not yet applied**; ~118 files still show as modified with no content change
 - **DoD**: API runs on :3001 (Swagger `/api`), Web runs on :3000 and connects to API, CI passes lint+build
@@ -48,7 +64,7 @@ _(verified against the repo 2026-08-14 — do not mark anything here without che
 
 ## Sprint 3 — Question Bank & Assignments
 - ⬜ F3.1 Create MCQ question · ⬜ F3.2 Listening · ⬜ F3.3 Reading · ⬜ F3.4 Writing
-- ⬜ (see DECISIONS.md #4) Support all 9 sub-types or just the 4 basic ones
+- ⬜ Support all 9 sub-types or just the 4 basic ones — *(cited `DECISIONS.md` #4, which does not exist — **DOC-008**)*
 - ⬜ F3.5 Search & filter questions (Chinese full-text search)
 - ⬜ F3.6 Edit/delete question (soft delete if already used)
 - ⬜ F4.1 Create Assignment · ⬜ F4.2 Create Mock Test · ⬜ F4.3 Edit/delete Assignment
@@ -67,15 +83,53 @@ _(verified against the repo 2026-08-14 — do not mark anything here without che
 - ⬜ F7.3 SRS review session (SM-2 algorithm — full formula in PROJECT_KNOWLEDGE.md 4.3)
 - ⬜ F7.4 Review stats (streak, cards learned)
 - ⬜ F6.1 Weekly skill heatmap · ⬜ F6.2 Progress chart
+      *(if F9–F16 ever land, `SkillScore.skill` widens 3 → 7 values — `PROJECT_KNOWLEDGE.md` §8. Blocked, see Sprint 5b)*
 - ⬜ F6.3 Class dashboard (Teacher) · ⬜ F6.4 API Quota Monitoring (Admin)
 - **DoD**: Rating a card reschedules it correctly per SM-2. Teacher sees red alerts for weak students.
 
 ## Sprint 6 — Attendance, Payroll, Tuition ⚠️
-> **Not yet confirmed in scope — see DECISIONS.md #5**
+> **Marked out of scope here, but this file is the outlier.** `PROJECT_KNOWLEDGE.md` §6 and
+> `docs/roadmap/SPRINT_PLAN.md` both specify Sprint 6 in full with a DoD, and the authority cited
+> for holding it (`DECISIONS.md` #5) **does not exist** (**DOC-008**). Two of three sources say
+> in scope. Owner decides — `PROJECT_KNOWLEDGE.md` §9 **CR-13**.
 - ⏸ ClassSession + SessionAttendance (attendance)
 - ⏸ TeacherPayRate + PayrollPeriod (teacher payroll)
 - ⏸ StudentTuitionRate + StudentInvoice + TuitionPayment (tuition, VietQR)
 - ⏸ F8.1–F8.5 In-app notifications (partly tied to this module, the rest belongs to Sprint 4)
+
+## Sprint 5b — Learning Content Modules (F9–F16) 🆕
+> Added 2026-09-01 from `PROJECT_KNOWLEDGE.md` §8. **Position in the sprint order is a
+> placeholder** — it has never been agreed, and it does not appear in `SPRINT_PLAN.md`.
+- ⛔ **BLOCKED — DOC-011**: the 10 JSON source files (`backend/data/content/`) are **not in this
+      repo**. Nothing below can be specified, let alone built, until they are located
+- ⛔ **BLOCKED — SCOPE-02**: F9–F16 assume single-user self-study; the rest of this plan assumes a
+      multi-role LMS. Two different products
+- ⬜ Content loader: read + validate the JSON files, schema guards
+- ⬜ F9 Pronunciation foundation (pinyin table, tones, tone sandhi, 214 radicals, 4 PDFs)
+- ⬜ F10 Grammar points (browse, auto-generate exercises from `tokens`, progress)
+- ⬜ F11 Character writing (stroke-order animation, canvas practice, radical breakdown)
+- ⬜ F12 Lego sentence builder (7 stations, drag-drop with S/T/P/A/V/O/C/Q roles, endless mode)
+- ⬜ F13 HSK mock exams (11 exams / 161 questions, real timers, skill breakdown → `SkillScore`)
+- ⬜ F14 Workplace roleplay (6 scenarios, multi-turn, keyword scoring)
+- ⬜ F15 Learning path (2 curricula, topic map, side quests, 3 bosses)
+- ⬜ F16 Gamification (XP, 9 named levels, 6 imperial-exam ranks, streaks, 20 badges, leaderboard)
+- ⬜ 7 new Postgres tables per `PROJECT_KNOWLEDGE.md` §8.9 + Prisma migration
+- ⬜ Widen the `skill` / `skillType` enums 3 → 7 (`grammar`, `character`, `speaking`,
+      `pronunciation`) — affects `Assignment.skillType`, `SkillScore.skill`, `Question.skill`
+- ⬜ Answer the 5 open questions in `PROJECT_KNOWLEDGE.md` §8.10
+- **DoD**: a learner can go pronunciation → grammar → character → Lego → mock exam, with
+      XP/streak/badges updating correctly
+
+> ⚠️ **Do not confuse this with the built Student mockups.** `apps/web/src/app/student/**` already
+> renders foundation, grammar and learning-path screens — all **fully mocked**, no API, built as a
+> visual spike (see § Off-sprint). They are not F9–F16.
+
+### Content data fixes needed first (DEBT-003 — blocked by DOC-011)
+- ⬜ Grammar count mismatch: declared 60, per-level sum = 51
+- ⬜ `与其…不如…` duplicated at both HSK 5 and HSK 8 — drop one
+- ⬜ Character count mismatch: declared 60, per-level sum ≈ 65
+- ⬜ XP curve broken: Cử nhân 24,000 → Cống sĩ 26,400 (2,400 gap) vs → Tiến sĩ 52,000 (25,600)
+- ⬜ HSK 7–9 content thin (3–4 grammar points, ~2 characters per level)
 
 ## Sprint 7 — Testing & Deploy
 - ⬜ Unit tests: Auth, Class, Question, Attempt, SRS
@@ -111,6 +165,43 @@ _(verified against the repo 2026-08-14 — do not mark anything here without che
 ## Off-sprint / spike
 _(work done outside sprint order. Recorded so another agent does not rebuild it, and so
 nobody mistakes a mock for a finished feature. See `working-rules.md` § Definition of Done.)_
+
+- 🔶 **First four Student mockup pages BUILT** — 2026-08-28 (opencode, mockup mode per
+      `docs/prompts/student-product/`). `apps/web/src/app/student/**`:
+      `/student` (dashboard: continue-learning, XP/streak/daily-goal, HSK 1–9 strip + level
+      drawer, review queue, activity, quick links), `/student/learning-path` (2 curricula,
+      HSK 1–9 selector, Map/List toggle, RPG nodes: lesson/side-quest/boss with 4 states,
+      node drawer, force-unlock demo costing 100 XP via zustand XP store; Han Yu 7–9 shows a
+      designed empty state), `/student/grammar` (search + HSK + category filters, mastery ring,
+      card grid, detail drawer with 5 exercise mini-demos incl. interactive reorder & match),
+      `/student/foundation` (5 tabs: 21 initials + 36 finals with IPA, 4 tone-contour SVG cards
+      + sandhi, **full 214 Kangxi radicals browser** with search/stroke filters + drawer,
+      listening/speaking practice cards with play/record placeholder states, 4 PDF download
+      cards). Plus student shell (sidebar + mobile bottom nav + menu sheet), 5 "coming soon"
+      stub routes, `student.css` tokens + tailwind `sp-*` palette (Nunito/DM Sans, indigo
+      #4F46E5 + orange #EA580C from ui-ux-pro-max "Educational App" palette — allowed in
+      mockup mode). All 9 routes × 4 demo states (ready/loading/empty/error) via in-page
+      switcher. **Fully mocked** — every data file in `src/lib/student/*` is `MOCK(student)`;
+      no API, no auth. Also fixed pre-existing `pnpm check:docs` failures in uncommitted
+      `STUDENT_UI_UX.md` (flashcard paths lacked `/student` prefix; dashboard-gap wording
+      tripped the endpoint regex). Build verified: `pnpm --filter web build` exit 0, 24 routes.
+      Next per mockup build order: Character Writing, Mistake Notebook/SRS, CBT Exam Room.
+- ✅ **Student product coding prompts** — 2026-08-26. Added `docs/prompts/student-product/`
+  with a master implementation prompt and page prompts for Student Dashboard, HSK Learning
+  Path, Grammar, Foundation, Workplace, CBT Exams, Mistake Notebook/SRS, Lego Word Order,
+  Character Writing, and Leaderboard/Streak/Badges. Scope is HSK 1–9. Music/Karaoke, PK Arena,
+  and AI Mentor/Tiểu Long are explicitly removed. Prompts require real API persistence,
+  RBAC, UI states, idempotency and tests; they do not represent implemented features.
+- ✅ Added `00-build-first-four-pages-ui-ux-pro-max.md` — implementation prompt for the first
+  four Student pages with verified `ui-ux-pro-max` search guidance and repository-token precedence.
+- ✅ **Student prompts switched to new-design mockup mode** — 2026-08-26. Prompt folder now
+  explicitly permits a fresh visual system, local mock data/state and frontend-only routes;
+  production flow-mapper/Page Contract/backend requirements were removed from all Student prompts.
+- ✅ **`hsk-learning-ia` project skill** — 2026-08-26. Adapted the supplied IELTS/TID learning
+  IA into an HSK 1–9 Student-product skill covering routes, hub hierarchy, learning modes,
+  progress loops and separate mockup/production behavior.
+- ✅ Added cross-agent usage adapters for Claude Code, Antigravity, generic agents and
+  Cursor/Windsurf/Cline/Roo Code in `docs/prompts/student-product/11-agent-adapters-hsk-learning-ia.md`.
 
 - ✅ **Doc-check clean-clone parity** — 2026-08-18. `check-docs.mjs` now ignores locally
   installed, Git-ignored vendored skills consistently in local and CI runs. The project-owned
@@ -227,8 +318,8 @@ _(discovered while mapping the Admin UI — 2026-08-13)_
 
 ## Backend — module spec
 
-_(specs written 2026-08-19, `docs/api/modules/`. No backend code exists yet.
-`apps/api` does not exist, `packages/` is still empty.)_
+_(specs written 2026-08-19, `docs/api/modules/`. **Updated 2026-09-01**: `apps/api` now exists
+(PR #12 scaffold + `User` migration) but implements no module; `packages/` does not exist at all.)_
 
 | # | Module | Spec | Status | INV | Blocked by |
 |---|---|---|---|---|---|
@@ -252,7 +343,7 @@ replaces coverage %.
   ADR-012 payroll · ADR-013 tuition · ADR-014 Gemini key
 - ⬜ `packages/types` — transport contract (OpenAPI/Zod). Nest DTOs implement it,
   **not** generated from Nest DTOs
-- ⬜ `turbo.json` (BUILD-001) — already have 2 apps, cannot defer any longer
+- ⬜ `turbo.json` (BUILD-001) — file exists on disk but is **untracked**; `git add turbo.json`
 - ⬜ Phase 1 infra: envelope interceptor · exception filter · error enum ·
   Prisma + migration `User` · Swagger `/api` · `/health` + `/ready` · CI + migration rehearsal
 - ⬜ Phase 2: Auth module

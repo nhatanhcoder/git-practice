@@ -230,6 +230,24 @@ Before adding or changing any route or guard:
   invent it. Add it under `## Needs from the other lane` in `ai/PROGRESS.md` and mock behind
   a `MOCK()` marker
 
+## Conflict Rules
+
+- Before acting on any fact from the docs, check the **Open Conflicts Register** in
+  `PROJECT_KNOWLEDGE.md` §9. It records what is settled, what is not, and on what evidence.
+- If two documents disagree and the register does not cover it: **stop and ask.** Do not pick a
+  side, and do not "harmonise" by editing one file to match the other.
+- **Repo beats copy.** The claude.ai Project, pasted context and uploaded files are mirrors and
+  they go stale. Read the file in the repo before rewriting it. A 2026-08-31 chat session rebuilt
+  five tracked files from July-era copies; every one came out shorter than the repo's version.
+- **`KNOWN_ISSUES.md` is append-only and IDs are never reused.** Read the existing IDs before
+  assigning one. The same session issued a second `API-003`, `DOC-006`, `DOC-007` and `SCOPE-01`
+  for unrelated problems; merging that as-is would have silently replaced live issues.
+- Entity specs (`docs/entities/`) outrank feature docs (`FEATURES_*.md`) when field names differ.
+- HSK level range is **1–9** (settled 2026-08-11). Any "1–6" you find is stale (`DOC-004`) —
+  except in historical log entries, which stay as written.
+- Sprint numbers come from `docs/roadmap/SPRINT_PLAN.md` (S0–S9), **not** from `ai/PROGRESS.md`
+  or `PROJECT_KNOWLEDGE.md` §6, which both still carry an 8-sprint shape (`DOC-012`).
+
 ## Frontend Design Rules
 
 - Tokens come from `docs/front-end-design-docs/root-design-fe.md`. **Components never choose

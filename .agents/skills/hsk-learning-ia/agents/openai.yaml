@@ -1,0 +1,4 @@
+interface:
+  display_name: "HSK Learning IA"
+  short_description: "HSK 1–9 learning information architecture"
+  default_prompt: "Design or review the learning flow and information architecture for the HSK Student product."
