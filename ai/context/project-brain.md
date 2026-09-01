@@ -58,7 +58,7 @@ either way.
   `01-auth.md` is accepted. `apps/api` is scaffolded (PR #12: NestJS, Prisma, migration
   `20260820000000_init_users`, health module) but implements no feature. `apps/web` has many
   **fully-mocked** admin and student screens — see `ai/PROGRESS.md` § Off-sprint
-- `turbo.json` exists on disk but is **untracked** (`BUILD-001`); `packages/` does not exist
+- `turbo.json` now tracked (`BUILD-001` resolved, PR #13, pending merge to `main`); `packages/` does not exist
 - HSK level range: **1–9** (confirmed 2026-08-11, matches the HSK 3.0 standard and every spec in `docs/`: entity specs, `GLOSSARY.md`, `DATABASE_SCHEMA.md`, `CONVENTIONS.md`, `SPRINT_PLAN.md` — do not use HSK 1–6, that came from a mistaken revert in this file on 2026-07-27)
 - **10-sprint plan (S0–S9)** in docs/roadmap/SPRINT_PLAN.md — that is the authority.
   `ai/PROGRESS.md` and `PROJECT_KNOWLEDGE.md` §6 still use an 8-sprint shape (`DOC-012`)

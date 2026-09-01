@@ -75,8 +75,8 @@ Full detail: `PROJECT_KNOWLEDGE.md` §9 and `KNOWN_ISSUES.md`.
   health module) but implements no features.
 - `apps/web` has substantial **fully-mocked** admin and student screens. None of them call an
   API. Do not mistake a mock for a feature — `PROGRESS.md` § Off-sprint says which is which.
-- `turbo.json` exists on disk but is **untracked in git** — `pnpm dev` / `pnpm build` still fail
-  on a clean clone (`BUILD-001`).
+- `turbo.json` is now tracked (`BUILD-001` resolved in PR #13; `pnpm dev` / `pnpm build` will
+  work on a clean clone once that PR merges to `main`).
 - `packages/` does not exist.
 - `git add --renormalize .` has still not been run — ~118 files show as modified with no content
   change (`GIT-001`).
