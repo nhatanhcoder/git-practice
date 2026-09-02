@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { TeacherShell } from "@/components/teacher/teacher-shell";
 import {
+  Overlay,
   ConfirmModal,
   ReviewSwitcher,
   StatusPill,
@@ -24,6 +25,7 @@ import {
 } from "@/components/teacher/teacher-widgets";
 import {
   difficultyLabels,
+  expectedResultOf,
   mockQuestions,
   skillLabels,
   subTypeLabels,
@@ -32,6 +34,7 @@ import {
   type Question,
   type Skill,
 } from "@/lib/teacher/question-data";
+import { useDismissMenu } from "@/hooks/use-overlay";
 import { formatDate } from "@/lib/formatters";
 import styles from "./questions.module.css";
 
@@ -42,7 +45,9 @@ type Draft = {
   difficulty: Difficulty;
   content: string;
   options: string;
-  answer: string;
+  // B2: the two are separate fields, not one overloaded "answer".
+  correctAnswer: string;
+  rubric: string;
   explanation: string;
 };
 
@@ -53,7 +58,8 @@ const emptyDraft = (): Draft => ({
   difficulty: "easy",
   content: "",
   options: "",
-  answer: "",
+  correctAnswer: "",
+  rubric: "",
   explanation: "",
 });
 
@@ -69,6 +75,8 @@ export default function TeacherQuestionsPage() {
   const [preview, setPreview] = useState<Question | null>(null);
   const [deleting, setDeleting] = useState<Question | null>(null);
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
+  // C3: outside-click / Escape dismissal for the open row menu.
+  const menuRef = useDismissMenu<HTMLTableCellElement>(activeMenu !== null, () => setActiveMenu(null));
   const [toast, setToast] = useState("");
 
   const filtered = useMemo(() => {
@@ -102,14 +110,19 @@ export default function TeacherQuestionsPage() {
       difficulty: question.difficulty,
       content: question.content,
       options: question.options ? question.options.join("\n") : "",
-      answer: question.answer,
+      correctAnswer: Array.isArray(question.correctAnswer) ? question.correctAnswer.join(", ") : (question.correctAnswer ?? ""),
+      rubric: question.rubric ?? "",
       explanation: question.explanation,
     });
     setEditing(question);
   }
 
   function submitDraft() {
-    if (draft.content.trim().length < 5 || !draft.answer.trim()) return;
+    // B2: writing needs a rubric and stores correctAnswer = null; the rest need an answer.
+    if (!valid) return;
+    const isWriting = draft.skill === "writing";
+    const correctAnswer = isWriting ? null : draft.correctAnswer.trim();
+    const rubric = isWriting ? draft.rubric.trim() : null;
     const options =
       draft.subType === "multiple_choice_single" || draft.subType === "multiple_choice_multi"
         ? draft.options.split("\n").map((o) => o.trim()).filter(Boolean)
@@ -119,7 +132,7 @@ export default function TeacherQuestionsPage() {
       setQuestions((current) =>
         current.map((x) =>
           x.id === editing.id
-            ? { ...x, ...draft, content: draft.content.trim(), answer: draft.answer.trim(), explanation: draft.explanation.trim(), options }
+            ? { ...x, ...draft, content: draft.content.trim(), correctAnswer, rubric, explanation: draft.explanation.trim(), options }
             : x,
         ),
       );
@@ -130,7 +143,8 @@ export default function TeacherQuestionsPage() {
           id: "q-" + Date.now(),
           ...draft,
           content: draft.content.trim(),
-          answer: draft.answer.trim(),
+          correctAnswer,
+          rubric,
           explanation: draft.explanation.trim(),
           options,
           usageCount: 0,
@@ -151,7 +165,12 @@ export default function TeacherQuestionsPage() {
     setDeleting(null);
   }
 
-  const valid = draft.content.trim().length >= 5 && draft.answer.trim().length > 0;
+  // B2: writing is valid on prompt + rubric (no answer); non-writing needs correctAnswer.
+  const valid =
+    draft.content.trim().length >= 5 &&
+    (draft.skill === "writing"
+      ? draft.rubric.trim().length > 0
+      : draft.correctAnswer.trim().length > 0);
   const subTypeOptions = subTypesBySkill[draft.skill];
 
   return (
@@ -271,19 +290,26 @@ export default function TeacherQuestionsPage() {
                       onClick={() => setPreview(q)}
                       onKeyDown={(e) => e.key === "Enter" && setPreview(q)}
                     >
-                      <td><div className={styles.contentCell}><strong>{q.content}</strong><small>Đáp án: {q.answer}</small></div></td>
+                      <td><div className={styles.contentCell}><strong>{q.content}</strong><small>{expectedResultOf(q).label}: {expectedResultOf(q).value}</small></div></td>
                       <td><StatusPill status={q.skill === "writing" ? "info" : q.skill === "listening" ? "warning" : "neutral"} label={skillLabels[q.skill]} /></td>
                       <td className={styles.subTypeCol}>{subTypeLabels[q.subType]}</td>
                       <td><span className={styles.levelBadge}>HSK {q.hskLevel}</span></td>
                       <td>{difficultyLabels[q.difficulty]}</td>
                       <td className={styles.numeric}>{q.usageCount} lần</td>
-                      <td className={styles.actionCell} onClick={(e) => e.stopPropagation()}>
-                        <button className={styles.moreButton} onClick={() => setActiveMenu(activeMenu === q.id ? null : q.id)} aria-label={"Thao tác cho câu hỏi " + q.id}>
+                      <td className={styles.actionCell} onClick={(e) => e.stopPropagation()} ref={activeMenu === q.id ? menuRef : undefined}>
+                        <button
+                          className={styles.moreButton}
+                          onClick={() => setActiveMenu(activeMenu === q.id ? null : q.id)}
+                          aria-label={"Thao tác cho câu hỏi " + q.id}
+                          aria-haspopup="menu"
+                          aria-expanded={activeMenu === q.id}
+                          aria-controls={"qmenu-" + q.id}
+                        >
                           <MoreHorizontal size={19} />
                         </button>
                         {activeMenu === q.id && (
-                          <div className={styles.actionMenu}>
-                            <button onClick={() => setPreview(q)}><Eye size={14} />Xem trước</button>
+                          <div className={styles.actionMenu} id={"qmenu-" + q.id} role="menu">
+                            <button onClick={() => { setActiveMenu(null); setPreview(q); }}><Eye size={14} />Xem trước</button>
                             <button onClick={() => openEdit(q)}><Pencil size={14} />Sửa</button>
                             <button
                               className={styles.dangerAction}
@@ -326,8 +352,12 @@ export default function TeacherQuestionsPage() {
       {toast && <Toast message={toast} />}
 
       {editing !== undefined && (
-        <div className={styles.modalBackdrop} role="dialog" aria-modal="true" aria-label={editing ? "Sửa câu hỏi" : "Tạo câu hỏi"}>
-          <div className={styles.modal}>
+        <Overlay
+          label={editing ? "Sửa câu hỏi" : "Tạo câu hỏi"}
+          onClose={() => setEditing(undefined)}
+          backdropClassName={styles.modalBackdrop}
+          panelClassName={styles.modalWide}
+        >
             <h2>{editing ? "Sửa câu hỏi" : "Tạo câu hỏi"}</h2>
             <form onSubmit={(e) => { e.preventDefault(); submitDraft(); }}>
               <div className={styles.formGrid}>
@@ -373,10 +403,26 @@ export default function TeacherQuestionsPage() {
                   <textarea value={draft.options} onChange={(e) => setDraft({ ...draft, options: e.target.value })} rows={4} placeholder={"一件衣服\n一双鞋\n一个书包"} />
                 </label>
               )}
-              <label className={styles.field}>
-                <span>Đáp án *</span>
-                <input value={draft.answer} onChange={(e) => setDraft({ ...draft, answer: e.target.value })} required placeholder="Đáp án / rubric" />
-              </label>
+              {draft.skill === "writing" ? (
+                <label className={styles.field}>
+                  <span>Rubric chấm điểm *</span>
+                  <textarea
+                    value={draft.rubric}
+                    onChange={(e) => setDraft({ ...draft, rubric: e.target.value })}
+                    rows={3}
+                    required
+                    placeholder="VD: Nội dung đủ ý 40% · ngữ pháp 30% · từ vựng 20% · trình bày 10%"
+                  />
+                  <small className={styles.fieldHint}>
+                    Bài Viết chấm tay kèm gợi ý AI — không lưu đáp án đúng (ENTITY_QUESTION: correctAnswer = null).
+                  </small>
+                </label>
+              ) : (
+                <label className={styles.field}>
+                  <span>Đáp án *</span>
+                  <input value={draft.correctAnswer} onChange={(e) => setDraft({ ...draft, correctAnswer: e.target.value })} required placeholder="Đáp án đúng" />
+                </label>
+              )}
               <label className={styles.field}>
                 <span>Giải thích</span>
                 <textarea value={draft.explanation} onChange={(e) => setDraft({ ...draft, explanation: e.target.value })} rows={2} placeholder="Giải thích cho học sinh sau khi nộp bài" />
@@ -388,13 +434,16 @@ export default function TeacherQuestionsPage() {
                 </button>
               </div>
             </form>
-          </div>
-        </div>
+          </Overlay>
       )}
 
       {preview && (
-        <div className={styles.modalBackdrop} role="dialog" aria-modal="true" aria-label="Xem trước câu hỏi">
-          <div className={styles.modal}>
+        <Overlay
+          label={"Xem trước câu hỏi"}
+          onClose={() => setPreview(null)}
+          backdropClassName={styles.modalBackdrop}
+          panelClassName={styles.modal}
+        >
             <div className={styles.previewHead}>
               <div className={styles.previewBadges}>
                 <StatusPill status={preview.skill === "writing" ? "info" : preview.skill === "listening" ? "warning" : "neutral"} label={skillLabels[preview.skill]} />
@@ -407,16 +456,15 @@ export default function TeacherQuestionsPage() {
             <p className={styles.previewContent}>{preview.content}</p>
             {preview.options && (
               <div className={styles.previewOptions}>
-                {preview.options.map((o) => <span key={o} className={o === preview.answer ? styles.previewOptionCorrect : styles.previewOption}>{o}</span>)}
+                {preview.options.map((o) => <span key={o} className={o === preview.correctAnswer ? styles.previewOptionCorrect : styles.previewOption}>{o}</span>)}
               </div>
             )}
             <dl className={styles.previewMeta}>
-              <div><dt>Đáp án</dt><dd>{preview.answer}</dd></div>
+              <div><dt>{expectedResultOf(preview).label}</dt><dd>{expectedResultOf(preview).value}</dd></div>
               <div><dt>Giải thích</dt><dd>{preview.explanation || "—"}</dd></div>
               <div><dt>Đã dùng trong</dt><dd>{preview.usageCount} bài tập · tạo {formatDate(preview.createdAt)}</dd></div>
             </dl>
-          </div>
-        </div>
+          </Overlay>
       )}
 
       {deleting && (

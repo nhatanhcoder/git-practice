@@ -3,7 +3,8 @@
 // Shared Teacher widgets — mock-backed, per the Teacher Page Contracts (2026-09-01).
 
 import { useEffect, useState, type ReactNode } from "react";
-import { Check, Copy, X } from "lucide-react";
+import { AlertCircle, Check, Copy, X } from "lucide-react";
+import { useBackdropClose, useOverlay } from "@/hooks/use-overlay";
 import { getStatusColor } from "@/lib/status";
 import styles from "./teacher-widgets.module.css";
 
@@ -40,22 +41,55 @@ export function StatusPill({ status, label }: { status: string; label: string })
 }
 
 export function CopyChip({ value }: { value: string }) {
-  const [copied, setCopied] = useState(false);
+  // C2: this used to just setCopied(true) — it reported success without ever touching the
+  // clipboard, so a blocked or unavailable Clipboard API still showed "Đã sao chép".
+  const [state, setState] = useState<"idle" | "copying" | "done" | "error">("idle");
+
   useEffect(() => {
-    if (!copied) return;
-    const t = setTimeout(() => setCopied(false), 1600);
+    if (state !== "done" && state !== "error") return;
+    const t = setTimeout(() => setState("idle"), state === "done" ? 1600 : 3200);
     return () => clearTimeout(t);
-  }, [copied]);
+  }, [state]);
+
+  async function handleCopy() {
+    if (state === "copying") return; // ignore repeat clicks mid-write
+    setState("copying");
+    try {
+      if (!navigator.clipboard?.writeText) throw new Error("Clipboard API unavailable");
+      await navigator.clipboard.writeText(value);
+      setState("done");
+    } catch {
+      // No fake fallback: if the write did not happen, do not claim it did.
+      setState("error");
+    }
+  }
+
+  const done = state === "done";
+  const failed = state === "error";
+  const label = done
+    ? "Đã sao chép mã " + value
+    : failed
+      ? "Không sao chép được mã " + value + ". Hãy chọn và sao chép thủ công."
+      : "Sao chép mã " + value;
+
   return (
-    <button
-      className={styles.copyChip + (copied ? " " + styles.copyChipDone : "")}
-      onClick={() => setCopied(true)}
-      title={copied ? "Đã sao chép" : "Sao chép mã"}
-      aria-label={copied ? "Đã sao chép mã " + value : "Sao chép mã " + value}
-    >
-      <code>{value}</code>
-      {copied ? <Check size={14} /> : <Copy size={14} />}
-    </button>
+    <>
+      <button
+        type="button"
+        className={styles.copyChip + (done ? " " + styles.copyChipDone : "") + (failed ? " " + styles.copyChipError : "")}
+        onClick={handleCopy}
+        disabled={state === "copying"}
+        title={done ? "Đã sao chép" : failed ? "Không sao chép được" : "Sao chép mã"}
+        aria-label={label}
+      >
+        <code>{value}</code>
+        {done ? <Check size={14} /> : failed ? <AlertCircle size={14} /> : <Copy size={14} />}
+      </button>
+      {/* Announced to screen readers on both outcomes. */}
+      <span role="status" aria-live="polite" className={styles.srOnly}>
+        {done ? "Đã sao chép mã " + value : failed ? "Không sao chép được mã. Hãy sao chép thủ công." : ""}
+      </span>
+    </>
   );
 }
 
@@ -64,6 +98,47 @@ export function Toast({ message }: { message: string }) {
     <div className={styles.toast} role="status">
       <Check size={18} />
       <span>{message}</span>
+    </div>
+  );
+}
+
+/**
+ * C3: shared wrapper for page-local modals and drawers.
+ *
+ * Every Teacher page had its own hand-rolled `<div className={backdrop} role="dialog">` with no
+ * Escape, no focus trap and no focus restore. This keeps the page's own CSS classes — it is not
+ * a redesign — while routing the behaviour through one implementation.
+ *
+ * `panelClassName` is the page's existing panel class; `children` is the panel's contents.
+ */
+export function Overlay({
+  label,
+  onClose,
+  backdropClassName,
+  panelClassName,
+  closeOnBackdrop = true,
+  children,
+}: {
+  label: string;
+  onClose: () => void;
+  backdropClassName: string;
+  panelClassName: string;
+  closeOnBackdrop?: boolean;
+  children: ReactNode;
+}) {
+  const panelRef = useOverlay<HTMLDivElement>(onClose);
+  const onBackdrop = useBackdropClose(onClose);
+  return (
+    <div
+      className={backdropClassName}
+      role="dialog"
+      aria-modal="true"
+      aria-label={label}
+      onMouseDown={closeOnBackdrop ? onBackdrop : undefined}
+    >
+      <div ref={panelRef} className={panelClassName}>
+        {children}
+      </div>
     </div>
   );
 }
@@ -79,16 +154,13 @@ function ModalFrame({
   children: ReactNode;
   wide?: boolean;
 }) {
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [onClose]);
+  // C3: Escape + focus trap + focus restore now come from the shared hook, replacing the
+  // Escape-only listener this component used to declare inline.
+  const panelRef = useOverlay<HTMLDivElement>(onClose);
+  const onBackdrop = useBackdropClose(onClose);
   return (
-    <div className={styles.modalBackdrop} role="dialog" aria-modal="true" aria-label={title}>
-      <div className={styles.modal + (wide ? " " + styles.modalWide : "")}>
+    <div className={styles.modalBackdrop} role="dialog" aria-modal="true" aria-label={title} onMouseDown={onBackdrop}>
+      <div ref={panelRef} className={styles.modal + (wide ? " " + styles.modalWide : "")}>
         <div className={styles.modalHead}>
           <h2>{title}</h2>
           <button className={styles.modalClose} onClick={onClose} aria-label="Đóng">

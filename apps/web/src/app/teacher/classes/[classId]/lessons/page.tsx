@@ -35,6 +35,7 @@ import {
   type ClassLesson,
   type LessonContentType,
 } from "@/lib/teacher-data";
+import { useDismissMenu } from "@/hooks/use-overlay";
 import styles from "./lessons.module.css";
 
 interface LessonDraft {
@@ -57,6 +58,8 @@ export default function TeacherLessonsPage({
   const [draft, setDraft] = useState<LessonDraft>({ title: "", description: "", contentType: "document" });
   const [deleting, setDeleting] = useState<ClassLesson | null>(null);
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
+  // C3: outside-click / Escape dismissal for the open row menu.
+  const menuRef = useDismissMenu<HTMLSpanElement>(activeMenu !== null, () => setActiveMenu(null));
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [toast, setToast] = useState("");
 
@@ -268,13 +271,16 @@ export default function TeacherLessonsPage({
                     <span className={styles.menuWrap}>
                       <button
                         className={styles.moreButton}
+                        aria-haspopup="menu"
+                        aria-expanded={activeMenu === lesson.id}
+                        aria-controls={"lmenu-" + lesson.id}
                         onClick={() => setActiveMenu(activeMenu === lesson.id ? null : lesson.id)}
                         aria-label={"Thao tác cho " + lesson.title}
                       >
                         <MoreHorizontal size={18} />
                       </button>
                       {activeMenu === lesson.id && (
-                        <span className={styles.actionMenu}>
+                        <span className={styles.actionMenu} id={"lmenu-" + lesson.id} role="menu">
                           <button onClick={() => openEdit(lesson)}>
                             <Pencil size={14} /> Sửa
                           </button>

@@ -96,6 +96,24 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
   gating, sessions with scheduled→completed_pending machine (start/attendance/submit) +
   rejection-reason modal, income view-only with period drawer (money display-only, from
   envelope totals — no client arithmetic). Sidebar: 7 live items + Analytics disabled (S5).
+- 🔶 (claude · 2026-09-02) **7 Teacher UI bugs fixed** (mock FE only; screens stay `🔶` because
+  they are still fully mocked — no API). Detail in `KNOWN_ISSUES.md` `WEB-006`.
+  **A1** session submit no longer writes the scheduled end into `actualEnd` — that laundered an
+  expected time into a real one and neutered `INV-PAYROLL-17`, turning a hard payroll failure
+  into a silently wrong payment. **A2** grading clamps scores to `[0, maxScore]` and keeps the
+  AI's original suggestion instead of overwriting it with the teacher's edit. **B1** assignment
+  enum `assignment` → `homework` per `ENTITY_ASSIGNMENT`, and `mock_test` now requires a time
+  limit. **B2** Writing questions store `correctAnswer = null` + a real `rubric` per
+  `ENTITY_QUESTION`, instead of stuffing rubric prose into `answer`. **C1** the question picker
+  actually filters by the class's HSK level and prunes stale selections when the class changes.
+  **C2** `CopyChip` calls the Clipboard API and reports failure honestly. **C3** new shared
+  `src/hooks/use-overlay.ts` gives every menu/dialog outside-click, Escape, focus trap and focus
+  restore.
+  New: `src/lib/teacher/teacher-rules.ts` (pure rules) + `scripts/teacher-rules.test.mjs`
+  (11 cases). Verified on a **production** build: build green, 31/31 tests, check-docs 8/8,
+  9/9 Teacher routes HTTP 200, every acceptance criterion exercised in a browser, desktop + 375px.
+  ⚠️ Requiring `actualEnd` before submit picks option (a) of the **still-open Q-SES-3** in
+  `04-sessions-attendance.md` §16 — a UI choice, not a settled backend rule.
 - **DoD**: Teacher creates class → student joins via code → teacher sees the student in the list
 
 ## Sprint 3 — Question Bank & Assignments

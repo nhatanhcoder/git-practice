@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { TeacherShell } from "@/components/teacher/teacher-shell";
 import {
+  Overlay,
   ReviewSwitcher,
   StatusPill,
   Toast,
@@ -31,6 +32,7 @@ import {
   type Session,
 } from "@/lib/teacher/session-data";
 import { mockTeacherClasses } from "@/lib/teacher-data";
+import { sessionSubmitError } from "@/lib/teacher/teacher-rules";
 import { formatDate } from "@/lib/formatters";
 import styles from "./sessions.module.css";
 
@@ -44,7 +46,7 @@ export default function TeacherSessionsPage() {
   const [attendanceSession, setAttendanceSession] = useState<Session | null>(null);
   const [attendanceDraft, setAttendanceDraft] = useState<Record<string, { value: AttendanceValue; note: string }>>({});
   const [submitting, setSubmitting] = useState<Session | null>(null);
-  const [submitDraft, setSubmitDraft] = useState({ topic: "", notes: "" });
+  const [submitDraft, setSubmitDraft] = useState({ topic: "", notes: "", actualEnd: "" });
   const [reasonSession, setReasonSession] = useState<Session | null>(null);
   const [toast, setToast] = useState("");
 
@@ -134,12 +136,30 @@ export default function TeacherSessionsPage() {
   }
 
   function openSubmit(session: Session) {
-    setSubmitDraft({ topic: session.topic ?? "", notes: session.notes ?? "" });
+    // Prefill ONLY from a real recorded end time. Never from `endTime` (the scheduled end):
+    // that would launder an expected time into an actual one — see submitError below.
+    setSubmitDraft({
+      topic: session.topic ?? "",
+      notes: session.notes ?? "",
+      actualEnd: session.actualEnd ?? "",
+    });
     setSubmitting(session);
   }
 
+  // A1: the submit gate. `actualEnd` feeds per_hour payroll (INV-PAYROLL-06), so it must be a
+  // time the teacher actually entered — never derived, never defaulted.
+  const submitError: string | null = submitting
+    ? sessionSubmitError({
+        topic: submitDraft.topic,
+        actualStart: submitting.actualStart,
+        actualEnd: submitDraft.actualEnd,
+      })
+    : null;
+
+  const submitValid = !!submitting && submitError === null;
+
   function handleSubmit() {
-    if (!submitting || !submitDraft.topic.trim()) return;
+    if (!submitting || !submitValid) return;
     // MOCK: PATCH /api/v1/teacher/sessions/:id/submit — payload per FLOW §3.2
     // (topic + notes + actual times + attendance) → completed_pending
     setSessions((current) =>
@@ -149,7 +169,7 @@ export default function TeacherSessionsPage() {
               ...s,
               topic: submitDraft.topic.trim(),
               notes: submitDraft.notes.trim() || null,
-              actualEnd: s.actualEnd ?? s.endTime,
+              actualEnd: submitDraft.actualEnd,
               status: "completed_pending" as const,
             }
           : s,
@@ -275,8 +295,12 @@ export default function TeacherSessionsPage() {
       {toast && <Toast message={toast} />}
 
       {creating && (
-        <div className={styles.modalBackdrop} role="dialog" aria-modal="true" aria-label="Tạo buổi học">
-          <div className={styles.modal}>
+        <Overlay
+          label={"Tạo buổi học"}
+          onClose={() => setCreating(false)}
+          backdropClassName={styles.modalBackdrop}
+          panelClassName={styles.modal}
+        >
             <h2>Tạo buổi học</h2>
             <form onSubmit={(e) => { e.preventDefault(); handleCreate(); }}>
               <label className={styles.field}>
@@ -305,13 +329,16 @@ export default function TeacherSessionsPage() {
                 <button type="submit" className={styles.primaryButton} disabled={!createValid}>Tạo buổi học</button>
               </div>
             </form>
-          </div>
-        </div>
+          </Overlay>
       )}
 
       {attendanceSession && (
-        <div className={styles.modalBackdrop} role="dialog" aria-modal="true" aria-label="Điểm danh">
-          <div className={styles.modal}>
+        <Overlay
+          label={"Điểm danh"}
+          onClose={() => setAttendanceSession(null)}
+          backdropClassName={styles.modalBackdrop}
+          panelClassName={styles.modal}
+        >
             <div className={styles.modalHeadRow}>
               <h2>Điểm danh — {formatDate(attendanceSession.date)}</h2>
               <button className={styles.modalClose} onClick={() => setAttendanceSession(null)} aria-label="Đóng"><X size={17} /></button>
@@ -370,41 +397,64 @@ export default function TeacherSessionsPage() {
                 <Check size={15} />Lưu điểm danh
               </button>
             </div>
-          </div>
-        </div>
+          </Overlay>
       )}
 
       {submitting && (
-        <div className={styles.modalBackdrop} role="dialog" aria-modal="true" aria-label="Gửi duyệt buổi học">
-          <div className={styles.modal}>
+        <Overlay
+          label={"Gửi duyệt buổi học"}
+          onClose={() => setSubmitting(null)}
+          backdropClassName={styles.modalBackdrop}
+          panelClassName={styles.modal}
+        >
             <h2>Gửi duyệt buổi học</h2>
             <p className={styles.modalSub}>
-              {submitting.className} · {formatDate(submitting.date)} · thực tế {submitting.actualStart ?? submitting.startTime}–{submitting.actualEnd ?? submitting.endTime}
+              {submitting.className} · {formatDate(submitting.date)} · theo lịch {submitting.startTime}–{submitting.endTime}
             </p>
             <label className={styles.field}>
               <span>Chủ đề bài dạy *</span>
               <input value={submitDraft.topic} onChange={(e) => setSubmitDraft({ ...submitDraft, topic: e.target.value })} autoFocus placeholder="VD: HSK 3 — Chương 5: Du lịch" />
             </label>
             <label className={styles.field}>
+              <span>Giờ kết thúc thực tế *</span>
+              <input
+                type="time"
+                required
+                value={submitDraft.actualEnd}
+                onChange={(e) => setSubmitDraft({ ...submitDraft, actualEnd: e.target.value })}
+                aria-describedby="submit-actualend-help"
+                aria-invalid={submitError !== null && submitError !== "Nhập giờ kết thúc thực tế." ? true : undefined}
+              />
+              <small id="submit-actualend-help" className={styles.fieldHint}>
+                Giờ bắt đầu thực tế đã ghi nhận: <strong>{submitting.actualStart ?? "chưa có"}</strong>. Giờ này dùng để tính lương theo giờ — nhập giờ dạy thật, không phải giờ theo lịch.
+              </small>
+            </label>
+            <label className={styles.field}>
               <span>Ghi chú cho Admin</span>
               <textarea rows={3} value={submitDraft.notes} onChange={(e) => setSubmitDraft({ ...submitDraft, notes: e.target.value })} placeholder="VD: Học sinh làm tốt phần nghe, cần luyện thêm viết" />
             </label>
+            {submitError && (
+              <p className={styles.fieldError} role="alert">{submitError}</p>
+            )}
             <p className={styles.submitNote}>
               Sau khi gửi, buổi học chuyển sang <strong>Chờ duyệt</strong> và Admin sẽ xem xét — buổi được duyệt mới tính lương.
             </p>
             <div className={styles.modalActions}>
               <button type="button" className={styles.cancelButton} onClick={() => setSubmitting(null)}>Hủy</button>
-              <button type="button" className={styles.primaryButton} onClick={handleSubmit} disabled={!submitDraft.topic.trim()}>
+              <button type="button" className={styles.primaryButton} onClick={handleSubmit} disabled={!submitValid}>
                 <Send size={15} />Gửi duyệt
               </button>
             </div>
-          </div>
-        </div>
+          </Overlay>
       )}
 
       {reasonSession && (
-        <div className={styles.modalBackdrop} role="dialog" aria-modal="true" aria-label="Lý do từ chối">
-          <div className={styles.modal}>
+        <Overlay
+          label={"Lý do từ chối"}
+          onClose={() => setReasonSession(null)}
+          backdropClassName={styles.modalBackdrop}
+          panelClassName={styles.modal}
+        >
             <h2>Buổi học bị từ chối</h2>
             <p className={styles.modalSub}>{reasonSession.className} · {formatDate(reasonSession.date)}</p>
             <div className={styles.reasonBox} role="alert">
@@ -417,8 +467,7 @@ export default function TeacherSessionsPage() {
             <div className={styles.modalActions}>
               <button type="button" className={styles.primaryButton} onClick={() => setReasonSession(null)}>Đã hiểu</button>
             </div>
-          </div>
-        </div>
+          </Overlay>
       )}
     </TeacherShell>
   );

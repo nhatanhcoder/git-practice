@@ -58,3 +58,13 @@ Edit/delete before-any-submission is enforced client-side in the mock (T-ASGN-5)
 - Authoring questions inside this flow — create them in the Question Bank first
 - Student-side assignment view
 - Grading — separate screen (`/teacher/grading`)
+
+## Implementation note — 2026-09-02 (`WEB-006` B1 + C1)
+
+- Assignment `type` uses **`homework` | `mock_test`** per `ENTITY_ASSIGNMENT`; the displayed
+  label stays "Bài tập". `timeLimitMinutes` is required (integer 5–180) when
+  `type = mock_test`, and is cleared when switching back to homework.
+- The question picker **filters by the selected class's `hskLevel`** — the hint claimed this
+  before but the code showed the whole bank. Changing class prunes already-picked question
+  ids that no longer match, so hidden stale ids can no longer be submitted, and editing an
+  assignment syncs `hskLevel` to the new class.
