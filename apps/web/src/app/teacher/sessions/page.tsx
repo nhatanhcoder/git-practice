@@ -44,7 +44,7 @@ export default function TeacherSessionsPage() {
   const [attendanceSession, setAttendanceSession] = useState<Session | null>(null);
   const [attendanceDraft, setAttendanceDraft] = useState<Record<string, { value: AttendanceValue; note: string }>>({});
   const [submitting, setSubmitting] = useState<Session | null>(null);
-  const [submitDraft, setSubmitDraft] = useState({ topic: "", notes: "" });
+  const [submitDraft, setSubmitDraft] = useState({ topic: "", notes: "", actualEnd: "" });
   const [reasonSession, setReasonSession] = useState<Session | null>(null);
   const [toast, setToast] = useState("");
 
@@ -134,12 +134,32 @@ export default function TeacherSessionsPage() {
   }
 
   function openSubmit(session: Session) {
-    setSubmitDraft({ topic: session.topic ?? "", notes: session.notes ?? "" });
+    // Prefill ONLY from a real recorded end time. Never from `endTime` (the scheduled end):
+    // that would launder an expected time into an actual one — see submitError below.
+    setSubmitDraft({
+      topic: session.topic ?? "",
+      notes: session.notes ?? "",
+      actualEnd: session.actualEnd ?? "",
+    });
     setSubmitting(session);
   }
 
+  // A1: the submit gate. `actualEnd` feeds per_hour payroll (INV-PAYROLL-06), so it must be a
+  // time the teacher actually entered — never derived, never defaulted.
+  const submitError: string | null = (() => {
+    if (!submitting) return null;
+    if (!submitting.actualStart) return "Chưa có giờ bắt đầu thực tế — bấm “Bắt đầu” trước khi gửi duyệt.";
+    if (!submitDraft.actualEnd) return "Nhập giờ kết thúc thực tế.";
+    // INV-SESSION-13: when both are non-NULL, actualEnd > actualStart.
+    if (submitDraft.actualEnd <= submitting.actualStart)
+      return "Giờ kết thúc phải sau giờ bắt đầu (" + submitting.actualStart + ").";
+    return null;
+  })();
+
+  const submitValid = !!submitting && !!submitDraft.topic.trim() && submitError === null;
+
   function handleSubmit() {
-    if (!submitting || !submitDraft.topic.trim()) return;
+    if (!submitting || !submitValid) return;
     // MOCK: PATCH /api/v1/teacher/sessions/:id/submit — payload per FLOW §3.2
     // (topic + notes + actual times + attendance) → completed_pending
     setSessions((current) =>
@@ -149,7 +169,7 @@ export default function TeacherSessionsPage() {
               ...s,
               topic: submitDraft.topic.trim(),
               notes: submitDraft.notes.trim() || null,
-              actualEnd: s.actualEnd ?? s.endTime,
+              actualEnd: submitDraft.actualEnd,
               status: "completed_pending" as const,
             }
           : s,
@@ -379,22 +399,39 @@ export default function TeacherSessionsPage() {
           <div className={styles.modal}>
             <h2>Gửi duyệt buổi học</h2>
             <p className={styles.modalSub}>
-              {submitting.className} · {formatDate(submitting.date)} · thực tế {submitting.actualStart ?? submitting.startTime}–{submitting.actualEnd ?? submitting.endTime}
+              {submitting.className} · {formatDate(submitting.date)} · theo lịch {submitting.startTime}–{submitting.endTime}
             </p>
             <label className={styles.field}>
               <span>Chủ đề bài dạy *</span>
               <input value={submitDraft.topic} onChange={(e) => setSubmitDraft({ ...submitDraft, topic: e.target.value })} autoFocus placeholder="VD: HSK 3 — Chương 5: Du lịch" />
             </label>
             <label className={styles.field}>
+              <span>Giờ kết thúc thực tế *</span>
+              <input
+                type="time"
+                required
+                value={submitDraft.actualEnd}
+                onChange={(e) => setSubmitDraft({ ...submitDraft, actualEnd: e.target.value })}
+                aria-describedby="submit-actualend-help"
+                aria-invalid={submitError !== null && submitError !== "Nhập giờ kết thúc thực tế." ? true : undefined}
+              />
+              <small id="submit-actualend-help" className={styles.fieldHint}>
+                Giờ bắt đầu thực tế đã ghi nhận: <strong>{submitting.actualStart ?? "chưa có"}</strong>. Giờ này dùng để tính lương theo giờ — nhập giờ dạy thật, không phải giờ theo lịch.
+              </small>
+            </label>
+            <label className={styles.field}>
               <span>Ghi chú cho Admin</span>
               <textarea rows={3} value={submitDraft.notes} onChange={(e) => setSubmitDraft({ ...submitDraft, notes: e.target.value })} placeholder="VD: Học sinh làm tốt phần nghe, cần luyện thêm viết" />
             </label>
+            {submitError && (
+              <p className={styles.fieldError} role="alert">{submitError}</p>
+            )}
             <p className={styles.submitNote}>
               Sau khi gửi, buổi học chuyển sang <strong>Chờ duyệt</strong> và Admin sẽ xem xét — buổi được duyệt mới tính lương.
             </p>
             <div className={styles.modalActions}>
               <button type="button" className={styles.cancelButton} onClick={() => setSubmitting(null)}>Hủy</button>
-              <button type="button" className={styles.primaryButton} onClick={handleSubmit} disabled={!submitDraft.topic.trim()}>
+              <button type="button" className={styles.primaryButton} onClick={handleSubmit} disabled={!submitValid}>
                 <Send size={15} />Gửi duyệt
               </button>
             </div>

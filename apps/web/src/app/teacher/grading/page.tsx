@@ -30,9 +30,26 @@ import { formatDateTime } from "@/lib/formatters";
 import styles from "./grading.module.css";
 
 interface GradingDraft {
+  // What the teacher will actually save.
   scores: Record<string, number | null>;
   feedbacks: Record<string, string>;
-  aiLoaded: Record<string, boolean>;
+  // A2: the AI's ORIGINAL suggestion, kept verbatim and never written by the teacher's edits.
+  // Overwriting this with the edited score destroys the audit trail — the whole point of
+  // storing aiSuggestion alongside the final score is to compare the two later.
+  aiOriginal: Record<string, { score: number; reasoning: string } | null>;
+}
+
+// A2: one range rule, used by the input, the finish gate and finishGrading itself.
+// Kept module-level so the disabled button and the write path cannot drift apart.
+function isValidScore(value: number | null | undefined, maxScore: number): value is number {
+  return typeof value === "number" && Number.isFinite(value) && value >= 0 && value <= maxScore;
+}
+
+function clampScore(raw: string, maxScore: number): number | null {
+  if (raw === "") return null;
+  const n = Number(raw);
+  if (!Number.isFinite(n)) return null;
+  return Math.min(maxScore, Math.max(0, n));
 }
 
 export default function TeacherGradingPage() {
@@ -41,7 +58,7 @@ export default function TeacherGradingPage() {
   const [statusFilter, setStatusFilter] = useState<"all" | "submitted" | "graded">("all");
   const [reviewState, setReviewState] = useState<ReviewState>("ready");
   const [open, setOpen] = useState<Attempt | null>(null);
-  const [draft, setDraft] = useState<GradingDraft>({ scores: {}, feedbacks: {}, aiLoaded: {} });
+  const [draft, setDraft] = useState<GradingDraft>({ scores: {}, feedbacks: {}, aiOriginal: {} });
   const [toast, setToast] = useState("");
 
   const classOptions = useMemo(() => {
@@ -70,13 +87,14 @@ export default function TeacherGradingPage() {
     setOpen(a);
     const scores: Record<string, number | null> = {};
     const feedbacks: Record<string, string> = {};
-    const aiLoaded: Record<string, boolean> = {};
+    const aiOriginal: Record<string, { score: number; reasoning: string } | null> = {};
     a.questions.forEach((q) => {
       scores[q.id] = q.score;
       feedbacks[q.id] = q.feedback ?? "";
-      aiLoaded[q.id] = q.aiSuggestion !== null;
+      // Carry any previously stored suggestion through unchanged.
+      aiOriginal[q.id] = q.aiSuggestion;
     });
-    setDraft({ scores, feedbacks, aiLoaded });
+    setDraft({ scores, feedbacks, aiOriginal });
   }
 
   function runAiSuggest(questionId: string) {
@@ -86,19 +104,20 @@ export default function TeacherGradingPage() {
     // MOCK: POST /api/v1/teacher/attempts/:id/ai-suggest — Gemini suggestion
     const suggestion = mockAiSuggest(question);
     setDraft((d) => ({
+      // Prefill the teacher's fields so they can accept or override…
       scores: { ...d.scores, [questionId]: suggestion.score },
       feedbacks: { ...d.feedbacks, [questionId]: suggestion.reasoning },
-      aiLoaded: { ...d.aiLoaded, [questionId]: true },
+      // …while the original is stored separately and never touched again.
+      aiOriginal: { ...d.aiOriginal, [questionId]: { score: suggestion.score, reasoning: suggestion.reasoning } },
     }));
     flash("Đã nhận gợi ý AI — bạn có thể ghi đè trước khi chốt");
   }
 
   function finishGrading() {
     if (!open) return;
-    const allScored = open.questions.every((q) => {
-      const s = draft.scores[q.id];
-      return s !== null && s !== undefined && !Number.isNaN(s);
-    });
+    // A2: re-check the range here, not just via the disabled button — a disabled attribute is
+    // a UI affordance, not a guard.
+    const allScored = open.questions.every((q) => isValidScore(draft.scores[q.id], q.maxScore));
     if (!allScored) return;
     // MOCK: PATCH /api/v1/teacher/attempts/:id/grade — status -> graded
     setAttempts((current) =>
@@ -108,15 +127,16 @@ export default function TeacherGradingPage() {
               ...a,
               status: "graded",
               questions: a.questions.map((q) => {
-                const finalScore = Number(draft.scores[q.id] ?? q.score ?? 0);
+                const drafted = draft.scores[q.id];
+                // Guard again at the write itself; fall back to the stored score, never to 0.
+                const finalScore = isValidScore(drafted, q.maxScore) ? drafted : (q.score ?? 0);
                 return {
                   ...q,
                   score: finalScore,
                   feedback: draft.feedbacks[q.id] || null,
-                  aiSuggestion:
-                    q.skill === "writing" && draft.aiLoaded[q.id]
-                      ? { score: finalScore, reasoning: draft.feedbacks[q.id] }
-                      : q.aiSuggestion,
+                  // The AI suggestion is whatever the AI said — independent of what the teacher
+                  // then typed. Null when AI was never called.
+                  aiSuggestion: draft.aiOriginal[q.id] ?? null,
                 };
               }),
             }
@@ -128,13 +148,10 @@ export default function TeacherGradingPage() {
   }
 
   const allScored = open
-    ? open.questions.every((q) => {
-        const s = draft.scores[q.id];
-        return s !== null && s !== undefined && !Number.isNaN(s);
-      })
+    ? open.questions.every((q) => isValidScore(draft.scores[q.id], q.maxScore))
     : false;
   const totalScore = open
-    ? open.questions.reduce((s, q) => s + (Number(draft.scores[q.id]) || 0), 0)
+    ? open.questions.reduce((s, q) => s + (isValidScore(draft.scores[q.id], q.maxScore) ? draft.scores[q.id]! : 0), 0)
     : 0;
   const maxTotal = open ? open.questions.reduce((s, q) => s + q.maxScore, 0) : 0;
 
@@ -292,7 +309,7 @@ export default function TeacherGradingPage() {
                     {q.skill === "writing" && !readOnly && (
                       <button type="button" className={styles.aiButton} onClick={() => runAiSuggest(q.id)}>
                         <Sparkles size={15} />
-                        {draft.aiLoaded[q.id] ? "Gợi ý AI đã áp dụng — ghi đè tự do" : "AI gợi ý điểm"}
+                        {draft.aiOriginal[q.id] ? "Gợi ý AI đã áp dụng — ghi đè tự do" : "AI gợi ý điểm"}
                       </button>
                     )}
                     <div className={styles.scoreRow}>
@@ -302,7 +319,7 @@ export default function TeacherGradingPage() {
                           type="number" min={0} max={q.maxScore}
                           value={score ?? ""}
                           disabled={readOnly}
-                          onChange={(e) => setDraft((d) => ({ ...d, scores: { ...d.scores, [q.id]: e.target.value === "" ? null : Number(e.target.value) } }))}
+                          onChange={(e) => setDraft((d) => ({ ...d, scores: { ...d.scores, [q.id]: clampScore(e.target.value, q.maxScore) } }))}
                         />
                       </label>
                       <label className={styles.feedbackField}>
