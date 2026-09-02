@@ -575,7 +575,24 @@ from memory of the deleted file.
 ### [API-006] `API_TEACHER.md` and `FLOW_ENROLLMENT.md` disagree on Class routes
 
 **Severity**: Medium
-**Status**: Open
+**Status**: ✅ Resolved 2026-09-01 (owner-confirmed) — **role-prefixed wins**:
+`/api/v1/teacher/classes/...`, `/api/v1/student/classes/...`
+
+**Resolution**: the owner settled the convention as role-prefixed. New evidence found while
+resolving it — the conflict was wider than this entry recorded. A **third** source,
+`docs/api/modules/03-classes-enrollment.md` (the backend build source), also used bare
+`/api/v1/classes`, siding with `FLOW_ENROLLMENT.md`. But `API_ADMIN.md`, `API_TEACHER.md` **and**
+`API_STUDENT.md` all use role prefixes, so the two outliers were the module spec and the flow doc.
+
+Applied:
+- `docs/api/modules/03-classes-enrollment.md` § 2 — rewritten to the role-prefixed paths, quoted
+  from the role API docs. Two findings recorded there rather than smoothed over: the old
+  `GET /classes` row served two roles and splits into two existing endpoints; and there is **no**
+  standalone `GET /classes/:id/students` — `API_TEACHER.md` embeds the roster in the class detail.
+- `docs/flows/FLOW_ENROLLMENT.md` — header note added: its 35 path references are stale, the role
+  `API_<ROLE>.md` file wins, archive is `PATCH` not `POST`. **The 35 references were not
+  rewritten** — that touches Student routes outside this change and is its own task.
+- The Teacher Page Contracts and `teacher-flow.md` were already on the winning side; no change.
 
 **Description**: found while writing the Teacher Page Contracts (`teacher-classes-list.md`,
 `teacher-class-detail.md`). Two docs describe the same Class endpoints differently:
@@ -603,7 +620,31 @@ do not silently pick a side without saying so in the commit.
 ### [API-007] `API_TEACHER.md` has no Lessons section — no endpoints exist at all
 
 **Severity**: High
-**Status**: Open — **blocks `teacher-lessons-list.md` entirely**
+**Status**: ✅ Resolved 2026-09-01 — Lessons section written. **One follow-up left**: no Lesson
+row in `RBAC_MATRIX.md` / `PERMISSIONS_TEACHER.md` (see below).
+
+**Resolution**: `API_TEACHER.md` § Lessons now defines 8 endpoints covering T-LESSON-1…5, and
+`API_ERROR_CODES.md` has a `LESSON_*` family (6 codes), marked *proposed, not agreed* per the
+registry's convention — no BE owner has signed them off, so they are documented but not usable
+in code yet.
+
+Nothing was invented. Every path, field and rule came from
+`docs/entities/postgres/ENTITY_LESSON.md` and `ENTITY_LESSON_ASSIGNMENT.md`, both of which turned
+out to be **full specs** that no one had read while writing the FE contract. Two things the FE
+contract had marked "inferred / unconfirmed" are in fact written business rules:
+- **Ownership** — "created/managed exclusively by the teacher who owns the class".
+- **Delete blocking** — "cannot delete lesson if linked assignments have active Attempts".
+
+A third: `FEATURES_TEACHER.md` T-LESSON-3 calls the Lesson↔Assignment cardinality "to be
+settled", but `ENTITY_LESSON_ASSIGNMENT.md` settles it as **M:N** with a unique
+`(lessonId, assignmentId)`. Entity specs outrank feature docs, so M:N it is.
+
+`teacher-lessons-list.md`, `teacher-flow.md` and `pages/_INDEX.md` were updated from
+"every action ⛔" to the real endpoints and codes.
+
+**Follow-up still open**: `RBAC_MATRIX.md` and `PERMISSIONS_TEACHER.md` have no Lesson row. The
+ownership rule is sourced from the entity spec so the endpoints are usable, but the permission
+matrix has not been extended — that edit touches RBAC and needs owner approval on its own.
 
 **Description**: found writing the Teacher Page Contracts, the hard way. An early draft of
 `teacher-lessons-list.md` cited five Lesson endpoints (`GET`/`POST .../lessons`,

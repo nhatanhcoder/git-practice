@@ -13,9 +13,10 @@ Build the lesson list for one class, in the order students will see it.
 
 ## Access
 - Allowed roles: teacher
-- Ownership rule: teacher must own the parent `classId` (inferred from Class ownership —
-  `RBAC_MATRIX.md` and `PERMISSIONS_TEACHER.md` have no row for Lesson at all; see Blocked on)
-- On denial: redirect to `/teacher/classes` + toast `CLASS_ACCESS_DENIED`
+- Ownership rule: teacher must own the parent `classId` — service-layer check, not the role guard
+  alone. Now sourced from `ENTITY_LESSON.md` § Business Rules ("created/managed exclusively by the
+  teacher who owns the class"), no longer an inference.
+- On denial: redirect to `/teacher/classes` + toast `LESSON_ACCESS_DENIED`
 
 ## Entry points
 - From: `/teacher/classes/[classId]` tab "Bài học"
@@ -24,21 +25,22 @@ Build the lesson list for one class, in the order students will see it.
 ## Data
 | Need | Endpoint | Envelope field |
 |---|---|---|
-| lesson list (ordered) | ⛔ no endpoint | — |
-| create lesson | ⛔ no endpoint | — |
-| update lesson | ⛔ no endpoint | — |
-| delete lesson | ⛔ no endpoint | — |
-| reorder | ⛔ no endpoint | — |
+| lesson list (ordered) | `GET /api/v1/teacher/classes/:classId/lessons` | `data[]` |
+| create lesson | `POST /api/v1/teacher/classes/:classId/lessons` | `data.lesson` |
+| update lesson | `PATCH /api/v1/teacher/lessons/:id` | `data.lesson` |
+| delete lesson | `DELETE /api/v1/teacher/lessons/:id` | — (204) |
+| reorder | `PATCH /api/v1/teacher/classes/:classId/lessons/reorder` | `data[]` |
 
-Blocked on: `docs/api/API_TEACHER.md` has **no Lessons section at all** — Classes, Question
-Bank, Assignments, Grading, Sessions, Income are the only sections it defines. None of the five
-actions above have a real endpoint anywhere in `docs/api/`. This entire screen is `⛔` until a
-Lessons API is written. (An earlier draft of this contract cited specific endpoint paths for
-these actions — they were wrong, reconstructed from a stale read of a different repo checkout;
-removed.) Ownership rule above and the delete-blocked-by-active-attempts behaviour mentioned
-under Actions are both **inferred from the Lesson↔Assignment relationship in
-`FEATURES_TEACHER.md` T-LESSON-3**, not from any written business rule — flag both for
-confirmation when the API is written, don't build against them as fact.
+Blocked on: the endpoints now exist (`API_TEACHER.md` § Lessons, added 2026-09-01 — `API-007`),
+but they are **not yet cross-checked by a BE owner** and the `LESSON_*` error codes are *proposed,
+not agreed*. The screen may be built against them; it may not be called done until they are
+signed off. `RBAC_MATRIX.md` / `PERMISSIONS_TEACHER.md` still have no Lesson row — that edit
+touches RBAC and needs its own approval.
+
+> **History.** An early draft of this contract cited five Lesson endpoints that did not exist —
+> reconstructed from a stale read of a different repo checkout, caught by `check-docs.mjs`. It was
+> then rewritten to mark every action `⛔`. The paths above are the real ones: they were written
+> into `API_TEACHER.md` from `ENTITY_LESSON.md` and `FEATURES_TEACHER.md` T-LESSON-1…5.
 
 ## Regions
 1. Page title (class name context) + primary action "Thêm bài học"
@@ -57,12 +59,16 @@ confirmation when the API is written, don't build against them as fact.
 ## Actions
 | Action | Trigger | Result | Error code |
 |---|---|---|---|
-| Create lesson | "Thêm bài học" | modal (title, description, content type + upload) → new row appended at end | ⛔ no endpoint |
-| Edit lesson | row menu → "Sửa" | modal, prefilled → row updates | ⛔ no endpoint |
-| Delete lesson | row menu → "Xoá" | confirm modal → row removed. Whether a linked assignment with active attempts blocks this is unconfirmed (see Blocked on) | ⛔ no endpoint |
-| Reorder | drag row to new position | optimistic reorder → revert on failure | ⛔ no endpoint |
+| Create lesson | "Thêm bài học" | modal (title, description, content type + upload) → new row appended at end | `LESSON_ACCESS_DENIED`, `LESSON_ORDER_INDEX_CONFLICT` |
+| Edit lesson | row menu → "Sửa" | modal, prefilled → row updates | `LESSON_NOT_FOUND`, `LESSON_ACCESS_DENIED` |
+| Delete lesson | row menu → "Xoá" | confirm modal → row removed. **Blocked when a linked assignment has active attempts** — documented in `ENTITY_LESSON.md` § Business Rules, no longer an assumption | `LESSON_HAS_ACTIVE_ATTEMPTS`, `LESSON_NOT_FOUND` |
+| Reorder | drag row to new position | optimistic reorder → revert on failure. Server swaps the whole set in **one transaction** (`(classId, orderIndex)` is unique) | `LESSON_ORDER_INDEX_CONFLICT` |
+
+All four codes are *proposed, not agreed* in `API_ERROR_CODES.md` — render them, but expect the
+names to move if the BE owner renames any.
 
 ## Out of scope
-- Attaching/detaching an Assignment to a lesson (T-LESSON-3) — separate screens, not yet
-  contracted, and `API_TEACHER.md` has no endpoints for this either
+- Attaching/detaching an Assignment to a lesson (T-LESSON-3) — the endpoints now exist
+  (`POST`/`DELETE /api/v1/teacher/lessons/:id/assignments/:assignmentId`), but the screen for
+  them is not contracted. Lesson ↔ Assignment is **M:N** per `ENTITY_LESSON_ASSIGNMENT.md`
 - Viewing lesson content itself — this is the teacher's management list, not the reader view

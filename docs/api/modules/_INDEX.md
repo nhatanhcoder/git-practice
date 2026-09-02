@@ -6,8 +6,16 @@ last_updated: 2026-08-19
 
 # Backend Module Specs — Admin
 
-> Backend specifications for **the entire Admin area**. 8 modules, ~3,900 lines.
-> These are **specs, not code**. No backend line has been written yet.
+> Backend specifications for **the entire Admin area**. 8 modules, ~5,000 lines.
+> These are **specs, not code**.
+>
+> ⚠️ **Scope: Admin only.** The folder name says `modules/`, but every file here specs the Admin
+> surface. **The Teacher area has no module spec at all** — see § 11 for what is missing.
+>
+> **Code status (verified 2026-09-01):** `apps/api` exists — NestJS scaffold, `prisma/schema.prisma`,
+> `seed.ts`, health module and migration `20260820000000_init_users` (PR #12). It **implements no
+> module**. `packages/` does not exist. So: the scaffold is real, the modules are not.
+> (This line previously read *"No backend line has been written yet"* — stale since PR #12.)
 >
 > Project context: read `docs/BACKEND_PLAN.md` first if you know nothing about the system.
 
@@ -188,3 +196,42 @@ Two corrections vs. notes made while drafting: `docs/shared/decisions/008-append
 
 Wherever source docs contradict each other, the spec **records the contradiction** instead of
 picking a side.
+
+## 11. Teacher backend — what is missing
+
+Added 2026-09-01. The Teacher FE is built (9 screens, fully mocked — `ai/PROGRESS.md` § Sprint 2)
+and every Teacher endpoint is listed in `docs/api/API_TEACHER.md`, but **no Teacher module spec
+exists**. Nothing below has a §4 invariant set, a §7 transaction boundary or a §15 test matrix.
+
+| Teacher area | `API_TEACHER.md` | Module spec | Error codes | Entity spec |
+|---|---|---|---|---|
+| Classes | ✅ 6 endpoints | ⚠️ partial — module 03 covers them but is `⛔ deferred` on **SCOPE-01** | ✅ `CLASS_*` | ✅ |
+| Lessons | ✅ 8 endpoints (added 2026-09-01) | ❌ none | 🔶 `LESSON_*` *proposed* | ✅ |
+| Question Bank | ✅ 5 endpoints | ❌ none — and it is **MongoDB**, unlike every module here | ✅ `QUESTION_*` | ✅ |
+| Assignments | ✅ 5 endpoints | ❌ none | ✅ `ASSIGNMENT_*` | ✅ |
+| Grading | ✅ 4 endpoints | ❌ none | ✅ `ATTEMPT_*` · `AI_*` *proposed* | ✅ |
+| Sessions | ✅ 6 endpoints | ⚠️ **half** — module 04 specs only the Admin approve/reject side. The teacher-side create / start / end / attendance / submit transitions are unspecced, which is exactly why `API-004` says `GET /admin/sessions/pending` is permanently empty | ✅ `SESSION_*` | ✅ |
+| Income | ✅ 2 endpoints | ⚠️ mentioned once — `05-payroll.md` §235 raises `/api/v1/teacher/payroll` as an open question, does not spec it | ✅ `PAYROLL_*` | ✅ |
+
+**Reading this table:** the foundation is in better shape than the empty column suggests. Entity
+specs exist for everything, and error-code families exist for all but Lessons. What is missing is
+the **module layer** — invariants, transaction boundaries, state machines, test matrices.
+
+**Suggested order when it gets written** (dependency-first, same rule as §2):
+
+```
+Classes+Lessons ──► Question Bank ──► Assignments ──► Attempts+Grading
+      │                                                     │
+      └──────────────► Sessions (teacher side) ◄────────────┘
+                              │
+                              ▼
+                        Income (read-only)
+```
+
+Two things to settle before the first line:
+- **Classes+Lessons inherits SCOPE-01.** Module 03 is deferred on it; a Teacher Classes spec
+  cannot be more decided than the module it sits on.
+- **Question Bank is MongoDB.** Every module in this folder is Prisma/PostgreSQL. The 16-section
+  template's §7 (transaction boundary) and §12 (migration) assume SQL; a Mongo module needs those
+  two sections rethought, not copied. `DEBT-001` (no cross-DB transactions) applies directly:
+  Question lives in Mongo, Assignment in Postgres, and they are linked by `questionIds`.

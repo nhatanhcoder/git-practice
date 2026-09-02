@@ -365,6 +365,11 @@ _(discovered while mapping the Admin UI — 2026-08-13)_
 _(specs written 2026-08-19, `docs/api/modules/`. **Updated 2026-09-01**: `apps/api` now exists
 (PR #12 scaffold + `User` migration) but implements no module; `packages/` does not exist at all.)_
 
+> ⚠️ **These 8 modules are the Admin area only.** The Teacher backend has **no module spec at
+> all** — the FE is 9 built (mocked) screens with every endpoint listed in `API_TEACHER.md`, but
+> no invariants, transaction boundaries or test matrices behind them. Gap map:
+> `docs/api/modules/_INDEX.md` § 11 (added 2026-09-01).
+
 | # | Module | Spec | Status | INV | Blocked by |
 |---|---|---|---|---|---|
 | 1 | Auth | `01-auth.md` | ✅ accepted | 24 | — |
@@ -380,6 +385,24 @@ _(specs written 2026-08-19, `docs/api/modules/`. **Updated 2026-09-01**: `apps/a
 replaces coverage %.
 
 **Only Auth is ready to code right now.**
+
+### Backend — Teacher module specs (none written)
+
+- 🔶 (claude · 2026-09-01) **API surface gaps closed, module specs not started.**
+  `API_TEACHER.md` § Lessons written (8 endpoints, `API-007` closed) + `LESSON_*` error family
+  (*proposed, not agreed*); `API-006` route convention settled **role-prefixed** by the owner and
+  applied to `docs/api/modules/03-classes-enrollment.md`. Full gap map in
+  `docs/api/modules/_INDEX.md` § 11.
+- ⬜ Teacher module specs — **5 modules, none exist**, suggested dependency order:
+  Classes+Lessons → Question Bank → Assignments → Attempts+Grading → Sessions (teacher side) →
+  Income. Two things to settle first: Classes+Lessons inherits **SCOPE-01** (module 03 is
+  deferred on it), and **Question Bank is MongoDB** — the 16-section template's §7 transaction
+  boundary and §12 migration assume SQL and need rethinking, plus `DEBT-001` (no cross-DB
+  transactions) applies directly since Question lives in Mongo and Assignment in Postgres
+- ⬜ Teacher-side Sessions transitions (`scheduled → in_progress → completed_pending`) — module 04
+  specs only the Admin approve/reject half. This is the same hole `API-004` names: without the
+  teacher side, `GET /admin/sessions/pending` is permanently empty
+- ⬜ Lesson row in `RBAC_MATRIX.md` / `PERMISSIONS_TEACHER.md` — needs owner approval (RBAC)
 
 ### Backend — not started
 

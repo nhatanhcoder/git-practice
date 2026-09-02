@@ -63,11 +63,11 @@ the same modal as the one on `/teacher/classes` (§2).
     ├── Copy code                              (clipboard, no request)
     ├── Tab "Bài học"
     │   ▼
-    │   /teacher/classes/[classId]/lessons  Lesson List   ⛔ no endpoint
-    │   ├── "Thêm bài học" → Modal → Submit → List        ⛔ no endpoint
-    │   ├── "Sửa" → Modal → Submit → same                 ⛔ no endpoint
-    │   ├── "Xoá" → Confirm → List (row removed)          ⛔ no endpoint
-    │   ├── Drag reorder → List (optimistic)               ⛔ no endpoint
+    │   /teacher/classes/[classId]/lessons  Lesson List   GET /teacher/classes/:classId/lessons
+    │   ├── "Thêm bài học" → Modal → Submit → List        POST /teacher/classes/:classId/lessons
+    │   ├── "Sửa" → Modal → Submit → same                 PATCH /teacher/lessons/:id
+    │   ├── "Xoá" → Confirm → List (row removed)          DELETE /teacher/lessons/:id
+    │   ├── Drag reorder → List (optimistic)               PATCH /teacher/classes/:classId/lessons/reorder
     │   └── Back                                            → Class Detail
     └── Back                                                → Class List
 ```
@@ -75,12 +75,13 @@ the same modal as the one on `/teacher/classes` (§2).
 **No `Remove student` node.** No endpoint exists for it in `API_TEACHER.md`, and it is not in
 `FEATURES_TEACHER.md`.
 **No `Delete class` node.** Only archive exists (T-CLASS-5); there is no delete feature.
-**The entire Lesson List branch is `⛔`.** `API_TEACHER.md` has no Lessons section at all —
-not one of these five actions has a real endpoint anywhere in `docs/api/`. This branch is drawn
-because the route and its actions follow directly from `FEATURES_TEACHER.md` T-LESSON-1/2/4/5,
-but nothing here should be built against yet. See `KNOWN_ISSUES.md` `API-006`.
-**No `Attach assignment` node.** T-LESSON-3 (attach an Assignment to a Lesson) has no endpoint
-either and no contracted screen — it belongs with the Assignment screens, not yet mapped.
+**The Lesson List branch is no longer `⛔`** (2026-09-01). `API_TEACHER.md` gained a Lessons
+section closing `API-007`; the five paths above are that section, quoted. They are **not yet
+cross-checked by a BE owner** and their `LESSON_*` codes are *proposed, not agreed* — buildable,
+not signable-off.
+**No `Attach assignment` node.** T-LESSON-3's endpoints now exist
+(`POST`/`DELETE /teacher/lessons/:id/assignments/:assignmentId`) but no screen is contracted for
+them — they belong with the Assignment screens.
 
 ---
 
@@ -96,11 +97,11 @@ either and no contracted screen — it belongs with the Assignment screens, not 
 | 6 | `/teacher/classes` | row click | `/teacher/classes/[classId]` | `GET /teacher/classes/:id` | `CLASS_NOT_FOUND`, `CLASS_ACCESS_DENIED` |
 | 7 | `…/[classId]` | edit | same | `PATCH /teacher/classes/:id` | `CLASS_NOT_FOUND`, `CLASS_ACCESS_DENIED` |
 | 8 | `…/[classId]` | regenerate code | same | `POST /teacher/classes/:id/enrollment-code/regenerate` | `CLASS_NOT_FOUND`, `CLASS_ACCESS_DENIED` |
-| 9 | `…/[classId]` | tab "Bài học" | `…/[classId]/lessons` | ⛔ no endpoint | — |
-| 10 | `…/lessons` | create lesson | same | ⛔ no endpoint | — |
-| 11 | `…/lessons` | edit lesson | same | ⛔ no endpoint | — |
-| 12 | `…/lessons` | delete lesson | same | ⛔ no endpoint | — |
-| 13 | `…/lessons` | drag reorder | same | ⛔ no endpoint | — |
+| 9 | `…/[classId]` | tab "Bài học" | `…/[classId]/lessons` | `GET /teacher/classes/:classId/lessons` | `LESSON_ACCESS_DENIED` |
+| 10 | `…/lessons` | create lesson | same | `POST /teacher/classes/:classId/lessons` | `LESSON_ORDER_INDEX_CONFLICT` |
+| 11 | `…/lessons` | edit lesson | same | `PATCH /teacher/lessons/:id` | `LESSON_NOT_FOUND`, `LESSON_ACCESS_DENIED` |
+| 12 | `…/lessons` | delete lesson | same | `DELETE /teacher/lessons/:id` | `LESSON_HAS_ACTIVE_ATTEMPTS` |
+| 13 | `…/lessons` | drag reorder | same | `PATCH /teacher/classes/:classId/lessons/reorder` | `LESSON_ORDER_INDEX_CONFLICT` |
 
 ---
 
@@ -190,9 +191,9 @@ not a state transition.
 | Gap | Blocks |
 |---|---|
 | A dashboard-aggregation endpoint for Teacher (`API_TEACHER.md` has no Dashboard section) | any KPI row on `/teacher` beyond the class-card preview |
-| **An entire Lessons API** — `API_TEACHER.md` has no Lessons section at all | transitions 9–13 in full; the whole `.../lessons` branch in §2 |
-| `RBAC_MATRIX.md` / `PERMISSIONS_TEACHER.md` row for Lesson | confirming the ownership rule used in `teacher-lessons-list.md`, currently inferred from Class |
+| ~~An entire Lessons API~~ — ✅ **closed 2026-09-01**, `API_TEACHER.md` § Lessons (`API-007`). Its `LESSON_*` codes are still *proposed, not agreed* | was: transitions 9–13 and the whole `.../lessons` branch |
+| `RBAC_MATRIX.md` / `PERMISSIONS_TEACHER.md` row for Lesson | the permission matrix has no Lesson row. Ownership itself is now sourced (`ENTITY_LESSON.md` § Business Rules), but the matrix edit touches RBAC and needs its own approval |
 | Class create/archive error codes beyond `CLASS_NOT_FOUND`/`CLASS_ACCESS_DENIED`/`CLASS_ALREADY_ARCHIVED` (transitions 3–4 are `TODO(error-code)`) | precise error handling on class creation |
 | Error codes for Question/Assignment/Attempt/Session actions (v2 transitions 14–25 are all `TODO(error-code)`) | precise error handling on all S3–S6 screens |
 | Analytics screens (T-ANL-1..4) — not contracted | the last unmapped FEATURES_TEACHER area |
-| Reconcile `API_TEACHER.md` (role-prefixed, archive = `PATCH`) vs. `docs/flows/FLOW_ENROLLMENT.md` (bare `/classes`, archive = `POST`) — `KNOWN_ISSUES.md` `API-006` | which convention the backend actually implements — this flow follows `API_TEACHER.md` per flow-mapper's read order, not resolved here |
+| ~~Reconcile `API_TEACHER.md` vs `FLOW_ENROLLMENT.md` route convention~~ — ✅ **settled 2026-09-01 by the owner: role-prefixed** (`API-006`). This flow was already correct. `docs/api/modules/03-classes-enrollment.md` was updated to match; `FLOW_ENROLLMENT.md` carries a supersede note, its 35 path references not yet rewritten | was: which convention the backend implements |
