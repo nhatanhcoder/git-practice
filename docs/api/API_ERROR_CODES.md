@@ -96,6 +96,23 @@
 | `CLASS_ALREADY_ENROLLED` | 409 | The student is already in this class |
 | `CLASS_NOT_ENROLLED` | 400 | The student is not in the class |
 
+### Lesson Errors (LESSON_*)
+
+> ⚠️ **Proposed, not agreed.** Added 2026-09-01 with the Lessons section of `API_TEACHER.md`
+> (`API-007`). Each code maps to a constraint or business rule already written in
+> [ENTITY_LESSON.md](../entities/postgres/ENTITY_LESSON.md) /
+> [ENTITY_LESSON_ASSIGNMENT.md](../entities/postgres/ENTITY_LESSON_ASSIGNMENT.md) — none was
+> invented — but no BE owner has signed them off, so they are **not usable in code yet**.
+
+| Code | HTTP | Description |
+|------|------|-------|
+| `LESSON_NOT_FOUND` | 404 | Lesson not found |
+| `LESSON_ACCESS_DENIED` | 403 | Not the teacher of the lesson's parent class |
+| `LESSON_HAS_ACTIVE_ATTEMPTS` | 409 | Cannot delete — a linked assignment has active attempts |
+| `LESSON_ORDER_INDEX_CONFLICT` | 409 | `(classId, orderIndex)` already taken — reorder was not transactional |
+| `LESSON_ASSIGNMENT_ALREADY_LINKED` | 409 | This assignment is already linked to this lesson |
+| `LESSON_ASSIGNMENT_NOT_LINKED` | 404 | No such link between this lesson and assignment |
+
 ### Question Errors (QUESTION_*)
 
 | Code | HTTP | Description |

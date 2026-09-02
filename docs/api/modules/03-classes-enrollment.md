@@ -30,16 +30,33 @@ This is a **scope gap**, not a module deferred due to low priority.
 ## 2. Endpoints
 
 **No endpoints are defined for Admin.** RBAC assigns create/edit rights to Teacher and
-enrollment rights to Student — but `docs/api/API_TEACHER.md` and `API_STUDENT.md` have not been
-cross-checked against this module spec.
+enrollment rights to Student.
+
+> **Cross-checked 2026-09-01 (`API-006` closed).** This table previously used bare
+> `/api/v1/classes` paths. The owner settled the convention as **role-prefixed**, matching
+> `API_ADMIN.md`, `API_TEACHER.md` and `API_STUDENT.md` — all three already used it; this spec
+> and `FLOW_ENROLLMENT.md` were the only two documents that did not. Paths below are now the ones
+> in the role API docs, quoted verbatim.
 
 | Method | Path | Role | Description | Status |
 |---|---|---|---|---|
-| POST | `/api/v1/classes` | teacher | Create class, generate 8-char `enrollmentCode` | ⛔ not cross-checked |
-| PATCH | `/api/v1/classes/:id` | teacher (own) | Edit class | ⛔ not cross-checked |
-| GET | `/api/v1/classes` | teacher (own) / student (enrolled) | List classes | ⛔ not cross-checked |
-| POST | `/api/v1/classes/join` | student | Enroll via `enrollmentCode` | ⛔ not cross-checked |
-| GET | `/api/v1/classes/:id/students` | teacher (own) | List students in class | ⛔ not cross-checked |
+| POST | `/api/v1/teacher/classes` | teacher | Create class, generate 8-char `enrollmentCode` | defined (`API_TEACHER.md`) |
+| PATCH | `/api/v1/teacher/classes/:id` | teacher (own) | Edit class | defined (`API_TEACHER.md`) |
+| PATCH | `/api/v1/teacher/classes/:id/archive` | teacher (own) | Archive class | defined (`API_TEACHER.md`) |
+| GET | `/api/v1/teacher/classes` | teacher (own) | List own classes | defined (`API_TEACHER.md`) |
+| GET | `/api/v1/teacher/classes/:id` | teacher (own) | Class detail — **student list is embedded here** | defined (`API_TEACHER.md`) |
+| GET | `/api/v1/student/classes` | student (enrolled) | List enrolled classes | defined (`API_STUDENT.md`) |
+| POST | `/api/v1/student/classes/join` | student | Enroll via `enrollmentCode` | defined (`API_STUDENT.md`) |
+| DELETE | `/api/v1/student/classes/:id/leave` | student | Leave class → `status = dropped` | defined (`API_STUDENT.md`) |
+
+Two consequences of the cross-check, recorded rather than smoothed over:
+
+- **The old `GET /classes` row served two roles at once.** Under the role-prefixed convention it
+  splits into two endpoints, and both already exist. No new surface.
+- **There is no separate `GET /classes/:id/students`.** `API_TEACHER.md` embeds the roster in
+  `GET /api/v1/teacher/classes/:id`. The old row implied a standalone endpoint that no role API
+  doc defines — if the roster ever needs its own paginated endpoint, that is new surface and
+  needs adding to `API_TEACHER.md` first.
 
 **The minimal part Sessions needs** (if option B in section 16 is chosen):
 

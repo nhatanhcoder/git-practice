@@ -43,22 +43,28 @@ last_updated: 2026-08-14
 
 ## Teacher
 
-**▶ [Teacher UI Flow + API Map](./teacher-pages/teacher-flow.md)** — screen-to-screen traversal
-for the S2 slice (Classes + Lessons); everything else is not yet mapped.
+**▶ [Teacher UI Flow + API Map](./teacher-pages/teacher-flow.md)** — screen-to-screen traversal.
+v1 covers the S2 slice (Classes + Lessons), v2 adds Question Bank, Assignments, Grading, Sessions
+and Income. **Analytics (T-ANL-1…4) is the only FEATURES_TEACHER area still unmapped.**
 
 | Route | Feature | Contract | Status | Design | Blocked on |
 |---|---|---|---|---|---|
 | `/teacher` | TODO(feature-id) | [teacher-dashboard](./teacher-pages/teacher-dashboard.md) | built | v1 | no dashboard-aggregation endpoint (KPI row deferred by contract) |
-| `/teacher/classes` | T-CLASS-1,2,5 | [teacher-classes-list](./teacher-pages/teacher-classes-list.md) | built | v1 | `API-006`: route mismatch vs FLOW_ENROLLMENT.md |
+| `/teacher/classes` | T-CLASS-1,2,5 | [teacher-classes-list](./teacher-pages/teacher-classes-list.md) | built | v1 | none — `API-006` settled 2026-09-01 (role-prefixed) |
 | `/teacher/classes/[classId]` | T-CLASS-3,4,6 | [teacher-class-detail](./teacher-pages/teacher-class-detail.md) | built | v1 | average score field; attendance rate (S5) |
-| `/teacher/classes/[classId]/lessons` | T-LESSON-1,2,4,5 | [teacher-lessons-list](./teacher-pages/teacher-lessons-list.md) | built | v1 | **`API-007`: no Lessons API at all** — every action is ⛔ (screen is local-mock only) |
+| `/teacher/classes/[classId]/lessons` | T-LESSON-1,2,4,5 | [teacher-lessons-list](./teacher-pages/teacher-lessons-list.md) | built | v1 | `LESSON_*` codes *proposed, not agreed* — `API-007` closed 2026-09-01, endpoints now defined |
 | `/teacher/questions` | T-QB-1,2,4,5,6 | [teacher-question-bank](./teacher-pages/teacher-question-bank.md) | built | v1 | error codes TODO; audio upload mocked |
 | `/teacher/assignments` | T-ASGN-1..5 | [teacher-assignments](./teacher-pages/teacher-assignments.md) | built | v1 | error codes TODO |
 | `/teacher/grading` | T-GRADE-1..5 | [teacher-grading](./teacher-pages/teacher-grading.md) | built | v1 | error codes TODO |
 | `/teacher/sessions` | T-SES-1..7 | [teacher-sessions](./teacher-pages/teacher-sessions.md) | built | v1 | error codes TODO |
 | `/teacher/income` | T-INC-1,2,3 | [teacher-income](./teacher-pages/teacher-income.md) | built | v1 | none — both endpoints defined |
 
-Question Bank, Assignments, Grading, Sessions, Analytics, Income: _not yet mapped._
+Analytics (T-ANL-1…4): _not yet mapped._ Every other Teacher area has a contract above.
+
+> ⚠️ All nine Teacher screens are **fully mocked** — no API call anywhere (`ai/PROGRESS.md`
+> § Sprint 2). `built` here means the screen exists and renders, not that the feature works.
+> The Teacher **backend** has no module spec either — see
+> [`docs/api/modules/_INDEX.md` § 11](../../api/modules/_INDEX.md).
 
 ## Student
 _Not yet mapped._ (the built `/student/**` screens were produced from

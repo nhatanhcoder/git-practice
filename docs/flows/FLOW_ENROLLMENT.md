@@ -4,6 +4,18 @@
 > **Module**: ClassesModule (NestJS)  
 > **Entities**: Class, ClassEnrollment (PostgreSQL)
 
+> ⚠️ **The route paths in this file are stale (2026-09-01, `API-006`).** It writes Teacher and
+> Student routes as bare `/api/v1/classes/...`. The owner settled the convention as
+> **role-prefixed** — `/api/v1/teacher/classes/...` and `/api/v1/student/classes/...` — which is
+> what `API_TEACHER.md`, `API_STUDENT.md`, `API_ADMIN.md` and
+> `docs/api/modules/03-classes-enrollment.md` all use.
+>
+> **For any endpoint path, the role `API_<ROLE>.md` file wins over this document.** Archive
+> method also differs: this file says `POST .../archive`, the API docs say `PATCH`. The
+> *sequences, business rules and service logic* below are still correct and still the reference —
+> only the paths are wrong. Rewriting all 35 path references is its own task; doing it here would
+> have meant touching Student routes that were not part of this change.
+
 ---
 
 ## 1. Overview
