@@ -26,6 +26,8 @@ import {
   type Attempt,
 } from "@/lib/teacher/grading-data";
 import { skillLabels } from "@/lib/teacher/question-data";
+import { useOverlay } from "@/hooks/use-overlay";
+import { clampScore, finalizeGradedQuestion, isValidScore } from "@/lib/teacher/teacher-rules";
 import { formatDateTime } from "@/lib/formatters";
 import styles from "./grading.module.css";
 
@@ -39,18 +41,6 @@ interface GradingDraft {
   aiOriginal: Record<string, { score: number; reasoning: string } | null>;
 }
 
-// A2: one range rule, used by the input, the finish gate and finishGrading itself.
-// Kept module-level so the disabled button and the write path cannot drift apart.
-function isValidScore(value: number | null | undefined, maxScore: number): value is number {
-  return typeof value === "number" && Number.isFinite(value) && value >= 0 && value <= maxScore;
-}
-
-function clampScore(raw: string, maxScore: number): number | null {
-  if (raw === "") return null;
-  const n = Number(raw);
-  if (!Number.isFinite(n)) return null;
-  return Math.min(maxScore, Math.max(0, n));
-}
 
 export default function TeacherGradingPage() {
   const [attempts, setAttempts] = useState<Attempt[]>(mockAttempts);
@@ -60,6 +50,8 @@ export default function TeacherGradingPage() {
   const [open, setOpen] = useState<Attempt | null>(null);
   const [draft, setDraft] = useState<GradingDraft>({ scores: {}, feedbacks: {}, aiOriginal: {} });
   const [toast, setToast] = useState("");
+  // C3: Escape / focus trap / focus restore for the grading drawer.
+  const drawerRef = useOverlay<HTMLDivElement>(() => setOpen(null), open !== null);
 
   const classOptions = useMemo(() => {
     const ids = new Map<string, string>();
@@ -126,19 +118,16 @@ export default function TeacherGradingPage() {
           ? {
               ...a,
               status: "graded",
-              questions: a.questions.map((q) => {
-                const drafted = draft.scores[q.id];
-                // Guard again at the write itself; fall back to the stored score, never to 0.
-                const finalScore = isValidScore(drafted, q.maxScore) ? drafted : (q.score ?? 0);
-                return {
-                  ...q,
-                  score: finalScore,
-                  feedback: draft.feedbacks[q.id] || null,
-                  // The AI suggestion is whatever the AI said — independent of what the teacher
-                  // then typed. Null when AI was never called.
-                  aiSuggestion: draft.aiOriginal[q.id] ?? null,
-                };
-              }),
+              questions: a.questions.map((q) => ({
+                ...q,
+                ...finalizeGradedQuestion({
+                  draftScore: draft.scores[q.id],
+                  draftFeedback: draft.feedbacks[q.id],
+                  aiOriginal: draft.aiOriginal[q.id] ?? null,
+                  storedScore: q.score,
+                  maxScore: q.maxScore,
+                }),
+              })),
             }
           : a,
       ),
@@ -268,8 +257,10 @@ export default function TeacherGradingPage() {
 
       {open && (
         <div className={styles.drawerBackdrop} role="dialog" aria-modal="true" aria-label={"Chấm bài của " + open.studentNickname}>
+          {/* The scrim is already a real button, so backdrop-close is covered; the ref below
+              adds Escape, focus trap and focus restore (C3). */}
           <button className={styles.drawerScrim} onClick={() => setOpen(null)} aria-label="Đóng" />
-          <div className={styles.drawer}>
+          <div ref={drawerRef} className={styles.drawer}>
             <div className={styles.drawerHead}>
               <div>
                 <h2>{open.studentNickname}</h2>

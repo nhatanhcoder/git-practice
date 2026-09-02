@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { TeacherShell } from "@/components/teacher/teacher-shell";
 import {
+  Overlay,
   ReviewSwitcher,
   StatusPill,
   Toast,
@@ -31,6 +32,7 @@ import {
   type Session,
 } from "@/lib/teacher/session-data";
 import { mockTeacherClasses } from "@/lib/teacher-data";
+import { sessionSubmitError } from "@/lib/teacher/teacher-rules";
 import { formatDate } from "@/lib/formatters";
 import styles from "./sessions.module.css";
 
@@ -146,17 +148,15 @@ export default function TeacherSessionsPage() {
 
   // A1: the submit gate. `actualEnd` feeds per_hour payroll (INV-PAYROLL-06), so it must be a
   // time the teacher actually entered — never derived, never defaulted.
-  const submitError: string | null = (() => {
-    if (!submitting) return null;
-    if (!submitting.actualStart) return "Chưa có giờ bắt đầu thực tế — bấm “Bắt đầu” trước khi gửi duyệt.";
-    if (!submitDraft.actualEnd) return "Nhập giờ kết thúc thực tế.";
-    // INV-SESSION-13: when both are non-NULL, actualEnd > actualStart.
-    if (submitDraft.actualEnd <= submitting.actualStart)
-      return "Giờ kết thúc phải sau giờ bắt đầu (" + submitting.actualStart + ").";
-    return null;
-  })();
+  const submitError: string | null = submitting
+    ? sessionSubmitError({
+        topic: submitDraft.topic,
+        actualStart: submitting.actualStart,
+        actualEnd: submitDraft.actualEnd,
+      })
+    : null;
 
-  const submitValid = !!submitting && !!submitDraft.topic.trim() && submitError === null;
+  const submitValid = !!submitting && submitError === null;
 
   function handleSubmit() {
     if (!submitting || !submitValid) return;
@@ -295,8 +295,12 @@ export default function TeacherSessionsPage() {
       {toast && <Toast message={toast} />}
 
       {creating && (
-        <div className={styles.modalBackdrop} role="dialog" aria-modal="true" aria-label="Tạo buổi học">
-          <div className={styles.modal}>
+        <Overlay
+          label={"Tạo buổi học"}
+          onClose={() => setCreating(false)}
+          backdropClassName={styles.modalBackdrop}
+          panelClassName={styles.modal}
+        >
             <h2>Tạo buổi học</h2>
             <form onSubmit={(e) => { e.preventDefault(); handleCreate(); }}>
               <label className={styles.field}>
@@ -325,13 +329,16 @@ export default function TeacherSessionsPage() {
                 <button type="submit" className={styles.primaryButton} disabled={!createValid}>Tạo buổi học</button>
               </div>
             </form>
-          </div>
-        </div>
+          </Overlay>
       )}
 
       {attendanceSession && (
-        <div className={styles.modalBackdrop} role="dialog" aria-modal="true" aria-label="Điểm danh">
-          <div className={styles.modal}>
+        <Overlay
+          label={"Điểm danh"}
+          onClose={() => setAttendanceSession(null)}
+          backdropClassName={styles.modalBackdrop}
+          panelClassName={styles.modal}
+        >
             <div className={styles.modalHeadRow}>
               <h2>Điểm danh — {formatDate(attendanceSession.date)}</h2>
               <button className={styles.modalClose} onClick={() => setAttendanceSession(null)} aria-label="Đóng"><X size={17} /></button>
@@ -390,13 +397,16 @@ export default function TeacherSessionsPage() {
                 <Check size={15} />Lưu điểm danh
               </button>
             </div>
-          </div>
-        </div>
+          </Overlay>
       )}
 
       {submitting && (
-        <div className={styles.modalBackdrop} role="dialog" aria-modal="true" aria-label="Gửi duyệt buổi học">
-          <div className={styles.modal}>
+        <Overlay
+          label={"Gửi duyệt buổi học"}
+          onClose={() => setSubmitting(null)}
+          backdropClassName={styles.modalBackdrop}
+          panelClassName={styles.modal}
+        >
             <h2>Gửi duyệt buổi học</h2>
             <p className={styles.modalSub}>
               {submitting.className} · {formatDate(submitting.date)} · theo lịch {submitting.startTime}–{submitting.endTime}
@@ -435,13 +445,16 @@ export default function TeacherSessionsPage() {
                 <Send size={15} />Gửi duyệt
               </button>
             </div>
-          </div>
-        </div>
+          </Overlay>
       )}
 
       {reasonSession && (
-        <div className={styles.modalBackdrop} role="dialog" aria-modal="true" aria-label="Lý do từ chối">
-          <div className={styles.modal}>
+        <Overlay
+          label={"Lý do từ chối"}
+          onClose={() => setReasonSession(null)}
+          backdropClassName={styles.modalBackdrop}
+          panelClassName={styles.modal}
+        >
             <h2>Buổi học bị từ chối</h2>
             <p className={styles.modalSub}>{reasonSession.className} · {formatDate(reasonSession.date)}</p>
             <div className={styles.reasonBox} role="alert">
@@ -454,8 +467,7 @@ export default function TeacherSessionsPage() {
             <div className={styles.modalActions}>
               <button type="button" className={styles.primaryButton} onClick={() => setReasonSession(null)}>Đã hiểu</button>
             </div>
-          </div>
-        </div>
+          </Overlay>
       )}
     </TeacherShell>
   );

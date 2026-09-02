@@ -22,6 +22,7 @@ import {
   mockTeacherClasses,
   type TeacherClass,
 } from "@/lib/teacher-data";
+import { useDismissMenu } from "@/hooks/use-overlay";
 import { formatDate } from "@/lib/formatters";
 import styles from "./classes.module.css";
 
@@ -246,6 +247,8 @@ function ClassRow({
   onOpen: () => void;
   onArchive: () => void;
 }) {
+  // C3: dismissal lives with the row that owns the menu.
+  const menuRef = useDismissMenu<HTMLTableCellElement>(activeMenu, () => { if (activeMenu) onToggleMenu(); });
   return (
     <tr tabIndex={0} onClick={onOpen} onKeyDown={(e) => e.key === "Enter" && onOpen()}>
       <td>
@@ -265,12 +268,19 @@ function ClassRow({
         <StatusPill status={cls.status} label={classStatusLabels[cls.status]} />
       </td>
       <td className={styles.numeric}>{formatDate(cls.createdAt)}</td>
-      <td className={styles.actionCell} onClick={(e) => e.stopPropagation()}>
-        <button className={styles.moreButton} onClick={onToggleMenu} aria-label={"Thao tác cho " + cls.name}>
+      <td className={styles.actionCell} onClick={(e) => e.stopPropagation()} ref={activeMenu ? menuRef : undefined}>
+        <button
+          className={styles.moreButton}
+          onClick={onToggleMenu}
+          aria-label={"Thao tác cho " + cls.name}
+          aria-haspopup="menu"
+          aria-expanded={activeMenu}
+          aria-controls={"cmenu-" + cls.id}
+        >
           <MoreHorizontal size={19} />
         </button>
         {activeMenu && (
-          <div className={styles.actionMenu}>
+          <div className={styles.actionMenu} id={"cmenu-" + cls.id} role="menu">
             <button onClick={onOpen}>Xem chi tiết</button>
             {cls.status === "active" && (
               <button className={styles.dangerAction} onClick={onArchive}>

@@ -76,6 +76,7 @@
 .modalActions button{height:38px;padding:0 16px;border-radius:6px;font-weight:600;cursor:pointer}
 .cancelButton{border:0;background:#f1f5f9;color:#475569}
 .pickerHint{margin:0 0 12px;color:#475569;font-size:12.5px}
+.pickerEmpty{margin:0;padding:18px 14px;color:#64748b;font-size:13px;text-align:center}
 .questionPicker{max-height:340px;overflow-y:auto;border:1px solid #e2e8f0;border-radius:6px}
 .pickRow,.pickRowChecked{display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border-bottom:1px solid #e2e8f0;cursor:pointer}
 .pickRow:last-child,.pickRowChecked:last-child{border-bottom:0}

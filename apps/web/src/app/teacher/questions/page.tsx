@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { TeacherShell } from "@/components/teacher/teacher-shell";
 import {
+  Overlay,
   ConfirmModal,
   ReviewSwitcher,
   StatusPill,
@@ -33,6 +34,7 @@ import {
   type Question,
   type Skill,
 } from "@/lib/teacher/question-data";
+import { useDismissMenu } from "@/hooks/use-overlay";
 import { formatDate } from "@/lib/formatters";
 import styles from "./questions.module.css";
 
@@ -73,6 +75,8 @@ export default function TeacherQuestionsPage() {
   const [preview, setPreview] = useState<Question | null>(null);
   const [deleting, setDeleting] = useState<Question | null>(null);
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
+  // C3: outside-click / Escape dismissal for the open row menu.
+  const menuRef = useDismissMenu<HTMLTableCellElement>(activeMenu !== null, () => setActiveMenu(null));
   const [toast, setToast] = useState("");
 
   const filtered = useMemo(() => {
@@ -292,13 +296,20 @@ export default function TeacherQuestionsPage() {
                       <td><span className={styles.levelBadge}>HSK {q.hskLevel}</span></td>
                       <td>{difficultyLabels[q.difficulty]}</td>
                       <td className={styles.numeric}>{q.usageCount} lần</td>
-                      <td className={styles.actionCell} onClick={(e) => e.stopPropagation()}>
-                        <button className={styles.moreButton} onClick={() => setActiveMenu(activeMenu === q.id ? null : q.id)} aria-label={"Thao tác cho câu hỏi " + q.id}>
+                      <td className={styles.actionCell} onClick={(e) => e.stopPropagation()} ref={activeMenu === q.id ? menuRef : undefined}>
+                        <button
+                          className={styles.moreButton}
+                          onClick={() => setActiveMenu(activeMenu === q.id ? null : q.id)}
+                          aria-label={"Thao tác cho câu hỏi " + q.id}
+                          aria-haspopup="menu"
+                          aria-expanded={activeMenu === q.id}
+                          aria-controls={"qmenu-" + q.id}
+                        >
                           <MoreHorizontal size={19} />
                         </button>
                         {activeMenu === q.id && (
-                          <div className={styles.actionMenu}>
-                            <button onClick={() => setPreview(q)}><Eye size={14} />Xem trước</button>
+                          <div className={styles.actionMenu} id={"qmenu-" + q.id} role="menu">
+                            <button onClick={() => { setActiveMenu(null); setPreview(q); }}><Eye size={14} />Xem trước</button>
                             <button onClick={() => openEdit(q)}><Pencil size={14} />Sửa</button>
                             <button
                               className={styles.dangerAction}
@@ -341,8 +352,12 @@ export default function TeacherQuestionsPage() {
       {toast && <Toast message={toast} />}
 
       {editing !== undefined && (
-        <div className={styles.modalBackdrop} role="dialog" aria-modal="true" aria-label={editing ? "Sửa câu hỏi" : "Tạo câu hỏi"}>
-          <div className={styles.modal}>
+        <Overlay
+          label={editing ? "Sửa câu hỏi" : "Tạo câu hỏi"}
+          onClose={() => setEditing(undefined)}
+          backdropClassName={styles.modalBackdrop}
+          panelClassName={styles.modalWide}
+        >
             <h2>{editing ? "Sửa câu hỏi" : "Tạo câu hỏi"}</h2>
             <form onSubmit={(e) => { e.preventDefault(); submitDraft(); }}>
               <div className={styles.formGrid}>
@@ -419,13 +434,16 @@ export default function TeacherQuestionsPage() {
                 </button>
               </div>
             </form>
-          </div>
-        </div>
+          </Overlay>
       )}
 
       {preview && (
-        <div className={styles.modalBackdrop} role="dialog" aria-modal="true" aria-label="Xem trước câu hỏi">
-          <div className={styles.modal}>
+        <Overlay
+          label={"Xem trước câu hỏi"}
+          onClose={() => setPreview(null)}
+          backdropClassName={styles.modalBackdrop}
+          panelClassName={styles.modal}
+        >
             <div className={styles.previewHead}>
               <div className={styles.previewBadges}>
                 <StatusPill status={preview.skill === "writing" ? "info" : preview.skill === "listening" ? "warning" : "neutral"} label={skillLabels[preview.skill]} />
@@ -446,8 +464,7 @@ export default function TeacherQuestionsPage() {
               <div><dt>Giải thích</dt><dd>{preview.explanation || "—"}</dd></div>
               <div><dt>Đã dùng trong</dt><dd>{preview.usageCount} bài tập · tạo {formatDate(preview.createdAt)}</dd></div>
             </dl>
-          </div>
-        </div>
+          </Overlay>
       )}
 
       {deleting && (

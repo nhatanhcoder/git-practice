@@ -19,6 +19,7 @@ import {
 import { TeacherShell } from "@/components/teacher/teacher-shell";
 import {
   ConfirmModal,
+  Overlay,
   ReviewSwitcher,
   Toast,
   type ReviewState,
@@ -32,6 +33,8 @@ import {
 } from "@/lib/teacher/assignment-data";
 import { mockQuestions } from "@/lib/teacher/question-data";
 import { mockTeacherClasses } from "@/lib/teacher-data";
+import { useDismissMenu } from "@/hooks/use-overlay";
+import { assignmentTimeLimitValid } from "@/lib/teacher/teacher-rules";
 import { formatDate } from "@/lib/formatters";
 import styles from "./assignments.module.css";
 
@@ -57,6 +60,8 @@ export default function TeacherAssignmentsPage() {
   const [stats, setStats] = useState<Assignment | null>(null);
   const [deleting, setDeleting] = useState<Assignment | null>(null);
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
+  // C3: outside-click / Escape dismissal for the open row menu.
+  const menuRef = useDismissMenu<HTMLTableCellElement>(activeMenu !== null, () => setActiveMenu(null));
   const [toast, setToast] = useState("");
 
   const ownClasses = useMemo(() => mockTeacherClasses.filter((c) => c.status === "active"), []);
@@ -107,7 +112,7 @@ export default function TeacherAssignmentsPage() {
     // MOCK: POST/PATCH /api/v1/teacher/assignments — error codes TODO(error-code)
     if (editing) {
       setAssignments((current) =>
-        current.map((a) => (a.id === editing.id ? { ...a, ...draft, timeLimitMinutes: timeLimit, className: cls?.name ?? a.className, questionIds: [...draft.questionIds] } : a)),
+        current.map((a) => (a.id === editing.id ? { ...a, ...draft, timeLimitMinutes: timeLimit, className: cls?.name ?? a.className, hskLevel: cls?.hskLevel ?? a.hskLevel, questionIds: [...draft.questionIds] } : a)),
       );
       flash("Đã lưu bài tập");
     } else {
@@ -142,11 +147,15 @@ export default function TeacherAssignmentsPage() {
 
   // B1: ENTITY_ASSIGNMENT — `timeLimitMinutes` is required when type = mock_test.
   // Shared by the step-1 gate and submitDraft so the two cannot disagree.
-  function timeLimitValid(d: Draft): boolean {
-    if (d.type !== "mock_test") return true;
-    const n = Number(d.timeLimitMinutes);
-    return d.timeLimitMinutes.trim() !== "" && Number.isInteger(n) && n >= 5 && n <= 180;
-  }
+  const timeLimitValid = (d: Draft) => assignmentTimeLimitValid(d.type, d.timeLimitMinutes);
+
+  // C1: the picker hint always claimed "đã lọc theo HSK của lớp" but rendered every question.
+  // Filter for real, from the class currently chosen in the draft.
+  const selectedClass = ownClasses.find((c) => c.id === draft.classId) ?? null;
+  const eligibleQuestions = useMemo(
+    () => (selectedClass ? mockQuestions.filter((q) => q.hskLevel === selectedClass.hskLevel) : []),
+    [selectedClass],
+  );
 
   const step1Valid =
     draft.title.trim().length >= 3 && !!draft.classId && !!draft.dueDate && timeLimitValid(draft);
@@ -267,12 +276,19 @@ export default function TeacherAssignmentsPage() {
                       <td className={styles.numeric}>
                         {a.pendingGradingCount > 0 ? <span className={styles.pendingBadge}>{a.pendingGradingCount}</span> : "—"}
                       </td>
-                      <td className={styles.actionCell} onClick={(e) => e.stopPropagation()}>
-                        <button className={styles.moreButton} onClick={() => setActiveMenu(activeMenu === a.id ? null : a.id)} aria-label={"Thao tác cho " + a.title}>
+                      <td className={styles.actionCell} onClick={(e) => e.stopPropagation()} ref={activeMenu === a.id ? menuRef : undefined}>
+                        <button
+                          className={styles.moreButton}
+                          onClick={() => setActiveMenu(activeMenu === a.id ? null : a.id)}
+                          aria-label={"Thao tác cho " + a.title}
+                          aria-haspopup="menu"
+                          aria-expanded={activeMenu === a.id}
+                          aria-controls={"amenu-" + a.id}
+                        >
                           <MoreHorizontal size={19} />
                         </button>
                         {activeMenu === a.id && (
-                          <div className={styles.actionMenu}>
+                          <div className={styles.actionMenu} id={"amenu-" + a.id} role="menu">
                             <button onClick={() => setStats(a)}>Thống kê nộp bài</button>
                             <button disabled={a.submittedCount > 0} title={a.submittedCount > 0 ? "Đã có bài nộp — không sửa được (T-ASGN-5)" : undefined} onClick={() => openEdit(a)}>
                               <Pencil size={14} />Sửa
@@ -315,8 +331,12 @@ export default function TeacherAssignmentsPage() {
       {toast && <Toast message={toast} />}
 
       {editing !== undefined && (
-        <div className={styles.modalBackdrop} role="dialog" aria-modal="true" aria-label={editing ? "Sửa bài tập" : "Tạo bài tập"}>
-          <div className={styles.modal}>
+        <Overlay
+          label={editing ? "Sửa bài tập" : "Tạo bài tập"}
+          onClose={() => setEditing(undefined)}
+          backdropClassName={styles.modalBackdrop}
+          panelClassName={styles.modalWide}
+        >
             <div className={styles.wizardHead}>
               <h2>{editing ? "Sửa bài tập" : "Tạo bài tập"}</h2>
               <div className={styles.wizardSteps}>
@@ -347,7 +367,26 @@ export default function TeacherAssignmentsPage() {
                   </label>
                   <label className={styles.field}>
                     <span>Lớp học *</span>
-                    <select value={draft.classId} onChange={(e) => setDraft({ ...draft, classId: e.target.value })} required>
+                    <select
+                      value={draft.classId}
+                      onChange={(e) => {
+                        const nextClassId = e.target.value;
+                        const nextClass = ownClasses.find((c) => c.id === nextClassId) ?? null;
+                        // C1: drop already-picked questions that do not match the new class HSK,
+                        // otherwise they stay hidden in the picker but still get submitted.
+                        const keptIds = nextClass
+                          ? draft.questionIds.filter((id) => {
+                              const q = mockQuestions.find((x) => x.id === id);
+                              return q ? q.hskLevel === nextClass.hskLevel : false;
+                            })
+                          : [];
+                        if (keptIds.length !== draft.questionIds.length) {
+                          flash("Đã bỏ chọn câu hỏi không thuộc HSK của lớp mới");
+                        }
+                        setDraft({ ...draft, classId: nextClassId, questionIds: keptIds });
+                      }}
+                      required
+                    >
                       <option value="">— Chọn lớp —</option>
                       {ownClasses.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
                     </select>
@@ -376,10 +415,15 @@ export default function TeacherAssignmentsPage() {
             ) : (
               <form onSubmit={(e) => { e.preventDefault(); if (step2Valid) submitDraft(); }}>
                 <p className={styles.pickerHint}>
-                  Chọn câu hỏi từ ngân hàng ({draft.questionIds.length} đã chọn) — đã lọc theo HSK của lớp.
+                  Chọn câu hỏi từ ngân hàng ({draft.questionIds.length} đã chọn) — chỉ hiển thị câu HSK {selectedClass?.hskLevel ?? "—"} theo lớp đã chọn.
                 </p>
                 <div className={styles.questionPicker}>
-                  {mockQuestions.map((q) => {
+                  {eligibleQuestions.length === 0 && (
+                    <p className={styles.pickerEmpty}>
+                      Ngân hàng câu hỏi chưa có câu nào ở HSK {selectedClass?.hskLevel ?? "?"} — tạo câu hỏi ở mục Ngân hàng câu hỏi trước.
+                    </p>
+                  )}
+                  {eligibleQuestions.map((q) => {
                     const checked = draft.questionIds.includes(q.id);
                     return (
                       <label key={q.id} className={checked ? styles.pickRowChecked : styles.pickRow}>
@@ -411,13 +455,16 @@ export default function TeacherAssignmentsPage() {
                 </div>
               </form>
             )}
-          </div>
-        </div>
+          </Overlay>
       )}
 
       {stats && (
-        <div className={styles.modalBackdrop} role="dialog" aria-modal="true" aria-label="Thống kê nộp bài">
-          <div className={styles.modal}>
+        <Overlay
+          label={"Thống kê nộp bài"}
+          onClose={() => setStats(null)}
+          backdropClassName={styles.modalBackdrop}
+          panelClassName={styles.modal}
+        >
             <div className={styles.statsHead}>
               <div>
                 <h2>{stats.title}</h2>
@@ -446,8 +493,7 @@ export default function TeacherAssignmentsPage() {
             ) : (
               <p className={styles.noRoster}>Lớp chưa có học sinh hoặc chưa có dữ liệu nộp bài cho bài tập này.</p>
             )}
-          </div>
-        </div>
+          </Overlay>
       )}
 
       {deleting && (
