@@ -58,3 +58,11 @@ Blocked on: error codes — none registered for Attempt/grading; rows below `TOD
 ## Out of scope
 - Re-grading an already graded attempt (T-GRADE-6 Could) — read-only view
 - Auto-graded MCQ recompute — server-side, display only
+
+## Implementation note — 2026-09-02 (`WEB-006` A2)
+
+Scores are clamped to `[0, maxScore]` on input and re-checked at the write, so a disabled
+button is never the only guard. The grading draft keeps the teacher's final score/feedback
+and the **AI's original suggestion** separately: finishing grading stores the AI suggestion
+as the AI produced it. The earlier build overwrote `aiSuggestion` with the teacher's edited
+values, which destroyed the only comparison the field exists for.

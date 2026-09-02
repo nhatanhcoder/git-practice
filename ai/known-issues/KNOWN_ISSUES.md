@@ -257,6 +257,60 @@ exported `metadata` or dynamic document title setters, resulting in the fallback
 
 ---
 
+### [WEB-006] Seven Teacher UI bugs — fixed 2026-09-02
+
+**Severity**: High (one of them money-adjacent)
+**Status**: ✅ Resolved 2026-09-02 — all seven fixed and verified in a production build.
+Recorded because several were only visible against the specs, not on screen.
+
+**Description**: a review of the mocked Teacher screens found seven defects. All were real —
+verified in code before any fix. Worst first:
+
+- **A1 — session submit fabricated `actualEnd`.** `handleSubmit` wrote
+  `actualEnd: s.actualEnd ?? s.endTime`, i.e. it stored the **scheduled** end as the **actual**
+  one whenever the teacher had not recorded a real end time. `INV-PAYROLL-06` forbids pricing
+  `per_hour` work from scheduled times, and `INV-PAYROLL-17` says the payroll request must fail
+  outright when `actualEnd` is NULL. Because the field was never null, that guard could never
+  fire: **a loud failure was converted into a silently wrong payment.** Fixed with a required
+  time input, prefilled only from a real value, gated on `actualEnd > actualStart`.
+- **A2 — grading destroyed the AI audit trail.** `finishGrading` wrote
+  `aiSuggestion: { score: finalScore, reasoning: teacherFeedback }` — overwriting the AI's
+  suggestion with the teacher's edited values, which is the one comparison the field exists for.
+  Scores were also unvalidated (`-1` and `maxScore + 1` were accepted). Fixed by splitting the
+  draft into the teacher's final values and the AI's untouched original.
+- **B1 — wrong enum + missing validation.** `AssignmentType` used `"assignment"`;
+  `ENTITY_ASSIGNMENT` says `"homework"`. A `mock_test` could also be saved with no
+  `timeLimitMinutes`, which the entity requires.
+- **B2 — Writing questions stored a rubric in `answer`.** `ENTITY_QUESTION` says Writing has
+  `correctAnswer = null` and keeps the rubric in `content.rubric`.
+- **C1 — assignment picker lied about filtering.** The hint said "đã lọc theo HSK của lớp" while
+  the code rendered the whole bank; picking questions then switching class left stale ids
+  selected but invisible, and they were still submitted.
+- **C2 — CopyChip faked success.** `onClick={() => setCopied(true)}` never called the Clipboard
+  API, so it reported "Đã sao chép" even where clipboard access is denied.
+- **C3 — menus and overlays had no dismissal or focus management.** No outside-click, no Escape
+  on menus, no focus trap or restore on dialogs.
+
+**Two implementation traps found while fixing C3** — both cost real debugging time, both now
+commented at the code in `apps/web/src/hooks/use-overlay.ts`:
+1. An inline `onClose` must **not** be an effect dependency. Callers pass a fresh arrow every
+   render, so the effect tears down and re-runs constantly, losing the captured focus-restore
+   target. Keep it in a ref and depend only on `open`.
+2. Restoring focus **only** in the effect cleanup does not work. Measured in a production build
+   (not just dev/StrictMode): the dialog closed but focus landed on `<body>` every time. The
+   restore has to happen synchronously in the Escape handler, the way the menu hook does it.
+
+**Verification**: `pnpm --filter web build` green; `node --test apps/web/scripts/*.test.mjs`
+31/31 (11 new in `teacher-rules.test.mjs`); `check-docs` 8/8; all 9 Teacher routes HTTP 200; each
+acceptance criterion exercised in a browser against the **production** build, desktop + 375px.
+
+**Note on Q-SES-3**: requiring `actualEnd` before submit picks option (a) — "block early" — of
+the open question in `docs/api/modules/04-sessions-attendance.md` §16, which the backend has
+**not** settled. `INV-SESSION-13` alone only constrains the pair when both are non-NULL. This is
+a UI-level choice; if the BE later chooses option (b), the FE gate can be relaxed.
+
+---
+
 ### [API-002] Two contradictory rate-reading formulas — wrong amounts
 
 **Severity**: Critical

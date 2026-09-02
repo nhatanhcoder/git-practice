@@ -62,3 +62,16 @@ State machine per FLOW_SESSION_ATTENDANCE.md §2: `scheduled → completed_pendi
 - Admin approve/reject — Admin side (A-PAY-2,3)
 - Editing a rejected session and resubmitting — flow exists but no dedicated endpoint row; deferred
 - Payroll calculation — read-only on `/teacher/income`
+
+## Implementation note — 2026-09-02 (`WEB-006` A1)
+
+Submit requires a **teacher-entered** `actualEnd`. The build previously defaulted it to the
+scheduled `endTime`, which `INV-PAYROLL-06` forbids as a basis for `per_hour` pay and which
+also stopped `INV-PAYROLL-17` from ever firing. The modal now has a required time input,
+prefilled only from a real recorded value, and blocks submit unless
+`actualEnd > actualStart` (`INV-SESSION-13`).
+
+⚠️ Requiring `actualEnd` at all picks option **(a)** of the open question **Q-SES-3**
+(`docs/api/modules/04-sessions-attendance.md` §16), which the backend has not settled.
+`INV-SESSION-13` by itself only constrains the pair when both values are non-NULL. If the
+BE later chooses option (b), relax this gate.

@@ -58,3 +58,11 @@ placeholder input in the mock.
 - Real audio upload/playback — placeholder only
 - Reading-passage multi-sub-question authoring — single content field in the mock
 - Bulk import / export
+
+## Implementation note — 2026-09-02 (`WEB-006` B2)
+
+The model follows `ENTITY_QUESTION`: `correctAnswer: string | string[] | null` plus a
+separate `rubric`. **Writing stores `correctAnswer = null`** and requires a rubric; the form
+hides the answer field for Writing and shows "Rubric chấm điểm *" instead. List and preview
+render through a helper so a rubric is never labelled as an answer. The earlier build had a
+single required `answer` field and put rubric prose in it.
