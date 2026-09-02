@@ -3,10 +3,12 @@
  * /api/v1/teacher/assignments exists.
  */
 
-export type AssignmentType = "assignment" | "mock_test";
+// Enum values follow ENTITY_ASSIGNMENT.md: homework | mock_test.
+// The Vietnamese label stays "Bài tập" — only the stored value changed.
+export type AssignmentType = "homework" | "mock_test";
 
 export const assignmentTypeLabels: Record<AssignmentType, string> = {
-  assignment: "Bài tập",
+  homework: "Bài tập",
   mock_test: "Đề thi thử",
 };
 
@@ -45,7 +47,7 @@ export const mockAssignments: Assignment[] = [
   {
     id: "a1",
     title: "Bài tập 4 · Mua sắm — từ vựng",
-    type: "assignment",
+    type: "homework",
     classId: "c1",
     className: "Sơ cấp A — Thứ 3/5/7",
     hskLevel: 3,
@@ -75,7 +77,7 @@ export const mockAssignments: Assignment[] = [
   {
     id: "a3",
     title: "Bài tập 3 · Hỏi đường — điền chỗ trống",
-    type: "assignment",
+    type: "homework",
     classId: "c1",
     className: "Sơ cấp A — Thứ 3/5/7",
     hskLevel: 3,
@@ -90,7 +92,7 @@ export const mockAssignments: Assignment[] = [
   {
     id: "a4",
     title: "Luyện viết — mô tả cuối tuần",
-    type: "assignment",
+    type: "homework",
     classId: "c3",
     className: "Luyện đề HSK 5 — cuối tuần",
     hskLevel: 4,

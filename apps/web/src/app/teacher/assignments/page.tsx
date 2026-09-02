@@ -99,11 +99,15 @@ export default function TeacherAssignmentsPage() {
 
   function submitDraft() {
     if (!draft.title.trim() || !draft.classId || !draft.dueDate || draft.questionIds.length === 0) return;
+    // B1: guard the write too, not just the step-1 button.
+    if (!timeLimitValid(draft)) return;
     const cls = ownClasses.find((c) => c.id === draft.classId);
+    // homework always stores null; mock_test stores the validated integer.
+    const timeLimit = draft.type === "mock_test" ? Number(draft.timeLimitMinutes) : null;
     // MOCK: POST/PATCH /api/v1/teacher/assignments — error codes TODO(error-code)
     if (editing) {
       setAssignments((current) =>
-        current.map((a) => (a.id === editing.id ? { ...a, ...draft, timeLimitMinutes: draft.timeLimitMinutes ? Number(draft.timeLimitMinutes) : null, className: cls?.name ?? a.className, questionIds: [...draft.questionIds] } : a)),
+        current.map((a) => (a.id === editing.id ? { ...a, ...draft, timeLimitMinutes: timeLimit, className: cls?.name ?? a.className, questionIds: [...draft.questionIds] } : a)),
       );
       flash("Đã lưu bài tập");
     } else {
@@ -115,7 +119,7 @@ export default function TeacherAssignmentsPage() {
         className: cls?.name ?? "",
         hskLevel: cls?.hskLevel ?? 1,
         dueDate: draft.dueDate,
-        timeLimitMinutes: draft.timeLimitMinutes ? Number(draft.timeLimitMinutes) : null,
+        timeLimitMinutes: timeLimit,
         questionIds: [...draft.questionIds],
         submittedCount: 0,
         totalStudents: 0,
@@ -136,7 +140,16 @@ export default function TeacherAssignmentsPage() {
     setDeleting(null);
   }
 
-  const step1Valid = draft.title.trim().length >= 3 && !!draft.classId && !!draft.dueDate;
+  // B1: ENTITY_ASSIGNMENT — `timeLimitMinutes` is required when type = mock_test.
+  // Shared by the step-1 gate and submitDraft so the two cannot disagree.
+  function timeLimitValid(d: Draft): boolean {
+    if (d.type !== "mock_test") return true;
+    const n = Number(d.timeLimitMinutes);
+    return d.timeLimitMinutes.trim() !== "" && Number.isInteger(n) && n >= 5 && n <= 180;
+  }
+
+  const step1Valid =
+    draft.title.trim().length >= 3 && !!draft.classId && !!draft.dueDate && timeLimitValid(draft);
   const step2Valid = draft.questionIds.length > 0;
   const roster = stats ? submissionRosters[stats.id] : null;
 
@@ -168,7 +181,7 @@ export default function TeacherAssignmentsPage() {
           <span className={styles.fieldLabel}>Loại</span>
           <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value as AssignmentType | "all")}>
             <option value="all">Tất cả</option>
-            <option value="assignment">Bài tập</option>
+            <option value="homework">Bài tập</option>
             <option value="mock_test">Đề thi thử</option>
           </select>
         </label>
@@ -323,8 +336,12 @@ export default function TeacherAssignmentsPage() {
                 <div className={styles.formGrid}>
                   <label className={styles.field}>
                     <span>Loại *</span>
-                    <select value={draft.type} onChange={(e) => setDraft({ ...draft, type: e.target.value as AssignmentType })}>
-                      <option value="assignment">Bài tập</option>
+                    <select value={draft.type} onChange={(e) => {
+                      const nextType = e.target.value as AssignmentType;
+                      // B1: homework stores null — drop any limit typed while it was a mock test.
+                      setDraft({ ...draft, type: nextType, timeLimitMinutes: nextType === "mock_test" ? draft.timeLimitMinutes : "" });
+                    }}>
+                      <option value="homework">Bài tập</option>
                       <option value="mock_test">Đề thi thử (có giới hạn thời gian)</option>
                     </select>
                   </label>
@@ -340,9 +357,10 @@ export default function TeacherAssignmentsPage() {
                     <input type="date" value={draft.dueDate} onChange={(e) => setDraft({ ...draft, dueDate: e.target.value })} required />
                   </label>
                   <label className={styles.field}>
-                    <span>Giới hạn thời gian (phút)</span>
+                    <span>Giới hạn thời gian (phút){draft.type === "mock_test" ? " *" : ""}</span>
                     <input
                       type="number" min={5} max={180} step={5}
+                      required={draft.type === "mock_test"}
                       value={draft.timeLimitMinutes}
                       disabled={draft.type !== "mock_test"}
                       placeholder={draft.type === "mock_test" ? "VD: 45" : "Chỉ áp dụng cho đề thi thử"}
@@ -449,7 +467,7 @@ export default function TeacherAssignmentsPage() {
 function emptyDraft(): Draft {
   return {
     title: "",
-    type: "assignment",
+    type: "homework",
     classId: "",
     dueDate: "",
     timeLimitMinutes: "",
