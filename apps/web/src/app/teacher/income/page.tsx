@@ -17,6 +17,7 @@ import {
   payrollStatusLabels,
   type PayrollPeriod,
 } from "@/lib/teacher/payroll-data";
+import { useOverlay } from "@/hooks/use-overlay";
 import { formatDate, formatVnd } from "@/lib/formatters";
 import styles from "./income.module.css";
 
@@ -25,6 +26,8 @@ export default function TeacherIncomePage() {
   const [reviewState, setReviewState] = useState<ReviewState>("ready");
   const [open, setOpen] = useState<PayrollPeriod | null>(null);
   const [toast, setToast] = useState("");
+  // C3 follow-up: this drawer was left out of the first overlay pass.
+  const drawerRef = useOverlay<HTMLDivElement>(() => setOpen(null), open !== null);
 
   const stats = useMemo(() => {
     const current = periods.find((p) => p.status !== "paid") ?? periods[0] ?? null;
@@ -146,8 +149,10 @@ export default function TeacherIncomePage() {
 
       {open && (
         <div className={styles.drawerBackdrop} role="dialog" aria-modal="true" aria-label={"Kỳ lương " + open.monthLabel}>
+          {/* The scrim is a real button, so backdrop-close is covered; the ref adds Escape,
+              focus trap and focus restore (C3 follow-up). */}
           <button className={styles.drawerScrim} onClick={() => setOpen(null)} aria-label="Đóng" />
-          <div className={styles.drawer}>
+          <div ref={drawerRef} className={styles.drawer}>
             <div className={styles.drawerHead}>
               <div>
                 <h2>{open.monthLabel}</h2>

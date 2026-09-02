@@ -27,7 +27,7 @@ import {
 } from "@/lib/teacher/grading-data";
 import { skillLabels } from "@/lib/teacher/question-data";
 import { useOverlay } from "@/hooks/use-overlay";
-import { clampScore, finalizeGradedQuestion, isValidScore } from "@/lib/teacher/teacher-rules";
+import { clampScore, finalizeGradedQuestion, isValidScore } from "@/lib/teacher/teacher-rules.js";
 import { formatDateTime } from "@/lib/formatters";
 import styles from "./grading.module.css";
 

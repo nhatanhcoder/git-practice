@@ -9,31 +9,24 @@
  */
 
 import { strict as assert } from "node:assert";
-import { readFileSync } from "node:fs";
 import { test } from "node:test";
-import { fileURLToPath } from "node:url";
-import { dirname, join } from "node:path";
+import {
+  assignmentTimeLimitValid,
+  clampScore,
+  finalizeGradedQuestion,
+  isValidScore,
+  questionIdsForClass,
+  sessionSubmitError,
+} from "../src/lib/teacher/teacher-rules.js";
 
-const here = dirname(fileURLToPath(import.meta.url));
-const src = readFileSync(join(here, "../src/lib/teacher/teacher-rules.ts"), "utf8");
-
-// Strip TS-only syntax so the module can be evaluated as plain JS.
-const js = src
-  .replace(/export function/g, "function")
-  .replace(/:\s*value is number/g, "")
-  .replace(/\bargs:\s*\{[\s\S]*?\}\)/, "args)")
-  .replace(/\binput:\s*\{[\s\S]*?\}\)/, "input)")
-  .replace(/\)\s*:\s*\{[\s\S]*?\}\s*\{/, ") {")
-  .replace(/:\s*(string|number|boolean)\s*\|\s*null\s*\|\s*undefined/g, "")
-  .replace(/:\s*(string|number|boolean)\s*\|\s*null/g, "")
-  .replace(/:\s*(string|number|boolean)(?=[,)\s=])/g, "")
-  .replace(/\)\s*:\s*(string|number|boolean)\s*\|\s*null\s*\{/g, ") {")
-  .replace(/\)\s*:\s*boolean\s*\{/g, ") {");
-
-const mod = new Function(
-  js +
-    "\nreturn { sessionSubmitError, isValidScore, clampScore, finalizeGradedQuestion, assignmentTimeLimitValid };",
-)();
+const mod = {
+  assignmentTimeLimitValid,
+  clampScore,
+  finalizeGradedQuestion,
+  isValidScore,
+  questionIdsForClass,
+  sessionSubmitError,
+};
 
 /* ---------------- A1: session submit must never invent actualEnd ---------------- */
 
@@ -134,4 +127,30 @@ test("B1: mock_test requires an integer time limit in 5–180", () => {
 test("B1: homework never requires a time limit", () => {
   assert.equal(mod.assignmentTimeLimitValid("homework", ""), true);
   assert.equal(mod.assignmentTimeLimitValid("homework", "999"), true);
+});
+
+/* ---------------- C1 follow-up: an assignment must never hold a wrong-HSK question ------- */
+
+const bank = [
+  { id: "q1", hskLevel: 3 },
+  { id: "q4", hskLevel: 3 },
+  { id: "q9", hskLevel: 5 },
+  { id: "q11", hskLevel: 4 },
+];
+
+test("C1: opening an assignment prunes ids that do not match the class HSK", () => {
+  // The real regression: a4 was an HSK-5 class holding the HSK-4 question q11. The modal said
+  // "1 đã chọn" with no checkbox ticked, and Save stayed enabled.
+  assert.deepEqual(mod.questionIdsForClass(["q11"], 5, bank), []);
+  assert.deepEqual(mod.questionIdsForClass(["q1", "q9", "q4"], 3, bank), ["q1", "q4"]);
+});
+
+test("C1: switching class keeps only the questions of the new level", () => {
+  assert.deepEqual(mod.questionIdsForClass(["q1", "q4"], 5, bank), []);
+  assert.deepEqual(mod.questionIdsForClass(["q1", "q9"], 5, bank), ["q9"]);
+});
+
+test("C1: unknown ids and a missing class are dropped, never passed through", () => {
+  assert.deepEqual(mod.questionIdsForClass(["nope"], 3, bank), []);
+  assert.deepEqual(mod.questionIdsForClass(["q1"], null, bank), []);
 });

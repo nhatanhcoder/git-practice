@@ -34,7 +34,7 @@ import {
 import { mockQuestions } from "@/lib/teacher/question-data";
 import { mockTeacherClasses } from "@/lib/teacher-data";
 import { useDismissMenu } from "@/hooks/use-overlay";
-import { assignmentTimeLimitValid } from "@/lib/teacher/teacher-rules";
+import { assignmentTimeLimitValid, questionIdsForClass } from "@/lib/teacher/teacher-rules.js";
 import { formatDate } from "@/lib/formatters";
 import styles from "./assignments.module.css";
 
@@ -90,29 +90,40 @@ export default function TeacherAssignmentsPage() {
 
   function openEdit(a: Assignment) {
     setActiveMenu(null);
+    // C1 follow-up: a stored assignment can hold ids that do not match its class HSK — either
+    // from legacy data or from a class change made before pruning existed. Prune on open, so the
+    // count, the checkboxes and what gets saved all agree.
+    const cls = ownClasses.find((c) => c.id === a.classId) ?? null;
+    const kept = questionIdsForClass(a.questionIds, cls?.hskLevel ?? null, mockQuestions);
+    if (kept.length !== a.questionIds.length) {
+      flash("Đã bỏ " + (a.questionIds.length - kept.length) + " câu hỏi không thuộc HSK của lớp");
+    }
     setDraft({
       title: a.title,
       type: a.type,
       classId: a.classId,
       dueDate: a.dueDate,
       timeLimitMinutes: a.timeLimitMinutes ? String(a.timeLimitMinutes) : "",
-      questionIds: [...a.questionIds],
+      questionIds: kept,
     });
     setStep(1);
     setEditing(a);
   }
 
   function submitDraft() {
-    if (!draft.title.trim() || !draft.classId || !draft.dueDate || draft.questionIds.length === 0) return;
+    if (!draft.title.trim() || !draft.classId || !draft.dueDate) return;
     // B1: guard the write too, not just the step-1 button.
     if (!timeLimitValid(draft)) return;
     const cls = ownClasses.find((c) => c.id === draft.classId);
+    // C1 follow-up: never persist an id outside the class HSK, whatever the draft happens to hold.
+    const questionIds = questionIdsForClass(draft.questionIds, cls?.hskLevel ?? null, mockQuestions);
+    if (questionIds.length === 0) return;
     // homework always stores null; mock_test stores the validated integer.
     const timeLimit = draft.type === "mock_test" ? Number(draft.timeLimitMinutes) : null;
     // MOCK: POST/PATCH /api/v1/teacher/assignments — error codes TODO(error-code)
     if (editing) {
       setAssignments((current) =>
-        current.map((a) => (a.id === editing.id ? { ...a, ...draft, timeLimitMinutes: timeLimit, className: cls?.name ?? a.className, hskLevel: cls?.hskLevel ?? a.hskLevel, questionIds: [...draft.questionIds] } : a)),
+        current.map((a) => (a.id === editing.id ? { ...a, ...draft, timeLimitMinutes: timeLimit, className: cls?.name ?? a.className, hskLevel: cls?.hskLevel ?? a.hskLevel, questionIds } : a)),
       );
       flash("Đã lưu bài tập");
     } else {
@@ -125,7 +136,7 @@ export default function TeacherAssignmentsPage() {
         hskLevel: cls?.hskLevel ?? 1,
         dueDate: draft.dueDate,
         timeLimitMinutes: timeLimit,
-        questionIds: [...draft.questionIds],
+        questionIds,
         submittedCount: 0,
         totalStudents: 0,
         pendingGradingCount: 0,
@@ -159,7 +170,14 @@ export default function TeacherAssignmentsPage() {
 
   const step1Valid =
     draft.title.trim().length >= 3 && !!draft.classId && !!draft.dueDate && timeLimitValid(draft);
-  const step2Valid = draft.questionIds.length > 0;
+  // C1 follow-up: count only ids the picker can actually show. Counting hidden ids let the
+  // save button enable with zero visible checkboxes.
+  const eligibleSelectedIds = questionIdsForClass(
+    draft.questionIds,
+    selectedClass?.hskLevel ?? null,
+    mockQuestions,
+  );
+  const step2Valid = eligibleSelectedIds.length > 0;
   const roster = stats ? submissionRosters[stats.id] : null;
 
   return (
@@ -415,7 +433,7 @@ export default function TeacherAssignmentsPage() {
             ) : (
               <form onSubmit={(e) => { e.preventDefault(); if (step2Valid) submitDraft(); }}>
                 <p className={styles.pickerHint}>
-                  Chọn câu hỏi từ ngân hàng ({draft.questionIds.length} đã chọn) — chỉ hiển thị câu HSK {selectedClass?.hskLevel ?? "—"} theo lớp đã chọn.
+                  Chọn câu hỏi từ ngân hàng ({eligibleSelectedIds.length} đã chọn) — chỉ hiển thị câu HSK {selectedClass?.hskLevel ?? "—"} theo lớp đã chọn.
                 </p>
                 <div className={styles.questionPicker}>
                   {eligibleQuestions.length === 0 && (
