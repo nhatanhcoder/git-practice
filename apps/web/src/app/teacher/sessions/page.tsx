@@ -32,7 +32,7 @@ import {
   type Session,
 } from "@/lib/teacher/session-data";
 import { mockTeacherClasses } from "@/lib/teacher-data";
-import { sessionSubmitError } from "@/lib/teacher/teacher-rules";
+import { sessionSubmitError } from "@/lib/teacher/teacher-rules.js";
 import { formatDate } from "@/lib/formatters";
 import styles from "./sessions.module.css";
 

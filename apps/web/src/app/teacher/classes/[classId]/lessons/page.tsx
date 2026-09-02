@@ -24,6 +24,7 @@ import {
 import { TeacherShell } from "@/components/teacher/teacher-shell";
 import {
   ConfirmModal,
+  Overlay,
   ReviewSwitcher,
   Toast,
   type ReviewState,
@@ -301,8 +302,12 @@ export default function TeacherLessonsPage({
       <ReviewSwitcher value={reviewState} onChange={setReviewState} />
       {toast && <Toast message={toast} />}
       {editing && (
-        <div className={styles.modalBackdrop} role="dialog" aria-modal="true" aria-label={editing.lesson ? "Sửa bài học" : "Thêm bài học"}>
-          <div className={styles.modal}>
+        <Overlay
+          label={editing.lesson ? "Sửa bài học" : "Thêm bài học"}
+          onClose={() => setEditing(null)}
+          backdropClassName={styles.modalBackdrop}
+          panelClassName={styles.modal}
+        >
             <h2>{editing.lesson ? "Sửa bài học" : "Thêm bài học"}</h2>
             <form
               onSubmit={(e) => {
@@ -360,8 +365,7 @@ export default function TeacherLessonsPage({
                 </button>
               </div>
             </form>
-          </div>
-        </div>
+          </Overlay>
       )}
       {deleting && (
         <ConfirmModal

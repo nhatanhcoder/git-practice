@@ -43,6 +43,11 @@ export const difficultyLabels: Record<Difficulty, string> = {
   hard: "Khó",
 };
 
+export interface QuestionOption {
+  id: string;   // 'A' | 'B' | 'C' | 'D' — what correctAnswer references for MCQ
+  text: string;
+}
+
 export interface Question {
   id: string;
   skill: Skill;
@@ -51,7 +56,8 @@ export interface Question {
   difficulty: Difficulty;
   /** ENTITY_QUESTION `content`: the passage / prompt shown to the student. */
   content: string;
-  options: string[] | null; // MCQ only
+  /** ENTITY_QUESTION `options`: MCQ only, each with a stable id ('A','B',…). */
+  options: QuestionOption[] | null;
   /**
    * ENTITY_QUESTION `correctAnswer`: string | string[] | null.
    * **null for Writing** — writing is graded manually plus an AI suggestion, so there is no
@@ -80,7 +86,15 @@ export function requiresCorrectAnswer(skill: Skill): boolean {
 export function expectedResultOf(q: Question): { label: string; value: string } {
   if (q.skill === "writing") return { label: "Rubric chấm điểm", value: q.rubric ?? "—" };
   const a = q.correctAnswer;
-  return { label: "Đáp án", value: Array.isArray(a) ? a.join(", ") : (a ?? "—") };
+  if (a === null) return { label: "Đáp án", value: "—" };
+  const ids = Array.isArray(a) ? a : [a];
+  // For MCQ, correctAnswer holds option ids ('A','B'). Showing the raw id tells a teacher
+  // nothing, so resolve it back to the option text; non-MCQ answers are already free text.
+  const shown = ids.map((id) => {
+    const opt = q.options?.find((o) => o.id === id);
+    return opt ? opt.id + ". " + opt.text : id;
+  });
+  return { label: "Đáp án", value: shown.join(" · ") };
 }
 
 export const mockQuestions: Question[] = [
@@ -91,8 +105,8 @@ export const mockQuestions: Question[] = [
     hskLevel: 3,
     difficulty: "easy",
     content: "Nghe đoạn hội thoại: người nữ muốn mua cái gì?",
-    options: ["一件衣服", "一双鞋", "一个书包", "一本书"],
-    correctAnswer: "一双鞋",
+    options: [{ id: "A", text: "一件衣服" }, { id: "B", text: "一双鞋" }, { id: "C", text: "一个书包" }, { id: "D", text: "一本书" }],
+    correctAnswer: "B",
     rubric: null,
     explanation: "Trong hội thoại, người nữ nói 「我想买这双鞋」.",
     usageCount: 3,
@@ -133,8 +147,8 @@ export const mockQuestions: Question[] = [
     hskLevel: 3,
     difficulty: "easy",
     content: "「这件衣服很便宜」— câu này nghĩa là gì?",
-    options: ["Quần áo này rất đắt", "Quần áo này rất rẻ", "Quần áo này rất đẹp", "Quần áo này rất cũ"],
-    correctAnswer: "Quần áo này rất rẻ",
+    options: [{ id: "A", text: "Quần áo này rất đắt" }, { id: "B", text: "Quần áo này rất rẻ" }, { id: "C", text: "Quần áo này rất đẹp" }, { id: "D", text: "Quần áo này rất cũ" }],
+    correctAnswer: "B",
     rubric: null,
     explanation: "便宜 = rẻ.",
     usageCount: 2,
@@ -147,8 +161,8 @@ export const mockQuestions: Question[] = [
     hskLevel: 4,
     difficulty: "hard",
     content: "Đọc đoạn văn về giao thông đô thị. Chọn TẤT CẢ phương án đúng: tác giả đề xuất giải pháp nào?",
-    options: ["Tăng giá vé xe buýt", "Phát triển tàu điện", "Hạn chế ô tô vào trung tâm", "Xây thêm đường cao tốc"],
-    correctAnswer: "Phát triển tàu điện + Hạn chế ô tô vào trung tâm",
+    options: [{ id: "A", text: "Tăng giá vé xe buýt" }, { id: "B", text: "Phát triển tàu điện" }, { id: "C", text: "Hạn chế ô tô vào trung tâm" }, { id: "D", text: "Xây thêm đường cao tốc" }],
+    correctAnswer: ["B", "C"],
     rubric: null,
     explanation: "Đoạn 2 và 3 nêu 2 giải pháp này.",
     usageCount: 1,
@@ -253,3 +267,55 @@ export const mockQuestions: Question[] = [
     createdAt: "2026-08-15",
   },
 ];
+
+/**
+ * The wire shape from `docs/entities/mongodb/ENTITY_QUESTION.md`.
+ *
+ * The editor above is a flat ViewModel because that is what a form is comfortable with. The
+ * entity is nested. Keeping both and mapping between them means the form stays simple while
+ * nothing flat is ever posted to the API — the model on its own is NOT a valid payload.
+ */
+export interface QuestionDto {
+  skill: Skill;
+  subType: string;
+  hskLevel: number;
+  difficulty: Difficulty;
+  content: {
+    audioUrl?: string;
+    transcript?: string;
+    passage?: string;
+    prompt?: string;
+    rubric?: string;
+  };
+  options?: QuestionOption[];
+  correctAnswer: string | string[] | null;
+  explanation: string | null;
+}
+
+/**
+ * ViewModel → DTO. The flat `content` string means different things per skill, which is exactly
+ * what the entity's nested `content` object encodes:
+ *   listening → `transcript`   ·   reading → `passage`   ·   writing → `prompt` (+ `rubric`)
+ *
+ * ⛔ `content.audioUrl` is never set: audio upload is not implemented, and the storage provider
+ * is still undecided (`CR-3`). Do not invent a URL here.
+ */
+export function toQuestionDto(q: Question): QuestionDto {
+  const content: QuestionDto["content"] = {};
+  if (q.skill === "listening") content.transcript = q.content;
+  else if (q.skill === "reading") content.passage = q.content;
+  else content.prompt = q.content;
+  if (q.skill === "writing" && q.rubric) content.rubric = q.rubric;
+
+  return {
+    skill: q.skill,
+    subType: q.subType,
+    hskLevel: q.hskLevel,
+    difficulty: q.difficulty,
+    content,
+    ...(q.options ? { options: q.options } : {}),
+    // Writing is always null (graded manually + AI suggestion).
+    correctAnswer: q.skill === "writing" ? null : q.correctAnswer,
+    explanation: q.explanation || null,
+  };
+}

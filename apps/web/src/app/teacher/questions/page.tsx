@@ -109,7 +109,7 @@ export default function TeacherQuestionsPage() {
       hskLevel: question.hskLevel,
       difficulty: question.difficulty,
       content: question.content,
-      options: question.options ? question.options.join("\n") : "",
+      options: question.options ? question.options.map((o) => o.text).join("\n") : "",
       correctAnswer: Array.isArray(question.correctAnswer) ? question.correctAnswer.join(", ") : (question.correctAnswer ?? ""),
       rubric: question.rubric ?? "",
       explanation: question.explanation,
@@ -123,9 +123,14 @@ export default function TeacherQuestionsPage() {
     const isWriting = draft.skill === "writing";
     const correctAnswer = isWriting ? null : draft.correctAnswer.trim();
     const rubric = isWriting ? draft.rubric.trim() : null;
+    // ENTITY_QUESTION: options carry a stable id ('A','B',…) which correctAnswer references.
     const options =
       draft.subType === "multiple_choice_single" || draft.subType === "multiple_choice_multi"
-        ? draft.options.split("\n").map((o) => o.trim()).filter(Boolean)
+        ? draft.options
+            .split("\n")
+            .map((o) => o.trim())
+            .filter(Boolean)
+            .map((text, i) => ({ id: "ABCDEFGH"[i] ?? String(i + 1), text }))
         : null;
     // MOCK: POST/PATCH /api/v1/teacher/questions — error codes TODO(error-code) per contract
     if (editing) {
@@ -456,7 +461,15 @@ export default function TeacherQuestionsPage() {
             <p className={styles.previewContent}>{preview.content}</p>
             {preview.options && (
               <div className={styles.previewOptions}>
-                {preview.options.map((o) => <span key={o} className={o === preview.correctAnswer ? styles.previewOptionCorrect : styles.previewOption}>{o}</span>)}
+                {preview.options.map((o) => {
+                  const answer = preview.correctAnswer;
+                  const isCorrect = Array.isArray(answer) ? answer.includes(o.id) : answer === o.id;
+                  return (
+                    <span key={o.id} className={isCorrect ? styles.previewOptionCorrect : styles.previewOption}>
+                      {o.id}. {o.text}
+                    </span>
+                  );
+                })}
               </div>
             )}
             <dl className={styles.previewMeta}>

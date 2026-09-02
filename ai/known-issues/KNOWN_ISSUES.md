@@ -257,11 +257,13 @@ exported `metadata` or dynamic document title setters, resulting in the fallback
 
 ---
 
-### [WEB-006] Seven Teacher UI bugs — fixed 2026-09-02
+### [WEB-006] Seven Teacher UI bugs — fixed 2026-09-02, three re-opened and closed the same day
 
 **Severity**: High (one of them money-adjacent)
-**Status**: ✅ Resolved 2026-09-02 — all seven fixed and verified in a production build.
-Recorded because several were only visible against the specs, not on screen.
+**Status**: ✅ Resolved 2026-09-02 — but **only after a second pass**. See *Correction* at the
+end: the first pass fixed 4 of 7 completely and 3 partially, and this entry originally claimed
+all seven were closed. That over-claim was caught by an independent review of `main@74a1e76`,
+not by this session's own verification — which is the more useful lesson here.
 
 **Description**: a review of the mocked Teacher screens found seven defects. All were real —
 verified in code before any fix. Worst first:
@@ -308,6 +310,36 @@ acceptance criterion exercised in a browser against the **production** build, de
 the open question in `docs/api/modules/04-sessions-attendance.md` §16, which the backend has
 **not** settled. `INV-SESSION-13` alone only constrains the pair when both are non-NULL. This is
 a UI-level choice; if the BE later chooses option (b), the FE gate can be relaxed.
+
+**Correction (2026-09-02, second pass)** — an independent review of `main@74a1e76` found three of
+the seven only partially fixed. All three are now closed. Each had the same root cause: the fix
+was applied to the path named in the report rather than to the rule behind it.
+
+- **C1 was fixed only for the *class-change* path.** `openEdit` still trusted the stored ids,
+  `step2Valid` counted ids the picker had hidden, and `submitDraft` wrote the raw draft. Fixture
+  `a4` showed it: "1 đã chọn" with no checkbox ticked and Save still enabled. Pruning is now one
+  shared rule (`questionIdsForClass`) applied on open, on class change, when counting and at the
+  write. **Four of five fixtures were also wrong** — a2/a3/a5 held off-level questions, and a4 was
+  an HSK-5 class holding an HSK-4 question while declaring `hskLevel: 4`. The first pass audited
+  the code and never the data.
+- **C3 missed two overlays.** The conversion covered sessions/assignments/questions/grading but not
+  the **income drawer** or the **lessons modal**, which kept hand-rolled dialogs: focus stayed on
+  the row behind, Tab escaped the drawer, Escape did nothing. Both now use `Overlay`/`useOverlay`.
+- **B2 fixed the Writing rubric but not the model shape.** `ENTITY_QUESTION` nests `content`
+  (`prompt` / `passage` / `transcript` / `rubric`) and gives options a stable id; multi-answer
+  questions store an **array**. The model had a flat `content` string, a top-level `rubric`,
+  options as bare strings, and `q5` stored its two answers as the concatenated string `"A + B"` —
+  which no comparison could match, so the preview marked neither option correct. Options are now
+  `{ id, text }`, `correctAnswer` references those ids, and `toQuestionDto()` maps the flat editor
+  ViewModel onto the entity shape. **The model is not a valid payload on its own** — always map.
+
+Also moved `teacher-rules` from `.ts` to `.js` with JSDoc, following `src/lib/user-status.js`. The
+test had been hand-stripping TypeScript with regexes, which broke the moment a signature used
+`string[]`; importing the module directly removes that failure mode.
+
+**Lesson**: "fix the reported line" is not "fix the rule". Three of these came back because the
+first pass patched the path named in the report without asking where else the same rule had to
+hold — including in the fixtures, which were never checked.
 
 ---
 
