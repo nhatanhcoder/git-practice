@@ -114,6 +114,21 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
   9/9 Teacher routes HTTP 200, every acceptance criterion exercised in a browser, desktop + 375px.
   ⚠️ Requiring `actualEnd` before submit picks option (a) of the **still-open Q-SES-3** in
   `04-sessions-attendance.md` §16 — a UI choice, not a settled backend rule.
+- 🔶 (claude · 2026-09-02) **Second pass — three of those seven were only partially fixed.**
+  Caught by an independent review of `main@74a1e76`, not by the first pass's own verification.
+  **C1**: pruning had been applied only to the class-change path, so `openEdit` trusted stored
+  ids, `step2Valid` counted hidden ones and `submitDraft` wrote the raw draft — fixture `a4`
+  showed "1 đã chọn" with no checkbox ticked and Save enabled. One shared rule
+  (`questionIdsForClass`) now guards open / class-change / count / write, and **4 of 5 fixtures
+  were themselves wrong** and were corrected. **C3**: the income drawer and lessons modal were
+  missed by the first overlay pass and still had hand-rolled dialogs; both now use
+  `Overlay`/`useOverlay`. **B2**: the Writing rubric was fixed but the model shape was not —
+  options are now `{id,text}`, `correctAnswer` references those ids (array for multi, which `q5`
+  had stored as the unmatchable string `"A + B"`), and `toQuestionDto()` maps the flat editor
+  ViewModel onto the entity's nested shape. The model is **not** a valid API payload on its own.
+  `teacher-rules` moved `.ts` → `.js` with JSDoc so the tests import it directly instead of
+  regex-stripping TypeScript. 34/34 tests, build green, check-docs 8/8, 9/9 routes 200,
+  all three findings re-verified in a **production** build, desktop + 375px.
 - **DoD**: Teacher creates class → student joins via code → teacher sees the student in the list
 
 ## Sprint 3 — Question Bank & Assignments
