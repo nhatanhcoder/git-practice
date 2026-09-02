@@ -96,6 +96,12 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
   gating, sessions with scheduled→completed_pending machine (start/attendance/submit) +
   rejection-reason modal, income view-only with period drawer (money display-only, from
   envelope totals — no client arithmetic). Sidebar: 7 live items + Analytics disabled (S5).
+- 🔶 (claude · 2026-09-02) **Fixing 7 verified Teacher UI bugs** (mock FE only, batches A/B/C):
+  A1 session submit fabricating `actualEnd` from the scheduled end · A2 grading score range +
+  lost AI audit trail · B1 assignment enum `assignment`→`homework` + mock-test time limit ·
+  B2 Writing question using `answer` instead of a rubric · C1 assignment picker not filtering
+  by HSK · C2 CopyChip faking clipboard success · C3 menus/overlays missing outside-click,
+  Escape and focus management.
 - **DoD**: Teacher creates class → student joins via code → teacher sees the student in the list
 
 ## Sprint 3 — Question Bank & Assignments
