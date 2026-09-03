@@ -1,0 +1,63 @@
+name: screens
+
+# Renders every screen in a production build at desktop and 375px, and uploads the
+# screenshots. This is the gate `next build` alone could never be: WEB-001 shipped a
+# header covering the first table row through a green compile.
+#
+# The rule this enforces lives in ai/rules/working-rules.md § Verify.
+
+on:
+  pull_request:
+    paths:
+      - 'apps/web/**'
+      - '.github/workflows/screens.yml'
+  workflow_dispatch:
+
+jobs:
+  screens:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # Chromium only. The screen check is about layout and runtime errors, not
+      # cross-engine differences; adding browsers here would triple CI time for
+      # a signal this repo has never needed.
+      - run: pnpm --filter web exec playwright install --with-deps chromium
+
+      - run: pnpm --filter web build
+
+      # PW_ALL on CI on purpose: locally the rule is "the routes you touched", but a
+      # PR is the last place to catch a shared-component regression that reached a
+      # screen the author never opened.
+      - run: pnpm --filter web test:screens
+        env:
+          CI: 'true'
+          PW_ALL: '1'
+
+      - name: Upload screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: screens
+          path: apps/web/test-results/screens
+          retention-days: 14
+
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: apps/web/playwright-report
+          retention-days: 14

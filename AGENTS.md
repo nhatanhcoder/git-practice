@@ -5,6 +5,39 @@
 
 Project context lives in `ai/context/project-brain.md` (shared by every AI agent).
 
+## Before you commit UI code — read this, it is not optional
+
+**A green `next build` is not verification.** It compiles; it does not render. Do not report a
+screen as working, and do not commit it, on the strength of a build.
+
+Every commit that touches `apps/web/**` runs, in this order, and **pastes the real output** into
+the PR and the session file:
+
+```bash
+pnpm --filter web build
+PW_ROUTES=<paths you changed> pnpm --filter web test:screens   # or PW_AREA=<area> / PW_ALL=1
+node --test apps/web/scripts/*.test.mjs
+pnpm check:docs
+```
+
+`test:screens` is Playwright. It loads each screen in a **production** build at desktop 1280 and
+at 375px, asserts it mounted and did not fall into a "not found" or error branch, fails on any
+console error or horizontal scroll, and writes a screenshot per screen per viewport to
+`apps/web/test-results/screens/`. **Open those screenshots and look at them** — that is the
+point, not a by-product.
+
+Scope is the routes this commit touched. Touching anything shared — a shell, `status.ts`,
+anything in `components/` — makes the scope the whole area (`PW_AREA=student|teacher|admin`).
+
+New screen? Add it to `apps/web/tests/routes.ts` with a **valid** id if the route is dynamic, and
+do not draw every fixture from one level or one curriculum. A level-1-only fixture is exactly how
+a broken id parser passed while every other lesson rendered "Không tìm thấy chặng".
+
+If you cannot run the browser check, say so plainly in the report and name what went unverified.
+Substituting the build for it, or describing a screen you never rendered, is the specific failure
+this rule exists to stop — it has happened here more than once. Full rule, including the four
+cases that demand more: `ai/rules/working-rules.md` § Verify.
+
 ## Always loaded
 
 These are small and apply to every task. They are `@`-referenced on purpose.

@@ -33,12 +33,22 @@ import { shuffleBlocks } from "@/lib/student/student-rules";
 /** Boss nodes need this share of the practice questions right to count as cleared. */
 const BOSS_PASS_RATE = 0.8;
 
-/** `hsk_standard_course-L3-n8` → the level, so the right map can be rebuilt. */
+/**
+ * `std-3-l2` → HSK Standard Course, level 3; `hy-1-boss` → Hán Ngữ Giáo Trình,
+ * level 1. The ids are built in `learning-path-data.ts` as
+ * `std-<level>-l<n>` / `-sq<n>` / `-boss` and `hy-<level>-…`.
+ *
+ * This used to look for `-L<n>-` and for a `han_yu` prefix, neither of which any
+ * generated id has ever contained. Every node above HSK 1, and every Hán Ngữ node,
+ * fell back to level 1 of the Standard Course and rendered "Không tìm thấy chặng".
+ * Caught by the 375px screen check, which only passed because its fixture happened
+ * to be a level-1 Standard Course node.
+ */
 function levelFromNodeId(nodeId: string): { curriculum: Curriculum; level: number } {
-  const level = Number(nodeId.match(/-L(\d+)-/)?.[1] ?? 1);
-  const curriculum: Curriculum = nodeId.startsWith("han_yu")
-    ? "han_yu_jiao_cheng"
-    : "hsk_standard_course";
+  const match = nodeId.match(/^(std|hy)-(\d+)-/);
+  const curriculum: Curriculum =
+    match?.[1] === "hy" ? "han_yu_jiao_cheng" : "hsk_standard_course";
+  const level = Number(match?.[2] ?? 1);
   return { curriculum, level };
 }
 
@@ -229,7 +239,9 @@ export default function LessonPage() {
                   </div>
                 ))}
               </div>
-              <div className="row gap-3" style={{ marginTop: "var(--sp-5)" }}>
+              {/* `wrap`: at 375px the two labels do not fit on one line — without it the
+                  primary button overflows the panel and drags the document to 388px wide. */}
+              <div className="row gap-3 wrap" style={{ marginTop: "var(--sp-5)" }}>
                 <Link href="/student/grammar" className="btn btn--outline">
                   <BookOpen size={16} /> Mở thư viện ngữ pháp
                 </Link>

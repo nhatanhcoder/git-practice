@@ -343,6 +343,59 @@ hold — including in the fixtures, which were never checked.
 
 ---
 
+### [WEB-007] Every learning-path lesson above HSK 1 rendered "Không tìm thấy chặng"
+
+**Severity**: High
+**Status**: ✅ Resolved 2026-09-03 — found by the first Playwright run, minutes after the check existed.
+
+**Description**: `apps/web/src/app/student/learning-path/[nodeId]/page.tsx` derived the curriculum
+and level from the node id with `nodeId.match(/-L(\d+)-/)` and `nodeId.startsWith("han_yu")`.
+Neither pattern has ever matched a generated id: `learning-path-data.ts` builds them as
+`std-<level>-l<n>` / `-sq<n>` / `-boss` and `hy-<level>-…`. Every id therefore fell back to
+"HSK Standard Course, level 1", so `buildLevelMap(...).nodes.find(...)` missed and the page
+rendered its own not-found branch.
+
+**Impact**: only HSK 1 Standard Course lessons opened. Every other level, and the entire
+Hán Ngữ Giáo Trình curriculum, was unreachable from the map — a large share of the Student area.
+
+**Why it survived**: the 2026-09-03 fidelity session recorded "smoke-tested all 20 Student
+routes, including valid dynamic lesson IDs". It had used `std-1-l1`, which resolves correctly
+**by accident** — the fallback is level 1 of the Standard Course. One fixture drawn from the
+fallback's own value proves the parser works exactly where it cannot fail.
+
+**Fix**: parse `^(std|hy)-(\d+)-`. Fixtures at `std-3-l2` and `hy-1-l1` added to
+`apps/web/tests/routes.ts`, plus an assertion that a listed route never renders a
+"Không tìm thấy" heading — the not-found branch returns 200 and renders an `h1`, so without
+that assertion the check would have screenshotted a broken screen and passed.
+
+**Lesson**: a fixture set drawn from one level, one curriculum or one id shape tests the happy
+default, not the code. Spread fixtures across the axes the code branches on.
+
+---
+
+### [WEB-008] Two screens scrolled horizontally at 375px
+
+**Severity**: Medium
+**Status**: ✅ Resolved 2026-09-03 — both found by the 375px project of the new screen check.
+
+**Description**: two nowrap flex rows held content wider than the mobile content column, so the
+overflowing child dragged the whole document past the viewport:
+
+- `/student/learning-path/[nodeId]` — "Mở thư viện ngữ pháp" (216px) beside "Sang phần luyện
+  tập" in a 293px row; the document went to 388px in a 375px viewport.
+- `/admin/payroll` — the teacher select plus "Tạo kỳ lương" needed 393px in a 343px column
+  (409px document), and once that was wrapped the filter card's year + status + "4 kỳ lương"
+  still needed 361px (378px document). Both needed fixing; the first fix alone looked like a
+  failure to fix anything.
+
+**Fix**: `wrap` on the lesson row; `flex-wrap: wrap` on `.titleControls` and `.filterCard` in
+the `max-width: 768px` block of `payroll.module.css`, with `.teacherSelect` allowed to shrink.
+
+**Note**: `/admin/payroll` is an Admin screen on a different design baseline, fixed here only
+because it is a two-line CSS change and leaving CI red on a pre-existing bug is worse than a
+small cross-area commit.
+
+---
 ### [API-002] Two contradictory rate-reading formulas — wrong amounts
 
 **Severity**: Critical

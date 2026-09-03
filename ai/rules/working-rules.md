@@ -16,8 +16,8 @@ file owns which, so you edit one place and not four.
 3  Claim in ai/PROGRESS.md   -> ⬜ becomes 🔶 (agent · date), commit that line ALONE
 4  Analyze -> Plan -> STOP   -> wait for the human's approval
 5  Read contract + spec + _DESIGN-SYSTEM -> write code   <──┐
-6  Verify                    -> FAST: build + 1 screenshot. Full lane only for
-                                auth/money/shared components/prod — see "Verify" below
+6  Verify                    -> build + Playwright screen check (desktop + 375px,
+                                screenshots) + tests + check:docs — see "Verify" below
       │                                                     │
       └── human dislikes the UI? ───────────────────────────┘  loop 5–6, no doc changes
 7  Record                    -> PROGRESS · KNOWN_ISSUES · contract/spec/_INDEX status
@@ -164,57 +164,83 @@ const initialUsers: User[] = [ ... ];
 Grep `MOCK(` before declaring a feature complete. Files under `src/lib/*-data.js` that exist
 only to fake an endpoint say so on line 1.
 
-### Verify — FAST by default
+### Verify — a real browser, every time
 
-Verification is a skim, not an audit. It exists to catch the obvious, not to prove
-correctness. Slow verification does not get run, and a check nobody runs is worth nothing.
+> **Rewritten 2026-09-03 at the owner's instruction.** The previous version ("Verify — FAST by
+> default") allowed a build plus one glance and explicitly skipped 375px and per-state
+> screenshots. It is gone. If you find a section telling you a green `next build` is enough,
+> it is stale — this is the current rule.
 
-> Restored 2026-08-19. This version was previously written on branch `chore/fast-verify-rule`
-> and **lost on branch switch because it was never committed**. If you see this section revert
-> to "Verify — one pass, then stop", it was lost again — this is the correct version.
+**A build is not verification.** `next build` compiles; it does not render. This repo has paid
+for that distinction twice: `WEB-001` shipped a sticky header covering the first table row
+through a green build, and the 2026-09-02 Teacher pass reported seven bugs fixed when three
+were not. On 2026-09-03 the very first Playwright run found two more nobody had seen — every
+learning-path lesson above HSK 1 rendering "Không tìm thấy chặng", and two screens overflowing
+horizontally at 375px.
 
-**Default — FAST LANE. One command, one glance:**
+**Before you commit UI code, run this — all of it:**
 
+```bash
+pnpm --filter web build                              # 1. must compile
+pnpm --filter web exec playwright test               # 2. must render (see below)
+node --test apps/web/scripts/*.test.mjs              # 3. rules still hold
+pnpm check:docs                                      # 4. docs invariants
 ```
-pnpm --filter web build          # DO NOT use `pnpm build` — turbo.json is missing (BUILD-001)
+
+Step 2 needs to know which screens you touched. It refuses to run without a selection —
+a check that silently verifies zero screens is worse than no check:
+
+```bash
+PW_ROUTES=/student/grammar,/student/exams pnpm --filter web test:screens   # what you changed
+PW_AREA=student                            pnpm --filter web test:screens   # a whole area
+PW_ALL=1                                   pnpm --filter web test:screens   # everything
 ```
 
-Then **one desktop screenshot, Ready state** — and actually read it. That's it.
+**The mandatory scope is: every route this commit touched, at desktop 1280 and at 375px.**
+Touching a shared component (`student-shell`, `teacher-shell`, `status.ts`, anything under
+`components/`) means the scope is the whole area, not the one screen you opened.
 
-Paste the real build output. "Build passed" with no output does not count as having run it.
+Each run leaves a screenshot per screen per viewport at
+`apps/web/test-results/screens/<viewport>/<area>-<screen>.png`. **Look at them.** They are the
+point of the exercise, not a by-product — the sticky-header bug was visible in a screenshot and
+invisible in every other signal. Paste the real command output into the PR and session file;
+"tests passed" with no output does not count as having run anything.
 
-Skipped in fast lane: unit tests, 375px screenshots, per-state screenshots. All states must
-still **exist** in code and be reachable via the REVIEW-STATE switcher (`WEB-004`) — you skip
-*looking*, not *writing*. **List the states no one looked at** so the user can flip through
-them in the browser in ten seconds.
+What the check asserts per screen, deliberately shallow: HTTP < 400 · a visible `<h1>` inside
+`<main>` · that heading is not a "Không tìm thấy" fallback (a bad dynamic id still returns 200
+and still renders an h1) · no console error or uncaught exception · no horizontal scroll.
+Business rules belong in `apps/web/scripts/*.test.mjs`, not here.
 
-Building multiple screens at once? Build each one, but **batch all screenshots at the end**,
-and run `pnpm check:docs` once for the whole batch. Screenshots are the most expensive agent
-operation; capturing ten individually costs ten times more than capturing them together.
+**Adding a screen means adding it to `apps/web/tests/routes.ts`**, with a *valid* id if the
+route is dynamic — a dynamic route visited with a bogus id renders the not-found branch and
+proves nothing. Do not use ids that all come from one level or one curriculum: the level-1
+fixture was the reason a broken id parser passed for weeks.
 
-**Errors: fix and move on.** Build breaks → fix it, keep going. Only stop to ask when the
-same thing breaks a second time, or when the fix touches a shared component that other
-already-built screens depend on. The fix → re-screenshot → fix again loop is what burns
-sessions, not the verification itself.
+**Two traps that have already cost time here:**
 
-**FULL LANE — four cases where you must not skim.** Run all three machine commands (`build`,
-`node --test apps/web/scripts/*.test.mjs`, `pnpm check:docs`), both screenshots
-(desktop + 375px), and write tests for the code path you just touched:
+1. `playwright.config.ts` reuses a server already listening on the port. Reusing one started
+   from an older build silently verifies the wrong code — a fix that was already applied still
+   reported as broken. Stop stray dev servers before trusting a run.
+2. Run against `next start`, not `next dev`. Dev-only overlays and unminified timing have
+   masked real regressions before. The config does this for you; do not change it to `dev`.
 
-1. **auth, RBAC, or permission boundaries** — skimming misses a missing ownership check
-2. **money or payroll arithmetic** — a wrong total looks identical to a correct one in a screenshot
-3. **shared components** (admin shell, table, `status.ts`) — one bug multiplies across every screen
+**Errors: fix and move on.** Something breaks → fix it, re-run, keep going. Stop to ask only
+when the same thing breaks a second time, or when the fix touches a shared component other
+built screens depend on.
+
+**Additional obligations for four cases**, on top of everything above — here you also write
+tests for the code path you touched and do not merge on a skim:
+
+1. **auth, RBAC, or permission boundaries** — a screenshot cannot show a missing ownership check
+2. **money or payroll arithmetic** — a wrong total looks identical to a correct one on screen
+3. **shared components** — one bug multiplies across every screen in the area
 4. **going to production**, or a Prisma migration
 
-Fast lane is for building screens on mock data. It is **not** a licence to ship a financial
-module with a glance.
+Batching several screens? Build once, run the screen check once with `PW_AREA` or `PW_ALL`, and
+run `pnpm check:docs` once for the batch.
 
-`next build` once passed while the sticky header bug (`WEB-001`) shipped a header covering
-the first row. Compilation proves type safety, not correctness — that is the risk fast lane
-**intentionally** accepts in exchange for speed. State that clearly in the report instead of
-implying more was checked than actually was.
-
-Logic-only tasks with no UI: build is the entire fast lane; add tests if the code path has none.
+Logic-only tasks with no UI: steps 1, 3 and 4; the screen check has nothing to look at.
+Say so explicitly in the report rather than leaving it ambiguous.
 
 ### Work outside the sprint plan
 

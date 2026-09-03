@@ -224,10 +224,21 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
   or without a file under `ai/context/sessions/` → **fails, blocks merge**.
   Reason: the 2026-08-19 session wrote 8 module specs (~3,900 lines) and recorded zero lines in
   PROGRESS.
-- ✅ **fast-verify rule restored** — 2026-08-19. The "Verify — FAST by default" version was
-  written on branch `chore/fast-verify-rule` then **lost on branch switch because it was never
+- ⏸ **fast-verify rule restored** — 2026-08-19. **Superseded 2026-09-03**: the owner replaced
+      it with the mandatory Playwright + screenshot rule below. Kept for the history only.
+      The "Verify — FAST by default" version was written on branch `chore/fast-verify-rule` then **lost on branch switch because it was never
   committed**. Rewritten, with a note to recognize it if it disappears again.
 - ⬜ husky pre-commit hook — deferred; CI covers the same ground and cannot be `--no-verify`'d
+- ✅ **Playwright screen check + the verification rule it enforces** — 2026-09-03, at the owner's
+      instruction. `@playwright/test` in `apps/web` (chromium), two viewports (desktop 1280 and
+      375px), a route manifest at `apps/web/tests/routes.ts` and `tests/screens.spec.ts`
+      asserting HTTP < 400, a visible `<h1>` inside `<main>`, no "Không tìm thấy" fallback, no
+      console error and no horizontal scroll — plus a screenshot per screen per viewport.
+      `working-rules.md` § Verify rewritten (the "FAST by default" version is **gone** — a build
+      is no longer verification), `.github/workflows/screens.yml` runs the full matrix on every
+      PR touching `apps/web/**`, and both `AGENTS.md` and `CLAUDE.md` carry the same
+      "Before you commit UI code" contract. **70/70 green** across Student, Teacher and Admin.
+      Its first two runs found `WEB-007` and `WEB-008`, both fixed in the same commit.
 
 ---
 
