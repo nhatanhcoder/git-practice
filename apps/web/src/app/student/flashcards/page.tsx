@@ -13,12 +13,10 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Check, Layers, RotateCcw, Search, Sparkles } from "lucide-react";
 import {
-  Bar,
   Chip,
   EmptyState,
   ErrorState,
   Metric,
-  PageHead,
   Panel,
   SectionHeader,
   SkeletonPanel,
@@ -42,7 +40,7 @@ type Filter = "all" | "new" | "learning" | "mastered";
 
 export default function FlashcardsPage() {
   const [demo, setDemo] = useState<DemoState>("ready");
-  const [level, setLevel] = useState<number | "all">("all");
+  const [level, setLevel] = useState<number | "all">(1);
   const [filter, setFilter] = useState<Filter>("all");
   const [topic, setTopic] = useState<string>("all");
   const [query, setQuery] = useState("");
@@ -121,15 +119,16 @@ export default function FlashcardsPage() {
 
   return (
     <>
-      <PageHead
-        title={
-          <>
-            Flashcard <em>từ vựng</em>
-          </>
-        }
-        sub="Lật thẻ bằng phím cách, chấm bằng 1 / 2 / 3. Thẻ đúng lên hộp, thẻ sai về hộp 1."
-        action={<DemoStateSwitcher value={demo} onChange={setDemo} />}
-      />
+      <header className="pagehead">
+        <div>
+          <p className="eyebrow">Luyện tập</p>
+          <h1 className="pagehead__title">Flashcard từ vựng HSK</h1>
+          <p className="pagehead__sub">
+            Luyện phản xạ và ghi nhớ từ vựng qua thẻ lật 3D theo phương pháp Spaced Repetition (SRS).
+          </p>
+        </div>
+        <DemoStateSwitcher value={demo} onChange={setDemo} />
+      </header>
 
       {demo === "loading" ? (
         <SkeletonPanel rows={4} height={260} />
@@ -140,38 +139,9 @@ export default function FlashcardsPage() {
       ) : (
         <>
           {/* ---------- Overview ---------- */}
-          <Panel className="panel--pad">
-            <div className="grid grid--4">
-              <Metric label="Tổng thẻ" value={stats.total} icon={<Layers size={14} />} />
-              <Metric label="Chưa học" value={stats.newCards} />
-              <Metric label="Đang học" value={stats.learning} />
-              <Metric label="Đã thuộc" value={stats.mastered} />
-            </div>
-            <Bar
-              value={(stats.mastered / stats.total) * 100}
-              tone="success"
-              label="Tỉ lệ đã thuộc"
-            />
-          </Panel>
-
-          {/* ---------- Filters ---------- */}
-          <Panel className="panel--pad">
-            <div className="stack gap-4">
-              <label className="field">
-                <Search size={16} aria-hidden="true" />
-                <input
-                  type="search"
-                  value={query}
-                  onChange={(e) => {
-                    setQuery(e.target.value);
-                    setIdx(0);
-                    setPage(1);
-                  }}
-                  placeholder="Tìm chữ Hán, pinyin hoặc nghĩa…"
-                  aria-label="Tìm từ vựng"
-                />
-              </label>
-
+          <Panel className="panel--pad stack gap-5" aria-label="Chọn cấp độ HSK">
+            <div className="stack gap-2">
+              <span className="metric__label">Cấp độ HSK</span>
               <div className="row gap-3 wrap">
                 <button
                   type="button"
@@ -191,6 +161,45 @@ export default function FlashcardsPage() {
                   }}
                 />
               </div>
+            </div>
+            <div className="divider" />
+            <div className="row gap-6 wrap">
+              <Metric label="Tổng từ vựng" value={stats.total} icon={<Layers size={14} />} />
+              <Metric label="Thành thạo" value={stats.mastered} color="var(--success)" />
+              <Metric label="Đang luyện" value={stats.learning} color="var(--warn)" />
+              <Metric label="Chưa học" value={stats.newCards} color="var(--text-3)" />
+              <div className="grow stack gap-1" style={{ minWidth: 200, justifyContent: "center" }}>
+                <span className="metric__label">{level === "all" ? "Toàn bộ HSK" : `HSK ${level}`}</span>
+                <p style={{ color: "var(--text-2)", fontSize: "var(--step--1)" }}>
+                  Học theo nhịp nhớ của bạn; thẻ cần ôn sẽ quay lại sớm hơn.
+                </p>
+              </div>
+            </div>
+          </Panel>
+
+          {/* ---------- Filters ---------- */}
+          <section className="stack gap-4" aria-labelledby="flashcard-deck-title">
+            <SectionHeader
+              id="flashcard-deck-title"
+              title={level === "all" ? "Bộ thẻ toàn cấp" : `Bộ thẻ HSK ${level}`}
+              sub="Bấm vào thẻ hoặc dùng phím Space để lật xem nghĩa và Pinyin. Dùng phím 1, 2, 3 để tự đánh giá."
+              action={<Chip tone="accent">{cards.length > 0 ? `${(idx % cards.length) + 1} / ${cards.length} thẻ` : "0 thẻ"}</Chip>}
+            />
+            <div className="stack gap-4">
+              <label className="field">
+                <Search size={16} aria-hidden="true" />
+                <input
+                  type="search"
+                  value={query}
+                  onChange={(e) => {
+                    setQuery(e.target.value);
+                    setIdx(0);
+                    setPage(1);
+                  }}
+                  placeholder="Tìm chữ Hán, pinyin hoặc nghĩa…"
+                  aria-label="Tìm từ vựng"
+                />
+              </label>
 
               <div className="row gap-2 wrap">
                 {(
@@ -241,7 +250,7 @@ export default function FlashcardsPage() {
                 ))}
               </div>
             </div>
-          </Panel>
+          </section>
 
           {/* ---------- The card ---------- */}
           {demo === "empty" || cards.length === 0 || !current ? (
