@@ -949,6 +949,23 @@ module specs. Remove obsolete references or document the accepted endpoint; do n
 
 ---
 
+### [WEB-010] Landing hero was too tall and its light-mode copy lacked contrast
+
+**Severity**: Medium
+**Status**: Resolved — verified 2026-09-03
+
+**Description**: At tall desktop viewports, `/student/landing` expanded to the full remaining
+viewport and left an oversized blank band above the teacher content. Supporting copy and tags
+were too faint over some light teacher gradients, while the oversized decorative Hanzi sat behind
+the copy instead of the portrait composition.
+
+**Resolution**: Capped the desktop hero at 820px, strengthened light-theme supporting foregrounds
+and tag surfaces, and anchored the decorative Hanzi on the portrait side. Production Playwright
+passed for the route at 1280px and 375px with no horizontal overflow; the 1280×1108 light-mode
+hero was also inspected separately.
+
+---
+
 ## Technical Debt
 
 ### [DEBT-001] No cross-DB transactions

@@ -246,9 +246,10 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
 _(work done outside sprint order. Recorded so another agent does not rebuild it, and so
 nobody mistakes a mock for a finished feature. See `working-rules.md` § Definition of Done.)_
 
-- 🔶 (codex · 2026-09-03) **Fixing `/student/landing` hero readability and composition** —
-      increase light-mode text contrast, reduce excessive desktop hero height, and move the
-      teacher copy toward the visual centre without changing the dark/mobile compositions.
+- 🔶 (codex · 2026-09-03) **Fixed `/student/landing` hero readability and composition** —
+      strengthened light-mode supporting text, capped the oversized desktop hero at 820px, and
+      moved the decorative Hanzi watermark from the copy side to the portrait side. Production
+      Playwright passed at 1280px and 375px; the screen remains 🔶 because its data is mocked.
 
 - 🔶 (claude · 2026-09-03) **BUILT — Landing page "Hán Lộ" ported to `/student/landing`**
       from the same prototype's `Landing.tsx` + `SiteShell.tsx` + `ThreeTeacherCylinderStage.tsx`
