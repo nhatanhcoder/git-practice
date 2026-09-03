@@ -3,6 +3,7 @@
 > **The single source of truth** for all permissions in the system.  
 > Every route guard and API middleware must reference this document.  
 > Per-actor permission details: see `docs/actors/<role>/PERMISSIONS_<ROLE>.md`
+> Student learning model: [ADR-016](decisions/016-combined-student-learning-domain.md).
 
 ---
 
@@ -50,12 +51,23 @@
 | **TuitionPayment** | record | ✅ | ❌ | ❌ |
 | **Flashcard** | read / study | ❌ | ❌ | ✅ |
 | **UserFlashcardState** | read / update own | ❌ | ❌ | 🔒 |
+| **LearningCatalog** | read published units | 👁️ | 👁️ | 👁️ |
+| **LearningCatalog** | author / publish | ⛔ contract needed | ⛔ contract needed | ❌ |
+| **SupplementalPractice** | assign catalog unit to own class | ❌ | 🔒 | ❌ |
+| **SupplementalPractice** | read / complete | ❌ | 👁️ (own active class) | 🔒 (own active enrollment) |
+| **SelfStudyProgress** | read / update own | ❌ | ❌ | 🔒 |
+| **SelfStudyProgress** | read assigned-unit completion | ❌ | 👁️ (own active class only) | 🔒 |
+| **GamificationState** | read / update own through system events | ❌ | ❌ | 🔒 |
 | **Notification** | read own | ✅ | 🔒 | 🔒 |
 | **Notification** | create (system) | ✅ (system) | ❌ | ❌ |
 
 ---
 
 ## Route Guard Implementation
+
+`⛔ contract needed` records an accepted product capability whose authoring owner is still
+undecided. It is not permission to implement either Admin or Teacher authoring. Supplemental
+practice never grants a teacher access to unrelated voluntary self-study history.
 
 ```typescript
 // NestJS: use the @Roles() decorator + RolesGuard
