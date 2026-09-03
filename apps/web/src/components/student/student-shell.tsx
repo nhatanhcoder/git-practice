@@ -132,6 +132,27 @@ export function StudentShell({ children }: { children: ReactNode }) {
     setSheetOpen(false);
   }, [pathname]);
 
+  /**
+   * `globals.css` paints <html> and <body> with the Admin area's light
+   * `--background`. The student root covers the viewport, but overscroll and any
+   * page shorter than the fold still show that light band behind the ink theme.
+   * Paint the document to match while the student area is mounted, and put it
+   * back on the way out so Admin and Teacher are unaffected.
+   */
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    const html = document.documentElement;
+    const body = document.body;
+    const previous = { html: html.style.backgroundColor, body: body.style.backgroundColor };
+    const ink = theme === "light" ? "#f6f2ea" : "#0a0d13";
+    html.style.backgroundColor = ink;
+    body.style.backgroundColor = ink;
+    return () => {
+      html.style.backgroundColor = previous.html;
+      body.style.backgroundColor = previous.body;
+    };
+  }, [theme]);
+
   // Until rehydration lands, render the server's defaults so the markup matches.
   const themeAttr = hydrated ? theme : "dark";
   const pinyinAttr = hydrated ? String(showPinyin) : "true";
