@@ -87,12 +87,9 @@ export default function MistakesPage() {
   return (
     <>
       <PageHead
-        title={
-          <>
-            Sổ tay <em>lỗi sai</em>
-          </>
-        }
-        sub="Ôn đúng chỗ đã sai. Trả lời đúng thì thẻ lên hộp, sai thì về hộp 1."
+        eyebrow="Luyện tập"
+        title="Sổ tay lỗi sai"
+        sub="Các câu từng làm sai được xếp theo năm hộp SRS. Làm lại đúng sẽ đẩy câu lên hộp kế tiếp, sai thì về hộp 1 — lịch ôn được lưu vào tiến độ."
         action={<DemoStateSwitcher value={demo} onChange={setDemo} />}
       />
 

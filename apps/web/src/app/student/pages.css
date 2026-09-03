@@ -775,6 +775,17 @@
   background: var(--bg);
 }
 
+@media (max-width: 767px) {
+  .student-root .tabs-shell {
+    top: 58px;
+    width: 100%;
+    margin: 0;
+    padding: var(--sp-2) 0 0;
+    overflow-x: auto;
+    border-bottom: 1px solid var(--line-soft);
+  }
+}
+
 .student-root .found-progress {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));

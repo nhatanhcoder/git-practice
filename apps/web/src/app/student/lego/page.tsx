@@ -267,12 +267,9 @@ export default function LegoPage() {
   return (
     <>
       <PageHead
-        title={
-          <>
-            Ghép câu <em>Lego</em>
-          </>
-        }
-        sub="Bảy trạm, mỗi trạm một quy tắc trật tự từ. Khối được tô màu theo vai trò ngữ pháp."
+        eyebrow="Luyện tập"
+        title="Ghép câu Lego"
+        sub="Luyện trật tự từ tiếng Trung qua các trạm tăng dần độ khó. Khối được tô màu theo vai trò ngữ pháp để bạn nhìn thấy cấu trúc câu."
         action={<DemoStateSwitcher value={demo} onChange={setDemo} />}
       />
 

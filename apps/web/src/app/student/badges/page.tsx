@@ -89,12 +89,9 @@ export default function BadgesPage() {
   return (
     <>
       <PageHead
-        title={
-          <>
-            Kho <em>huy hiệu</em>
-          </>
-        }
-        sub="Hai mươi huy hiệu, mở khoá bằng chuỗi ngày, từ vựng, chữ Hán, thi cử và ngữ pháp."
+        eyebrow="Cộng đồng"
+        title="Kho huy hiệu"
+        sub="Huy hiệu được chia theo các nhóm thành tựu. Tiến độ và điều kiện mở suy ra từ tiến độ học tập; huy hiệu còn khoá vẫn hiện cần làm gì tiếp theo."
         action={<DemoStateSwitcher value={demo} onChange={setDemo} />}
       />
 

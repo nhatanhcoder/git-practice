@@ -60,12 +60,9 @@ export default function ProgressPage() {
   return (
     <>
       <PageHead
-        title={
-          <>
-            Tiến độ <em>học tập</em>
-          </>
-        }
-        sub="Ba tháng gần nhất — chuỗi ngày, XP theo tháng, bốn kỹ năng và thang HSK."
+        eyebrow="Cộng đồng"
+        title="Tiến độ học tập"
+        sub="Toàn cảnh hành trình HSK 1–9: chuỗi ngày học, XP theo tháng, điểm mạnh yếu bốn kỹ năng và các mốc đã đạt."
         action={<DemoStateSwitcher value={demo} onChange={setDemo} />}
       />
 

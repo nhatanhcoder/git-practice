@@ -51,12 +51,9 @@ export default function WorkplacePage() {
   return (
     <>
       <PageHead
-        title={
-          <>
-            Mô phỏng <em>công sở</em>
-          </>
-        }
-        sub="Sáu tình huống nhiều lượt: báo giá, họp, thư tín, phỏng vấn, hẹn lịch, khiếu nại."
+        eyebrow="Luyện tập"
+        title="Mô phỏng công sở"
+        sub="Các tình huống tiếng Trung thương mại: báo giá, họp nhóm, email công việc, phỏng vấn, hẹn lịch và khiếu nại. Điểm số và phần chữa lỗi là kịch bản dựng sẵn, không có AI phía sau."
         action={<DemoStateSwitcher value={demo} onChange={setDemo} />}
       />
 

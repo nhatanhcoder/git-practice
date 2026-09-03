@@ -311,14 +311,17 @@ export function PageHead({
   title,
   sub,
   action,
+  eyebrow,
 }: {
   title: ReactNode;
   sub?: ReactNode;
   action?: ReactNode;
+  eyebrow?: ReactNode;
 }) {
   return (
     <header className="pagehead">
       <div>
+        {eyebrow ? <p className="eyebrow">{eyebrow}</p> : null}
         <h1 className="pagehead__title">{title}</h1>
         {sub ? <p className="pagehead__sub">{sub}</p> : null}
       </div>

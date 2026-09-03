@@ -61,12 +61,9 @@ export default function LeaderboardPage() {
   return (
     <>
       <PageHead
-        title={
-          <>
-            Bảng <em>xếp hạng</em>
-          </>
-        }
-        sub="So với 20 học viên khác. Thứ hạng tính theo XP tích luỹ trong kỳ."
+        eyebrow="Cộng đồng"
+        title="Bảng xếp hạng"
+        sub="So sánh XP với các học viên cùng cấp độ HSK. Toàn bộ tên và điểm ở đây là dữ liệu demo được sinh cục bộ — bản prototype không có dịch vụ realtime."
         action={<DemoStateSwitcher value={demo} onChange={setDemo} />}
       />
 

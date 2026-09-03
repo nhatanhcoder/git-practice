@@ -65,12 +65,9 @@ export default function WritingPage() {
   return (
     <>
       <PageHead
-        title={
-          <>
-            Luyện viết <em>chữ Hán</em>
-          </>
-        }
-        sub="Thứ tự nét, bảng 米字格 để viết tay, và từ ghép để nhớ chữ trong ngữ cảnh."
+        eyebrow="Luyện tập"
+        title="Luyện viết chữ Hán"
+        sub="Chữ mẫu từ HSK 1 đến HSK 9, kèm thứ tự nét, bảng viết mô phỏng và tiến độ luyện tập cục bộ. Bản prototype không chấm chữ viết tay thật."
         action={<DemoStateSwitcher value={demo} onChange={setDemo} />}
       />
 

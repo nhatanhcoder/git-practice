@@ -75,12 +75,9 @@ export default function ExamsPage() {
   return (
     <>
       <PageHead
-        title={
-          <>
-            Phòng thi <em>HSK</em>
-          </>
-        }
-        sub="Đề bấm giờ, nộp bài rồi xem phiếu điểm theo từng kỹ năng."
+        eyebrow="Luyện tập"
+        title="Phòng thi HSK"
+        sub="Thi thử trên máy theo định dạng CBT: đếm ngược, chuyển phần, bảng điều hướng câu hỏi và phiếu điểm chi tiết. Điểm và lịch sử thi được lưu lại; phần chấm vẫn chạy trên trình duyệt."
         action={<DemoStateSwitcher value={demo} onChange={setDemo} />}
       />
 
