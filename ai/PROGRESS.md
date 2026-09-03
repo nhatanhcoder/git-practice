@@ -246,6 +246,10 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
 _(work done outside sprint order. Recorded so another agent does not rebuild it, and so
 nobody mistakes a mock for a finished feature. See `working-rules.md` § Definition of Done.)_
 
+- 🔶 (codex · 2026-09-03) **Fixing `/student/landing` hero readability and composition** —
+      increase light-mode text contrast, reduce excessive desktop hero height, and move the
+      teacher copy toward the visual centre without changing the dark/mobile compositions.
+
 - 🔶 (claude · 2026-09-03) **BUILT — Landing page "Hán Lộ" ported to `/student/landing`**
       from the same prototype's `Landing.tsx` + `SiteShell.tsx` + `ThreeTeacherCylinderStage.tsx`
       (public marketing page: 3D teacher hero, stats, student stories, method, HSK path, skills,
