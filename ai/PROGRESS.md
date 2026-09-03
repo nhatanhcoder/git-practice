@@ -235,6 +235,13 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
 _(work done outside sprint order. Recorded so another agent does not rebuild it, and so
 nobody mistakes a mock for a finished feature. See `working-rules.md` § Definition of Done.)_
 
+- 🔶 (claude · 2026-09-03) **BUILDING — Landing page "Hán Lộ" ported to `/student/landing`**
+      from the same prototype's `Landing.tsx` + `SiteShell.tsx` + `ThreeTeacherCylinderStage.tsx`
+      (public marketing page: 3D teacher hero, stats, student stories, method, HSK path, skills,
+      areas, CTA). Branch `feat/student-hanlu-ui`. Fully mocked, no API. Reuses the Student
+      design system scoped `.student-root`; needs `three` (client-only). Lane: `apps/web/**`
+      (codex lane, solo flip per `multi-agent-workflow.md` §1 — codex idle this session).
+
 - 🔶 (claude + codex · 2026-09-03) **BUILT — Student UI rebuilt and fidelity-checked against the "Hán Lộ" prototype**
       (`Chinese UI test/ui-claude`, a separate repo), distilled in
       `docs/front-end-design-docs/HANLU_PROTOTYPE_DISTILLED.md`. Replaces the 2026-08-28 indigo
