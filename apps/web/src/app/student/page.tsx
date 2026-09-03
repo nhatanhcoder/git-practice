@@ -28,7 +28,6 @@ import {
   Puzzle,
   Sparkles,
   Target,
-  Trophy,
   Zap,
 } from "lucide-react";
 import {
@@ -37,7 +36,6 @@ import {
   EmptyState,
   ErrorState,
   Metric,
-  PageHead,
   Panel,
   Ring,
   SectionHeader,
@@ -72,6 +70,14 @@ const SHORTCUTS = [
   { href: "/student/workplace", icon: Briefcase, tone: "epic", title: "Mô phỏng công sở", text: "Báo giá, họp nhóm, email, phỏng vấn." },
 ];
 
+function greeting() {
+  const hour = new Date().getHours();
+  if (hour < 11) return "Chào buổi sáng";
+  if (hour < 14) return "Chào buổi trưa";
+  if (hour < 18) return "Chào buổi chiều";
+  return "Chào buổi tối";
+}
+
 export default function StudentDashboard() {
   const [demo, setDemo] = useState<DemoState>("ready");
   const profile = useStudentProfile();
@@ -93,6 +99,7 @@ export default function StudentDashboard() {
   const levelRow = levelProgress.find((l) => l.level === level) ?? levelProgress[0];
   const maxMinutes = Math.max(...weekData.map((d) => d.minutes), 1);
   const totalMinutes = weekData.reduce((sum, d) => sum + d.minutes, 0);
+  const minutesToday = weekData.find((d) => d.isToday)?.minutes ?? 0;
   const rankPct = rankProgress(profile.xpIntoRank, profile.xpForNextRank);
 
   const sessionItem = queue[sessionIdx];
@@ -115,15 +122,22 @@ export default function StudentDashboard() {
 
   return (
     <>
-      <PageHead
-        title={
-          <>
-            Chào <em>{profile.name.split(" ").slice(-1)[0]}</em>
-          </>
-        }
-        sub="Hôm nay học gì? Ba khối dưới đây xếp theo thứ tự nên làm."
-        action={<DemoStateSwitcher value={demo} onChange={setDemo} />}
-      />
+      <header className="pagehead">
+        <div>
+          <p className="eyebrow">
+            {new Date().toLocaleDateString("vi-VN", { weekday: "long", day: "numeric", month: "long" })}
+          </p>
+          <h1 className="pagehead__title">
+            {greeting()},{" "}
+            <em style={{ color: "var(--accent)" }}>{profile.name.split(" ").slice(-2).join(" ")}</em>
+          </h1>
+          <p className="pagehead__sub">
+            HSK {profile.currentLevel} · còn <strong>{Math.max(0, 30 - minutesToday)} phút</strong> nữa đạt mục tiêu hôm nay ·{" "}
+            <strong>{queue.length} thẻ</strong> đến hạn ôn.
+          </p>
+        </div>
+        <DemoStateSwitcher value={demo} onChange={setDemo} />
+      </header>
 
       {demo === "loading" ? (
         <SkeletonPanel rows={4} height={160} />
@@ -173,7 +187,7 @@ export default function StudentDashboard() {
                   <span className="is-xp"><Zap size={14} /><span className="num is-xp">+180</span> XP</span>
                 </p>
                 <div className="row gap-3 wrap">
-                  <Link href="/student/learning-path/lesson-8" className="btn btn--primary btn--lg">
+                  <Link href="/student/learning-path" className="btn btn--primary btn--lg">
                     Tiếp tục {continueLesson.title.split("·")[0]} <ArrowRight size={18} />
                   </Link>
                   <Link href="/student/learning-path" className="btn btn--ghost">
@@ -229,9 +243,9 @@ export default function StudentDashboard() {
                   <div className="row gap-2">
                     <span className="metric__label">Mục tiêu hôm nay</span>
                     <span className="grow" />
-                    <span className="num" style={{ fontSize: "var(--step--1)", fontWeight: 700 }}>{totalMinutes}/30 phút</span>
+                    <span className="num" style={{ fontSize: "var(--step--1)", fontWeight: 700 }}>{minutesToday}/30 phút</span>
                   </div>
-                  <Bar value={(totalMinutes / 30) * 100} size="sm" label="Mục tiêu hôm nay" />
+                  <Bar value={(minutesToday / 30) * 100} size="sm" label="Mục tiêu hôm nay" />
                 </div>
               </Panel>
             </div>

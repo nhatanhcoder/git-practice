@@ -22,7 +22,6 @@ import {
   EmptyState,
   ErrorState,
   Metric,
-  PageHead,
   Panel,
   Ring,
   SectionHeader,
@@ -116,6 +115,16 @@ function FoundationInner() {
     (radicalPage - 1) * RADICALS_PER_PAGE,
     radicalPage * RADICALS_PER_PAGE,
   );
+  const foundationProgress = [
+    { id: "pinyin", label: "Pinyin", value: soundPct },
+    { id: "tones", label: "Thanh điệu", value: foundationMastery.tones },
+    { id: "radicals", label: "Bộ thủ", value: radicalPct },
+    { id: "listening", label: "Nghe", value: foundationMastery.listening },
+    { id: "speaking", label: "Nói", value: foundationMastery.speaking },
+  ];
+  const overall = Math.round(
+    foundationProgress.reduce((sum, item) => sum + item.value, 0) / foundationProgress.length,
+  );
 
   function markSound(id: string) {
     const wasMastered = masteredSounds.includes(id);
@@ -128,15 +137,16 @@ function FoundationInner() {
 
   return (
     <>
-      <PageHead
-        title={
-          <>
-            Gốc rễ <em>tiếng Trung</em>
-          </>
-        }
-        sub="Phát âm, thanh điệu và bộ thủ — phần nền mà mọi cấp HSK phía sau đều dựa vào."
-        action={<DemoStateSwitcher value={demo} onChange={setDemo} />}
-      />
+      <header className="pagehead">
+        <div>
+          <p className="eyebrow">Nền tảng</p>
+          <h1 className="pagehead__title">Gốc rễ tiếng Trung</h1>
+          <p className="pagehead__sub">
+            Phát âm chuẩn, thanh điệu vững, bộ thủ thuộc lòng — ba nền móng quyết định tốc độ tiến bộ ở mọi cấp HSK.
+          </p>
+        </div>
+        <DemoStateSwitcher value={demo} onChange={setDemo} />
+      </header>
 
       {demo === "loading" ? (
         <SkeletonPanel rows={6} height={220} />
@@ -147,45 +157,41 @@ function FoundationInner() {
       ) : (
         <>
           {/* ---------- Mastery overview ---------- */}
-          <Panel className="panel--pad">
-            <SectionHeader title="Mức nắm nền tảng" sub="Cập nhật khi bạn đánh dấu đã thuộc" />
-            <div className="found-progress">
-              <div className="stack gap-2" style={{ alignItems: "center" }}>
-                <Ring value={soundPct} size={88} label="Âm đã thuộc">
-                  <span className="num" style={{ fontWeight: 700 }}>
-                    {soundPct}%
-                  </span>
-                </Ring>
-                <span style={{ color: "var(--text-3)", fontSize: "var(--step--2)" }}>
-                  Âm ({masteredSounds.length}/{initials.length + finals.length})
+          <Panel className="panel--pad" aria-label="Tiến độ nền tảng">
+            <div className="row gap-6 wrap">
+              <Ring value={overall} size={104} stroke={10} label="Mức thành thạo nền tảng">
+                <span className="stack" style={{ gap: 0 }}>
+                  <span className="num" style={{ fontFamily: "var(--font-display)", fontSize: "var(--step-2)", fontWeight: 700 }}>{overall}%</span>
+                  <span style={{ fontSize: 10, color: "var(--text-3)" }}>nền tảng</span>
                 </span>
-              </div>
-              <div className="stack gap-2" style={{ alignItems: "center" }}>
-                <Ring value={radicalPct} size={88} label="Bộ thủ đã học">
-                  <span className="num" style={{ fontWeight: 700 }}>
-                    {radicalPct}%
-                  </span>
-                </Ring>
-                <span style={{ color: "var(--text-3)", fontSize: "var(--step--2)" }}>
-                  Bộ thủ ({learnedRadicals.length}/{radicals.length})
-                </span>
-              </div>
-              <Metric label="Thanh điệu" value={`${foundationMastery.tones}%`} />
-              <Metric label="Nghe" value={`${foundationMastery.listening}%`} />
-              <Metric label="Nói" value={`${foundationMastery.speaking}%`} />
+              </Ring>
+              <ul className="found-progress grow">
+                {foundationProgress.map((item) => (
+                  <li key={item.id} className="stack gap-2">
+                    <div className="row gap-2">
+                      <span className="metric__label">{item.label}</span>
+                      <span className="grow" />
+                      <span className="num" style={{ fontSize: "var(--step--1)", fontWeight: 700 }}>{item.value}%</span>
+                    </div>
+                    <Bar value={item.value} size="sm" tone={item.value >= 70 ? "success" : item.value >= 45 ? "accent" : "info"} label={`Thành thạo ${item.label}`} />
+                  </li>
+                ))}
+              </ul>
+              <Metric label="Bộ thủ đã thuộc" value={learnedRadicals.length} unit="/214" />
             </div>
           </Panel>
 
           {/* ---------- Tabs ---------- */}
-          <Panel className="panel--pad">
+          <div className="tabs-shell">
             <Tabs
               tabs={TABS}
               active={tab}
               onChange={changeTab}
               label="Khu vực nền tảng"
             />
+          </div>
 
-            <div style={{ paddingTop: "var(--sp-5)" }}>
+            <div>
               {/* ---- Pinyin ---- */}
               {tab === "pinyin" ? (
                 <div className="stack gap-6">
@@ -478,7 +484,6 @@ function FoundationInner() {
                 </div>
               ) : null}
             </div>
-          </Panel>
 
           {/* ---------- PDFs ---------- */}
           <Panel>

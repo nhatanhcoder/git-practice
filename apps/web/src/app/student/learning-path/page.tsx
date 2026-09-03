@@ -13,14 +13,13 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { Check, Crown, Lock, Map as MapIcon, Play, Rows3, Star, Swords } from "lucide-react";
+import { Check, Compass, Crown, List, Lock, Map as MapIcon, Play, Star, Swords, Zap } from "lucide-react";
 import {
   Bar,
   Chip,
   EmptyState,
   ErrorState,
   Metric,
-  PageHead,
   Panel,
   SectionHeader,
   SkeletonPanel,
@@ -76,6 +75,7 @@ export default function LearningPathPage() {
 
   const done = nodes.filter((n) => n.state === "completed").length;
   const pct = nodes.length ? Math.round((done / nodes.length) * 100) : 0;
+  const totalXp = nodes.reduce((sum, node) => sum + node.xp, 0);
 
   function tryUnlock(node: PathNode) {
     const ok = unlockNode(node.id);
@@ -89,21 +89,22 @@ export default function LearningPathPage() {
 
   return (
     <>
-      <PageHead
-        title={
-          <>
-            Bản đồ <em>HSK {level}</em>
-          </>
-        }
-        sub="Mỗi chặng là một bài. Nhiệm vụ phụ cho thêm XP, ải trùm chốt cấp độ."
-        action={<DemoStateSwitcher value={demo} onChange={setDemo} />}
-      />
+      <header className="pagehead">
+        <div>
+          <p className="eyebrow">Lộ trình học</p>
+          <h1 className="pagehead__title">Bản đồ HSK {level}</h1>
+          <p className="pagehead__sub">
+            Mỗi chương là một chặng đường: bài học nối tiếp nhau, xen kẽ nhiệm vụ phụ, khép lại bằng một Ải Trùm. Hoàn thành ải để mở chặng kế tiếp.
+          </p>
+        </div>
+        <DemoStateSwitcher value={demo} onChange={setDemo} />
+      </header>
 
       {/* ---------- Toolbar ---------- */}
-      <Panel className="panel--pad">
-        <div className="stack gap-5">
-          <div className="stack gap-2">
-            <span className="eyebrow">Giáo trình</span>
+      <Panel className="panel--pad stack gap-5" aria-label="Bộ lọc lộ trình">
+          <div className="path-tools">
+            <div className="stack gap-2 grow">
+            <span className="metric__label">Giáo trình</span>
             <div className="curriculum">
               {curricula.map((c) => (
                 <button
@@ -116,17 +117,31 @@ export default function LearningPathPage() {
                   <span className="curriculum__hanzi han" aria-hidden="true">
                     {CURRICULUM_HANZI[c.key]}
                   </span>
-                  <span className="stack gap-1">
+                  <span className="stack gap-1 grow" style={{ textAlign: "left", minWidth: 0 }}>
                     <span className="curriculum__name">{c.name}</span>
-                    <span className="curriculum__pub">{c.desc}</span>
+                    <span className="curriculum__pub truncate">{c.desc}</span>
                   </span>
                 </button>
               ))}
             </div>
           </div>
 
+            <div className="stack gap-2">
+              <span className="metric__label">Hiển thị</span>
+              <Segmented
+                options={[
+                  { value: "map", label: "Bản đồ", icon: <MapIcon size={14} /> },
+                  { value: "list", label: "Danh sách", icon: <List size={14} /> },
+                ]}
+                value={view}
+                onChange={setView}
+                label="Kiểu hiển thị lộ trình"
+              />
+            </div>
+          </div>
+
           <div className="stack gap-2">
-            <span className="eyebrow">Cấp độ</span>
+            <span className="metric__label">Cấp độ HSK</span>
             <LevelSelector
               levels={LEVELS.map((id) => ({
                 id,
@@ -138,40 +153,21 @@ export default function LearningPathPage() {
             />
           </div>
 
-          <div className="row gap-4 wrap">
-            <Segmented
-              options={[
-                { value: "map", label: "Bản đồ", icon: <MapIcon size={14} /> },
-                { value: "list", label: "Danh sách", icon: <Rows3 size={14} /> },
-              ]}
-              value={view}
-              onChange={setView}
-              label="Kiểu hiển thị lộ trình"
-            />
-            <div className="map-legend grow">
-              <span className="legend">
-                <span className="legend__dot legend__dot--done" /> Đã xong
-              </span>
-              <span className="legend">
-                <span className="legend__dot legend__dot--current" /> Đang học
-              </span>
-              <span className="legend">
-                <span className="legend__dot legend__dot--open" /> Mở
-              </span>
-              <span className="legend">
-                <span className="legend__dot" /> Khoá
-              </span>
+          <div className="divider" />
+
+          <div className="row gap-6 wrap">
+            <Metric label="Tiến độ chặng" value={`${done}/${nodes.length}`} icon={<Compass size={12} />} />
+            <Metric label="XP khả dụng" value={profile.xp.toLocaleString("vi-VN")} color="var(--gold-400)" icon={<Zap size={12} />} />
+            <Metric label="XP toàn chặng" value={totalXp.toLocaleString("vi-VN")} />
+            <div className="grow stack gap-2" style={{ minWidth: 220 }}>
+              <div className="row gap-2">
+                <span className="metric__label">{curricula.find((item) => item.key === curriculum)?.name}</span>
+                <span className="grow" />
+                <span className="num" style={{ fontWeight: 700 }}>{pct}%</span>
+              </div>
+              <Bar value={pct} tone={pct === 100 ? "success" : "accent"} label={`Tiến độ HSK ${level}`} />
             </div>
           </div>
-
-          <div className="grid grid--4">
-            <Metric label="Chặng đã xong" value={`${done}/${nodes.length}`} />
-            <Metric label="Tiến độ cấp" value={`${pct}%`} />
-            <Metric label="XP trong cấp" value={map.xpInLevel.toLocaleString("vi-VN")} />
-            <Metric label="Bài học" value={`${map.lessonsCompleted}/${map.lessonsTotal}`} />
-          </div>
-          <Bar value={pct} tone="success" label={`Tiến độ HSK ${level}`} />
-        </div>
       </Panel>
 
       {demo === "loading" ? (
@@ -197,8 +193,20 @@ export default function LearningPathPage() {
           />
         </Panel>
       ) : view === "map" ? (
-        <Panel className="panel--pad">
-          <SectionHeader title={`Chặng đường HSK ${level}`} sub="Bấm một chặng để xem chi tiết" />
+        <section aria-labelledby="map-title" className="stack gap-4">
+          <SectionHeader
+            id="map-title"
+            title={`Nhập môn · ${nodes.length} chặng`}
+            sub="Chạm vào một node để xem mục tiêu, phần thưởng và hành động."
+            action={
+              <div className="row gap-2 wrap map-legend" aria-hidden="true">
+                <span className="legend"><i className="legend__dot legend__dot--done" />Hoàn thành</span>
+                <span className="legend"><i className="legend__dot legend__dot--current" />Đang học</span>
+                <span className="legend"><i className="legend__dot legend__dot--open" />Có thể học</span>
+                <span className="legend"><i className="legend__dot legend__dot--locked" />Khoá</span>
+              </div>
+            }
+          />
           <div className="trail">
             {nodes.map((n, i) =>
               n.kind === "boss" ? (
@@ -253,7 +261,7 @@ export default function LearningPathPage() {
               ),
             )}
           </div>
-        </Panel>
+        </section>
       ) : (
         <Panel>
           <div className="panel__head">

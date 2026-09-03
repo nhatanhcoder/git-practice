@@ -11,13 +11,13 @@
  */
 
 import { useMemo, useState } from "react";
-import { BookOpen, Dumbbell, Search, Sparkles } from "lucide-react";
+import { BookOpen, Check, Dumbbell, Filter, Gauge, RotateCcw, Search, Sparkles, X } from "lucide-react";
 import {
   Bar,
   Chip,
   EmptyState,
   ErrorState,
-  PageHead,
+  Metric,
   Panel,
   Ring,
   SectionHeader,
@@ -107,7 +107,7 @@ export default function GrammarPage() {
       mastered,
       learning,
       notStarted: points.length - mastered - learning,
-      pct: Math.round((mastered / points.length) * 100),
+      pct: Math.round(points.reduce((sum, point) => sum + point.mastery, 0) / points.length),
     };
   }, [points]);
 
@@ -127,15 +127,16 @@ export default function GrammarPage() {
 
   return (
     <>
-      <PageHead
-        title={
-          <>
-            Ngữ pháp <em>HSK 1 – 9</em>
-          </>
-        }
-        sub="Tra cứu điểm ngữ pháp, xem ví dụ, rồi luyện ngay bằng năm dạng bài."
-        action={<DemoStateSwitcher value={demo} onChange={setDemo} />}
-      />
+      <header className="pagehead">
+        <div>
+          <p className="eyebrow">Thư viện</p>
+          <h1 className="pagehead__title">Ngữ pháp HSK 1 – 9</h1>
+          <p className="pagehead__sub">
+            {points.length} điểm ngữ pháp có công thức, ví dụ chữ Hán, phiên âm, dịch nghĩa tiếng Việt và năm dạng bài tập luyện ngay trong thư viện.
+          </p>
+        </div>
+        <DemoStateSwitcher value={demo} onChange={setDemo} />
+      </header>
 
       {demo === "loading" ? (
         <SkeletonPanel rows={5} height={200} />
@@ -146,47 +147,45 @@ export default function GrammarPage() {
       ) : (
         <>
           {/* ---------- Mastery summary ---------- */}
-          <Panel className="panel--pad">
-            <div className="row gap-6 wrap">
-              <Ring value={summary.pct} size={104} label="Tỉ lệ thành thạo">
-                <div className="stack">
+          <Panel className="panel--pad mastery" aria-label="Tổng quan mức thành thạo">
+            <div className="row gap-5">
+              <Ring value={summary.pct} size={104} stroke={10} label="Mức thành thạo tổng thể">
+                <div className="stack" style={{ gap: 0 }}>
                   <span className="num" style={{ fontSize: "var(--step-2)", fontWeight: 700 }}>
                     {summary.pct}%
                   </span>
-                  <span style={{ color: "var(--text-3)", fontSize: 10 }}>thành thạo</span>
+                  <span style={{ color: "var(--text-3)", fontSize: 10 }}>tổng thể</span>
                 </div>
               </Ring>
-              <div className="grow mastery__levels">
-                <div className="mastery__level">
-                  <div className="mastery__level-n num">{summary.total}</div>
-                  <div className="mastery__level-p">Tổng điểm</div>
+              <div className="grow stack gap-4">
+                <div className="row gap-6 wrap">
+                  <Metric label="Thành thạo" value={summary.mastered} icon={<Check size={12} />} color="var(--success)" />
+                  <Metric label="Đang học" value={summary.learning} icon={<Gauge size={12} />} color="var(--warn)" />
+                  <Metric label="Chưa học" value={summary.notStarted} icon={<Sparkles size={12} />} />
                 </div>
-                <div className="mastery__level">
-                  <div className="mastery__level-n num" style={{ color: "var(--success)" }}>
-                    {summary.mastered}
-                  </div>
-                  <div className="mastery__level-p">Thành thạo</div>
-                </div>
-                <div className="mastery__level">
-                  <div className="mastery__level-n num" style={{ color: "var(--warn)" }}>
-                    {summary.learning}
-                  </div>
-                  <div className="mastery__level-p">Đang học</div>
-                </div>
-                <div className="mastery__level">
-                  <div className="mastery__level-n num" style={{ color: "var(--text-3)" }}>
-                    {summary.notStarted}
-                  </div>
-                  <div className="mastery__level-p">Chưa học</div>
+                <div className="mastery__levels">
+                  {LEVELS.map((itemLevel) => {
+                    const levelPoints = points.filter((point) => point.level === itemLevel);
+                    const levelPct = levelPoints.length
+                      ? Math.round(levelPoints.reduce((sum, point) => sum + point.mastery, 0) / levelPoints.length)
+                      : 0;
+                    return (
+                      <button key={itemLevel} type="button" className="mastery__level" onClick={() => setLevel(itemLevel)} aria-label={`Lọc HSK ${itemLevel} — thành thạo ${levelPct}%`}>
+                        <span className="mastery__level-n num">HSK {itemLevel}</span>
+                        <Bar value={levelPct} size="sm" tone={levelPct >= 70 ? "success" : levelPct > 0 ? "accent" : "info"} />
+                        <span className="mastery__level-p num">{levelPct}%</span>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             </div>
           </Panel>
 
           {/* ---------- Filters ---------- */}
-          <Panel className="panel--pad">
-            <div className="stack gap-4">
-              <label className="field">
+          <Panel className="panel--pad stack gap-5" aria-label="Bộ lọc ngữ pháp">
+              <div className="row gap-4 wrap">
+              <label className="field grow" style={{ minWidth: 240, maxWidth: 420 }}>
                 <Search size={16} aria-hidden="true" />
                 <input
                   type="search"
@@ -195,10 +194,17 @@ export default function GrammarPage() {
                   placeholder="Tìm theo tên, công thức, chữ Hán hoặc pinyin…"
                   aria-label="Tìm điểm ngữ pháp"
                 />
+                {query ? <button type="button" className="btn btn--ghost btn--icon btn--sm" onClick={() => setQuery("")} aria-label="Xoá từ khoá"><X size={14} /></button> : null}
               </label>
+              <span className="grow" />
+              <Chip icon={<Filter size={12} />}>{results.length} kết quả</Chip>
+              {level !== "all" || category !== "all" || query.trim() ? (
+                <button type="button" className="btn btn--ghost btn--sm" onClick={() => { setLevel("all"); setCategory("all"); setQuery(""); }}><RotateCcw size={14} /> Xoá bộ lọc</button>
+              ) : null}
+              </div>
 
               <div className="stack gap-2">
-                <span className="eyebrow">Cấp độ</span>
+                <span className="metric__label">Cấp độ</span>
                 <div className="row gap-3 wrap">
                   <button
                     type="button"
@@ -217,7 +223,7 @@ export default function GrammarPage() {
               </div>
 
               <div className="stack gap-2">
-                <span className="eyebrow">Nhóm</span>
+                <span className="metric__label">Nhóm ngữ pháp</span>
                 <div className="row gap-2 wrap">
                   <button
                     type="button"
@@ -225,7 +231,7 @@ export default function GrammarPage() {
                     aria-pressed={category === "all"}
                     onClick={() => setCategory("all")}
                   >
-                    Tất cả
+                    Tất cả nhóm
                   </button>
                   {grammarCategories.map((c) => (
                     <button
@@ -240,7 +246,6 @@ export default function GrammarPage() {
                   ))}
                 </div>
               </div>
-            </div>
           </Panel>
 
           {/* ---------- Results ---------- */}
