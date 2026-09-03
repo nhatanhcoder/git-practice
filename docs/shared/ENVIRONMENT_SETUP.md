@@ -109,77 +109,110 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 
 ## 4. Database Setup
 
-### Option A: Supabase + MongoDB Atlas (Recommended — Free Cloud)
+> Viết lại 2026-09-03 sau khi dựng lại từ đầu trên máy sạch. Bản cũ in ra một
+> `docker-compose.yml` **không tồn tại trong repo** (service `postgres`, database
+> `hsk_platform`, kèm một service `mongo`). Đừng copy compose từ tài liệu — file
+> thật ở root là nguồn duy nhất, và nó chỉ có PostgreSQL.
 
-#### PostgreSQL via Supabase:
-1. Vào https://supabase.com → New Project
-2. Lấy connection string từ **Settings > Database > Connection string > URI**
-3. Dán vào `DATABASE_URL` trong `.env`
+### 4.1 PostgreSQL — Docker, dùng `docker-compose.yml` có sẵn ở root
 
-#### MongoDB Atlas:
-1. Vào https://cloud.mongodb.com → Create Free Cluster (M0)
-2. **Database Access** → Add user
-3. **Network Access** → Add `0.0.0.0/0` (dev) hoặc IP Railway (prod)
-4. **Connect** → Compass → Lấy connection string
-5. Dán vào `MONGODB_URI` trong `.env`
+Không cần viết compose file. Nó đã ở trong repo: service tên **`db`**, container
+`hsk-postgres`, image `postgres:16-alpine`, user `hsk`, database **`hsk_dev`**, cổng host
+lấy từ `${POSTGRES_PORT:-5432}`, kèm healthcheck và `--locale=C.UTF-8` (locale cố định để
+hai máy không cho ra thứ tự `ORDER BY` khác nhau trên tiếng Trung).
 
-### Option B: Docker Local (Không cần cloud)
-
-```yaml
-# docker-compose.yml (ở root)
-version: '3.8'
-services:
-  postgres:
-    image: postgres:16-alpine
-    environment:
-      POSTGRES_DB: hsk_platform
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-
-  mongo:
-    image: mongo:7
-    ports:
-      - "27017:27017"
-    volumes:
-      - mongo_data:/data/db
-
-volumes:
-  postgres_data:
-  mongo_data:
+```powershell
+Copy-Item .env.example .env     # bash: cp .env.example .env
+docker compose up -d
 ```
 
-```bash
-docker-compose up -d
+`docker compose`, không phải `docker-compose` — bản v1 có dấu gạch nối đã ngừng hỗ trợ.
 
-# .env cho Docker local:
-# DATABASE_URL="postgresql://postgres:postgres@localhost:5432/hsk_platform"
-# MONGODB_URI="mongodb://localhost:27017/hsk-platform"
-```
+**Nếu cổng 5432 đã bị chiếm** (Postgres cài native trên Windows rất hay gặp), đặt
+`POSTGRES_PORT=5433` trong `.env` và sửa cổng trong `DATABASE_URL` cho khớp — Compose không
+tự viết lại URL hộ bạn.
+
+### 4.2 MongoDB — Atlas
+
+`docker-compose.yml` **cố ý không có** service Mongo. Tạo cluster M0 miễn phí tại
+https://cloud.mongodb.com, thêm database user, mở Network Access, rồi lấy connection string
+ở **Connect > Drivers > Node.js**.
+
+Hai cái bẫy, cả hai đều tạo ra lỗi trông giống "sai mật khẩu":
+
+- **Phải chèn tên database vào URI**, ngay trước dấu `?`: `.../hsk_dev?retryWrites=true...`.
+  Thiếu nó thì driver vẫn kết nối thành công nhưng vào database `test`, và mọi collection
+  app ghi ra sẽ nằm sai chỗ.
+- Mật khẩu chứa `@ : / ? # [ ]` **phải percent-encode**, nếu không URI parser cắt ngang.
+  Dễ nhất là đặt mật khẩu không có mấy ký tự đó.
+
+Muốn làm offline thì trỏ `MONGODB_URI` vào một `mongod` local (`mongodb://localhost:27017/hsk_dev`);
+không có gì trong code phụ thuộc riêng vào Atlas.
+
+### 4.3 Supabase thay cho Docker (tuỳ chọn)
+
+Dùng được, nhưng migrate chạy thẳng lên cloud nên sai thì tốn công hơn. Lấy connection
+string ở **Settings > Database**, đặt vào `DATABASE_URL` và `DIRECT_URL`. Migration cần
+`CREATE EXTENSION citext` — Supabase có sẵn extension này.
 
 ---
 
-## 5. Database Migration & Seed
+## 5. Migration, Seed và kiểm tra
+
+Chạy **từ root**, không phải `cd apps/api`. Mọi script `db:*` đều tự nạp `.env` ở root qua
+`dotenv -e ../../.env`, nên đừng gọi thẳng `prisma` — nó sẽ không thấy biến môi trường.
 
 ```bash
-# Vào thư mục backend
-cd apps/api
-
-# Chạy Prisma migrations
-pnpm prisma migrate dev --name init
-
-# Generate Prisma client
-pnpm prisma generate
-
-# (Optional) Seed dữ liệu mẫu
-pnpm prisma db seed
-
-# Xem DB qua Prisma Studio
-pnpm prisma studio
+pnpm --filter api db:deploy     # áp migration đã có (dùng cho máy mới)
+pnpm --filter api db:seed       # 8 tài khoản test
+pnpm --filter api db:check      # kiểm tra CẢ HAI database
 ```
+
+| Script | Làm gì | Khi nào dùng |
+|---|---|---|
+| `db:deploy` | `prisma migrate deploy` — áp migration có sẵn, không hỏi gì | máy mới, CI |
+| `db:migrate` | `prisma migrate dev` — **tương tác**, tạo migration mới khi schema đổi | khi bạn sửa `schema.prisma` |
+| `db:seed` | 8 user, mật khẩu `Password123!` | sau khi migrate |
+| `db:check` | connect thử Postgres + Mongo, in nguyên nhân nếu hỏng | **chạy đầu tiên mỗi khi có gì lạ** |
+| `db:studio` | Prisma Studio ở http://localhost:5555 | xem dữ liệu |
+| `db:reset` | drop → migrate → seed | làm lại từ đầu |
+
+`db:check` đáng chạy trước khi đổ lỗi cho app. Nó phân biệt "container chưa chạy", "sai
+credential", "database không tồn tại", "schema chưa áp", và với Atlas là "IP chưa có trong
+Network Access" — năm lỗi mà driver in ra gần như giống hệt nhau.
+
+Kết quả đúng trông như thế này:
+
+```
+OK    PostgreSQL  PostgreSQL 16.15 on x86_64-pc-linux-musl — users table has 8 row(s)
+OK    MongoDB     Atlas 8.0.30 — database "hsk_dev"
+```
+
+### Schema hiện tại chỉ có bảng `users` — đó là cố ý
+
+`prisma/schema.prisma` không phải làm dở. `RefreshToken` bị `docs/api/modules/01-auth.md` §12
+chặn ("no coding before the table is locked"); classes/enrollment chặn bởi `SCOPE-01`;
+payroll/billing chặn bởi `API-002` và câu hỏi money representation mà ADR-010 chưa từng
+được hỏi. `docs/shared/DATABASE_SCHEMA.md` có đủ model nhưng đề ngày 2026-07-10 và mâu thuẫn
+với spec đã accepted ở ba điểm, nên **không** được dùng làm nguồn. Lý do đầy đủ nằm ở đầu
+`prisma/schema.prisma` và trong `apps/api/README.md`.
+
+### Tài khoản seed
+
+Tất cả dùng mật khẩu `Password123!`.
+
+| Email | Role | Status |
+|---|---|---|
+| `admin@hsk.local` | admin | active |
+| `admin2@hsk.local` | admin | active |
+| `teacher@hsk.local` | teacher | active |
+| `teacher.pending@hsk.local` | teacher | pending |
+| `student@hsk.local` | student | active |
+| `student.suspended@hsk.local` | student | suspended |
+| `never.logged.in@hsk.local` | student | active |
+| `MiXeD.CaSe@HSK.Local` | student | active |
+
+Mỗi tài khoản tồn tại để test một nhánh cụ thể — lý do từng cái ghi trong `apps/api/README.md`.
 
 ---
 
@@ -187,28 +220,31 @@ pnpm prisma studio
 
 ### Option 1: Chạy tất cả từ root (turborepo)
 ```bash
-# Từ root directory
 pnpm dev
-# → web chạy trên http://localhost:3000
-# → api chạy trên http://localhost:3001
+# → web: http://localhost:3000
+# → api: http://localhost:3001
 ```
 
 ### Option 2: Chạy riêng từng app
 ```bash
-# Terminal 1 — Backend
-cd apps/api
-pnpm start:dev
-
-# Terminal 2 — Frontend
-cd apps/web
-pnpm dev
+pnpm --filter api dev     # NestJS, watch mode
+pnpm --filter web dev     # Next.js
 ```
+
+Tên script là **`dev`**, không phải `start:dev` — `apps/api/package.json` chỉ có
+`dev` / `build` / `start` / `type-check` và nhóm `db:*`.
 
 ### Kiểm tra:
 - Frontend: http://localhost:3000
-- Backend Swagger UI: http://localhost:3001/api
-- Health check: http://localhost:3001/api/health
-- Prisma Studio: http://localhost:5555 (sau khi chạy `pnpm prisma studio`)
+- Health check: http://localhost:3001/api/health — trả `{"status":"ok","databases":{...}}`
+- Prisma Studio: `pnpm --filter api db:studio` → http://localhost:5555
+
+**Chưa có Swagger.** `main.ts` không gọi `SwaggerModule`; `http://localhost:3001/api` sẽ ra
+404 chứ không phải trang docs. Nó nằm trong Phase 1 infra ở `ai/PROGRESS.md`, chưa làm.
+
+**Nếu cổng 3001 báo `EADDRINUSE`**: có tiến trình khác đang giữ. Tìm chủ sở hữu bằng
+`Get-NetTCPConnection -LocalPort 3001 -State Listen` (PowerShell) rồi tắt, hoặc chạy tạm với
+cổng khác: `API_PORT=3002 pnpm --filter api dev`.
 
 ---
 ## 7. Supabase Storage Setup (Audio, Avatar)

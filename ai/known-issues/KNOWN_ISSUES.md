@@ -658,7 +658,19 @@ currently holding all of Sprint 6 at `⏸`.
 ### [DOC-009] Stale local-infrastructure references (`5433`, `27018`, local Mongo)
 
 **Severity**: Medium
-**Status**: Open
+**Status**: 🔶 Mostly resolved 2026-09-03 — the literal `5433`/`27018` strings are gone from
+`docs/`; the remaining hits are historical session notes (which stay as written) plus this
+entry, `PROGRESS.md` and `PROJECT_KNOWLEDGE.md` CR-22, which all *describe* the problem.
+
+**The bigger drift was not the port numbers.** `docs/shared/ENVIRONMENT_SETUP.md` §4 printed a
+**`docker-compose.yml` that does not exist in this repo** — service `postgres`, database
+`hsk_platform`, plus a `mongo` service — inviting anyone following it to build a stack the
+real file contradicts (service `db`, user `hsk`, database `hsk_dev`, healthcheck, no Mongo).
+§5 told the reader to `cd apps/api` and call `prisma` directly, which cannot see the root
+`.env`, and never mentioned `db:check`. §6 named a script (`start:dev`) that does not exist
+and promised a Swagger UI that is not implemented. Sections 4–6 were rewritten on 2026-09-03
+against a setup actually performed end to end. Still open elsewhere: the duplicate `## 7`
+headings and the Supabase-vs-Cloudinary storage split, which is `CR-3` and needs the owner.
 
 **Description**: Docs describing "Postgres 5433, Mongo 27018" predate PR #12, which renamed the
 Postgres service to `db`, switched the port to `${POSTGRES_PORT:-5432}`, renamed the database to
@@ -832,6 +844,61 @@ of `teacher-flow.md` describe a screen that cannot be built against anything rea
 before citing them, even within the same session — do not reuse a reading from an earlier point
 in the conversation if the working directory could have changed (here, an earlier turn had read
 the same-named file in a *different* repo checkout entirely).
+
+---
+
+### [API-008] Global route prefix is `api`, but every doc and the FE expect `api/v1`
+
+**Severity**: High
+**Status**: Open — **needs a decision, not a silent fix**
+
+**Description**: `apps/api/src/main.ts:9` hardcodes `app.setGlobalPrefix('api')`. Meanwhile
+`.env` declares `API_PREFIX="api/v1"` and `NEXT_PUBLIC_API_URL="http://localhost:3001/api/v1"`,
+and every endpoint in `docs/api/**` is written as `/api/v1/...`. `API_PREFIX` is read by
+nothing — grep returns no other hit.
+
+**Impact**: the only route that exists today, health, is served at `/api/health`. The moment
+the frontend calls the API using `NEXT_PUBLIC_API_URL` it will hit `/api/v1/...` and get 404.
+Invisible right now because `apps/web` makes no API call at all — `axios` is in
+`package.json` but imported by no file.
+
+**Found**: 2026-09-03, while doing the local database setup end to end. `/api/health` answered
+`{"status":"ok","databases":{"postgres":{"up":true},"mongodb":{"up":true}}}` — the endpoint
+works, it is just at the wrong path.
+
+**Fix Plan**: `setGlobalPrefix(process.env.API_PREFIX ?? 'api/v1')`, which moves health to
+`/api/v1/health`. Deliberately **not** applied here: it changes an externally visible path and
+the version segment is an API-contract decision, so it belongs to whoever owns
+`API_CONVENTIONS.md`, not to a setup session. Whichever way it goes, `API_PREFIX` must end up
+actually used or actually deleted — an env var nothing reads is worse than no env var.
+
+---
+
+### [API-009] `dist/` is nested one level deeper than two paths assumed
+
+**Severity**: High
+**Status**: ✅ Resolved 2026-09-03 — commit `93d23db`.
+
+**Description**: `apps/api/tsconfig.json` compiles `scripts/` and `prisma/` alongside `src/`,
+so TypeScript keeps the common root at `apps/api` and emits **`dist/src/main.js`**, not
+`dist/main.js`. Two places assumed the flatter layout:
+
+- `src/app.module.ts` — `envFilePath: join(__dirname, '../../../.env')` resolved to
+  `apps/.env`, which does not exist. The app died with **"MONGODB_URI is missing. Copy
+  .env.example to .env and fill it in."** while a correctly filled `.env` sat at the repo
+  root. The error pointed at the wrong problem entirely, which is the expensive part.
+- `package.json` — `"start": "node dist/main.js"` has never resolved.
+
+**Impact**: `pnpm --filter api dev` and `pnpm --filter api start` both failed on a correctly
+configured machine. Not caught earlier because the `db:*` scripts all wrap themselves in
+`dotenv -e ../../.env`, so migrate, seed and check worked and the wiring looked healthy.
+
+**Fix**: resolve the env file from `process.cwd()` (which is `apps/api` for both `nest start`
+and `node dist/src/main.js`) and point `start` at `dist/src/main.js`.
+
+**Lesson**: a `__dirname`-relative path across package boundaries silently changes meaning
+when the emitted layout changes. Anything reaching outside its own package should resolve
+from a fixed anchor — cwd here, or a repo-root marker — not from a count of `..` segments.
 
 ---
 
