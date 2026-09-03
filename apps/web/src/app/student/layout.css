@@ -175,6 +175,41 @@
   flex-direction: column;
 }
 
+.student-root .route-progress {
+  position: fixed;
+  top: 0;
+  right: 0;
+  left: var(--rail-w);
+  z-index: 90;
+  height: 3px;
+  overflow: hidden;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--dur-1) var(--ease);
+}
+
+.student-root .route-progress::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--accent);
+  transform: translateX(-100%);
+}
+
+.student-root .route-progress.is-active {
+  opacity: 1;
+}
+
+.student-root .route-progress.is-active::before {
+  animation: hanlu-route-progress 900ms var(--ease-out) infinite;
+}
+
+@keyframes hanlu-route-progress {
+  0% { transform: translateX(-100%) scaleX(0.45); }
+  55% { transform: translateX(-10%) scaleX(0.75); }
+  100% { transform: translateX(100%) scaleX(0.45); }
+}
+
 .student-root .topbar {
   position: sticky;
   top: 0;
@@ -317,6 +352,9 @@
 
 /* Tablet / small laptop: icon rail */
 @media (max-width: 1080px) and (min-width: 768px) {
+  .student-root .route-progress {
+    left: var(--rail-w-compact);
+  }
   .student-root .rail {
     width: var(--rail-w-compact);
     align-items: center;
@@ -364,6 +402,9 @@
 
 /* Mobile: no rail, top bar + bottom tabs */
 @media (max-width: 767px) {
+  .student-root .route-progress {
+    left: 0;
+  }
   .student-root .rail {
     display: none;
   }

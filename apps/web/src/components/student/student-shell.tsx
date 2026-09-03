@@ -15,9 +15,9 @@
  * MOCK(student): mockup mode per docs/prompts/student-product/.
  */
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useState, type MouseEvent, type ReactNode } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   Blocks,
   BookOpen,
@@ -73,6 +73,8 @@ export const ACHIEVEMENT_NAV: NavItem[] = [
   { to: "/student/badges", label: "Kho huy hiệu", short: "Huy hiệu", icon: <Medal size={18} /> },
 ];
 
+const ALL_NAV_ITEMS = [...PRIMARY_NAV, ...SECONDARY_NAV, ...ACHIEVEMENT_NAV];
+
 /**
  * Longer prefixes first, so `/student/exams/e-h3-1` matches "Phòng thi HSK"
  * rather than falling through to the bare `/student` entry.
@@ -108,6 +110,7 @@ function isActive(pathname: string, to: string) {
 
 export function StudentShell({ children }: { children: ReactNode }) {
   const pathname = usePathname() || "/student";
+  const router = useRouter();
   const profile = useStudentProfile();
   const theme = useStudentStore((s) => s.theme);
   const showPinyin = useStudentStore((s) => s.showPinyin);
@@ -120,6 +123,7 @@ export function StudentShell({ children }: { children: ReactNode }) {
 
   const [sheetOpen, setSheetOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [navigatingTo, setNavigatingTo] = useState<string | null>(null);
   const title = titleFor(pathname);
 
   // Read localStorage only after mount — see the note in store.ts.
@@ -130,7 +134,58 @@ export function StudentShell({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     setSheetOpen(false);
+    setNavigatingTo(null);
   }, [pathname]);
+
+  // A navigation that is blocked, aborted, or resolved back to the same URL never
+  // changes `pathname`, so the indicator would spin forever. Cap it — the bar is a
+  // progress hint, not a source of truth about the router.
+  useEffect(() => {
+    if (!navigatingTo) return;
+    const timer = window.setTimeout(() => setNavigatingTo(null), 8000);
+    return () => window.clearTimeout(timer);
+  }, [navigatingTo]);
+
+  // Warm the small top-level route chunks once the first screen is idle. Link
+  // prefetch remains enabled too; the stagger is intentional so initial paint
+  // wins over background work on slower devices.
+  useEffect(() => {
+    let timer = 0;
+    let index = 0;
+    const routes = ALL_NAV_ITEMS.map((item) => item.to);
+
+    const warmNext = () => {
+      const route = routes[index];
+      if (!route) return;
+      router.prefetch(route);
+      index += 1;
+      timer = window.setTimeout(warmNext, 90);
+    };
+
+    timer = window.setTimeout(warmNext, 250);
+    return () => window.clearTimeout(timer);
+  }, [router]);
+
+  function beginNavigation(event: MouseEvent<HTMLDivElement>) {
+    if (
+      event.defaultPrevented ||
+      event.button !== 0 ||
+      event.metaKey ||
+      event.ctrlKey ||
+      event.shiftKey ||
+      event.altKey
+    ) {
+      return;
+    }
+
+    const anchor = (event.target as Element).closest("a[href]");
+    if (!anchor) return;
+
+    const target = new URL(anchor.getAttribute("href") || "", window.location.href);
+    if (target.origin !== window.location.origin || !target.pathname.startsWith("/student")) return;
+    if (target.pathname === pathname && target.search === window.location.search) return;
+    setNavigatingTo(`${target.pathname}${target.search}`);
+  }
 
   /**
    * `globals.css` paints <html> and <body> with the Admin area's light
@@ -211,6 +266,8 @@ export function StudentShell({ children }: { children: ReactNode }) {
           href={item.to}
           className={`navlink ${isActive(pathname, item.to) ? "is-active" : ""}`}
           aria-current={isActive(pathname, item.to) ? "page" : undefined}
+          onMouseEnter={() => router.prefetch(item.to)}
+          onFocus={() => router.prefetch(item.to)}
         >
           {item.icon}
           <span>{item.short}</span>
@@ -225,6 +282,7 @@ export function StudentShell({ children }: { children: ReactNode }) {
       data-theme={themeAttr}
       data-show-pinyin={pinyinAttr}
       data-show-meaning={meaningAttr}
+      onClickCapture={beginNavigation}
     >
       <ToastProvider>
         <div className="shell">
@@ -275,6 +333,12 @@ export function StudentShell({ children }: { children: ReactNode }) {
 
           {/* ---------- Main column ---------- */}
           <div className="main">
+            <div
+              className={`route-progress ${navigatingTo ? "is-active" : ""}`}
+              role="progressbar"
+              aria-label="Đang chuyển khu vực"
+              aria-hidden={navigatingTo ? undefined : true}
+            />
             <header className="topbar">
               <nav className="crumb" aria-label="Đường dẫn">
                 <span>Học viện</span>
@@ -318,7 +382,8 @@ export function StudentShell({ children }: { children: ReactNode }) {
               {themeBtn}
             </header>
 
-            <main id="main" className="content" tabIndex={-1}>
+            <main id="main" className="content" tabIndex={-1} aria-busy={Boolean(navigatingTo)}>
+              {navigatingTo ? <span className="sr-only" aria-live="polite">Đang chuyển khu vực…</span> : null}
               {children}
             </main>
           </div>
@@ -330,6 +395,8 @@ export function StudentShell({ children }: { children: ReactNode }) {
                 key={item.to}
                 href={item.to}
                 className={`tabbar__item ${isActive(pathname, item.to) ? "is-active" : ""}`}
+                onMouseEnter={() => router.prefetch(item.to)}
+                onFocus={() => router.prefetch(item.to)}
               >
                 <span className="tabbar__glyph">{item.icon}</span>
                 <span>{item.short}</span>
@@ -356,6 +423,8 @@ export function StudentShell({ children }: { children: ReactNode }) {
                   key={item.to}
                   href={item.to}
                   className={`sheet__item ${isActive(pathname, item.to) ? "is-active" : ""}`}
+                  onMouseEnter={() => router.prefetch(item.to)}
+                  onFocus={() => router.prefetch(item.to)}
                 >
                   {item.icon}
                   {item.label}

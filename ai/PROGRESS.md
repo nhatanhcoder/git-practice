@@ -246,6 +246,17 @@ nobody mistakes a mock for a finished feature. See `working-rules.md` § Definit
       per `docs/prompts/student-product/` — no API, no auth, everything `MOCK(student)`.
       Lane: `apps/web/**`.
 
+- 🔶 (claude · 2026-09-03) **Student navigation + failure states** on the same branch. Staggered
+      `router.prefetch` of the top-level Student routes plus hover/focus prefetch on every rail,
+      tab-bar and sheet link; a `.route-progress` indicator with `aria-busy` and an `aria-live`
+      announcement on `#main`, capped at 8s so a blocked or aborted navigation cannot leave it
+      spinning. Added `app/student/error.tsx` — the area had **no** error boundary, so a render
+      error fell through to the root one, which is painted with the Admin light tokens and drops
+      the shell; the new boundary keeps rail/topbar/theme and replaces only the content column.
+      Tracked `app/student/loading.tsx`. Still `MOCK(student)` — no API, so the claim stays 🔶.
+      Build exit 0 (37 pages), 34/34 tests, `check:docs` unchanged at the 18 pre-existing
+      `DOC-013` violations. `error.tsx` is compiled and wired but **was not exercised at runtime**.
+
 - 🔶 **First four Student mockup pages BUILT** — 2026-08-28 (opencode, mockup mode per
       `docs/prompts/student-product/`). `apps/web/src/app/student/**`:
       `/student` (dashboard: continue-learning, XP/streak/daily-goal, HSK 1–9 strip + level
