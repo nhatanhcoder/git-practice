@@ -44,7 +44,7 @@ Resolved SCOPE-01 Option A by implementing the complete Teacher & Admin backend 
 - Implemented Teacher Lessons (`POST /teacher/classes/:classId/lessons`, `GET /teacher/classes/:classId/lessons`, `GET /teacher/lessons/:id`, `PATCH /teacher/lessons/:id`, `DELETE /teacher/lessons/:id`, `PATCH /teacher/classes/:classId/lessons/reorder`).
 - Updated `03-classes-enrollment.md` and `_INDEX.md` to `accepted`.
 - Verified:
-  - `pnpm --filter api test`: **56/56 tests pass** (11 suites).
+  - `pnpm --filter api test`: **64/64 tests pass** (12 suites, covering access control, admin users, auth, user lifecycle, teacher classes, teacher lessons).
   - `node --test apps/web/scripts/*.test.mjs`: **34/34 tests pass**.
   - `pnpm --filter web build`: **31/31 static pages build cleanly**.
   - `node scripts/check-docs.mjs`: **8/8 tests pass**.
