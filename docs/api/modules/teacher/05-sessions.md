@@ -184,7 +184,7 @@ Module 04 §6 verbatim — teacher-side rows highlighted:
 |---|---|---|---|
 | Session id not found / not the caller's | 404 | `SESSION_NOT_FOUND` | agreed |
 | Class not found / not the caller's | 404 / 403 | `CLASS_NOT_FOUND` / `CLASS_ACCESS_DENIED` | agreed |
-| `start`/`end`/`submit` from a wrong source status | 409 | ⛔ **no valid code** — `SESSION_ALREADY_REVIEWED` is Admin-flavored ("already approved or rejected"); FLOW's `SESSION_ALREADY_SUBMITTED` is **not in the registry** | gap — §16-Q1 |
+| `start`/`end`/`submit` from a wrong source status | 409 | ⛔ **no valid code** — `SESSION_ALREADY_REVIEWED` is Admin-flavored ("already approved or rejected"); the code FLOW uses for this branch (SESSION_ALREADY_SUBMITTED, unregistered) must not be used either | gap — §16-Q1 |
 | Attendance: unknown student / non-active enrollment | 400 | `VALIDATION_ERROR` | agreed (fallback family) |
 | Attendance: bad `status` value | 400 | `VALIDATION_ERROR` | agreed |
 | Field validation (topic, times, date order) | 400 | `VALIDATION_ERROR` | agreed |
@@ -250,7 +250,7 @@ for a **second** teacher (ownership tests).
 
 | Question | What it blocks | Owner | Decide by |
 |---|---|---|---|
-| Q1. **No valid code for teacher-side transition errors** (start/end/submit from wrong status). FLOW's `SESSION_ALREADY_SUBMITTED` is unregistered; `SESSION_ALREADY_REVIEWED` is Admin-flavored. | §9 — the most-hit error branch in the module | BE owner (registry) | before coding |
+| Q1. **No valid code for teacher-side transition errors** (start/end/submit from wrong status). The code FLOW uses here (SESSION_ALREADY_SUBMITTED) is unregistered; `SESSION_ALREADY_REVIEWED` is Admin-flavored. | §9 — the most-hit error branch in the module | BE owner (registry) | before coding |
 | Q2. May a session be created for an **archived** class? (same open question as 01-TCL §16-Q2) | INV-TSES-01 gate | PO | before coding |
 | Q3. Submit fan-out: **all admins** (FLOW §5 mechanism) vs one queue owner. Working reading: all admins. | INV-TSES-05 | PO | before coding |
 | Q4. Q-SES-3 (inherited): submit is permissive about `actualEnd`; the Admin side must decide block-at-approve vs block-at-payroll. The built FE already gates client-side. | INV-TSES-04 boundary with module 04 | BE lead | before Admin payroll code |
