@@ -3,7 +3,7 @@ module: classes-enrollment
 status: deferred
 blocked_by: SCOPE-01 — scope undecided. No endpoints in docs/api/ for the Admin side.
 owner: -
-last_updated: 2026-08-19
+last_updated: 2026-09-03
 ---
 
 # Module Spec — Classes + Enrollment
@@ -206,7 +206,7 @@ Log: class creation, successful/failed enrollments, wrong-code guessing attempts
 | Question | What it blocks | Owner | Decide by |
 |---|---|---|---|
 | **SCOPE-01: scope of this module** — full implementation (pull Teacher scope in early) or minimal enough for Sessions? | **All of Sessions + Payroll**. Without Class, `GET /admin/sessions/pending` is permanently empty | - | before Phase 3 |
-| **SCOPE-02**: the three transitions `scheduled → in_progress → completed_pending` have no endpoint anywhere | The `session_submitted_for_review` notification has no producer | - | same as SCOPE-01 |
+| **API-004**: the three transitions `scheduled → in_progress → completed_pending` have no endpoint anywhere | The `session_submitted_for_review` notification has no producer | - | same as SCOPE-01 |
 | Is un-archiving a class allowed? | state machine | - | when working on the module |
 | Re-join after `dropped`: UPDATE back to `active` or block? | INV-CLASS-05, unique constraint | - | when working on the module |
 

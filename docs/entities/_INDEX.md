@@ -57,6 +57,28 @@
 
 ---
 
+## Accepted domain concepts awaiting entity specs
+
+ADR-016 accepts these capabilities into the product domain but deliberately does not approve a
+database, aggregate boundary, table name or field shape. They stay `⛔` until contract-first
+entity/module design is reviewed.
+
+| Domain concept | Purpose | Status |
+|---|---|---|
+| Learning catalog & curriculum | Platform-owned HSK 1–9 units aligned to supported curricula | ⛔ entity/storage design needed |
+| Supplemental practice assignment | Teacher references a catalog unit for an active class | ⛔ relation/cardinality design needed |
+| Personal learning progress | Completion/mastery for foundation, grammar, writing and learning path | ⛔ aggregate design needed |
+| Placement attempt | Personal level recommendation history | ⛔ retention and authority rules needed |
+| Lego progress | Station completion and best stars | ⛔ entity design needed |
+| Workplace progress | Scenario attempts and best outcome | ⛔ scoring contract needed |
+| Gamification state | XP, rank and streak | ⛔ event/ledger and timezone rules needed |
+| Badge definition & award | Server-authoritative badge conditions and earned awards | ⛔ entity/event design needed |
+| Leaderboard projection | Derived ranking over eligible activity | ⛔ privacy and aggregation rules needed |
+
+The proposed SQL tables in `PROJECT_KNOWLEDGE.md` §8.9 are inputs, not accepted entity specs.
+
+---
+
 ## Status Key
 
 | Symbol | Meaning |

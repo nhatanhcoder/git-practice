@@ -3,7 +3,7 @@ module: Notifications
 status: proposed
 blocked_by: NO endpoint of this module is defined in any API_*.md (§2) · no `NOTIFICATION_*` error code exists in API_ERROR_CODES.md (§9) · DEBT-002 60s polling (§16)
 owner: -
-last_updated: 2026-08-19
+last_updated: 2026-09-03
 ---
 
 ## 0. Summary
@@ -355,7 +355,7 @@ entities.
 | 3 | `new_teacher_registration` | **Auth** — `POST /auth/register` with `role='teacher'` | **every** admin (fan-out of N rows) | new `user.id` / ⚠️ `null` | — | ✅ endpoint defined; spec 01 §10 |
 | 4 | `new_student_registration` | **Auth** — `POST /auth/register` with `role='student'` | **every** admin (fan-out of N rows) | new `user.id` / ⚠️ `null` | — | ✅ endpoint defined |
 | 5 | `new_invoice` | **Billing** — `POST /admin/invoices` (ENTITY_STUDENT_INVOICE: "On creation → triggers `new_invoice`") | `invoice.studentId` | `invoice.id` / `invoice` | ⚠️ not locked (amount? due date? — §16) | ⚠️ endpoint defined but the `INVOICE_*` group and the tuition model are *proposed* |
-| 6 | `session_submitted_for_review` | **Sessions (Teacher lane)** — teacher submits a session (`→ completed_pending`) | Admin — ⚠️ **which admin? all?** not locked | `session.id` / `session` | — | ⛔ **no endpoint exists** for teacher submission (spec 04 SCOPE-02) |
+| 6 | `session_submitted_for_review` | **Sessions (Teacher lane)** — teacher submits a session (`→ completed_pending`) | Admin — ⚠️ **which admin? all?** not locked | `session.id` / `session` | — | ⛔ **no endpoint exists** for teacher submission (API-004) |
 | 7 | `session_approved` | **Sessions** — `PATCH /admin/sessions/:id/approve` | `session.teacherId` | `session.id` / `session` | — | ✅ endpoint defined; spec 04 §10 |
 | 8 | `session_rejected` | **Sessions** — `PATCH /admin/sessions/:id/reject` | `session.teacherId` | `session.id` / `session` | `{ "rejectionReason": "<verbatim>" }` | ✅ endpoint defined; spec 04 §10 |
 | 9 | `new_assignment` | **Assignments (Teacher lane)** — teacher publishes an assignment | **every** `active` student in the class (fan-out by class size) | `assignment.id` / `assignment` | — | ⛔ no `API_TEACHER.md`, no endpoint |

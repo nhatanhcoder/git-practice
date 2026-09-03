@@ -11,10 +11,10 @@ HSK Learning Platform — web app for Chinese language learning (HSK 1–9).
 Stack: Next.js 14 (App Router) + NestJS monolith + PostgreSQL (Supabase) + MongoDB Atlas.
 Three actors: Admin, Teacher, Student.
 
-⚠️ **SCOPE-02 is open**: every doc in the repo describes a multi-role LMS, while
-`PROJECT_KNOWLEDGE.md` §8 (F9–F16) describes single-user self-study. Its source files
-(`backend/data/content/`) are **not in this repo** (`DOC-011`) — find them before planning
-either way.
+✅ **SCOPE-02 resolved by ADR-016**: this is one product with two connected learning lanes —
+class learning/Assignments and personal self-study. Teachers may assign platform catalog units
+as supplemental practice; only an Assignment produces an official graded result. The source
+content corpus remains external to this repo (`DOC-011`), so import/seed work is still blocked.
 
 ## Key Docs
 
@@ -32,6 +32,7 @@ either way.
 | **Whole-project reference** (schema, flows, roadmap) | PROJECT_KNOWLEDGE.md |
 | **Open conflicts register** — read before trusting a fact | PROJECT_KNOWLEDGE.md §9 |
 | **Built-in learning content (F9–F16)** ⚠️ unverified, see DOC-011 | PROJECT_KNOWLEDGE.md §8 |
+| **Combined LMS + self-study decision** | docs/shared/decisions/016-combined-student-learning-domain.md |
 | **Starting a Cowork/chat session** | COWORK_BOOTSTRAP.md |
 | **AI coding rules** (read before touching routes/DB/API) | ai/rules/working-rules.md |
 | **Known bugs / technical debt** | ai/known-issues/KNOWN_ISSUES.md |

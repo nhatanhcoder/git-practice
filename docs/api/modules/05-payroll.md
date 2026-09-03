@@ -3,9 +3,9 @@
 ---
 module: payroll
 status: proposed
-blocked_by: C2 (ADR-008 append-only vs ENTITY_TEACHER_PAY_RATE "set effectiveTo on current") — BLOCKS §4 · Q-PAY-1 (payroll period boundary + timezone) · RATE_* error-code group *proposed, not agreed* · missing error code for duplicate period · depends on spec 04 (SCOPE-01/02)
+blocked_by: C2 (ADR-008 append-only vs ENTITY_TEACHER_PAY_RATE "set effectiveTo on current") — BLOCKS §4 · Q-PAY-1 (payroll period boundary + timezone) · RATE_* error-code group *proposed, not agreed* · missing error code for duplicate period · depends on spec 04 (SCOPE-01/API-004)
 owner: -
-last_updated: 2026-08-19
+last_updated: 2026-09-03
 ---
 
 ## 0. Summary
@@ -628,7 +628,7 @@ an UPDATE mechanism must be added and **INV-PAYROLL-01, 26, 27, §6.2, §7 TX-PA
 rewritten**.
 
 **Seed for testing money and conflicts** (must INSERT directly into the DB because spec 04's
-SCOPE-01/02 block the API creation path):
+SCOPE-01 / API-004 block the API creation path):
 
 1. 2 admins `role=admin, status=active` (to test two-admin conflicts).
 2. Teacher **T1** — `rateType=per_session`, 2 rates: `250000.00` from `2026-07-01`,
@@ -772,7 +772,7 @@ SCOPE-01/02 block the API creation path):
 | **C1** | `User.nickname` (ENTITY_USER) vs `fullName` (API_AUTH). Which field does `teacherName` in DTO §3.2, §3.3, §3.5 read? | FE contract of all 3 payroll screens | BE lead | before locking the contract |
 
 **Reverse dependency on spec 04**: this module only has input data when `approved` sessions
-exist. And spec 04's SCOPE-01 (`Class`/`ClassEnrollment` have no endpoints) and SCOPE-02 (no
+exist. And spec 04's SCOPE-01 (`Class`/`ClassEnrollment` have no endpoints) and API-004 (no
 teacher-side endpoint to move a session to `completed_pending`) are blocking that source.
 **Payroll cannot run end-to-end until those two scope gaps are filled** — only testable via DB
 seed.

@@ -6,6 +6,10 @@
 
 All routes require: `Authorization: Bearer <token>` + `role=student`
 
+> **Scope decision — ADR-016:** Student supports both class learning and personal self-study.
+> Teachers may select platform catalog units as supplemental practice. Completion is personal
+> progress unless the unit is wrapped in an Assignment/Attempt.
+
 ---
 
 ## Classes
@@ -68,3 +72,21 @@ All routes require: `Authorization: Bearer <token>` + `role=student`
 |--------|------|-------------|
 | GET | `/api/v1/student/notifications` | List notifications |
 | PATCH | `/api/v1/student/notifications/:id/read` | Mark as read |
+
+---
+
+## Accepted capabilities with no endpoint contract yet
+
+The following capabilities are part of the product domain, but no path, DTO, error code or
+module invariant has been approved. They are listed here to prevent FE mock routes from being
+mistaken for API contracts:
+
+- learning catalog and curriculum paths;
+- teacher-selected supplemental practice and completion visibility;
+- foundation, grammar, character writing, Lego and workplace progress;
+- placement attempts and platform mock exams;
+- XP, rank, streak, badges and leaderboard;
+- display preferences and cross-device progress sync.
+
+⛔ Define these in Student/Teacher module specs before adding endpoints. Do not copy the
+prototype's `/api/progress` routes into production by default.

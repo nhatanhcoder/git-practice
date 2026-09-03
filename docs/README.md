@@ -2,7 +2,7 @@
 
 > **Tech**: Next.js 14 + NestJS + PostgreSQL (Supabase) + MongoDB Atlas  
 > **Actors**: Admin · Teacher · Student  
-> Last updated: 2026-09-01
+> Last updated: 2026-09-03
 
 ---
 
@@ -41,6 +41,7 @@ docs/
 | [AI_WORKFLOW.md](shared/AI_WORKFLOW.md) | How Gemini AI is used in the platform |
 | [AI_FEATURES.md](shared/AI_FEATURES.md) | AI feature details (grading, suggested score) |
 | [decisions/](shared/decisions/) | Architecture Decision Records (ADR) |
+| [ADR-016](shared/decisions/016-combined-student-learning-domain.md) | Combined LMS + self-study, SM-2, supplemental practice and gamification domain |
 
 ---
 

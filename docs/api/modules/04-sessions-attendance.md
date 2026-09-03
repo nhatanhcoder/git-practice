@@ -3,9 +3,9 @@
 ---
 module: sessions-attendance
 status: proposed
-blocked_by: SCOPE-01 (Class + ClassEnrollment have no endpoints in docs/api/) · SCOPE-02 (scheduled→in_progress→completed_pending transition has no teacher-side endpoint) · SESSION_* error code family *proposed, not agreed* · C1 (nickname vs fullName)
+blocked_by: SCOPE-01 (Class + ClassEnrollment have no endpoints in docs/api/) · API-004 (scheduled→in_progress→completed_pending transition has no teacher-side endpoint) · SESSION_* error code family *proposed, not agreed* · C1 (nickname vs fullName)
 owner: -
-last_updated: 2026-08-19
+last_updated: 2026-09-03
 ---
 
 ## 0. Summary
@@ -149,7 +149,7 @@ Additional check at the **service layer** (exact predicate):
 ## 6. State machine
 
 ```
-   [outside this module's scope — SCOPE-02: no endpoints]
+   [outside this module's scope — API-004: no endpoints]
    ┌──────────────────────────────────────────────────────────┐
    │                                                          │
  scheduled ──────────► in_progress ──────────► completed_pending
@@ -176,8 +176,8 @@ Additional check at the **service layer** (exact predicate):
 
 | From | To | Who | Mechanism | In this spec? |
 |---|---|---|---|---|
-| `scheduled` | `in_progress` | teacher | — | NO (SCOPE-02) |
-| `in_progress` | `completed_pending` | teacher | — | NO (SCOPE-02) |
+| `scheduled` | `in_progress` | teacher | — | NO (API-004) |
+| `in_progress` | `completed_pending` | teacher | — | NO (API-004) |
 | `completed_pending` | `approved` | admin | `PATCH /:id/approve` | **YES** |
 | `completed_pending` | `rejected` | admin | `PATCH /:id/reject` | **YES** |
 | `rejected` | `completed_pending` | teacher? | — | UNRESOLVED (Q-SES-2) |
@@ -270,7 +270,7 @@ Error envelope per API_CONVENTIONS.md (flat): `{ statusCode, error, message, cod
 | Admin approves session | `session_approved` | `ClassSession.teacherId` | `session.id` / `"session"` | `null` (or `{}`) |
 | Admin rejects session | `session_rejected` | `ClassSession.teacherId` | `session.id` / `"session"` | `{ "rejectionReason": "<verbatim>" }` |
 
-- Teacher submitting a session (`→ completed_pending`) emits `session_submitted_for_review` to the **Admin** — that lives in the teacher lane, NOT written by this module. Currently no endpoint produces it (SCOPE-02).
+- Teacher submitting a session (`→ completed_pending`) emits `session_submitted_for_review` to the **Admin** — that lives in the teacher lane, NOT written by this module. Currently no endpoint produces it (API-004).
 - `Notification` is append-only: never deleted, only marked `isRead` (ENTITY_NOTIFICATION business rules).
 - Sent to **how many admins**: reject/approve does not notify other admins. If fan-out to all admins is needed later, it must be decided (not in the current ENTITY_NOTIFICATION).
 - Other side effects: **none**. No email, no webhook, no touching `PayrollPeriod`.
@@ -373,7 +373,7 @@ Consider a partial index on large tables: `CREATE INDEX ... ON "ClassSession"("s
 | # | Question | What it blocks | Owner | Decide by |
 |---|---|---|---|---|
 | **SCOPE-01** | **`Class` and `ClassEnrollment` have no endpoints at all.** Both have full ENTITY docs (`ENTITY_CLASS.md`, `ENTITY_CLASS_ENROLLMENT.md`) and RBAC_MATRIX rows (`Class create = ✅ Teacher`, `ClassEnrollment enroll = ✅ Student`), but `docs/api/` only has `API_ADMIN.md`, `API_AUTH.md`, `API_CONVENTIONS.md`, `API_ERROR_CODES.md` — **no `API_TEACHER.md`, no `API_STUDENT.md`**, and `API_ADMIN.md` has no Class section. No path to create a Class ⇒ no path to create a ClassSession ⇒ `GET /admin/sessions/pending` is permanently empty in real environments. `className`, `hskLevel`, `enrolledActive` in the §3.1 DTO all read from two tables nobody owns. | **BLOCKS THE WHOLE MODULE** — can be coded and tested via DB seed, but cannot run end-to-end, cannot demo, cannot go to staging | BE lead + PO | before Sprint 3 |
-| **SCOPE-02** | The three transitions `scheduled → in_progress → completed_pending` have no endpoint in any API file. The `session_submitted_for_review` notification has no producer. | No input data source for this module; the entire teacher lane of payroll is empty | BE lead | before Sprint 3 |
+| **API-004** | The three transitions `scheduled → in_progress → completed_pending` have no endpoint in any API file. The `session_submitted_for_review` notification has no producer. | No input data source for this module; the entire teacher lane of payroll is empty | BE lead | before Sprint 3 |
 | Q-SES-1 | Status of the `SESSION_*` family: `_FACTS.md` classifies `SESSION_*` as *proposed, not agreed*; but the "Session Review Errors" section of `API_ERROR_CODES.md` has **no** ⚠ proposed banner (only `INVOICE_*`, `RATE_*`, `AI_*` have one). Also the `PAYROLL_*` family (`PAYROLL_SESSION_NOT_COMPLETED`, `PAYROLL_SESSION_NOT_FOUND`, `PAYROLL_PERIOD_*`) exists in the registry but **not** in the "Existing codes" list of `_FACTS.md`. The two sources disagree → this is **contradiction #5**, not yet recorded in `_FACTS.md`. | Entire §9; FE cannot map errors | BE owner of API_ERROR_CODES | before coding §9 |
 | Q-SES-2 | Can a `rejected` session be resubmitted? If yes: who calls `rejected → completed_pending`, which endpoint, any attempt limit? If no: the teacher loses an entire teaching session with no appeal path. Currently `rejected` is a **dead end**. | §6 state machine not closed; teacher-side flow | PO | before Sprint 3 |
 | Q-SES-3 | May a session with `actualStart` or `actualEnd` NULL be approved? A `per_hour` session missing these two fields cannot be priced by spec 05 (INV-PAYROLL-03). Two options: (a) block at approve — safe, surfaces the error early; (b) allow approve, block at payroll — error surfaces late, mid payroll close. | Spec 04 ↔ 05 boundary; INV-SESSION-13 only constrains when both are non-NULL | BE lead | before Sprint 3 |

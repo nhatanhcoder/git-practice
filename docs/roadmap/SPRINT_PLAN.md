@@ -122,6 +122,8 @@
 - [ ] Student: `/classes` — join via code modal + list of enrolled classes
 - [ ] Student: `/classes/:id/lessons` — ordered lesson list with content view
 - [ ] Student: lesson detail — view content + linked assignments
+- [ ] Teacher: attach a platform self-study unit as supplemental practice for a class lesson
+- [ ] Student: open assigned supplemental practice from the class lesson; completion remains ungraded
 
 ### Definition of Done S2:
 - Teacher creates class → student joins with code → sees lessons in order
@@ -193,6 +195,7 @@
 - [ ] `FlashcardsModule`: `GET /flashcards?hskLevel=` (browse), seed HSK 1–9 data
 - [ ] `SRSModule`: `GET /srs/due` (cards due for user), `POST /srs/review` (rate card → SM-2 update)
 - [ ] `GET /srs/stats` — streak, cards reviewed today, retention rate
+- [ ] Replace the FE's five-box Leitner mock with SM-2 (Again=0, Hard=3, Good=4, Easy=5)
 - [ ] `WordBankModule`: `POST /word-bank` (save word), `GET /word-bank`, `DELETE /word-bank/:id`
 - [ ] `AnalyticsModule` (Student): `GET /analytics/me` — heatmap, progress chart, scores
 - [ ] `AnalyticsModule` (Teacher): `GET /analytics/class/:classId` — score chart, distribution, submission rate, weak students, skill breakdown
@@ -210,6 +213,18 @@
 ### Definition of Done S5:
 - Student reviews due cards with SM-2, saves a word from lesson, sees it in word bank
 - Teacher sees class analytics dashboard with skill breakdown
+
+### Accepted follow-up — built-in learning domain (ADR-016)
+
+- [ ] Validate and import/seed the external Hán Lộ content corpus (`DOC-011`)
+- [ ] Write contract-first module specs for learning catalog, personal progress,
+      supplemental practice and gamification before choosing tables or endpoints
+- [ ] Build Foundation, Grammar, Writing, Lego, Workplace, Placement, platform mock exams,
+      curriculum learning paths, XP/rank/streak/badges and leaderboard as first-class domain features
+- [ ] Keep practice completion separate from official Assignment/Attempt grades
+- [ ] Enforce teacher visibility: own active classes + learning units assigned to those classes only
+
+The existing Student FE pages are mockups, not completion of these backend/domain tasks.
 
 ---
 
