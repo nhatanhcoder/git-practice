@@ -31,6 +31,43 @@
 
 ---
 
+## [2026-09-03] — Module 01 Auth Backend Implementation & Invariants Verification — Antigravity
+
+**Context**:
+Implemented Sprint 1 Module 01: Auth & Identity Backend (`apps/api`) on branch `feat/s1-auth-module`, fulfilling all 24 Invariants defined in `docs/api/modules/01-auth.md`.
+
+**Done**:
+- Added `RefreshToken` model to `apps/api/prisma/schema.prisma` with `tokenHash`, `familyId`, `replacedById`, `revokedAt`, `revokedReason`, `expiresAt`, indexed by `userId` and `familyId`.
+- Applied migration `20260903151610_add_refresh_tokens`.
+- Installed `cookie-parser` and registered it globally in `apps/api/src/main.ts`.
+- Implemented `RegisterDto`, `LoginDto`, `ChangePasswordDto`, `UpdateProfileDto`, and response serializers in `apps/api/src/auth/dto/`.
+- Implemented `AuthService` & `AuthController`:
+  - `POST /api/v1/auth/register` (status=pending, bcrypt cost 12, admin self-registration forbidden, duplicate email 409).
+  - `POST /api/v1/auth/login` (identical 401 on bad email/pass, status 403 checks, mints 15m access token, sets 7d httpOnly cookie).
+  - `POST /api/v1/auth/refresh` (single-use token rotation, instant replay attack detection revoking entire family).
+  - `POST /api/v1/auth/logout` (revokes active session, clears cookie).
+  - `GET /api/v1/auth/me` & `PATCH /api/v1/auth/me` (reads and updates profile, never exposes passwordHash).
+  - `POST /api/v1/auth/change-password` (verifies current password, re-hashes with cost 12, revokes all active sessions).
+- Added `AuthModule` to `app.module.ts`.
+- Added missing auth error codes (`AUTH_EMAIL_EXISTS`, `AUTH_INVALID_CREDENTIALS`, `AUTH_REFRESH_INVALID`) to `apps/api/src/common/errors/error-codes.ts`.
+- Created comprehensive E2E test suite `apps/api/test/auth.e2e.test.ts`.
+- Verified:
+  - `pnpm --filter api test`: 40/40 tests pass (including 17 auth e2e tests).
+  - `node --test apps/web/scripts/*.test.mjs`: 34/34 tests pass.
+  - `node scripts/check-docs.mjs`: 8/8 tests pass.
+  - `pnpm --filter api build`: clean.
+  - `pnpm --filter web build`: 37/37 static pages pass.
+- Updated `ai/PROGRESS.md` and created session log `ai/context/sessions/2026-09-03-antigravity-auth-module.md`.
+
+**Blocker / needs follow-up**:
+- None for Module 01 Auth. Ready to commit and open PR.
+
+**Next steps**:
+- Commit changes on `feat/s1-auth-module` and open PR.
+- Next module in Sprint 1 is F1.3 Account Approval (Admin) or connecting frontend auth flows to `/api/v1/auth`.
+
+---
+
 ## [2026-09-01] — Branch audit, PR #13 merged, PR #14 opened — Claude Code
 
 **Context**: user's first request pointed at a stray checkout

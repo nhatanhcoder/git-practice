@@ -3,6 +3,7 @@ import { Logger, ValidationPipe, type ValidationError } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
+import cookieParser from 'cookie-parser';
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
 import { EnvelopeInterceptor } from './common/interceptors/envelope.interceptor';
 import { AppException } from './common/errors/app.exception';
@@ -33,6 +34,8 @@ async function bootstrap(): Promise<void> {
   // frontend call would have 404'd (KNOWN_ISSUES API-008, settled by the owner).
   const prefix = process.env.API_PREFIX ?? 'api/v1';
   app.setGlobalPrefix(prefix);
+
+  app.use(cookieParser());
 
   app.useGlobalPipes(
     new ValidationPipe({

@@ -7,6 +7,7 @@ import { join } from 'node:path';
 import { HealthController } from './health/health.controller';
 import { PrismaModule } from './prisma/prisma.module';
 import { UsersModule } from './users/users.module';
+import { AuthModule } from './auth/auth.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
 
@@ -14,12 +15,11 @@ import { RolesGuard } from './common/guards/roles.guard';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      // One .env at the repo root — the same file docker-compose reads, so the
-      // container's credentials and the API's DATABASE_URL cannot drift apart.
-      envFilePath: join(__dirname, '../../../.env'),
+      envFilePath: join(process.cwd(), '../../.env'),
     }),
 
     PrismaModule,
+    AuthModule,
 
     // Global so any guard can verify an access token without each feature module
     // re-registering it. Only verification lives here — nothing issues tokens yet:
