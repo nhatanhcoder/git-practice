@@ -424,23 +424,29 @@ replaces coverage %.
 
 **Only Auth is ready to code right now.**
 
-### Backend — Teacher module specs (none written)
+### Backend — Teacher module specs
 
 - 🔶 (claude · 2026-09-01) **API surface gaps closed, module specs not started.**
   `API_TEACHER.md` § Lessons written (8 endpoints, `API-007` closed) + `LESSON_*` error family
   (*proposed, not agreed*); `API-006` route convention settled **role-prefixed** by the owner and
   applied to `docs/api/modules/03-classes-enrollment.md`. Full gap map in
   `docs/api/modules/_INDEX.md` § 11.
-- 🔶 (opencode · 2026-09-03) Teacher module specs — **5 modules, none exist**, suggested dependency order:
-  Classes+Lessons → Question Bank → Assignments → Attempts+Grading → Sessions (teacher side) →
-  Income. Two things to settle first: Classes+Lessons inherits **SCOPE-01** (module 03 is
-  deferred on it), and **Question Bank is MongoDB** — the 16-section template's §7 transaction
-  boundary and §12 migration assume SQL and need rethinking, plus `DEBT-001` (no cross-DB
-  transactions) applies directly since Question lives in Mongo and Assignment in Postgres
-- 🔶 (opencode · 2026-09-03) Teacher-side Sessions transitions (`scheduled → in_progress → completed_pending`) — module 04
-  specs only the Admin approve/reject half. This is the same hole `API-004` names: without the
-  teacher side, `GET /admin/sessions/pending` is permanently empty
-- 🔶 (opencode · 2026-09-03 · in teacher spec set, pending owner approval) Lesson row in `RBAC_MATRIX.md` / `PERMISSIONS_TEACHER.md` — needs owner approval (RBAC)
+- 🔶 (opencode · 2026-09-03) **Teacher module specs WRITTEN — 6 files, 36 endpoints, 46 new
+  invariants** in `docs/api/modules/teacher/` (`_INDEX.md` + `01-classes-lessons` ·
+  `02-question-bank` (Mongo, §7/§12 rethought) · `03-assignments` · `04-attempts-grading`
+  (AI-suggest specced but **parked** per owner) · `05-sessions` (teacher-side transitions +
+  `session_submitted_for_review` producer — closes the `API-004` producer hole) ·
+  `06-income` (read-only, no rate math — closes Q-PAY-7)). All `proposed`, awaiting BE-owner
+  sign-off. Owner settled 2026-09-03: SCOPE-01 teacher slice = teacher-side full management;
+  Income = read-only stored data. **Code not started** — blocked on: auth PR (Antigravity,
+  in flight) landing on main, and 3 error-code gaps (API-010). Branch
+  `feat/api-teacher-specs`.
+- 🔶 (opencode · 2026-09-03) Teacher-side Sessions transitions (`scheduled → in_progress → completed_pending`) — **specced** in
+  `docs/api/modules/teacher/05-sessions.md` (producer of `session_submitted_for_review`;
+  re-submit after reject stays open as Q-SES-2). **Code not started** — the endpoints still do
+  not exist anywhere; `API-004` stays open until they do.
+- ✅ (opencode · 2026-09-03) Lesson row in `RBAC_MATRIX.md` / `PERMISSIONS_TEACHER.md` — added with the spec set (owner-approved
+  via the 2026-09-03 plan); ownership inherited from the parent class per `ENTITY_LESSON.md`
 
 ### Backend — not started
 
