@@ -9,10 +9,11 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { avatarToneFor, formatDate, formatDateTime, initialsOf } from "../../../lib/formatters";
 import { getStatusColor } from "../../../lib/status";
 import { nextStatus } from "../../../lib/user-status.js";
+import { fetchAdminUsers, type AdminUserItem } from "../../../lib/admin-users-service";
 import styles from "./users.module.css";
 
 type UserStatus = "pending" | "active" | "suspended";
@@ -50,6 +51,26 @@ export default function AdminUsersPage() {
   const [toast, setToast] = useState("");
   const [mobileNav, setMobileNav] = useState(false);
   const [sort, setSort] = useState<"createdAt" | "lastLoginAt">("createdAt");
+
+  useEffect(() => {
+    let isMounted = true;
+    fetchAdminUsers({ q: query, role, status, sortBy: sort })
+      .then((res) => {
+        if (!isMounted) return;
+        setUsers(res.users as User[]);
+        if (res.users.length === 0 && (query || role !== "all" || status !== "all")) {
+          setReviewState("empty");
+        } else if (reviewState === "loading" || reviewState === "empty") {
+          setReviewState("ready");
+        }
+      })
+      .catch(() => {
+        if (!isMounted) return;
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, [query, role, status, sort]);
 
   const filteredUsers = useMemo(() => {
     const normalized = query.trim().toLocaleLowerCase("vi");
