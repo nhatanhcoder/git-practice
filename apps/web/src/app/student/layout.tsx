@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { StudentShell } from "@/components/student/student-shell";
+import { StudentChrome } from "@/components/student/student-chrome";
 import "./tokens.css";
 import "./base.css";
 import "./layout.css";
@@ -13,5 +13,5 @@ export const metadata: Metadata = {
 };
 
 export default function StudentLayout({ children }: { children: React.ReactNode }) {
-  return <StudentShell>{children}</StudentShell>;
+  return <StudentChrome>{children}</StudentChrome>;
 }
