@@ -468,10 +468,10 @@ the missing codes. No module is allowed to invent its own codes.
 
 ---
 
-### [SCOPE-02] Product model is undecided: LMS vs single-user self-study
+### [SCOPE-02] Product model: LMS vs single-user self-study
 
 **Severity**: Critical
-**Status**: Open — **blocks roadmap planning**
+**Status**: ✅ Resolved 2026-09-03 — ADR-016 combines both lanes in one product
 
 **Description**: Every doc in this repo describes a multi-role LMS (Admin/Teacher/Student,
 classes, assignments, attendance, payroll, tuition). `PROJECT_KNOWLEDGE.md` §8 (F9–F16) describes
@@ -487,8 +487,14 @@ already in use in `ai/PROGRESS.md` for the Classes/Enrollment scope question.
 are located this may not be a conflict at all, just a spec for a different project that got
 merged into these docs.
 
-**Fix Plan**: locate the content (`DOC-011`) first, then the owner decides. Do not start work
-that assumes either answer.
+**Owner decision (2026-09-03)**: keep both. Class learning owns teacher lessons, Assignments and
+official Attempts. Platform self-study owns personal learning units and progress. Teachers may
+assign catalog units as supplemental practice aligned to their class curriculum, but completion
+only becomes an official result when wrapped in an Assignment. XP, ranks, streaks, badges, Lego,
+Workplace and Placement are accepted domain capabilities. Production SRS uses SM-2. See ADR-016.
+
+`DOC-011` remains separate: the content corpus was located outside this repo, but import/seed and
+production storage are still unresolved.
 
 ---
 
@@ -533,7 +539,7 @@ evidence.
 ### [DOC-011] `backend/data/content/` does not exist in this repo
 
 **Severity**: Critical
-**Status**: Open — **needs the owner**
+**Status**: Open — source located externally; import/seed strategy still needed
 
 **Description**: `PROJECT_KNOWLEDGE.md` §8 and `COWORK_BOOTSTRAP.md` are both written around 10
 static JSON files at `backend/data/content/` (`grammar.json`, `writing.json`, `lego.json`,
@@ -544,17 +550,21 @@ Verified 2026-09-01: there is **no `backend/` directory, no `content/` directory
 those filenames** anywhere in `D:\PersonalProject\Real` (excluding `node_modules`). The repo
 has exactly two apps, `apps/api` and `apps/web`.
 
+**Location update (2026-09-03)**: the owner supplied the Hán Lộ prototype at
+`D:\PersonalProject\Chinese UI test\ui-claude`; all ten content files exist under its
+`backend\data\content` directory. They remain outside this repo and unavailable to CI/deploy.
+
 **Consequences**:
-- §8 (F9–F16) documents content nobody in this repo can read — it is a proposal, not a spec
-- `SCOPE-02` rests on evidence that is not here
+- §8 (F9–F16) is accepted product scope via ADR-016, but its content counts/data remain unverified
+  by this repository
 - The HSK 1–9 decision was re-justified on 2026-08-31 using these files; that justification is
   unverifiable here. It does not matter — the range was already settled 2026-08-11 on repo
   evidence (entity specs, `GLOSSARY.md`, `DATABASE_SCHEMA.md`, `CONVENTIONS.md`, `SPRINT_PLAN.md`)
 - `DEBT-003` (content data defects) cannot be actioned
 
-**Fix Plan**: the owner says where the content lives — another repo, an un-pushed local folder,
-or an older project. Then either bring it in under a decided path or delete §8. Do not plan
-F9–F16 until then.
+**Fix Plan**: validate the external corpus, choose an approved content model and import/seed path,
+then bring it into a location available to CI/deploy. Do not make production depend on the
+developer-machine absolute path.
 
 ---
 

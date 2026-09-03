@@ -30,7 +30,7 @@ The project uses a **Monorepo** managed by **Turborepo** and **pnpm**, deploying
 *   `apps/web/` — Next.js 14 frontend.
 *   `packages/types/` — shared TypeScript interfaces used by both FE and BE. ✅ **CR-19 RESOLVED 2026-09-01 → `packages/types`.** `pnpm-workspace.yaml` declares `packages/*`, and `PROGRESS.md` refers to `packages/types` throughout (Sprint 0, *Needs from the other lane*, *Backend — not started*). **The directory does not exist on disk yet** — nothing to rename, only to create. `packages/shared-types` was this document's invention.
 *   `docs/` — detailed business specifications per actor and per flow.
-*   ⛔ `backend/data/content/` — **DOES NOT EXIST IN THIS REPO.** Verified 2026-09-01: there is no `backend/` directory, no `content/` directory, and none of the 10 JSON files (`grammar.json`, `badges.json`, `lego.json`, `levels.json`, …) anywhere under `D:\PersonalProject\Real`. The repo has exactly two apps: `apps/api` and `apps/web`. Everything §8 describes, and all the "hard evidence" the 2026-08-31 session cited, comes from files that are **not in this repository** — see `SCOPE-02` and `DOC-011`. Establish where that content actually lives before treating §8 as a spec.
+*   ⛔ `backend/data/content/` — **DOES NOT EXIST IN THIS REPO.** Verified 2026-09-01. The source corpus was located on 2026-09-03 at `D:\PersonalProject\Chinese UI test\ui-claude\backend\data\content`, outside this repository. ADR-016 accepts the learning modules into the product domain, but the files are still unavailable to CI/deploy and are not an approved production data shape — see `DOC-011`.
 
 ---
 
@@ -328,16 +328,17 @@ Designed around the free-tier quota (Gemini 1.5 Flash allows 60 requests/minute)
 
 ### 🗂️ 4.3. Spaced Repetition (SM-2)
 
-The standard **SM-2** algorithm schedules daily vocabulary review.
+The standard **SM-2** algorithm schedules daily vocabulary review. ADR-016 confirms SM-2 as
+the production algorithm; the five-box Leitner behavior in the Student FE is mock-only.
 
-After studying a card, the student rates recall quality ($q$, from 0 to 5):
+After studying a card, the UI offers four ratings mapped to SM-2 recall quality ($q$):
 
-*   $q = 0$ — "Again" (no recall at all)
-*   $q = 1$ — "Incorrect" (recognised it wrong)
-*   $q = 2$ — "Hard" (vague, took a long time)
-*   $q = 3$ — "Good" (correct, but needed thought)
-*   $q = 4$ — "Easy" (correct and immediate)
-*   $q = 5$ — "Perfect" (deeply known, could write it out)
+*   **Again** → $q = 0$
+*   **Hard** → $q = 3$
+*   **Good** → $q = 4$
+*   **Easy** → $q = 5$
+
+Quality 1–2 remain valid internal values for imported/corrected history but have no separate UI button.
 
 Updating `UserFlashcardState`:
 
@@ -480,9 +481,15 @@ Updating `UserFlashcardState`:
 
 ## 🧩 8. Built-in Learning Content & Gamification (F9 → F16)
 
-> ⛔ **READ THIS BEFORE USING §8.** The 10 JSON files this section is derived from are **not in this repository** (verified 2026-09-01 — no `backend/`, no `content/`, none of the filenames). This whole section documents content that exists somewhere else, or no longer exists. Until someone says where it lives, §8 is a **proposal**, not a description of the system, and nothing here should be planned against. Tracked as `DOC-011`.
+> ✅ **Product scope accepted by ADR-016.** F9–F16 are first-class self-study and gamification
+> domain capabilities inside the same product as the LMS. They primarily supply personal practice
+> and teacher-selected supplemental work aligned to a class curriculum. Only an Assignment/Attempt
+> produces an official graded result.
 >
-> **Data source (as described)**: 10 static JSON files in `backend/data/content/` (~231 KB, read-only). System-authored content, distinct from the MongoDB question bank (teacher-authored).
+> ⛔ **Content source still blocked by `DOC-011`.** The 10 JSON files are outside this repo at
+> `D:\PersonalProject\Chinese UI test\ui-claude\backend\data\content`. Their content must be
+> validated and imported/seeded before CI or production can use them. Acceptance of the domain is
+> not acceptance of the proposed schema below.
 >
 > ⚠️ **OPEN (CR-8, §8.10)** — whether to keep both sources or import the JSON into MongoDB at seed time is undecided, and moot until the files are located.
 
@@ -577,9 +584,11 @@ Updating `UserFlashcardState`:
 
 > 🔍 **The XP curve is broken**: Cử nhân (24,000) → Cống sĩ (26,400) is a 2,400-point gap, while Cống sĩ → Tiến sĩ is 25,600. Rebalance.
 
-### 🗄️ 8.9. New PostgreSQL Tables Required
+### 🗄️ 8.9. Proposed persistence concepts — not approved schema
 
-The content lives in static JSON, but **per-learner progress must live in PostgreSQL**. `backend/data/progress.default.json` currently holds all progress in a single file — workable for one demo user, not for production.
+Per-learner progress must be durable and ownership-safe. The table names and fields below came
+from the external prototype analysis and remain a proposal; ADR-016 approves the capabilities,
+not these SQL boundaries or columns.
 
 | Table | Purpose | Key fields |
 |---|---|---|
@@ -597,7 +606,10 @@ The content lives in static JSON, but **per-learner progress must live in Postgr
 2.  **`progress.default.json`** — currently a demo profile ("Nguyễn Minh Anh", 24,860 XP, 34-day streak). Confirm it is seed/demo only and not a production data shape.
 3.  **HSK 7–9 content is thin** — 3–4 grammar points per level, ~2 characters per level, 15 questions per exam. Filling this is authoring work, not engineering; the test pipeline is already in place.
 4.  **Speaking input (F14)** — does this need audio recording, or is keyword-scored typed text enough? `workplace.json` currently scores typed text.
-5.  **Relationship to the class model** — F9–F16 are individual self-study and carry no `classId`. Decide whether teachers may view a student's self-study progress; this affects the RBAC matrix.
+5.  ✅ **Relationship to the class model — resolved by ADR-016.** F9–F16 remain personal
+    self-study. Teachers may attach catalog units as supplemental practice and view completion
+    only for units assigned to active students in their own class. Unrelated self-study history
+    remains private. Official grades require an Assignment/Attempt.
 
 ---
 
@@ -620,7 +632,7 @@ still need the project owner.
 | CR-3 | Cloudinary vs Supabase Storage for avatars and audio | §1, §3 here vs `docs/` | 🔴 Open — **but the evidence is lopsided.** Supabase Storage: `BACKEND_PLAN.md`, `architecture-layers.mmd`, all three `FEATURES_*.md`, `USECASES_TEACHER.md`, and the only *accepted* module spec `01-auth.md` (3 places, incl. the non-rollbackable-upload ordering rule). Cloudinary: `TECH_STACK.md`, `ARCHITECTURE.md`, `DATABASE_SCHEMA.md`, `PROJECT_STRUCTURE.md`, `QUESTION_BANK.md`, `ENVIRONMENT_SETUP.md`, entity specs. Owner picks; then sweep the loser. |
 | CR-6 | Backend at `apps/api/` vs a second backend at `backend/` | §1 here vs the content data | ✅ **RESOLVED 2026-09-01 → one backend, `apps/api/`.** There is no `backend/` directory in the repo. See `DOC-011` for where the content went. |
 | CR-7 | Sprint 0 marked "not started" while the repo has scaffolding | `PROGRESS.md` vs `multi-agent-workflow.md` §13 | 🟡 **Partly false as stated.** Verified 2026-09-01: `turbo.json` exists on disk but is **untracked in git** (`BUILD-001` is not fixed); `pnpm-workspace.yaml`, `eslint.config.mjs`, `.prettierrc`, `.npmrc` exist; `apps/api` **does** exist with `prisma/schema.prisma`, `seed.ts` and migration `20260820000000_init_users`; `apps/web` is scaffolded. But **`packages/` does not exist at all** — the claim that the repo root "already contains a `packages/` directory" was wrong. Corrected in `PROGRESS.md`. |
-| SCOPE-02 | Product model: multi-role LMS (classes, payroll, tuition) vs single-user self-study (JSON content, XP, leaderboard, one demo profile) | §2 vs §8 | 🔴 Open — **the largest one**, and now weaker than it looked. The self-study half rests entirely on `backend/data/content/`, which **is not in this repo**. Until those files are located, the repo describes one product (the LMS) and §8 describes something that may belong to a different project. Renamed from `SCOPE-01` (taken). |
+| SCOPE-02 | Product model: multi-role LMS vs single-user self-study | §2 vs §8 | ✅ **RESOLVED 2026-09-03 by ADR-016** → one product, two lanes. Class learning owns official Assignments/Attempts; platform self-study owns personal practice/progress. Teachers may assign catalog units as supplemental practice. The source corpus remains external (`DOC-011`). |
 | CR-11 | Gemini 1.5 Flash chosen pre-2026, never reviewed | §1 | 🟡 Worth revisiting |
 | CR-13 | Sprint 6 fully specified here and in `SPRINT_PLAN.md`, but marked `⏸ out of scope` in `PROGRESS.md` | §6 vs `PROGRESS.md` | 🔴 Open — `PROGRESS.md` is the outlier of three sources, and its authority (`DECISIONS.md` #5) does not exist. |
 | CR-14 | `DECISIONS.md` is referenced by `PROGRESS.md` (#3, #4, #5) and `AI_CHAT_LOG.md`, but the file does not exist | `PROGRESS.md`, `AI_CHAT_LOG.md` | 🟡 **Confirmed absent 2026-09-01** (`find` across the repo returns nothing). Three real decisions have no recorded rationale → `DOC-008`. |

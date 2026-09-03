@@ -1,8 +1,16 @@
 # 🎓 Student — Feature Specification
 
 > **Role**: Student (User)  
-> **Scope**: Class enrollment, lessons, assignments, SRS flashcards, skill drill, quiz room, progress tracking, billing  
+> **Scope**: Combined class learning + self-study, assignments, SRS, learning catalog, gamification, progress, billing
 > **Tech**: Next.js 14 (App Router) + NestJS + PostgreSQL (Prisma) + MongoDB
+> **Product decision**: [ADR-016](../../shared/decisions/016-combined-student-learning-domain.md)
+
+The Student product has two connected lanes:
+
+- **Class learning**: teacher lessons and Assignments; Attempts may become official graded results.
+- **Self-study**: platform-owned HSK 1–9 learning units and personal progress. Teachers may assign
+  catalog units as supplemental practice, but completion is not an official grade unless wrapped
+  in an Assignment.
 
 ---
 
@@ -32,13 +40,16 @@
 
 ## 📚 Lessons
 
-> **Note**: Lessons are a class's core content. This is a new entity — its definition (document/video/description + its relationship to assignments) must be settled before building.
+> **Note**: A class Lesson is teacher-organized core content. It may link to platform-owned
+> self-study units as supplemental practice; the link does not copy the catalog content or turn
+> personal practice into an official grade.
 
 | # | Feature | Priority | Notes |
 |---|---------|----------|-------|
 | S-LESSON-1 | View the ordered lesson list for a class | 🔴 Must | Ordered list, each lesson with its related assignments |
 | S-LESSON-2 | View a lesson's content in detail | 🔴 Must | Document / video / description |
 | S-LESSON-3 | View assignments attached to a lesson | 🟡 Should | Links to an Assignment (if any) |
+| S-LESSON-4 | View supplemental self-study units selected for the lesson | 🔴 Must | Completion remains personal practice unless wrapped in an Assignment |
 
 ---
 
@@ -54,10 +65,14 @@
 | S-ASGN-6 | Submit | 🔴 Must | status: submitted — locked, no further edits |
 | S-ASGN-7 | View the result once graded | 🔴 Must | Total score + per-question feedback (MCQ automatic, Writing awaits the teacher) |
 | S-ASGN-8 | Review the submission (correct answers + teacher comments) | 🟡 Should | Only after grading |
+| S-ASGN-9 | Complete teacher-selected supplemental practice | 🟡 Should | References a catalog learning unit; Assignment wrapper required for an official result |
 
 ---
 
 ## 🃏 SRS Flashcards
+
+> **Decision**: Production uses SM-2, not the five-box Leitner behavior in the current FE mockup.
+> UI ratings map as Again=0, Hard=3, Good=4, Easy=5; see ADR-016.
 
 | # | Feature | Priority | Notes |
 |---|---------|----------|-------|
@@ -70,6 +85,39 @@
 | S-SRS-7 | View & manage the saved word bank | 🟡 Should | List of saved words, delete a word, start a review session from the personal word bank |
 
 > 📄 Details: SRS_ALGORITHM.md (docs/architecture/)
+
+---
+
+## 🧭 Built-in Self-study & Supplemental Practice
+
+| # | Feature | Priority | Notes |
+|---|---|---|---|
+| S-SELF-1 | Follow one of the supported curriculum learning paths | 🔴 Must | HSK 1–9; ordered learning units, side practice and progress |
+| S-SELF-2 | Study pronunciation, tones and radicals | 🔴 Must | Foundation learning catalog |
+| S-SELF-3 | Browse and practise structured grammar | 🔴 Must | Personal mastery; not an official class grade |
+| S-SELF-4 | Practise character writing | 🟡 Should | Stroke guidance and personal mastery |
+| S-SELF-5 | Practise word order with Lego stations | 🟡 Should | Personal progress and stars |
+| S-SELF-6 | Practise workplace scenarios | 🟡 Should | Model answer/rubric; production scorer not yet specified |
+| S-SELF-7 | Take placement and platform mock exams | 🟡 Should | Mock-exam scoring remains server-authoritative per ADR-005 |
+| S-SELF-8 | Open a supplemental unit assigned by a teacher | 🔴 Must | Only for an active enrollment in the teacher's class |
+| S-SELF-9 | Keep private progress for voluntary self-study | 🔴 Must | Teacher sees only completion for supplemental units assigned to their class |
+
+⛔ Content storage, authoring/publishing workflow and transport contracts need module specs.
+`DOC-011` remains open because the source JSON corpus is not in this repository.
+
+---
+
+## 🏆 Gamification
+
+| # | Feature | Priority | Notes |
+|---|---|---|---|
+| S-GAME-1 | Earn XP from eligible learning activities | 🟡 Should | XP is motivation, not an official grade or money |
+| S-GAME-2 | View rank and level progression | 🟡 Should | XP curve must be approved before implementation |
+| S-GAME-3 | Maintain a study streak | 🟡 Should | Calendar/timezone rules need a domain spec |
+| S-GAME-4 | Earn and inspect badges | 🟡 Should | Unlock conditions must be server-authoritative |
+| S-GAME-5 | View leaderboard | 🟢 Could | Real aggregation and privacy/visibility rules still need approval |
+
+⛔ Spending XP to force-unlock learning content is not approved; the current FE behavior is demo-only.
 
 ---
 
@@ -153,6 +201,8 @@ Register → (wait for admin approval) → Login
         │     └─► Submit → await grading → View results + feedback
         ├─► SRS Flashcards → Browse HSK level → Study session
         │     └─► Rate: Again/Hard/Good/Easy → SM-2 schedules next review
+        ├─► Self-study → Curriculum path → Learning unit → Personal progress
+        │     └─► Teacher-assigned supplement → Completion visible to that class teacher
         ├─► Skill Drill → Pick skill + HSK + difficulty → Practise (ungraded)
         ├─► Quiz Room → Enter room code → Wait → Play real-time → View leaderboard
         ├─► Progress → Heatmap + charts + scores + global leaderboard

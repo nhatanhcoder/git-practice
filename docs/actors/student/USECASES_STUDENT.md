@@ -46,7 +46,8 @@
 2. System loads cards where `nextReviewDate <= now`
 3. Student sees the front (hanzi) → flips → sees pinyin + meaning + example
 4. Rates it: **Again** / **Hard** / **Good** / **Easy**
-5. SM-2 recalculates: easeFactor, repetitionsCount, nextReviewDate
+5. SM-2 maps the rating to quality `0 / 3 / 4 / 5`, then recalculates easeFactor,
+   repetitionsCount and nextReviewDate
 6. Repeats until no cards remain due
 7. Dashboard shows: streak, cards reviewed today, retention rate
 
@@ -115,3 +116,38 @@
 
 **Error**: Room code does not exist → 404. Room already started → joining mid-game is not allowed.  
 **Note**: Who creates the room and where the questions come from must be settled before building (see the open questions).
+
+---
+
+## UC-S-008: Continue a personal self-study path
+
+**Actor**: Student
+**Precondition**: Logged in, account active
+
+**Main Flow**:
+1. Student opens the self-study learning path and chooses a supported curriculum and HSK level
+2. System shows the ordered learning units and the student's personal state
+3. Student opens a unit and completes its learning/practice loop
+4. System records personal progress and any eligible gamification events
+5. Result points to one next action: continue, practise a weak area, review mistakes or take a mock exam
+
+**Rule**: This completion is personal practice, not an official class grade.
+
+---
+
+## UC-S-009: Complete supplemental practice selected by a teacher
+
+**Actors**: Teacher, Student
+**Precondition**: Student has an active enrollment in a class managed by the teacher
+
+**Main Flow**:
+1. Teacher selects a platform catalog learning unit that supports the class curriculum/lesson
+2. System attaches a reference to that unit as supplemental practice; it does not copy content
+3. Student opens the supplement from the class lesson or assigned-work context
+4. Student completes it; the system updates personal progress
+5. Teacher may view completion for that assigned unit and active class enrollment
+
+**Rule**: A score becomes official only when the teacher wraps the unit in an Assignment and the
+student completes an Attempt. The teacher cannot inspect unrelated private self-study history.
+
+**Unresolved**: ⛔ Authoring/publishing, cardinality and transport contracts require a module spec.
