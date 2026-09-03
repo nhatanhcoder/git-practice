@@ -782,6 +782,29 @@ new files appear untracked, the index is unchanged, and HEAD does not move.
 
 ---
 
+### [DOC-013] Student FE contracts cite 18 endpoints absent from `docs/api/**`
+
+**Severity**: High
+**Status**: Open — blocks `node scripts/check-docs.mjs`
+
+**Description**: Verified on 2026-09-03 while completing the Hán Lộ Student UI fidelity pass.
+The docs checker reports 18 `endpoint-undefined` violations from existing Student FE contracts:
+`PUT /progress/display-settings`, `GET /api/content`, `PATCH /api/progress`,
+`PUT /mistakes/:id`, `POST /attempts`, `POST /nodes/:id/unlock`, `POST /activity`,
+`PUT /grammar/:id`, `PUT /writing/:id`, `PUT /lego/:stationId`, `PUT /badges`,
+`PUT /week`, `PUT /xp-months`, `PUT /streak-history`, `POST /lessons/:nodeId/complete`,
+`PUT /workplace/:scenarioId`, `PUT /display-settings`, and `POST /reset`.
+
+**Impact**: the Student mock UI builds and its routes render, but the repository-wide docs gate
+cannot pass. This UI task did not define or call these endpoints; inventing API paths, fields,
+error codes, auth or RBAC rules here would violate contract-first workflow.
+
+**Fix Plan**: the docs/API owner must reconcile each FE contract with the accepted Student API
+module specs. Remove obsolete references or document the accepted endpoint; do not bulk-add the
+18 paths without entity, auth and RBAC review.
+
+---
+
 ## Technical Debt
 
 ### [DEBT-001] No cross-DB transactions

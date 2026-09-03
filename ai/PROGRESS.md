@@ -235,11 +235,13 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
 _(work done outside sprint order. Recorded so another agent does not rebuild it, and so
 nobody mistakes a mock for a finished feature. See `working-rules.md` § Definition of Done.)_
 
-- 🔶 (claude · 2026-09-03) **CLAIMED — rebuild the whole Student UI from the "Hán Lộ" prototype**
+- 🔶 (claude + codex · 2026-09-03) **BUILT — Student UI rebuilt and fidelity-checked against the "Hán Lộ" prototype**
       (`Chinese UI test/ui-claude`, a separate repo), distilled in
       `docs/front-end-design-docs/HANLU_PROTOTYPE_DISTILLED.md`. Replaces the 2026-08-28 indigo
       mockup generation below with the prototype's "Mực & Chu Sa" direction: dark-default ink
-      theme + light "paper" theme, 21 routes, CSS variables + CSS modules. **Student area only**
+      theme + light "paper" theme, shared Playfair/Sora/Inter/Noto type stack, responsive layouts,
+      and the full Student route set. Desktop/light/mobile visual checks and all 20 `page.tsx`
+      routes passed on branch `feat/student-hanlu-ui`. **Student area only**
       — Admin and Teacher are untouched (different design baseline, already `built`). Mockup mode
       per `docs/prompts/student-product/` — no API, no auth, everything `MOCK(student)`.
       Lane: `apps/web/**`.

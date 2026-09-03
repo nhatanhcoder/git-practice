@@ -1,10 +1,15 @@
 ---
 title: Chưng cất prototype "Hán Lộ" → FE của chúng ta
-status: draft
+status: built
 owner: Nhật
 last_updated: 2026-09-03
 source: D:\PersonalProject\Chinese UI test\ui-claude (frontend/ + backend/data/content)
 ---
+
+> **Implementation status (2026-09-03):** built in `apps/web/src/app/student/**` on
+> `feat/student-hanlu-ui`. Typography, shared shell, dark/light themes, responsive layout and
+> the complete Student route set were checked against the prototype. This remains a mocked
+> frontend; the API/auth contracts called out below are not implemented by this status change.
 
 # Chưng cất prototype "Hán Lộ" cho `apps/web`
 
