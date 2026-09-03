@@ -235,12 +235,20 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
 _(work done outside sprint order. Recorded so another agent does not rebuild it, and so
 nobody mistakes a mock for a finished feature. See `working-rules.md` § Definition of Done.)_
 
-- 🔶 (claude · 2026-09-03) **BUILDING — Landing page "Hán Lộ" ported to `/student/landing`**
+- 🔶 (claude · 2026-09-03) **BUILT — Landing page "Hán Lộ" ported to `/student/landing`**
       from the same prototype's `Landing.tsx` + `SiteShell.tsx` + `ThreeTeacherCylinderStage.tsx`
       (public marketing page: 3D teacher hero, stats, student stories, method, HSK path, skills,
-      areas, CTA). Branch `feat/student-hanlu-ui`. Fully mocked, no API. Reuses the Student
-      design system scoped `.student-root`; needs `three` (client-only). Lane: `apps/web/**`
-      (codex lane, solo flip per `multi-agent-workflow.md` §1 — codex idle this session).
+      areas, CTA). Branch `feat/student-hanlu-ui`, commit `4c88b62`. Fully mocked, no API. Reuses
+      the Student design system scoped `.student-root`; `three` added to apps/web (client-only,
+      `next/dynamic` ssr:false). New: `src/components/site/{site-shell,
+      three-teacher-cylinder-stage,landing-data}` · `app/student/landing/{page,landing-view,
+      landing.css}` · `public/teachers/*.png` · `StudentChrome` passthrough in
+      `student/layout.tsx` (landing escapes StudentShell; other routes unchanged). Verified:
+      `pnpm --filter web build` green (38 routes, `/student/landing` static 14.6 kB), 34/34 unit
+      tests, HTTP 200 with hero/teacher content served. **Not yet looked at in a browser** —
+      WebGL stage, light theme, 375px and the student modal need eyes. check-docs still fails on
+      the 18 pre-existing `DOC-013` endpoint violations (not from this page — it cites no
+      endpoint). Lane: `apps/web/**` (codex lane, solo flip per `multi-agent-workflow.md` §1).
 
 - 🔶 (claude + codex · 2026-09-03) **BUILT — Student UI rebuilt and fidelity-checked against the "Hán Lộ" prototype**
       (`Chinese UI test/ui-claude`, a separate repo), distilled in
