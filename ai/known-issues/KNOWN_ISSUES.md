@@ -373,7 +373,7 @@ default, not the code. Spread fixtures across the axes the code branches on.
 
 ---
 
-### [WEB-008] Two screens scrolled horizontally at 375px
+### [WEB-008] Three screens scrolled horizontally at 375px
 
 **Severity**: Medium
 **Status**: ✅ Resolved 2026-09-03 — both found by the 375px project of the new screen check.
@@ -390,6 +390,13 @@ overflowing child dragged the whole document past the viewport:
 
 **Fix**: `wrap` on the lesson row; `flex-wrap: wrap` on `.titleControls` and `.filterCard` in
 the `max-width: 768px` block of `payroll.module.css`, with `.teacherSelect` allowed to shrink.
+
+**Third, found the same day on a route committed while this check was being written**:
+`/student/landing` reached 443px. Two causes again — the sitebar keeps a 158px premium CTA
+beside the theme toggle and the burger, and the final CTA's label measures 416px against a
+global `white-space: nowrap` on `.btn`, so the button was wider than the viewport and spilled
+out of both edges. Fixed in the `max-width: 768px` block of `landing.css`; the CTA hide is
+scoped to `.sitebar__actions` because the mobile menu reuses the same class for its own copy.
 
 **Note**: `/admin/payroll` is an Admin screen on a different design baseline, fixed here only
 because it is a two-line CSS change and leaving CI red on a pre-existing bug is worse than a

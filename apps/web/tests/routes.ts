@@ -19,6 +19,9 @@ export type Screen = {
 
 const student: Screen[] = [
   { path: "/student", name: "dashboard", area: "student" },
+  // Public marketing page: bypasses StudentShell via StudentChrome, so it is the one
+  // Student route whose chrome is not covered by any other entry here.
+  { path: "/student/landing", name: "landing", area: "student" },
   { path: "/student/learning-path", name: "learning-path", area: "student" },
   { path: "/student/learning-path/std-1-l1", name: "learning-path-node", area: "student" },
   // Deliberately not all from level 1 of one curriculum: the id parser used to

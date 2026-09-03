@@ -1334,6 +1334,13 @@
   .student-root .sitenav { display: none; }
   .student-root .sitebar__burger { display: inline-flex; }
   .student-root .sitemenu { display: flex; }
+  /* The premium CTA is 158px; beside the theme toggle and the burger it pushed the
+     bar to 443px in a 375px viewport. Scoped to the bar on purpose — the menu sheet
+     reuses the same class for its own copy of the link, which must stay visible. */
+  .student-root .sitebar__actions .sitebar__cta-premium { display: none; }
+  /* .btn is white-space: nowrap globally, and this label measures 416px — wider than
+     the viewport itself, so it spilled out of both edges. */
+  .student-root .lp-wrap .btn--lg { white-space: normal; max-width: 100%; }
   .student-root .lp-students {
     grid-template-columns: 1fr;
   }

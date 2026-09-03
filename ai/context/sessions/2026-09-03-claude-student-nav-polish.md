@@ -91,3 +91,16 @@ instrumentation added a spurious 400 to every page. Stop stray servers before tr
 - `DOC-013` still blocks `check:docs`; it belongs to the docs/API owner.
 - `.github/workflows/screens.yml` has never executed — there is no PR yet. Its first run is
   the real test of the CI half.
+
+**Addendum — `/student/landing`**: the route landed on this branch (commit `4c88b62`) while the
+screen check was being written, so it was not in the first manifest. Added, and it failed
+immediately at 375px with a 443px document: the sitebar keeps a 158px premium CTA beside the
+theme toggle and burger, and the final CTA's label measures 416px against the global
+`white-space: nowrap` on `.btn` — a button wider than the viewport, spilling out of both edges.
+Both fixed in `landing.css`; the CTA hide is scoped to `.sitebar__actions` because the mobile
+menu reuses the same class for its own copy of that link. Full matrix now **72/72**.
+
+One flake worth knowing: running the landing page's two viewports in parallel locally makes both
+slow (~1.4 min) and can truncate the trace, because each worker spins up its own WebGL context
+for the Three.js hero. It passes in 6s on its own, and CI runs `workers: 1`, so this is a local
+parallelism artifact rather than a page problem.
