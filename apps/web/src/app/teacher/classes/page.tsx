@@ -3,7 +3,7 @@
 // MOCK(T-CLASS-1,2,5): class list, create and archive stay in-memory until
 // /api/v1/teacher/classes endpoints exist.
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AlertCircle, Archive, Inbox, MoreHorizontal, Plus, Search } from "lucide-react";
 import { TeacherShell } from "@/components/teacher/teacher-shell";
@@ -22,6 +22,11 @@ import {
   mockTeacherClasses,
   type TeacherClass,
 } from "@/lib/teacher-data";
+import {
+  fetchTeacherClasses,
+  createTeacherClass,
+  archiveTeacherClass,
+} from "@/lib/teacher-service";
 import { useDismissMenu } from "@/hooks/use-overlay";
 import { formatDate } from "@/lib/formatters";
 import styles from "./classes.module.css";
@@ -36,6 +41,19 @@ export default function TeacherClassesPage() {
   const [archiving, setArchiving] = useState<TeacherClass | null>(null);
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
   const [toast, setToast] = useState("");
+
+  useEffect(() => {
+    let isMounted = true;
+    fetchTeacherClasses()
+      .then((res) => {
+        if (!isMounted) return;
+        setClasses(res.classes);
+      })
+      .catch(() => {});
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLocaleLowerCase("vi");
@@ -52,26 +70,18 @@ export default function TeacherClassesPage() {
     window.setTimeout(() => setToast(""), 2800);
   }
 
-  function handleCreate(name: string, hskLevel: number, description: string) {
-    // MOCK: POST /api/v1/teacher/classes
-    const created: TeacherClass = {
-      id: "c" + (classes.length + 1) + "-" + Date.now(),
-      name,
-      hskLevel,
-      enrollmentCode: generateEnrollmentCode(hskLevel),
-      studentCount: 0,
-      status: "active",
-      createdAt: new Date().toISOString().slice(0, 10),
-      description,
-    };
-    setClasses((current) => [created, ...current]);
+  async function handleCreate(name: string, hskLevel: number, description: string) {
+    const res = await createTeacherClass({ name, hskLevel, description });
+    setClasses((current) => [res.classItem, ...current]);
     setCreating(false);
-    flash("Đã tạo lớp — mã ghi danh " + created.enrollmentCode);
+    flash("Đã tạo lớp — mã ghi danh " + res.classItem.enrollmentCode);
   }
 
-  function handleArchive() {
+  async function handleArchive() {
     if (!archiving) return;
-    // MOCK: PATCH /api/v1/teacher/classes/:id/archive
+    try {
+      await archiveTeacherClass(archiving.id);
+    } catch {}
     setClasses((current) =>
       current.map((c) => (c.id === archiving.id ? { ...c, status: "archived" } : c)),
     );

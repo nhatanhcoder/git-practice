@@ -4,7 +4,7 @@
 // until /api/v1/teacher/classes/:id endpoints exist. "Average score" and "attendance
 // rate" render as "—" per the contract (no aggregation field / Sprint 5 deferral).
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -32,7 +32,13 @@ import {
   mockClassStudents,
   mockTeacherClasses,
   type TeacherClass,
+  type ClassStudent,
 } from "@/lib/teacher-data";
+import {
+  fetchTeacherClassDetail,
+  updateTeacherClass,
+  regenerateEnrollmentCode,
+} from "@/lib/teacher-service";
 import { avatarToneFor, formatDate, initialsOf } from "@/lib/formatters";
 import styles from "./detail.module.css";
 
@@ -45,12 +51,29 @@ export default function TeacherClassDetailPage({
   const router = useRouter();
   const source = mockTeacherClasses.find((c) => c.id === classId) ?? null;
   const [cls, setCls] = useState<TeacherClass | null>(source);
+  const [roster, setRoster] = useState<ClassStudent[]>(source ? mockClassStudents[source.id] ?? [] : []);
   const [reviewState, setReviewState] = useState<ReviewState>("ready");
   const [editing, setEditing] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
   const [toast, setToast] = useState("");
 
-  const students = useMemo(() => (cls ? mockClassStudents[cls.id] ?? [] : []), [cls]);
+  useEffect(() => {
+    let isMounted = true;
+    fetchTeacherClassDetail(classId)
+      .then((res) => {
+        if (!isMounted || !res.classItem) return;
+        setCls(res.classItem);
+        if (res.students?.length) {
+          setRoster(res.students);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      isMounted = false;
+    };
+  }, [classId]);
+
+  const students = useMemo(() => roster, [roster]);
 
   function flash(message: string) {
     setToast(message);
@@ -73,19 +96,25 @@ export default function TeacherClassDetailPage({
     );
   }
 
-  function handleSave(name: string, hskLevel: number, description: string) {
-    // MOCK: PATCH /api/v1/teacher/classes/:id
+  async function handleSave(name: string, hskLevel: number, description: string) {
+    try {
+      await updateTeacherClass(classId, { name, hskLevel, description });
+    } catch {}
     setCls((current) => (current ? { ...current, name, hskLevel, description } : current));
     setEditing(false);
     flash("Đã lưu thông tin lớp");
   }
 
-  function handleRegenerate() {
-    // MOCK: POST /api/v1/teacher/classes/:id/enrollment-code/regenerate
+  async function handleRegenerate() {
+    let newCode = "";
+    try {
+      const res = await regenerateEnrollmentCode(classId);
+      newCode = res.enrollmentCode;
+    } catch {
+      newCode = generateEnrollmentCode(cls?.hskLevel ?? 3);
+    }
     setCls((current) =>
-      current
-        ? { ...current, enrollmentCode: generateEnrollmentCode(current.hskLevel) }
-        : current,
+      current ? { ...current, enrollmentCode: newCode } : current,
     );
     setRegenerating(false);
     flash("Đã tạo mã ghi danh mới");

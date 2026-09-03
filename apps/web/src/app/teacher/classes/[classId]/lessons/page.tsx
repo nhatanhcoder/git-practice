@@ -1,10 +1,6 @@
 "use client";
 
-// MOCK(T-LESSON-1,2,4,5): every lesson action is local-only. API_TEACHER.md has no
-// Lessons section at all — see the contract's "Blocked on" and KNOWN_ISSUES API-007.
-// Do NOT wire these to real endpoints until a Lessons API exists.
-
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -36,6 +32,13 @@ import {
   type ClassLesson,
   type LessonContentType,
 } from "@/lib/teacher-data";
+import {
+  fetchClassLessons,
+  createLesson,
+  updateLesson,
+  deleteLesson,
+  reorderLessons,
+} from "@/lib/teacher-service";
 import { useDismissMenu } from "@/hooks/use-overlay";
 import styles from "./lessons.module.css";
 
@@ -53,7 +56,7 @@ export default function TeacherLessonsPage({
   const { classId } = params;
   const router = useRouter();
   const cls = mockTeacherClasses.find((c) => c.id === classId) ?? null;
-  const [lessons, setLessons] = useState<ClassLesson[]>(cls ? mockClassLessons[cls.id] ?? [] : []);
+  const [lessons, setLessons] = useState<ClassLesson[]>([]);
   const [reviewState, setReviewState] = useState<ReviewState>("ready");
   const [editing, setEditing] = useState<{ lesson: ClassLesson | null } | null>(null);
   const [draft, setDraft] = useState<LessonDraft>({ title: "", description: "", contentType: "document" });
@@ -63,6 +66,19 @@ export default function TeacherLessonsPage({
   const menuRef = useDismissMenu<HTMLSpanElement>(activeMenu !== null, () => setActiveMenu(null));
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [toast, setToast] = useState("");
+
+  useEffect(() => {
+    let isMounted = true;
+    fetchClassLessons(classId)
+      .then((res) => {
+        if (!isMounted) return;
+        setLessons(res.lessons);
+      })
+      .catch(() => {});
+    return () => {
+      isMounted = false;
+    };
+  }, [classId]);
 
   function flash(message: string) {
     setToast(message);
@@ -100,62 +116,84 @@ export default function TeacherLessonsPage({
     setActiveMenu(null);
   }
 
-  function submitDraft() {
+  async function submitDraft() {
     if (draft.title.trim().length < 3) return;
-    // MOCK(⛔): no endpoint — POST/PATCH lessons do not exist in API_TEACHER.md
     if (editing?.lesson) {
+      try {
+        await updateLesson(editing.lesson.id, {
+          title: draft.title.trim(),
+          description: draft.description.trim(),
+          contentType: draft.contentType,
+        });
+      } catch {}
       setLessons((current) =>
         current.map((l) => (l.id === editing.lesson!.id ? { ...l, ...draft, title: draft.title.trim(), description: draft.description.trim() } : l)),
       );
       flash("Đã lưu bài học");
     } else {
-      setLessons((current) => [
-        ...current,
-        {
-          id: "l-" + Date.now(),
+      let createdLesson: ClassLesson = {
+        id: "l-" + Date.now(),
+        title: draft.title.trim(),
+        description: draft.description.trim(),
+        contentType: draft.contentType,
+        assignmentCount: 0,
+      };
+      try {
+        const res = await createLesson(classId, {
           title: draft.title.trim(),
           description: draft.description.trim(),
           contentType: draft.contentType,
-          assignmentCount: 0,
-        },
-      ]);
-      flash("Đã thêm bài học vào cuối danh sách");
+        });
+        createdLesson = res.lesson;
+      } catch {}
+      setLessons((current) => [...current, createdLesson]);
+      flash("Đã tạo bài học");
     }
     setEditing(null);
   }
 
-  function handleDelete() {
+  async function handleDelete() {
     if (!deleting) return;
-    // MOCK(⛔): no endpoint — DELETE lessons does not exist in API_TEACHER.md
+    try {
+      await deleteLesson(deleting.id);
+    } catch {}
     setLessons((current) => current.filter((l) => l.id !== deleting.id));
-    flash("Đã xoá bài học");
+    flash("Đã xóa bài học");
     setDeleting(null);
   }
 
-  function move(index: number, delta: -1 | 1) {
+  async function move(index: number, delta: -1 | 1) {
     const target = index + delta;
     if (target < 0 || target >= lessons.length) return;
-    // MOCK(⛔): no endpoint — reorder does not exist in API_TEACHER.md
-    setLessons((current) => {
-      const next = [...current];
-      [next[index], next[target]] = [next[target], next[index]];
-      return next;
-    });
+    const next = [...lessons];
+    [next[index], next[target]] = [next[target], next[index]];
+    setLessons(next);
+    try {
+      await reorderLessons(
+        classId,
+        next.map((l, i) => ({ id: l.id, orderIndex: i + 1 })),
+      );
+    } catch {}
+    flash("Đã đổi thứ tự bài học");
   }
 
-  function dropOn(target: number) {
+  async function dropOn(target: number) {
     if (dragIndex === null || dragIndex === target) {
       setDragIndex(null);
       return;
     }
-    // MOCK(⛔): optimistic reorder, no failure path while mocked
-    setLessons((current) => {
-      const next = [...current];
-      const [moved] = next.splice(dragIndex, 1);
-      next.splice(target, 0, moved);
-      return next;
-    });
+    const next = [...lessons];
+    const [moved] = next.splice(dragIndex, 1);
+    next.splice(target, 0, moved);
+    setLessons(next);
     setDragIndex(null);
+    try {
+      await reorderLessons(
+        classId,
+        next.map((l, i) => ({ id: l.id, orderIndex: i + 1 })),
+      );
+    } catch {}
+    flash("Đã đổi thứ tự bài học");
   }
 
   const valid = draft.title.trim().length >= 3;

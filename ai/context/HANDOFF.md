@@ -43,19 +43,21 @@ Resolved SCOPE-01 Option A by implementing the complete Teacher & Admin backend 
 - Implemented Admin Classes (`GET /admin/classes`, `GET /admin/classes/:id`).
 - Implemented Teacher Lessons (`POST /teacher/classes/:classId/lessons`, `GET /teacher/classes/:classId/lessons`, `GET /teacher/lessons/:id`, `PATCH /teacher/lessons/:id`, `DELETE /teacher/lessons/:id`, `PATCH /teacher/classes/:classId/lessons/reorder`).
 - Updated `03-classes-enrollment.md` and `_INDEX.md` to `accepted`.
+- Connected Teacher Frontend screens (`/teacher/classes`, `/teacher/classes/[classId]`, `/teacher/classes/[classId]/lessons`) to real API via `apps/web/src/lib/teacher-service.ts` with offline fallback.
+- Created `docs/testing/TEACHER_TEST_PLAN_AND_REVIEW.md` (20-item test matrix).
 - Verified:
   - `pnpm --filter api test`: **64/64 tests pass** (12 suites, covering access control, admin users, auth, user lifecycle, teacher classes, teacher lessons).
-  - `node --test apps/web/scripts/*.test.mjs`: **34/34 tests pass**.
+  - `node --test apps/web/scripts/*.test.mjs`: **39/39 tests pass** (7 suites).
   - `pnpm --filter web build`: **31/31 static pages build cleanly**.
   - `node scripts/check-docs.mjs`: **8/8 tests pass**.
-- Updated `ai/PROGRESS.md` (F1.3, F2.1, F2.2, F2.5, Lessons marked Done).
+- Updated `ai/PROGRESS.md` (F1.3, F2.1, F2.2, F2.5, Lessons marked Done, Teacher FE connected).
 
 **Blocker / needs follow-up**:
 - None.
 
 **Next steps**:
-- Open PR for `feat/s1-teacher-classes-api`.
-- Connect Teacher Frontend screens (`/teacher/classes`, `/teacher/classes/[classId]`, `/teacher/classes/[classId]/lessons`) to the newly implemented endpoints.
+- Merge PR #28.
+- Proceed to Sprint 2 Student Enrollment (`/student/classes/join`, `/student/classes/:id/leave`, `/student/classes`).
 
 ---
 

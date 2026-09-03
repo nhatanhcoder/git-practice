@@ -31,10 +31,15 @@ Addressed SCOPE-01 Option A (Full implementation) and unblocked Module 02 & Modu
 6. **Specs & Docs**:
    - Updated `docs/api/modules/03-classes-enrollment.md` to `status: accepted`.
    - Updated `docs/api/modules/_INDEX.md` Module 2 and Module 3 to `accepted`.
-7. **Verification**:
+7. **Teacher Frontend Integration & Test Plan**:
+   - Created `apps/web/src/lib/teacher-service.ts` connecting `/teacher/classes`, `/teacher/classes/[classId]`, `/teacher/classes/[classId]/lessons` to real APIs with graceful offline fallbacks.
+   - Documented comprehensive test plan matrix in `docs/testing/TEACHER_TEST_PLAN_AND_REVIEW.md` (20 test items across unit, E2E, and build tiers).
+   - Created `apps/web/scripts/teacher-service.test.mjs` verifying code generation, status labels, and validation rules.
+8. **Verification**:
    - `apps/api/test/teacher-classes.e2e.test.ts`: 9 tests passed.
    - `apps/api/test/teacher-lessons.e2e.test.ts`: 7 tests passed.
-   - `pnpm --filter api test`: **56/56 tests passed** (11 suites).
-   - `node --test apps/web/scripts/*.test.mjs`: **34/34 tests passed**.
+   - `apps/api/test/admin-user-lifecycle.e2e.test.ts`: 8 tests passed.
+   - `pnpm --filter api test`: **64/64 tests passed** (12 suites).
+   - `node --test apps/web/scripts/*.test.mjs`: **39/39 tests passed** (7 suites).
    - `pnpm --filter web build`: **31/31 static pages built cleanly**.
    - `node scripts/check-docs.mjs`: **8/8 checks passed**.
