@@ -1,253 +1,386 @@
 "use client";
 
-import { clsx } from "clsx";
+/**
+ * Student app shell — the ink rail, the topbar HUD, and the mobile bars.
+ *
+ * Three responsibilities that all have to happen in one place:
+ *  1. own `.student-root`, which is where the theme tokens are scoped;
+ *  2. apply theme and the Pinyin / meaning flags as data attributes **after
+ *     mount**, so the server and first client render agree (see `store.ts`);
+ *  3. rehydrate the persisted store, for the same reason.
+ *
+ * Distilled from the prototype's AppShell.tsx — see
+ * docs/front-end-design-docs/HANLU_PROTOTYPE_DISTILLED.md §2.
+ *
+ * MOCK(student): mockup mode per docs/prompts/student-product/.
+ */
+
+import { useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
 import {
+  Blocks,
   BookOpen,
-  BookMarked,
   Briefcase,
-  ClipboardCheck,
   Flame,
+  GraduationCap,
   Home,
-  Layers,
+  LayoutGrid,
   Map,
-  Menu,
+  Medal,
+  Moon,
   NotebookPen,
   PenTool,
+  Puzzle,
+  RotateCcw,
+  Sparkles,
+  Sun,
+  Target,
+  TrendingUp,
   Trophy,
-  X,
   Zap,
-  type LucideIcon,
 } from "lucide-react";
-import { mockLearner } from "@/lib/student/mock-user";
-import { useStudentProgress } from "@/lib/student/store";
+import { ToastProvider } from "./toast";
+import { Sheet } from "./overlay";
+import { useStudentProfile, useStudentStore } from "@/lib/student/store";
 
 interface NavItem {
-  href: string;
+  to: string;
   label: string;
-  icon: LucideIcon;
-  primary?: boolean; // shown in mobile bottom nav
-  soon?: boolean;
+  short: string;
+  icon: ReactNode;
 }
 
-const navItems: NavItem[] = [
-  { href: "/student", label: "Tổng quan", icon: Home, primary: true },
-  { href: "/student/learning-path", label: "Lộ trình học", icon: Map, primary: true },
-  { href: "/student/grammar", label: "Ngữ pháp", icon: BookOpen, primary: true },
-  { href: "/student/foundation", label: "Nền tảng", icon: Layers, primary: true },
-  { href: "/student/workplace", label: "Giao tiếp công sở", icon: Briefcase, soon: true },
-  { href: "/student/exams", label: "Thi HSK", icon: ClipboardCheck, soon: true },
-  { href: "/student/mistakes", label: "Sổ lỗi & Ôn tập", icon: NotebookPen, soon: true },
-  { href: "/student/writing", label: "Tập viết chữ Hán", icon: PenTool, soon: true },
-  { href: "/student/leaderboard", label: "Bảng xếp hạng", icon: Trophy, soon: true },
+export const PRIMARY_NAV: NavItem[] = [
+  { to: "/student", label: "Trang chủ", short: "Trang chủ", icon: <Home size={18} /> },
+  { to: "/student/learning-path", label: "Lộ trình HSK", short: "Lộ trình", icon: <Map size={18} /> },
+  { to: "/student/flashcards", label: "Từ vựng Flashcard", short: "Từ vựng", icon: <Sparkles size={18} /> },
+  { to: "/student/grammar", label: "Ngữ pháp", short: "Ngữ pháp", icon: <BookOpen size={18} /> },
+  { to: "/student/foundation", label: "Nền tảng", short: "Nền tảng", icon: <Blocks size={18} /> },
 ];
 
-function Logo() {
-  return (
-    <Link
-      href="/student"
-      className="flex items-center gap-3 rounded-xl focus-visible:outline-2 focus-visible:outline-sp-primary"
-    >
-      <span className="sp-font-head flex h-10 w-10 items-center justify-center rounded-2xl bg-sp-primary text-lg font-black text-white shadow-sp-sm">
-        汉
-      </span>
-      <span className="sp-font-head text-base font-black leading-tight text-sp-ink">
-        Hành trình HSK
-      </span>
-    </Link>
+export const SECONDARY_NAV: NavItem[] = [
+  { to: "/student/exams", label: "Phòng thi HSK", short: "Thi thử", icon: <GraduationCap size={18} /> },
+  { to: "/student/mistakes", label: "Sổ tay lỗi sai", short: "Lỗi sai", icon: <NotebookPen size={18} /> },
+  { to: "/student/writing", label: "Luyện viết chữ", short: "Viết chữ", icon: <PenTool size={18} /> },
+  { to: "/student/lego", label: "Ghép câu Lego", short: "Ghép câu", icon: <Puzzle size={18} /> },
+  { to: "/student/workplace", label: "Mô phỏng công sở", short: "Công sở", icon: <Briefcase size={18} /> },
+];
+
+export const ACHIEVEMENT_NAV: NavItem[] = [
+  { to: "/student/leaderboard", label: "Bảng xếp hạng", short: "Xếp hạng", icon: <Trophy size={18} /> },
+  { to: "/student/progress", label: "Tiến độ học tập", short: "Tiến độ", icon: <TrendingUp size={18} /> },
+  { to: "/student/badges", label: "Kho huy hiệu", short: "Huy hiệu", icon: <Medal size={18} /> },
+];
+
+/**
+ * Longer prefixes first, so `/student/exams/e-h3-1` matches "Phòng thi HSK"
+ * rather than falling through to the bare `/student` entry.
+ */
+const PAGE_TITLES: [string, string][] = [
+  ["/student/learning-path", "Lộ trình HSK"],
+  ["/student/flashcards", "Flashcard từ vựng"],
+  ["/student/grammar", "Thư viện ngữ pháp"],
+  ["/student/foundation", "Nền tảng"],
+  ["/student/writing", "Luyện viết chữ"],
+  ["/student/mistakes/review", "Phiên ôn lỗi sai"],
+  ["/student/mistakes", "Sổ tay lỗi sai"],
+  ["/student/exams", "Phòng thi HSK"],
+  ["/student/workplace", "Mô phỏng công sở"],
+  ["/student/lego", "Ghép câu Lego"],
+  ["/student/leaderboard", "Bảng xếp hạng"],
+  ["/student/progress", "Tiến độ học tập"],
+  ["/student/badges", "Kho huy hiệu"],
+  ["/student/placement", "Kiểm tra xếp cấp"],
+  ["/student", "Trang chủ"],
+];
+
+function titleFor(pathname: string) {
+  const hit = PAGE_TITLES.find(
+    ([prefix]) => pathname === prefix || pathname.startsWith(`${prefix}/`),
   );
+  return hit ? hit[1] : "Học viện";
 }
 
-function NavList({ onNavigate }: { onNavigate?: () => void }) {
-  const pathname = usePathname();
-  return (
-    <nav aria-label="Điều hướng khu vực học tập" className="flex flex-col gap-1">
-      {navItems.map((item) => {
-        const active = pathname === item.href;
-        const Icon = item.icon;
-        return (
-          <Link
-            key={item.href}
-            href={item.href}
-            onClick={onNavigate}
-            aria-current={active ? "page" : undefined}
-            className={clsx(
-              "sp-press flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-bold",
-              active
-                ? "bg-sp-primary text-white shadow-sp-sm"
-                : "text-sp-ink2 hover:bg-sp-primary-soft hover:text-sp-primary-strong",
-            )}
-          >
-            <Icon size={18} aria-hidden="true" />
-            <span className="flex-1">{item.label}</span>
-            {item.soon ? (
-              <span
-                className={clsx(
-                  "rounded-full px-2 py-0.5 text-[10px] font-extrabold",
-                  active ? "bg-white/20 text-white" : "bg-sp-xp-soft text-sp-warn",
-                )}
-              >
-                Sắp ra mắt
-              </span>
-            ) : null}
-          </Link>
-        );
-      })}
-    </nav>
-  );
+function isActive(pathname: string, to: string) {
+  return to === "/student" ? pathname === to : pathname.startsWith(to);
 }
 
-function UserCard() {
-  const xp = useStudentProgress((s) => s.xp);
-  return (
-    <div className="flex items-center gap-3 rounded-2xl border border-sp-line bg-sp-primary-soft p-3">
-      <span className="sp-font-head flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-sp-primary text-sm font-black text-white">
-        MA
-      </span>
-      <div className="min-w-0 flex-1">
-        <p className="sp-font-head truncate text-sm font-extrabold text-sp-ink">
-          {mockLearner.nickname}
-        </p>
-        <p className="text-xs text-sp-ink2">
-          HSK {mockLearner.currentLevel} · {xp.toLocaleString("vi-VN")} XP
-        </p>
-      </div>
-    </div>
-  );
-}
+export function StudentShell({ children }: { children: ReactNode }) {
+  const pathname = usePathname() || "/student";
+  const profile = useStudentProfile();
+  const theme = useStudentStore((s) => s.theme);
+  const showPinyin = useStudentStore((s) => s.showPinyin);
+  const showMeaning = useStudentStore((s) => s.showMeaning);
+  const toggleTheme = useStudentStore((s) => s.toggleTheme);
+  const togglePinyin = useStudentStore((s) => s.togglePinyin);
+  const toggleMeaning = useStudentStore((s) => s.toggleMeaning);
+  const resetProgress = useStudentStore((s) => s.resetProgress);
+  const hydrated = useStudentStore((s) => s.hydrated);
 
-function XpChips() {
-  const xp = useStudentProgress((s) => s.xp);
-  return (
-    <div className="flex items-center gap-2">
-      <span className="sp-font-head inline-flex items-center gap-1 rounded-full bg-sp-xp-soft px-3 py-1.5 text-xs font-extrabold text-sp-warn">
-        <Zap size={13} aria-hidden="true" />
-        {xp.toLocaleString("vi-VN")}
-      </span>
-      <span className="sp-font-head inline-flex items-center gap-1 rounded-full bg-sp-accent-soft px-3 py-1.5 text-xs font-extrabold text-sp-accent-strong">
-        <Flame size={13} aria-hidden="true" />
-        {mockLearner.streakDays} ngày
-      </span>
-    </div>
-  );
-}
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const title = titleFor(pathname);
 
-export function StudentShell({ children }: { children: React.ReactNode }) {
-  const [menuOpen, setMenuOpen] = useState(false);
-  const pathname = usePathname();
+  // Read localStorage only after mount — see the note in store.ts.
+  useEffect(() => {
+    void useStudentStore.persist.rehydrate();
+    useStudentStore.getState().setHydrated(true);
+  }, []);
 
   useEffect(() => {
-    setMenuOpen(false);
+    setSheetOpen(false);
   }, [pathname]);
 
-  useEffect(() => {
-    if (!menuOpen) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setMenuOpen(false);
-    };
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [menuOpen]);
+  // Until rehydration lands, render the server's defaults so the markup matches.
+  const themeAttr = hydrated ? theme : "dark";
+  const pinyinAttr = hydrated ? String(showPinyin) : "true";
+  const meaningAttr = hydrated ? String(showMeaning) : "true";
+
+  const themeBtn = (
+    <button
+      type="button"
+      className="btn btn--ghost btn--icon"
+      onClick={toggleTheme}
+      aria-label={themeAttr === "dark" ? "Chuyển sang giao diện sáng" : "Chuyển sang giao diện tối"}
+    >
+      {themeAttr === "dark" ? <Sun size={18} /> : <Moon size={18} />}
+    </button>
+  );
+
+  const displayToggles = (mobile = false) => (
+    <div
+      className={`display-toggles ${mobile ? "display-toggles--mobile" : ""}`}
+      role="group"
+      aria-label="Tùy chọn hiển thị chữ Hán"
+    >
+      <button
+        type="button"
+        className={`display-toggle-btn ${showPinyin ? "is-active" : ""}`}
+        onClick={togglePinyin}
+        aria-pressed={showPinyin}
+        title={showPinyin ? "Đang bật Pinyin — bấm để ẩn" : "Đang ẩn Pinyin — bấm để hiện"}
+      >
+        <span className="display-toggle-badge han" aria-hidden="true">
+          拼
+        </span>
+        {!mobile ? <span className="display-toggle-label">Pinyin</span> : null}
+      </button>
+      <button
+        type="button"
+        className={`display-toggle-btn ${showMeaning ? "is-active" : ""}`}
+        onClick={toggleMeaning}
+        aria-pressed={showMeaning}
+        title={showMeaning ? "Đang bật dịch nghĩa — bấm để ẩn" : "Đang ẩn dịch nghĩa — bấm để hiện"}
+      >
+        <span className="display-toggle-badge han" aria-hidden="true">
+          译
+        </span>
+        {!mobile ? <span className="display-toggle-label">Nghĩa</span> : null}
+      </button>
+    </div>
+  );
+
+  const navGroup = (heading: string, items: NavItem[]) => (
+    <>
+      <p className="rail__group">{heading}</p>
+      {items.map((item) => (
+        <Link
+          key={item.to}
+          href={item.to}
+          className={`navlink ${isActive(pathname, item.to) ? "is-active" : ""}`}
+          aria-current={isActive(pathname, item.to) ? "page" : undefined}
+        >
+          {item.icon}
+          <span>{item.short}</span>
+        </Link>
+      ))}
+    </>
+  );
 
   return (
-    <div className="student-root min-h-screen">
-      {/* Desktop sidebar */}
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col justify-between border-r border-sp-line bg-sp-card px-4 py-5 lg:flex">
-        <div>
-          <div className="px-2 pb-5">
-            <Logo />
-          </div>
-          <NavList />
-        </div>
-        <UserCard />
-      </aside>
+    <div
+      className="student-root"
+      data-theme={themeAttr}
+      data-show-pinyin={pinyinAttr}
+      data-show-meaning={meaningAttr}
+    >
+      <ToastProvider>
+        <div className="shell">
+          <a className="skip-link" href="#main">
+            Bỏ qua điều hướng, tới nội dung chính
+          </a>
 
-      {/* Mobile header */}
-      <header className="sticky top-0 z-30 flex items-center justify-between gap-3 border-b border-sp-line bg-sp-card/95 px-4 py-3 backdrop-blur lg:hidden">
-        <Logo />
-        <div className="flex items-center gap-2">
-          <XpChips />
-          <button
-            type="button"
-            onClick={() => setMenuOpen(true)}
-            aria-label="Mở menu"
-            className="sp-press flex h-10 w-10 items-center justify-center rounded-xl border border-sp-line bg-sp-card text-sp-ink"
-          >
-            <Menu size={20} aria-hidden="true" />
-          </button>
-        </div>
-      </header>
+          {/* ---------- Desktop / tablet rail ---------- */}
+          <nav className="rail" aria-label="Điều hướng chính">
+            <Link href="/student" className="rail__brand" aria-label="Hán Lộ — về trang chủ">
+              <span className="seal han" aria-hidden="true">
+                汉
+              </span>
+              <span className="stack rail__brand-text">
+                <span className="rail__name">Hán Lộ</span>
+                <span className="rail__tag">Học viện HSK</span>
+              </span>
+            </Link>
 
-      {/* Mobile menu sheet */}
-      {menuOpen ? (
-        <div className="fixed inset-0 z-40 lg:hidden" role="dialog" aria-modal="true" aria-label="Menu">
-          <button
-            type="button"
-            aria-label="Đóng menu"
-            onClick={() => setMenuOpen(false)}
-            className="absolute inset-0 h-full w-full cursor-default bg-sp-ink/35"
-          />
-          <div className="absolute inset-y-0 left-0 flex w-[290px] flex-col justify-between bg-sp-card px-4 py-5 shadow-sp">
-            <div>
-              <div className="flex items-center justify-between px-2 pb-5">
-                <Logo />
-                <button
-                  type="button"
-                  onClick={() => setMenuOpen(false)}
-                  aria-label="Đóng menu"
-                  className="sp-press flex h-9 w-9 items-center justify-center rounded-xl text-sp-ink2 hover:bg-sp-locked-soft"
-                >
-                  <X size={18} aria-hidden="true" />
-                </button>
-              </div>
-              <NavList onNavigate={() => setMenuOpen(false)} />
+            <div className="rail__nav">
+              {navGroup("Học tập", PRIMARY_NAV)}
+              {navGroup("Luyện tập", SECONDARY_NAV)}
+              {navGroup("Thành tích", ACHIEVEMENT_NAV)}
             </div>
-            <UserCard />
-          </div>
-        </div>
-      ) : null}
 
-      {/* Page content */}
-      <main className="px-4 pb-24 pt-5 sm:px-6 lg:ml-64 lg:px-10 lg:pb-12 lg:pt-8">{children}</main>
+            <div className="rail__foot">
+              <button
+                type="button"
+                className="userchip"
+                aria-label={`Hồ sơ của ${profile.name}`}
+                aria-haspopup="dialog"
+                onClick={() => setProfileOpen(true)}
+              >
+                <span className="avatar han" aria-hidden="true">
+                  {profile.initials}
+                </span>
+                <span className="stack userchip__text grow" style={{ textAlign: "left" }}>
+                  <span style={{ fontWeight: 600, fontSize: "var(--step--1)" }} className="truncate">
+                    {profile.name}
+                  </span>
+                  <span style={{ color: "var(--text-3)", fontSize: "var(--step--2)" }}>
+                    {profile.rank} · HSK {profile.currentLevel}
+                  </span>
+                </span>
+              </button>
+            </div>
+          </nav>
 
-      {/* Mobile bottom nav */}
-      <nav
-        aria-label="Điều hướng nhanh"
-        className="fixed inset-x-0 bottom-0 z-30 border-t border-sp-line bg-sp-card/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden"
-      >
-        <div className="grid grid-cols-5">
-          {navItems
-            .filter((i) => i.primary)
-            .map((item) => {
-              const active = pathname === item.href;
-              const Icon = item.icon;
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  aria-current={active ? "page" : undefined}
-                  className={clsx(
-                    "flex flex-col items-center gap-1 px-1 py-2.5 text-[11px] font-bold",
-                    active ? "text-sp-primary" : "text-sp-ink3",
-                  )}
+          {/* ---------- Main column ---------- */}
+          <div className="main">
+            <header className="topbar">
+              <nav className="crumb" aria-label="Đường dẫn">
+                <span>Học viện</span>
+                <span aria-hidden="true">/</span>
+                <span className="crumb__now">{title}</span>
+              </nav>
+
+              <div className="hud">
+                {displayToggles()}
+                <span className="hud__stat hud__stat--streak" title="Chuỗi ngày học liên tiếp">
+                  <Flame size={15} />
+                  <span className="num">{profile.streakDays}</span>
+                  <span className="sr-only">ngày chuỗi liên tiếp</span>
+                </span>
+                <span className="hud__stat hud__stat--xp" title="Tổng điểm kinh nghiệm">
+                  <Zap size={15} />
+                  <span className="num">{profile.xp.toLocaleString("vi-VN")}</span>
+                  <span className="sr-only">điểm kinh nghiệm</span>
+                </span>
+                {themeBtn}
+              </div>
+            </header>
+
+            {/* ---------- Mobile top bar ---------- */}
+            <header className="mobilebar">
+              <Link href="/student" aria-label="Hán Lộ — về trang chủ" style={{ flex: "none" }}>
+                <span
+                  className="seal han"
+                  style={{ width: 30, height: 30, fontSize: 16 }}
+                  aria-hidden="true"
                 >
-                  <Icon size={20} aria-hidden="true" />
+                  汉
+                </span>
+              </Link>
+              <h1 className="mobilebar__title grow truncate">{title}</h1>
+              {displayToggles(true)}
+              <span className="hud__stat hud__stat--streak" style={{ height: 30 }}>
+                <Flame size={14} />
+                <span className="num">{profile.streakDays}</span>
+              </span>
+              {themeBtn}
+            </header>
+
+            <main id="main" className="content" tabIndex={-1}>
+              {children}
+            </main>
+          </div>
+
+          {/* ---------- Mobile tab bar ---------- */}
+          <nav className="tabbar" aria-label="Điều hướng dưới cùng">
+            {PRIMARY_NAV.map((item) => (
+              <Link
+                key={item.to}
+                href={item.to}
+                className={`tabbar__item ${isActive(pathname, item.to) ? "is-active" : ""}`}
+              >
+                <span className="tabbar__glyph">{item.icon}</span>
+                <span>{item.short}</span>
+              </Link>
+            ))}
+            <button
+              type="button"
+              className={`tabbar__item ${sheetOpen ? "is-active" : ""}`}
+              onClick={() => setSheetOpen(true)}
+              aria-haspopup="dialog"
+              aria-expanded={sheetOpen}
+            >
+              <span className="tabbar__glyph">
+                <LayoutGrid size={18} />
+              </span>
+              <span>Thêm</span>
+            </button>
+          </nav>
+
+          <Sheet open={sheetOpen} onClose={() => setSheetOpen(false)} title="Tất cả khu vực học">
+            <div className="sheet__grid">
+              {[...PRIMARY_NAV, ...SECONDARY_NAV, ...ACHIEVEMENT_NAV].map((item) => (
+                <Link
+                  key={item.to}
+                  href={item.to}
+                  className={`sheet__item ${isActive(pathname, item.to) ? "is-active" : ""}`}
+                >
+                  {item.icon}
                   {item.label}
                 </Link>
-              );
-            })}
-          <button
-            type="button"
-            onClick={() => setMenuOpen(true)}
-            className="flex flex-col items-center gap-1 px-1 py-2.5 text-[11px] font-bold text-sp-ink3"
-          >
-            <BookMarked size={20} aria-hidden="true" />
-            Xem thêm
-          </button>
+              ))}
+            </div>
+          </Sheet>
+
+          {/* ---------- Profile ---------- */}
+          <Sheet open={profileOpen} onClose={() => setProfileOpen(false)} title="Hồ sơ học viên">
+            <div className="stack gap-5" style={{ paddingTop: "var(--sp-4)" }}>
+              <div className="row gap-3">
+                <span className="avatar avatar--lg han" aria-hidden="true">
+                  {profile.initials}
+                </span>
+                <div className="stack gap-1 grow">
+                  <span style={{ fontWeight: 600 }}>{profile.name}</span>
+                  <span style={{ color: "var(--text-3)", fontSize: "var(--step--1)" }}>
+                    {profile.rank} · HSK {profile.currentLevel} · {profile.joinedLabel}
+                  </span>
+                </div>
+              </div>
+              <p style={{ color: "var(--text-3)", fontSize: "var(--step--1)" }}>
+                Bản mockup: mọi tiến độ được lưu trong trình duyệt này, chưa có tài khoản thật.
+              </p>
+              <Link
+                href="/student/placement"
+                className="btn btn--outline btn--block"
+                onClick={() => setProfileOpen(false)}
+              >
+                <Target size={16} /> Làm bài kiểm tra xếp cấp
+              </Link>
+              <button
+                type="button"
+                className="btn btn--outline btn--block"
+                onClick={() => {
+                  resetProgress();
+                  setProfileOpen(false);
+                }}
+              >
+                <RotateCcw size={16} /> Đặt lại tiến độ demo
+              </button>
+            </div>
+          </Sheet>
         </div>
-      </nav>
+      </ToastProvider>
     </div>
   );
 }

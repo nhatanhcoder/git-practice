@@ -1,528 +1,507 @@
 "use client";
 
-import { useState } from "react";
+/**
+ * /student — the dashboard.
+ *
+ * It answers one question: *what should I do right now?* Hence the order —
+ * where you left off, then what is due, then how the week is going. Not a
+ * control panel.
+ *
+ * MOCK(student): every figure comes from `lib/student/*`; no API call.
+ */
+
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import {
-  ArrowRight,
   BookOpen,
-  CalendarDays,
-  CheckCircle2,
-  ChevronRight,
-  ClipboardCheck,
+  Blocks,
   Flame,
-  Layers,
+  GraduationCap,
   Map,
-  Medal,
+  NotebookPen,
+  PenTool,
   Play,
-  RotateCcw,
+  Puzzle,
   Sparkles,
-  Star,
   Trophy,
   Zap,
-  type LucideIcon,
 } from "lucide-react";
-import { AudioButton } from "@/components/student/audio-button";
 import {
-  Card,
+  Bar,
   Chip,
-  DemoStateSwitcher,
   EmptyState,
   ErrorState,
-  GhostButton,
-  LoadingState,
-  PrimaryButton,
-  ProgressBar,
-  SectionHead,
-  XpPill,
-  type DemoState,
-} from "@/components/student/ui";
-import {
-  continueLesson,
-  quickLinks,
-  recentActivity,
-  todayReview,
-  type ActivityItem,
-  type ReviewCard,
-} from "@/lib/student/dashboard-data";
-import { levelProgress, mockLearner, type LevelProgress } from "@/lib/student/mock-user";
-import { useStudentProgress } from "@/lib/student/store";
+  Metric,
+  PageHead,
+  Panel,
+  Ring,
+  SectionHeader,
+  SkeletonPanel,
+} from "@/components/student/primitives";
+import { DemoStateSwitcher, LevelSelector, type DemoState } from "@/components/student/controls";
+import { Drawer, Modal } from "@/components/student/overlay";
+import { useToast } from "@/components/student/toast";
+import { useStudentProfile, useStudentStore } from "@/lib/student/store";
+import { boxInterval, rankProgress, reviewQueueFromMistakes } from "@/lib/student/student-rules";
+import { levelProgress } from "@/lib/student/mock-user";
+import { continueLesson } from "@/lib/student/dashboard-data";
+import type { ReviewItem } from "@/lib/student/types";
 
-const quickLinkIcons: Record<string, LucideIcon> = {
-  map: Map,
-  grammar: BookOpen,
-  foundation: Layers,
-  exam: ClipboardCheck,
+const KIND_LABEL: Record<string, string> = {
+  vocab: "Từ vựng",
+  grammar: "Ngữ pháp",
+  character: "Chữ Hán",
+  listening: "Nghe",
+  reading: "Đọc",
 };
 
-const activityIcons: Record<ActivityItem["kind"], LucideIcon> = {
-  lesson: BookOpen,
-  exam: ClipboardCheck,
-  srs: RotateCcw,
-  grammar: BookOpen,
-  streak: Flame,
-};
+const SHORTCUTS = [
+  { href: "/student/learning-path", icon: Map, tone: "", title: "Lộ trình HSK", text: "Bản đồ chặng theo giáo trình" },
+  { href: "/student/flashcards", icon: Sparkles, tone: "info", title: "Flashcard", text: "Ôn từ vựng theo cấp" },
+  { href: "/student/grammar", icon: BookOpen, tone: "success", title: "Ngữ pháp", text: "Tra cứu và luyện 5 dạng bài" },
+  { href: "/student/foundation", icon: Blocks, tone: "epic", title: "Nền tảng", text: "Pinyin, thanh điệu, 214 bộ thủ" },
+  { href: "/student/exams", icon: GraduationCap, tone: "", title: "Phòng thi", text: "Đề thi thử có bấm giờ" },
+  { href: "/student/writing", icon: PenTool, tone: "info", title: "Luyện viết", text: "Thứ tự nét và bảng 米字格" },
+  { href: "/student/lego", icon: Puzzle, tone: "success", title: "Ghép câu", text: "Trật tự từ qua 7 trạm" },
+  { href: "/student/mistakes", icon: NotebookPen, tone: "epic", title: "Sổ tay lỗi sai", text: "Ôn lại đúng chỗ đã sai" },
+];
 
-function greeting() {
-  const h = new Date().getHours();
-  if (h < 12) return "Chào buổi sáng";
-  if (h < 18) return "Chào buổi chiều";
-  return "Chào buổi tối";
-}
+export default function StudentDashboard() {
+  const [demo, setDemo] = useState<DemoState>("ready");
+  const profile = useStudentProfile();
+  const mistakes = useStudentStore((s) => s.mistakes);
+  const activity = useStudentStore((s) => s.activity);
+  const weekData = useStudentStore((s) => s.week);
+  const reviewMistake = useStudentStore((s) => s.reviewMistake);
+  const awardXp = useStudentStore((s) => s.awardXp);
+  const toast = useToast();
 
-function timeAgo(minutes: number) {
-  if (minutes < 60) return `${minutes} phút trước`;
-  if (minutes < 1440) return `${Math.round(minutes / 60)} giờ trước`;
-  return `${Math.round(minutes / 1440)} ngày trước`;
-}
+  const [level, setLevel] = useState(profile.currentLevel);
+  const [openItem, setOpenItem] = useState<ReviewItem | null>(null);
+  const [sessionOpen, setSessionOpen] = useState(false);
+  const [sessionIdx, setSessionIdx] = useState(0);
+  const [revealed, setRevealed] = useState(false);
+  const [sessionRight, setSessionRight] = useState(0);
 
-/* ---------- Level detail drawer content ---------- */
+  const queue = useMemo(() => reviewQueueFromMistakes(mistakes), [mistakes]);
+  const levelRow = levelProgress.find((l) => l.level === level) ?? levelProgress[0];
+  const maxMinutes = Math.max(...weekData.map((d) => d.minutes), 1);
+  const totalMinutes = weekData.reduce((sum, d) => sum + d.minutes, 0);
+  const rankPct = rankProgress(profile.xpIntoRank, profile.xpForNextRank);
 
-function LevelDetail({ level }: { level: LevelProgress }) {
-  const items = [
-    { label: "Bài học", done: level.lessonsDone, total: level.lessonsTotal },
-    { label: "Từ vựng", done: level.vocabMastered, total: level.vocabTotal },
-    { label: "Ngữ pháp", done: level.grammarMastered, total: level.grammarTotal },
-  ];
-  return (
-    <div className="space-y-5">
-      <div className="flex items-center gap-3">
-        <span className="sp-font-head flex h-14 w-14 items-center justify-center rounded-2xl bg-sp-primary text-xl font-black text-white">
-          {level.level}
-        </span>
-        <div>
-          <p className="sp-font-head text-lg font-black text-sp-ink">{level.label}</p>
-          <p className="text-sm text-sp-ink2">
-            {level.state === "completed"
-              ? "Đã hoàn thành"
-              : level.state === "current"
-                ? "Đang học"
-                : "Chưa mở"}
-          </p>
-        </div>
-        {level.state === "completed" ? (
-          <Chip tone="ok" className="ml-auto">
-            <CheckCircle2 size={13} aria-hidden="true" /> Hoàn thành
-          </Chip>
-        ) : level.state === "current" ? (
-          <Chip tone="primary" className="ml-auto">Đang học</Chip>
-        ) : null}
-      </div>
+  const sessionItem = queue[sessionIdx];
 
-      {items.map((it) => (
-        <div key={it.label}>
-          <div className="mb-1 flex items-baseline justify-between text-sm">
-            <span className="font-semibold text-sp-ink">{it.label}</span>
-            <span className="text-sp-ink2">
-              {it.done.toLocaleString("vi-VN")} / {it.total.toLocaleString("vi-VN")}
-            </span>
-          </div>
-          <ProgressBar
-            value={(it.done / it.total) * 100}
-            tone={it.done === it.total ? "ok" : "primary"}
-            label={`Tiến độ ${it.label} ${level.label}`}
-          />
-        </div>
-      ))}
-
-      <div className="rounded-2xl border border-sp-line bg-sp-bg p-4">
-        <p className="text-sm font-semibold text-sp-ink">Điểm thi thử cao nhất</p>
-        {level.bestExamScore !== null ? (
-          <div className="mt-1 flex items-center gap-2">
-            <span className="sp-font-head text-2xl font-black text-sp-primary">
-              {level.bestExamScore}%
-            </span>
-            <Chip tone="ok">Đạt chuẩn</Chip>
-          </div>
-        ) : (
-          <p className="mt-1 text-sm text-sp-ink2">Chưa thi thử cấp này</p>
-        )}
-      </div>
-
-      <Link
-        href={`/student/learning-path?level=${level.level}`}
-        className="sp-press flex items-center justify-between rounded-xl bg-sp-primary px-4 py-3 text-sm font-extrabold text-white"
-      >
-        Xem lộ trình {level.label}
-        <ArrowRight size={16} aria-hidden="true" />
-      </Link>
-    </div>
-  );
-}
-
-/* ---------- Review queue card ---------- */
-
-function ReviewCardRow({ card }: { card: ReviewCard }) {
-  const [open, setOpen] = useState(false);
-  return (
-    <div className="rounded-2xl border border-sp-line bg-sp-card p-4 shadow-sp-sm">
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        aria-expanded={open}
-        className="flex w-full items-center gap-3 text-left"
-      >
-        <span className="sp-font-head flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-sp-primary-soft text-base font-bold text-sp-primary-strong">
-          {card.hanzi.charAt(0)}
-        </span>
-        <span className="min-w-0 flex-1">
-          <span className="sp-font-head block text-base font-extrabold text-sp-ink">
-            {card.hanzi}
-          </span>
-          <span className="block truncate text-xs text-sp-ink2">
-            {card.pinyin} · {card.meaning}
-          </span>
-        </span>
-        <Chip tone={card.dueKind.includes("sai") ? "danger" : "warn"} size="sm">
-          {card.dueKind}
-        </Chip>
-        <ChevronRight
-          size={16}
-          aria-hidden="true"
-          className={`shrink-0 text-sp-ink3 transition-transform ${open ? "rotate-90" : ""}`}
-        />
-      </button>
-      {open ? (
-        <div className="mt-3 flex items-start gap-3 border-t border-sp-line pt-3">
-          <AudioButton label={card.hanzi} size="sm" />
-          <div className="min-w-0">
-            <p className="text-sm text-sp-ink">{card.example}</p>
-            <p className="mt-0.5 text-xs text-sp-ink2">
-              HSK {card.level} · lặp lại ngẫu nhiên theo thuật toán SM-2
-            </p>
-          </div>
-        </div>
-      ) : null}
-    </div>
-  );
-}
-
-/* ---------- Page ---------- */
-
-export default function StudentDashboardPage() {
-  const [demoState, setDemoState] = useState<DemoState>("ready");
-  const [openLevel, setOpenLevel] = useState<LevelProgress | null>(null);
-  const [reviewStarted, setReviewStarted] = useState(false);
-  const xp = useStudentProgress((s) => s.xp);
-  const addXp = useStudentProgress((s) => s.add);
-  const xpInStore = xp;
-
-  const goalPct = Math.min(100, (mockLearner.todayXp / mockLearner.dailyGoalXp) * 100);
+  function answerSession(correct: boolean) {
+    if (!sessionItem) return;
+    reviewMistake(sessionItem.id, correct);
+    if (correct) {
+      setSessionRight((n) => n + 1);
+      awardXp(15, 1);
+    }
+    if (sessionIdx + 1 >= queue.length) {
+      setSessionOpen(false);
+      toast(`Xong phiên ôn — đúng ${sessionRight + (correct ? 1 : 0)}/${queue.length}`, "success");
+      return;
+    }
+    setSessionIdx((i) => i + 1);
+    setRevealed(false);
+  }
 
   return (
-    <div className="mx-auto max-w-6xl">
-      {/* Header */}
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="sp-font-head text-2xl font-black text-sp-ink sm:text-3xl">
-            {greeting()}, {mockLearner.nickname}
-          </h1>
-          <p className="mt-1 flex items-center gap-1.5 text-sm text-sp-ink2">
-            <CalendarDays size={15} aria-hidden="true" />
-            Hôm nay là một ngày tốt để học tiếng Trung
-          </p>
-        </div>
-        <DemoStateSwitcher state={demoState} onChange={setDemoState} />
-      </div>
+    <>
+      <PageHead
+        title={
+          <>
+            Chào <em>{profile.name.split(" ").slice(-1)[0]}</em>
+          </>
+        }
+        sub="Hôm nay học gì? Ba khối dưới đây xếp theo thứ tự nên làm."
+        action={<DemoStateSwitcher value={demo} onChange={setDemo} />}
+      />
 
-      {/* Hero row */}
-      <div className="grid gap-4 lg:grid-cols-3">
-        {/* Continue learning */}
-        <Card className="relative overflow-hidden p-5 lg:col-span-2">
-          <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
-            <div className="min-w-0 flex-1">
-              <Chip tone="primary">
-                <Play size={12} aria-hidden="true" /> Tiếp tục học
-              </Chip>
-              <h2 className="sp-font-head mt-3 text-xl font-black text-sp-ink sm:text-2xl">
-                {continueLesson.title}
-              </h2>
-              <p className="mt-1 text-base text-sp-ink2">{continueLesson.titleHanzi}</p>
-              <div className="mt-3 flex flex-wrap items-center gap-2">
-                <Chip>HSK {continueLesson.level}</Chip>
-                <Chip>{continueLesson.course}</Chip>
-                <Chip>còn {continueLesson.minutesLeft} phút</Chip>
-              </div>
-              <div className="mt-4">
-                <div className="mb-1 flex items-baseline justify-between text-xs text-sp-ink2">
-                  <span>{continueLesson.unit}</span>
-                  <span className="sp-font-head font-bold text-sp-ink">
-                    {continueLesson.progress}%
-                  </span>
-                </div>
-                <ProgressBar value={continueLesson.progress} label="Tiến độ bài học hiện tại" />
-                <p className="mt-1.5 text-xs text-sp-ink2">
-                  Từ vựng {continueLesson.vocabDone}/{continueLesson.vocabTotal} · Ngữ pháp{" "}
-                  {continueLesson.grammarDone}/{continueLesson.grammarTotal}
-                </p>
-              </div>
-            </div>
-            <div className="flex shrink-0 flex-col gap-2">
-              <PrimaryButton
-                icon={Play}
-                onClick={() => addXp(10)}
-                className="w-full sm:w-auto"
-              >
-                Học tiếp
-              </PrimaryButton>
-              <GhostButton className="w-full sm:w-auto">Xem tổng quan bài</GhostButton>
-            </div>
-          </div>
-          <Sparkles
-            size={120}
-            aria-hidden="true"
-            className="pointer-events-none absolute -right-6 -top-6 text-sp-primary-soft"
-          />
-        </Card>
-
-        {/* Stats column */}
-        <div className="grid gap-4">
-          <Card className="flex items-center gap-4 p-5">
-            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-sp-xp-soft text-sp-warn">
-              <Zap size={22} aria-hidden="true" />
-            </span>
-            <div className="min-w-0 flex-1">
-              <p className="sp-font-head text-lg font-black text-sp-ink">
-                {xpInStore.toLocaleString("vi-VN")} XP
-              </p>
-              <p className="text-xs text-sp-ink2">{mockLearner.rank}</p>
-            </div>
-            <Chip tone="xp">+{mockLearner.todayXp} hôm nay</Chip>
-          </Card>
-
-          <Card className="flex items-center gap-4 p-5">
-            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-sp-accent-soft text-sp-accent-strong">
-              <Flame size={22} aria-hidden="true" />
-            </span>
-            <div className="min-w-0 flex-1">
-              <p className="sp-font-head text-lg font-black text-sp-ink">
-                {mockLearner.streakDays} ngày liên tiếp
-              </p>
-              <p className="text-xs text-sp-ink2">Kỷ lục: {mockLearner.bestStreak} ngày</p>
-            </div>
-            <Medal size={20} aria-hidden="true" className="text-sp-accent" />
-          </Card>
-
-          <Card className="p-5">
-            <div className="mb-2 flex items-baseline justify-between">
-              <p className="sp-font-head text-sm font-extrabold text-sp-ink">Mục tiêu hôm nay</p>
-              <p className="text-xs text-sp-ink2">
-                {mockLearner.todayXp}/{mockLearner.dailyGoalXp} XP
-              </p>
-            </div>
-            <ProgressBar value={goalPct} tone="xp" label="Mục tiêu XP hàng ngày" />
-            <p className="mt-2 text-xs text-sp-ink2">
-              Còn {Math.max(0, mockLearner.dailyGoalXp - mockLearner.todayXp)} XP nữa để giữ chuỗi
-              ngày học.
-            </p>
-          </Card>
-        </div>
-      </div>
-
-      {/* HSK level progress */}
-      <section className="mt-8" aria-labelledby="hsk-progress-title">
-        <SectionHead
-          icon={Map}
-          title="Tiến độ HSK 1–9"
-          desc="Chọn một cấp để xem chi tiết"
-          action={
-            <Link
-              href="/student/learning-path"
-              className="sp-press sp-font-head inline-flex items-center gap-1 rounded-xl px-3 py-1.5 text-sm font-bold text-sp-primary hover:bg-sp-primary-soft"
-            >
-              Lộ trình đầy đủ <ArrowRight size={15} aria-hidden="true" />
-            </Link>
-          }
-        />
-        <Card className="p-4">
-          <div className="grid grid-cols-3 gap-3 sm:grid-cols-5 lg:grid-cols-9">
-            {levelProgress.map((lp) => {
-              const pct =
-                lp.lessonsTotal > 0 ? (lp.lessonsDone / lp.lessonsTotal) * 100 : 0;
-              const isCurrent = lp.state === "current";
-              const isDone = lp.state === "completed";
-              return (
-                <button
-                  key={lp.level}
-                  type="button"
-                  onClick={() => setOpenLevel(lp)}
-                  aria-label={`${lp.label} — ${
-                    isDone ? "hoàn thành" : isCurrent ? "đang học" : "chưa mở"
-                  }, ${Math.round(pct)}%`}
-                  className={`sp-press rounded-2xl border p-3 text-left ${
-                    isCurrent
-                      ? "border-sp-primary bg-sp-primary-soft"
-                      : isDone
-                        ? "border-sp-ok/30 bg-sp-ok-soft"
-                        : "border-sp-line bg-sp-card"
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="sp-font-head text-sm font-black text-sp-ink">
-                      {lp.label}
-                    </span>
-                    {isDone ? (
-                      <CheckCircle2 size={15} className="text-sp-ok" aria-hidden="true" />
-                    ) : isCurrent ? (
-                      <span className="h-2 w-2 rounded-full bg-sp-primary" aria-hidden="true" />
-                    ) : null}
-                  </div>
-                  <ProgressBar
-                    value={pct}
-                    tone={isDone ? "ok" : isCurrent ? "primary" : "accent"}
-                    className="mt-2"
-                    label={`Tiến độ ${lp.label}`}
-                  />
-                  <p className="mt-1.5 text-[11px] text-sp-ink2">
-                    {lp.lessonsDone}/{lp.lessonsTotal} bài
-                  </p>
-                </button>
-              );
-            })}
-          </div>
-        </Card>
-      </section>
-
-      <div className="mt-8 grid gap-8 lg:grid-cols-3">
-        {/* Review queue */}
-        <section className="lg:col-span-2" aria-labelledby="review-title">
-          <SectionHead
-            icon={RotateCcw}
-            title="Ôn hôm nay"
-            desc={`${todayReview.total} thẻ đến hạn · ${todayReview.newCards} thẻ mới`}
+      {demo === "loading" ? (
+        <SkeletonPanel rows={4} height={160} />
+      ) : demo === "error" ? (
+        <Panel className="panel--pad">
+          <ErrorState onRetry={() => setDemo("ready")} />
+        </Panel>
+      ) : demo === "empty" ? (
+        <Panel className="panel--pad">
+          <EmptyState
+            title="Chưa có dữ liệu học tập"
+            text="Bắt đầu bằng bài kiểm tra xếp cấp để hệ thống gợi ý đúng chặng."
             action={
-              <PrimaryButton
-                icon={Play}
-                className="hidden sm:inline-flex"
-                disabled={reviewStarted || demoState !== "ready"}
-                onClick={() => {
-                  setReviewStarted(true);
-                  addXp(20);
-                }}
-              >
-                {reviewStarted ? "Đang ôn…" : "Ôn ngay"}
-              </PrimaryButton>
+              <Link href="/student/placement" className="btn btn--primary">
+                Làm bài xếp cấp
+              </Link>
             }
           />
-          {demoState === "loading" ? (
-            <LoadingState rows={4} />
-          ) : demoState === "empty" ? (
-            <EmptyState
-              icon={CheckCircle2}
-              title="Hôm nay không còn thẻ nào đến hạn"
-              desc="Tuyệt vời! Bạn đã ôn hết 18 thẻ. Thẻ tiếp theo sẽ xuất hiện vào ngày mai."
-              action={<GhostButton>Thêm thẻ mới</GhostButton>}
+        </Panel>
+      ) : (
+        <>
+          {/* ---------- Hero: rank + streak ---------- */}
+          <section className="hero">
+            <span className="hero__mark han" aria-hidden="true">
+              {profile.rankHanzi}
+            </span>
+            <div className="grow stack gap-2" style={{ position: "relative" }}>
+              <span className="eyebrow">Danh hiệu hiện tại</span>
+              <h2 className="hero__title">{profile.rank}</h2>
+              <p style={{ color: "var(--text-2)", fontSize: "var(--step--1)" }}>{profile.rankBlurb}</p>
+              <div className="hero__meta">
+                <span className="is-xp num">
+                  <Zap size={14} style={{ display: "inline" }} /> {profile.xp.toLocaleString("vi-VN")} XP
+                </span>
+                <span className="dot" aria-hidden="true" />
+                <span>
+                  HSK <span className="num">{profile.currentLevel}</span>
+                </span>
+                <span className="dot" aria-hidden="true" />
+                <span>
+                  <Flame size={14} style={{ display: "inline" }} /> chuỗi{" "}
+                  <span className="num">{profile.streakDays}</span> ngày
+                </span>
+              </div>
+              {profile.nextRank ? (
+                <div className="stack gap-2" style={{ maxWidth: 420, marginTop: "var(--sp-2)" }}>
+                  <Bar value={rankPct} tone="gold" label={`Tiến tới ${profile.nextRank.name}`} />
+                  <span style={{ color: "var(--text-3)", fontSize: "var(--step--2)" }}>
+                    Còn{" "}
+                    <span className="num">
+                      {(profile.xpForNextRank - profile.xpIntoRank).toLocaleString("vi-VN")}
+                    </span>{" "}
+                    XP nữa lên {profile.nextRank.name} {profile.nextRank.hanzi}
+                  </span>
+                </div>
+              ) : (
+                <Chip tone="warn">Đã đạt danh hiệu cao nhất</Chip>
+              )}
+            </div>
+
+            <div className="stack gap-3" style={{ position: "relative", flex: "none" }}>
+              <span className="eyebrow">Tuần này</span>
+              <div className="streak__week">
+                {weekData.map((d) => (
+                  <span
+                    key={d.label}
+                    className={`streak__day ${d.minutes > 0 ? "is-done" : ""} ${d.isToday ? "is-today" : ""}`}
+                    title={`${d.label}: ${d.minutes} phút`}
+                  >
+                    {d.label}
+                  </span>
+                ))}
+              </div>
+              <span style={{ color: "var(--text-3)", fontSize: "var(--step--2)" }}>
+                Tổng <span className="num">{totalMinutes}</span> phút
+              </span>
+            </div>
+          </section>
+
+          {/* ---------- Continue where you left off ---------- */}
+          <Panel className="panel--pad">
+            <div className="row gap-4 wrap">
+              <span className="hero__mark han" style={{ width: 64, height: 64, fontSize: 26 }} aria-hidden="true">
+                {continueLesson.titleHanzi.slice(0, 2)}
+              </span>
+              <div className="grow stack gap-2">
+                <span className="eyebrow">Học tiếp</span>
+                <h2 style={{ fontSize: "var(--step-2)" }}>{continueLesson.title}</h2>
+                <p style={{ color: "var(--text-3)", fontSize: "var(--step--1)" }}>
+                  {continueLesson.course} · HSK <span className="num">{continueLesson.level}</span> ·{" "}
+                  {continueLesson.unit} · còn khoảng{" "}
+                  <span className="num">{continueLesson.minutesLeft}</span> phút
+                </p>
+                <Bar value={continueLesson.progress} label="Tiến độ bài học" />
+                <span style={{ color: "var(--text-3)", fontSize: "var(--step--2)" }}>
+                  Từ vựng <span className="num">{continueLesson.vocabDone}/{continueLesson.vocabTotal}</span> ·
+                  Ngữ pháp <span className="num">{continueLesson.grammarDone}/{continueLesson.grammarTotal}</span>
+                </span>
+              </div>
+              <Link href="/student/learning-path" className="btn btn--primary btn--lg">
+                <Play size={18} /> Tiếp tục
+              </Link>
+            </div>
+          </Panel>
+
+          {/* ---------- HSK 1–9 ladder ---------- */}
+          <Panel className="panel--pad">
+            <SectionHeader
+              title="Bậc HSK 1 – 9"
+              sub="Chọn một bậc để xem tiến độ từ vựng, ngữ pháp và điểm thi tốt nhất."
             />
-          ) : demoState === "error" ? (
-            <ErrorState onRetry={() => setDemoState("ready")} />
-          ) : reviewStarted ? (
-            <EmptyState
-              icon={CheckCircle2}
-              title="Phiên ôn đã bắt đầu"
-              desc="Đây là trạng thái demo — bản thật sẽ chuyển sang giao diện lật thẻ SM-2. Bạn nhận +20 XP."
-              action={<GhostButton onClick={() => setReviewStarted(false)}>Quay lại</GhostButton>}
+            <LevelSelector
+              levels={levelProgress.map((l) => ({
+                id: l.level,
+                done: l.state === "completed",
+                locked: l.state === "locked",
+              }))}
+              value={level}
+              onChange={setLevel}
             />
-          ) : (
-            <div className="space-y-3">
-              {todayReview.cards.map((c) => (
-                <ReviewCardRow key={c.id} card={c} />
+            <div className="grid grid--4" style={{ marginTop: "var(--sp-5)" }}>
+              <Metric
+                label="Bài học"
+                value={`${levelRow.lessonsDone}/${levelRow.lessonsTotal}`}
+              />
+              <Metric
+                label="Từ vựng"
+                value={`${levelRow.vocabMastered}/${levelRow.vocabTotal}`}
+              />
+              <Metric
+                label="Ngữ pháp"
+                value={`${levelRow.grammarMastered}/${levelRow.grammarTotal}`}
+              />
+              <Metric
+                label="Điểm thi tốt nhất"
+                value={levelRow.bestExamScore === null ? "—" : `${levelRow.bestExamScore}%`}
+              />
+            </div>
+          </Panel>
+
+          {/* ---------- Review queue + week ---------- */}
+          <div className="grid" style={{ gridTemplateColumns: "minmax(0, 1.4fr) minmax(0, 1fr)" }}>
+            <Panel>
+              <div className="panel__head">
+                <div>
+                  <h2 className="section-title" style={{ fontSize: "var(--step-2)" }}>
+                    Ôn tập hôm nay
+                  </h2>
+                  <p className="section-sub">
+                    <span className="num">{queue.length}</span> thẻ đến hạn, lấy từ sổ tay lỗi sai
+                  </p>
+                </div>
+                {queue.length > 0 ? (
+                  <button
+                    type="button"
+                    className="btn btn--primary"
+                    onClick={() => {
+                      setSessionIdx(0);
+                      setSessionRight(0);
+                      setRevealed(false);
+                      setSessionOpen(true);
+                    }}
+                  >
+                    <Play size={16} /> Ôn nhanh
+                  </button>
+                ) : null}
+              </div>
+              <div className="panel__body panel__body--flush">
+                {queue.length === 0 ? (
+                  <EmptyState
+                    title="Hàng đợi trống"
+                    text="Không còn thẻ nào đến hạn hôm nay. Học chặng mới để tạo thêm bài ôn."
+                  />
+                ) : (
+                  queue.map((item) => (
+                    <button
+                      key={item.id}
+                      type="button"
+                      className="rowitem"
+                      onClick={() => setOpenItem(item)}
+                    >
+                      <span className="rowitem__icon han" aria-hidden="true">
+                        {item.hanzi.slice(0, 1)}
+                      </span>
+                      <span className="grow stack gap-1">
+                        <span style={{ fontWeight: 600 }} className="truncate">
+                          {item.prompt}
+                        </span>
+                        <span style={{ color: "var(--text-3)", fontSize: "var(--step--2)" }}>
+                          {KIND_LABEL[item.kind]} · Hộp <span className="num">{item.box}</span> ·{" "}
+                          {boxInterval(item.box)}
+                        </span>
+                      </span>
+                      <Ring value={item.strength} size={38} stroke={4} label="Độ nhớ" />
+                    </button>
+                  ))
+                )}
+              </div>
+            </Panel>
+
+            <div className="stack gap-5">
+              <Panel className="panel--pad">
+                <SectionHeader title="Tuần này" sub="Số phút học mỗi ngày" />
+                <div className="chart">
+                  {weekData.map((d) => (
+                    <div className="chart__col" key={d.label}>
+                      <div
+                        className={`chart__bar ${d.isToday ? "is-today" : ""}`}
+                        style={{ height: `${Math.max(4, (d.minutes / maxMinutes) * 100)}%` }}
+                        title={`${d.label}: ${d.minutes} phút · ${d.xp} XP`}
+                      />
+                      <span className="chart__label">{d.label}</span>
+                    </div>
+                  ))}
+                </div>
+              </Panel>
+
+              <Panel>
+                <div className="panel__head">
+                  <h2 className="section-title" style={{ fontSize: "var(--step-2)" }}>
+                    Hoạt động gần đây
+                  </h2>
+                </div>
+                <div className="panel__body panel__body--flush">
+                  {activity.slice(0, 5).map((a) => (
+                    <div key={a.id} className="rowitem">
+                      <span className="rowitem__icon" aria-hidden="true">
+                        {a.kind === "badge" ? <Trophy size={16} /> : <Sparkles size={16} />}
+                      </span>
+                      <span className="grow stack gap-1">
+                        <span style={{ fontSize: "var(--step--1)" }}>{a.text}</span>
+                        {a.detail ? (
+                          <span style={{ color: "var(--text-3)", fontSize: "var(--step--2)" }}>
+                            {a.detail}
+                          </span>
+                        ) : null}
+                      </span>
+                      {a.xp ? <Chip tone="warn">+{a.xp} XP</Chip> : null}
+                    </div>
+                  ))}
+                </div>
+              </Panel>
+            </div>
+          </div>
+
+          {/* ---------- Shortcuts ---------- */}
+          <section>
+            <SectionHeader title="Lối tắt" sub="Chín khu vực học, mở thẳng từ đây." />
+            <div className="shortcuts">
+              {SHORTCUTS.map((s) => (
+                <Link key={s.href} href={s.href} className="shortcut">
+                  <span className={`shortcut__icon ${s.tone ? `shortcut__icon--${s.tone}` : ""}`}>
+                    <s.icon size={18} />
+                  </span>
+                  <span className="stack gap-1 grow">
+                    <span className="shortcut__title">{s.title}</span>
+                    <span className="shortcut__text">{s.text}</span>
+                  </span>
+                </Link>
               ))}
             </div>
-          )}
-        </section>
+          </section>
+        </>
+      )}
 
-        {/* Activity */}
-        <section aria-labelledby="activity-title">
-          <SectionHead icon={Star} title="Hoạt động gần đây" />
-          <Card className="divide-y divide-sp-line">
-            {recentActivity.map((a) => {
-              const Icon = activityIcons[a.kind];
-              return (
-                <div key={a.id} className="flex items-start gap-3 p-4">
-                  <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-sp-primary-soft text-sp-primary">
-                    <Icon size={16} aria-hidden="true" />
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-semibold leading-snug text-sp-ink">{a.text}</p>
-                    <p className="mt-0.5 text-xs text-sp-ink2">
-                      {a.meta} · {timeAgo(a.minutesAgo)}
-                    </p>
-                  </div>
-                </div>
-              );
-            })}
-          </Card>
-          <div className="mt-4">
-            <XpPill xp={xpInStore} />
+      {/* ---------- Review item drawer ---------- */}
+      <Drawer
+        open={openItem !== null}
+        onClose={() => setOpenItem(null)}
+        eyebrow={openItem ? KIND_LABEL[openItem.kind] : ""}
+        title={openItem?.prompt ?? ""}
+        subtitle={openItem ? `Hộp ${openItem.box} · ${boxInterval(openItem.box)}` : ""}
+        footer={
+          <>
+            <button
+              type="button"
+              className="btn btn--outline grow"
+              onClick={() => {
+                if (openItem) reviewMistake(openItem.id, false);
+                setOpenItem(null);
+              }}
+            >
+              Chưa nhớ
+            </button>
+            <button
+              type="button"
+              className="btn btn--primary grow"
+              onClick={() => {
+                if (openItem) {
+                  reviewMistake(openItem.id, true);
+                  awardXp(15, 1);
+                  toast("+15 XP", "success");
+                }
+                setOpenItem(null);
+              }}
+            >
+              Đã nhớ
+            </button>
+          </>
+        }
+      >
+        {openItem ? (
+          <div className="stack gap-5">
+            <div className="stack gap-2" style={{ textAlign: "center" }}>
+              <span className="han" style={{ fontSize: 64, lineHeight: 1.1 }}>
+                {openItem.hanzi}
+              </span>
+              <span className="pinyin" style={{ fontFamily: "var(--font-mono)", color: "var(--accent)" }}>
+                {openItem.pinyin}
+              </span>
+              <span className="vi-meaning" style={{ color: "var(--text-2)" }}>
+                {openItem.meaning}
+              </span>
+            </div>
+            <div className="stack gap-2">
+              <span className="eyebrow">Độ nhớ</span>
+              <Bar value={openItem.strength} tone="success" label="Độ nhớ" />
+            </div>
           </div>
-        </section>
-      </div>
+        ) : null}
+      </Drawer>
 
-      {/* Quick links */}
-      <section className="mt-8" aria-labelledby="quick-title">
-        <SectionHead
-          icon={Trophy}
-          title="Khám phá thêm"
-          desc="Mọi khu vực luyện tập đều cách đây một cú nhấp"
-        />
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {quickLinks.map((q) => {
-            const Icon = quickLinkIcons[q.icon];
-            return (
-              <Link
-                key={q.href}
-                href={q.href}
-                className="sp-press group flex flex-col rounded-3xl border border-sp-line bg-sp-card p-5 shadow-sp"
-              >
-                <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-sp-primary-soft text-sp-primary">
-                  <Icon size={21} aria-hidden="true" />
-                </span>
-                <h3 className="sp-font-head mt-3 text-base font-extrabold text-sp-ink">
-                  {q.title}
-                </h3>
-                <p className="mt-1 flex-1 text-sm leading-relaxed text-sp-ink2">{q.desc}</p>
-                <span className="sp-font-head mt-3 inline-flex items-center gap-1 text-sm font-bold text-sp-primary">
-                  {q.cta}
-                  <ChevronRight
-                    size={15}
-                    aria-hidden="true"
-                    className="transition-transform group-hover:translate-x-0.5"
-                  />
-                </span>
-              </Link>
-            );
-          })}
-        </div>
-      </section>
-
-      {/* Level detail drawer */}
-      {openLevel ? (
-        <div className="fixed inset-0 z-50" role="dialog" aria-modal="true" aria-label={`Chi tiết ${openLevel.label}`}>
-          <button
-            type="button"
-            aria-label="Đóng"
-            onClick={() => setOpenLevel(null)}
-            className="absolute inset-0 h-full w-full cursor-default bg-sp-ink/35 backdrop-blur-[2px]"
-          />
-          <div className="absolute inset-y-0 right-0 flex w-full flex-col bg-sp-card shadow-sp sm:w-[420px]">
-            <div className="flex items-center justify-between border-b border-sp-line px-5 py-4">
-              <h2 className="sp-font-head text-base font-extrabold text-sp-ink">
-                Chi tiết cấp độ
-              </h2>
+      {/* ---------- Quick review session ---------- */}
+      <Modal
+        open={sessionOpen}
+        onClose={() => setSessionOpen(false)}
+        title="Phiên ôn tập nhanh"
+        subtitle={
+          sessionItem
+            ? `Thẻ ${sessionIdx + 1}/${queue.length} · đúng ${sessionRight}`
+            : undefined
+        }
+        footer={
+          revealed ? (
+            <>
               <button
                 type="button"
-                onClick={() => setOpenLevel(null)}
-                aria-label="Đóng"
-                className="sp-press flex h-9 w-9 items-center justify-center rounded-xl text-sp-ink2 hover:bg-sp-locked-soft"
+                className="btn btn--outline grow"
+                onClick={() => answerSession(false)}
               >
-                <ChevronRight size={18} aria-hidden="true" className="rotate-180" />
+                Chưa nhớ
               </button>
-            </div>
-            <div className="sp-scroll flex-1 overflow-y-auto px-5 py-5">
-              <LevelDetail level={openLevel} />
-            </div>
+              <button
+                type="button"
+                className="btn btn--primary grow"
+                onClick={() => answerSession(true)}
+              >
+                Đã nhớ (+15 XP)
+              </button>
+            </>
+          ) : (
+            <button
+              type="button"
+              className="btn btn--primary btn--block"
+              onClick={() => setRevealed(true)}
+            >
+              Xem đáp án
+            </button>
+          )
+        }
+      >
+        {sessionItem ? (
+          <div className="stack gap-4" style={{ textAlign: "center", padding: "var(--sp-6) 0" }}>
+            <span className="han" style={{ fontSize: 72, lineHeight: 1.1 }}>
+              {sessionItem.hanzi}
+            </span>
+            {revealed ? (
+              <>
+                <span
+                  className="pinyin"
+                  style={{ fontFamily: "var(--font-mono)", color: "var(--accent)", fontSize: "var(--step-2)" }}
+                >
+                  {sessionItem.pinyin}
+                </span>
+                <span className="vi-meaning" style={{ color: "var(--text-2)" }}>
+                  {sessionItem.meaning}
+                </span>
+              </>
+            ) : (
+              <span style={{ color: "var(--text-3)" }}>Nhớ nghĩa rồi bấm «Xem đáp án»</span>
+            )}
           </div>
-        </div>
-      ) : null}
-    </div>
+        ) : null}
+      </Modal>
+    </>
   );
 }

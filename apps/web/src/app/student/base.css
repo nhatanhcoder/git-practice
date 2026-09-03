@@ -1,0 +1,219 @@
+/* ============================================================
+   Student base — resets scoped to .student-root, plus the two
+   infrastructure classes the whole area depends on:
+
+     .han  every Chinese character            (--font-han)
+     .num  every number, so tables do not jump (--font-mono)
+
+   and the global Pinyin / meaning toggle. That toggle is pure
+   CSS driven off two data attributes on `.student-root`; no page
+   component knows about it. Distilled from the prototype's
+   base.css — see HANLU_PROTOTYPE_DISTILLED.md §4.1.
+   ============================================================ */
+
+.student-root {
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-ui);
+  font-size: var(--step-0);
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+.student-root h1,
+.student-root h2,
+.student-root h3,
+.student-root h4 {
+  font-family: var(--font-display);
+  font-weight: 650;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  margin: 0;
+}
+
+.student-root p {
+  margin: 0;
+}
+
+.student-root ul,
+.student-root ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.student-root button,
+.student-root input,
+.student-root select,
+.student-root textarea {
+  font: inherit;
+  color: inherit;
+}
+
+.student-root button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+}
+
+.student-root a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.student-root svg {
+  display: block;
+  flex: none;
+}
+
+.student-root img {
+  max-width: 100%;
+  display: block;
+}
+
+.student-root hr {
+  border: none;
+  border-top: 1px solid var(--line-soft);
+  margin: 0;
+}
+
+.student-root :focus {
+  outline: none;
+}
+
+.student-root :focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+  border-radius: var(--r-xs);
+}
+
+/* ---------- Skip link ---------- */
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 200;
+  padding: var(--sp-3) var(--sp-5);
+  background: var(--accent);
+  color: var(--on-accent);
+  border-radius: 0 0 var(--r-md) 0;
+  font-weight: 600;
+}
+
+.skip-link:focus-visible {
+  left: 0;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ---------- The two infrastructure classes ---------- */
+.han {
+  font-family: var(--font-han);
+}
+
+.num {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+/* ---------- Layout atoms ---------- */
+.stack {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.gap-1 { gap: var(--sp-1); }
+.gap-2 { gap: var(--sp-2); }
+.gap-3 { gap: var(--sp-3); }
+.gap-4 { gap: var(--sp-4); }
+.gap-5 { gap: var(--sp-5); }
+.gap-6 { gap: var(--sp-6); }
+
+.grow { flex: 1 1 auto; min-width: 0; }
+.wrap { flex-wrap: wrap; }
+
+.truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ---------- Global Pinyin / meaning toggle ----------
+   One data attribute, no per-page JavaScript. Any new element that
+   shows pinyin or a Vietnamese gloss joins this list — that is the
+   whole contract. */
+.student-root[data-show-pinyin="false"] .pinyin,
+.student-root[data-show-pinyin="false"] .charcard__pinyin,
+.student-root[data-show-pinyin="false"] .wordrow__pinyin,
+.student-root[data-show-pinyin="false"] .gcard__pinyin,
+.student-root[data-show-pinyin="false"] .drawer-hanzi__pinyin,
+.student-root[data-show-pinyin="false"] .mistake-source__pinyin,
+.student-root[data-show-pinyin="false"] .msg__pinyin,
+.student-root[data-show-pinyin="false"] .vocab__pinyin,
+.student-root[data-show-pinyin="false"] .phrase__pinyin,
+.student-root[data-show-pinyin="false"] .script__pinyin,
+.student-root[data-show-pinyin="false"] .passage__pinyin,
+.student-root[data-show-pinyin="false"] .resultq__pinyin,
+.student-root[data-show-pinyin="false"] .verdict__pinyin,
+.student-root[data-show-pinyin="false"] .radical__pinyin,
+.student-root[data-show-pinyin="false"] .practice__pinyin,
+.student-root[data-show-pinyin="false"] .hero__pinyin,
+.student-root[data-show-pinyin="false"] .dialogue__pinyin,
+.student-root[data-show-pinyin="false"] .char-hero__pinyin,
+.student-root[data-show-pinyin="false"] .flashcard__pinyin,
+.student-root[data-show-pinyin="false"] ruby rt {
+  visibility: hidden;
+}
+
+.student-root[data-show-meaning="false"] .vi-meaning,
+.student-root[data-show-meaning="false"] .charcard__vi,
+.student-root[data-show-meaning="false"] .wordrow__vi,
+.student-root[data-show-meaning="false"] .gcard__vi,
+.student-root[data-show-meaning="false"] .drawer-hanzi__vi,
+.student-root[data-show-meaning="false"] .msg__vi,
+.student-root[data-show-meaning="false"] .correction__vi,
+.student-root[data-show-meaning="false"] .vocab__vi,
+.student-root[data-show-meaning="false"] .phrase__vi,
+.student-root[data-show-meaning="false"] .mistake-source__vi,
+.student-root[data-show-meaning="false"] .dialogue__vi,
+.student-root[data-show-meaning="false"] .script__vi,
+.student-root[data-show-meaning="false"] .passage__vi,
+.student-root[data-show-meaning="false"] .radical__vi,
+.student-root[data-show-meaning="false"] .practice__vi,
+.student-root[data-show-meaning="false"] .transcript__vi,
+.student-root[data-show-meaning="false"] .char-hero__vi,
+.student-root[data-show-meaning="false"] .flashcard__vi {
+  visibility: hidden;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .student-root *,
+  .student-root *::before,
+  .student-root *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
