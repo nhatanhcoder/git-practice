@@ -279,16 +279,47 @@ export function LandingView() {
   const [theme, setTheme] = useState<"dark" | "light">("dark");
   useEffect(() => {
     try {
-      const saved = window.localStorage.getItem("hanlo-theme");
+      const saved = window.localStorage.getItem("hanlu-theme") || window.localStorage.getItem("hanlo-theme");
       if (saved === "light") setTheme("light");
     } catch {
       /* prototype: ignore storage errors */
     }
   }, []);
+
+  /**
+   * Keep <html> and <body> backgrounds synced with the theme while mounted,
+   * preventing the white background from globals.css leaking through.
+   */
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    const html = document.documentElement;
+    const body = document.body;
+    const previous = {
+      htmlBg: html.style.backgroundColor,
+      bodyBg: body.style.backgroundColor,
+      themeAttr: html.getAttribute("data-theme"),
+    };
+    const ink = theme === "light" ? "#f6f2ea" : "#0a0d13";
+    html.style.backgroundColor = ink;
+    body.style.backgroundColor = ink;
+    html.setAttribute("data-theme", theme);
+
+    return () => {
+      html.style.backgroundColor = previous.htmlBg;
+      body.style.backgroundColor = previous.bodyBg;
+      if (previous.themeAttr) {
+        html.setAttribute("data-theme", previous.themeAttr);
+      } else {
+        html.removeAttribute("data-theme");
+      }
+    };
+  }, [theme]);
+
   function toggleTheme() {
     setTheme((t) => {
       const nextTheme = t === "dark" ? "light" : "dark";
       try {
+        window.localStorage.setItem("hanlu-theme", nextTheme);
         window.localStorage.setItem("hanlo-theme", nextTheme);
       } catch {
         /* prototype: ignore storage errors */
