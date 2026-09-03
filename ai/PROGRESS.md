@@ -47,19 +47,20 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
 ## Sprint 1 — Auth & Users
 - ✅ F1.1 Account registration (status `pending`, bcrypt cost 12)
 - ✅ F1.2 Login (JWT access 15min + refresh 7d, httpOnly cookie)
-- ⬜ F1.3 Account approval (Admin)
+- ✅ F1.3 Account approval (Admin: PATCH /admin/users/:id/approve, suspend, activate)
 - ✅ F1.4 Profile & Admin Users FE integration (connected apps/web/src/app/admin/users, [userId], profile to real /api/v1/admin/users and /api/v1/auth/me)
 - ✅ Refresh Token Rotation + Replay Attack detection (PROJECT_KNOWLEDGE.md 4.1)
 - ✅ Custom decorators `@CurrentUser`, `@Roles`, `@Public`
 - **DoD**: Register → Admin approves → login lands on the correct dashboard per role
 
 ## Sprint 2 — Classes & Enrollment
-- ⬜ F2.1 Create class (unique 8-character enrollment code)
-- ⬜ F2.2 Edit class
+- ✅ F2.1 Create class (unique 8-character enrollment code)
+- ✅ F2.2 Edit class
 - ⬜ F2.3 Join class
 - ⬜ F2.4 Leave class
-- ⬜ F2.5 View student list in a class
+- ✅ F2.5 View student list in a class
 - ⬜ F2.6 View Student's class list
+- ✅ Teacher Lessons API & Admin Classes API (SCOPE-01 Option A complete)
 - 🔶 (claude · 2026-09-01) **Teacher Page Contracts for this sprint's slice** —
   `/teacher`, `/teacher/classes`, `/teacher/classes/[classId]`,
   `/teacher/classes/[classId]/lessons` contracted (not built). See

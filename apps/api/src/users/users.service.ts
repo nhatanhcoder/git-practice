@@ -72,6 +72,57 @@ export class UsersService {
     return toDetail(row);
   }
 
+  async approve(id: string): Promise<AdminUserDetail> {
+    if (!UUID.test(id)) {
+      throw new AppException(ErrorCode.VALIDATION_ERROR, 'id không đúng định dạng uuid');
+    }
+    const user = await this.prisma.user.findUnique({ where: { id } });
+    if (!user) {
+      throw new AppException(ErrorCode.USER_NOT_FOUND, 'Không tìm thấy người dùng');
+    }
+    if (user.status === 'active') {
+      throw new AppException(ErrorCode.USER_ALREADY_APPROVED, 'Tài khoản đã được phê duyệt trước đó');
+    }
+    const updated = await this.prisma.user.update({
+      where: { id },
+      data: { status: 'active' },
+      select: DETAIL_SELECT,
+    });
+    return toDetail(updated);
+  }
+
+  async suspend(id: string): Promise<AdminUserDetail> {
+    if (!UUID.test(id)) {
+      throw new AppException(ErrorCode.VALIDATION_ERROR, 'id không đúng định dạng uuid');
+    }
+    const user = await this.prisma.user.findUnique({ where: { id } });
+    if (!user) {
+      throw new AppException(ErrorCode.USER_NOT_FOUND, 'Không tìm thấy người dùng');
+    }
+    const updated = await this.prisma.user.update({
+      where: { id },
+      data: { status: 'suspended' },
+      select: DETAIL_SELECT,
+    });
+    return toDetail(updated);
+  }
+
+  async activate(id: string): Promise<AdminUserDetail> {
+    if (!UUID.test(id)) {
+      throw new AppException(ErrorCode.VALIDATION_ERROR, 'id không đúng định dạng uuid');
+    }
+    const user = await this.prisma.user.findUnique({ where: { id } });
+    if (!user) {
+      throw new AppException(ErrorCode.USER_NOT_FOUND, 'Không tìm thấy người dùng');
+    }
+    const updated = await this.prisma.user.update({
+      where: { id },
+      data: { status: 'active' },
+      select: DETAIL_SELECT,
+    });
+    return toDetail(updated);
+  }
+
   private buildWhere(query: ListUsersQuery): Prisma.UserWhereInput {
     const where: Prisma.UserWhereInput = {};
     if (query.role) where.role = query.role;
@@ -89,3 +140,4 @@ export class UsersService {
     return where;
   }
 }
+

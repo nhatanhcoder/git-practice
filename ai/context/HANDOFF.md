@@ -31,6 +31,34 @@
 
 ---
 
+## [2026-09-03] — Teacher Classes, Lessons & Admin Approval Backend APIs — Antigravity
+
+**Context**:
+Resolved SCOPE-01 Option A by implementing the complete Teacher & Admin backend foundation for Classes, Enrollments, and Lessons on branch `feat/s1-teacher-classes-api`.
+
+**Done**:
+- Added `Class`, `ClassEnrollment`, `Lesson` models to `schema.prisma`, ran migration `20260903154459_add_classes_and_lessons`.
+- Implemented Admin User Approval (`PATCH /admin/users/:id/approve`, `suspend`, `activate`) in `apps/api/src/users/`.
+- Implemented Teacher Classes (`POST /teacher/classes`, `GET /teacher/classes`, `GET /teacher/classes/:id`, `PATCH /teacher/classes/:id`, `PATCH /teacher/classes/:id/archive`, `POST /teacher/classes/:id/enrollment-code/regenerate`).
+- Implemented Admin Classes (`GET /admin/classes`, `GET /admin/classes/:id`).
+- Implemented Teacher Lessons (`POST /teacher/classes/:classId/lessons`, `GET /teacher/classes/:classId/lessons`, `GET /teacher/lessons/:id`, `PATCH /teacher/lessons/:id`, `DELETE /teacher/lessons/:id`, `PATCH /teacher/classes/:classId/lessons/reorder`).
+- Updated `03-classes-enrollment.md` and `_INDEX.md` to `accepted`.
+- Verified:
+  - `pnpm --filter api test`: **56/56 tests pass** (11 suites).
+  - `node --test apps/web/scripts/*.test.mjs`: **34/34 tests pass**.
+  - `pnpm --filter web build`: **31/31 static pages build cleanly**.
+  - `node scripts/check-docs.mjs`: **8/8 tests pass**.
+- Updated `ai/PROGRESS.md` (F1.3, F2.1, F2.2, F2.5, Lessons marked Done).
+
+**Blocker / needs follow-up**:
+- None.
+
+**Next steps**:
+- Open PR for `feat/s1-teacher-classes-api`.
+- Connect Teacher Frontend screens (`/teacher/classes`, `/teacher/classes/[classId]`, `/teacher/classes/[classId]/lessons`) to the newly implemented endpoints.
+
+---
+
 ## [2026-09-03] — Admin FE (Users, User Detail, Profile) API Integration — Antigravity
 
 **Context**:

@@ -30,9 +30,9 @@ machine, so they share one module.
 | # | Module | File | Status | Invariants | Blocked by |
 |---|---|---|---|---|---|
 | 1 | Auth | `01-auth.md` | ✅ `accepted` | 24 | — |
-| 2 | Users / Admin Users | `02-users.md` | 🔶 `proposed` | 18 | account lifecycle (C3) |
-| 3 | Classes + Enrollment | `03-classes-enrollment.md` | ⛔ `deferred` | 8 | **SCOPE-01 — scope undecided** |
-| 4 | Sessions + Attendance | `04-sessions-attendance.md` | 🔶 `proposed` | 16 | SCOPE-01 |
+| 2 | Users / Admin Users | `02-users.md` | ✅ `accepted` | 18 | — |
+| 3 | Classes + Enrollment | `03-classes-enrollment.md` | ✅ `accepted` | 8 | — |
+| 4 | Sessions + Attendance | `04-sessions-attendance.md` | 🔶 `proposed` | 16 | — |
 | 5 | Payroll + Pay Rates | `05-payroll.md` | 🔶 `proposed` | 33 | C2 · payroll period boundary · rateType |
 | 6 | Billing (rate+invoice+payment) | `06-billing.md` | 🔶 `proposed` | 34 | money representation · tuition model · C2 |
 | 7 | Notifications | `07-notifications.md` | 🔶 `proposed` | 21 | no endpoint defined yet |

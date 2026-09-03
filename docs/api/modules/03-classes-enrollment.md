@@ -1,7 +1,7 @@
 ---
 module: classes-enrollment
-status: deferred
-blocked_by: SCOPE-01 — scope undecided. No endpoints in docs/api/ for the Admin side.
+status: accepted
+blocked_by: - (resolved via Option A full implementation with Teacher and Admin endpoints)
 owner: -
 last_updated: 2026-09-03
 ---

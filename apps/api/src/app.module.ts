@@ -8,6 +8,8 @@ import { HealthController } from './health/health.controller';
 import { PrismaModule } from './prisma/prisma.module';
 import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
+import { ClassesModule } from './classes/classes.module';
+import { LessonsModule } from './lessons/lessons.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
 
@@ -20,6 +22,8 @@ import { RolesGuard } from './common/guards/roles.guard';
 
     PrismaModule,
     AuthModule,
+    ClassesModule,
+    LessonsModule,
 
     // Global so any guard can verify an access token without each feature module
     // re-registering it. Only verification lives here — nothing issues tokens yet:
