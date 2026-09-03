@@ -11,7 +11,15 @@ import { PrismaModule } from './prisma/prisma.module';
       isGlobal: true,
       // One .env at the repo root — the same file docker-compose reads, so the
       // container's credentials and the API's DATABASE_URL cannot drift apart.
-      envFilePath: join(__dirname, '../../../.env'),
+      //
+      // Resolved from cwd, not __dirname. `tsconfig` compiles `scripts/` and
+      // `prisma/` alongside `src/`, so TypeScript keeps the common root at
+      // `apps/api` and emits `dist/src/app.module.js` — one level deeper than the
+      // `__dirname`-relative path assumed. It silently pointed at `apps/.env`,
+      // which does not exist, and the app died on "MONGODB_URI is missing" with a
+      // correctly filled .env sitting at the root. cwd is `apps/api` for both
+      // `nest start` and `node dist/src/main.js`, so this holds either way.
+      envFilePath: join(process.cwd(), '../../.env'),
     }),
 
     PrismaModule,
