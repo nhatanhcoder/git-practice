@@ -63,6 +63,9 @@ Production dùng SM-2 trên `UserFlashcardState`. UI có bốn lựa chọn, án
 
 Quality 1–2 không có nút riêng nhưng vẫn là giá trị hợp lệ nội bộ khi import hoặc hiệu chỉnh.
 Leitner 5 hộp trong FE mockup không phải contract production và phải được thay trước khi nối API.
+SM-2 dùng một công thức duy nhất trong `docs/flows/FLOW_SRS_REVIEW.md`: rating dưới 3 reset
+repetitions/interval, còn ease factor được tính lại bằng công thức SM-2 cho mọi rating và chặn
+đáy ở 1.3. Không dùng các multiplier riêng theo từng nút.
 
 ### 4. Gamification và learning modules là domain chính thức
 

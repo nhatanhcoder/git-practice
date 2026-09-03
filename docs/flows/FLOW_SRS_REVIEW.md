@@ -11,15 +11,16 @@ SM-2 schedules reviews based on the learner's **recall quality**.
 Better recall → longer interval → less studying but longer retention.
 
 ```
-Rating  Meaning     Action
-──────────────────────────────
-  0     Again       Completely forgotten — review again today
-  1     Again       Vaguely remembered — review again today
-  2     Hard        Remembered but with difficulty — short interval
-  3     Good        Remembered correctly, with slight hesitation
-  4     Easy        Remembered easily
-  5     Easy!       Remembered very easily and quickly
+UI rating  Quality  Action
+──────────────────────────────────
+Again          0   Completely forgotten — reset and review soon
+Hard           3   Recalled with difficulty — successful but shorter growth
+Good           4   Recalled correctly
+Easy           5   Recalled immediately — longest growth
 ```
+
+Quality 1–2 remain valid internal/import values but have no separate UI button. This four-button
+mapping is accepted in ADR-016.
 
 ---
 
@@ -52,7 +53,6 @@ export function calculateSM2(input: SM2Input): SM2Output {
     // Failed: reset
     newRepetitions = 0;
     newInterval = 1;
-    newEaseFactor = easeFactor;  // EF is not reduced on failure
   } else {
     // Success
     newRepetitions = repetitions + 1;
@@ -65,10 +65,11 @@ export function calculateSM2(input: SM2Input): SM2Output {
       newInterval = Math.round(interval * easeFactor);
     }
 
-    // Update EF
-    newEaseFactor = easeFactor + (0.1 - (5 - rating) * (0.08 + (5 - rating) * 0.02));
-    newEaseFactor = Math.max(1.3, newEaseFactor);  // EF never drops below 1.3
   }
+
+  // Canonical SM-2: update EF for every rating, including a failed recall.
+  newEaseFactor = easeFactor + (0.1 - (5 - rating) * (0.08 + (5 - rating) * 0.02));
+  newEaseFactor = Math.max(1.3, newEaseFactor);  // EF never drops below 1.3
 
   const nextReviewDate = new Date();
   nextReviewDate.setDate(nextReviewDate.getDate() + newInterval);
@@ -83,11 +84,10 @@ export function calculateSM2(input: SM2Input): SM2Output {
 
 | Rating | EF before | EF after | Change |
 |--------|---------|--------|---------|
-| 0 (Again) | 2.5 | 2.5 | ±0 (no EF penalty) |
-| 2 (Hard) | 2.5 | 2.18 | -0.32 |
-| 3 (Good) | 2.5 | 2.36 | -0.14 |
-| 4 (Easy) | 2.5 | 2.5 | ±0 |
-| 5 (Easy!) | 2.5 | 2.6 | +0.1 |
+| 0 (Again) | 2.5 | 1.7 | -0.8 |
+| 3 (Hard) | 2.5 | 2.36 | -0.14 |
+| 4 (Good) | 2.5 | 2.5 | ±0 |
+| 5 (Easy) | 2.5 | 2.6 | +0.1 |
 
 ---
 

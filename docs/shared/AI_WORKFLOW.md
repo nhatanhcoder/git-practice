@@ -185,7 +185,8 @@ SM-2 Algorithm:
 - repetitions: số lần đã ôn thành công liên tiếp
 - interval: ngày đến lần review tiếp theo
 
-Rating: 0-5 (Again=0, Hard=2, Good=3, Easy=5)
+UI rating map (ADR-016): Again=0, Hard=3, Good=4, Easy=5
+Quality 1-2 remain internal/import values without dedicated UI buttons.
 
 [REQUEST]
 Implement SM2Algorithm.calculate(rating, repetitions, interval, easeFactor):

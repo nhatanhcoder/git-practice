@@ -35,13 +35,12 @@
 ## Business Rules
 
 - Created on first interaction (review or manual save)
-- SM-2 update on each rating:
-  - **Again**: `repetitionsCount = 0`, `intervalDays = 1`, `easeFactor -= 0.2`
-  - **Hard**: `intervalDays × 1.2`, `easeFactor -= 0.15`
-  - **Good**: `intervalDays × easeFactor`, `easeFactor` unchanged
-  - **Easy**: `intervalDays × easeFactor × 1.3`, `easeFactor += 0.15`
-- `easeFactor` clamped to minimum 1.3
+- Production scheduling uses the single SM-2 formula in `FLOW_SRS_REVIEW.md`
+- UI ratings map to quality: **Again=0, Hard=3, Good=4, Easy=5** (ADR-016)
+- Quality below 3 resets `repetitionsCount = 0` and `intervalDays = 1`
+- Every rating recalculates `easeFactor` with the SM-2 formula; minimum 1.3
+- Successful intervals are 1 day, then 6 days, then `round(previousInterval × easeFactor)`
 - Due cards = `nextReviewDate <= now` for the user
 - `isSavedByUser = true` marks cards added via S-SRS-7 (personal study list)
 
-> 📄 Full SM-2 formula: docs/architecture/SRS_ALGORITHM.md
+> 📄 Full SM-2 formula: `docs/flows/FLOW_SRS_REVIEW.md`

@@ -17,7 +17,7 @@
 
 | Term | Definition |
 |------|-----------|
-| **boxNumber** | The "box" index in SRS (Leitner system). Box 1 = reviewed soonest, Box 5+ = well memorised. |
+| **boxNumber** | Legacy/mock-only Leitner box used by the current Student FE. Not part of the production SRS contract after ADR-016. |
 
 ## C
 
@@ -117,7 +117,7 @@
 
 | Term | Definition |
 |------|-----------|
-| **UserFlashcardState** | The SRS state for one user × one flashcard. Contains: boxNumber, easeFactor, repetitionsCount, nextReviewDate. |
+| **UserFlashcardState** | The SM-2 state for one user × one flashcard. Contains easeFactor, repetitionsCount, intervalDays and nextReviewDate; no production `boxNumber`. |
 
 ## V
 
