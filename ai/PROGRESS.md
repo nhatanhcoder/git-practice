@@ -240,6 +240,19 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
 _(work done outside sprint order. Recorded so another agent does not rebuild it, and so
 nobody mistakes a mock for a finished feature. See `working-rules.md` § Definition of Done.)_
 
+- ✅ (opencode · 2026-09-03) **Admin API review + test plan + independent verification** —
+      cross-reviewed the admin-area backend on `feat/student-hanlu-ui` @ `5e70873`
+      (foundation + auth + admin users + lifecycle, written by antigravity) against
+      `01-auth.md` (accepted) and `02-users.md` (proposed). Output:
+      `docs/testing/TEST_PLAN_ADMIN_API.md` (findings, 24+18 invariant coverage matrices,
+      prioritized backlog, run log) + `docs/testing/_INDEX.md`. **3 consecutive runs 63/63,
+      0 fail** from a cold worktree (HANDOFF said 64 — actual 63). Filed: **API-011**
+      (lifecycle accepts invalid source states — High), **API-012** (replay error code),
+      **API-013** (no account notifications), **API-014** (unspecced admin class-read
+      endpoints), **DOC-015** (TEST_STRATEGY.md stale). Claim-before-code was skipped (work
+      was read-only review + docs; noted in the session file). Branch
+      `docs/admin-api-test-plan`.
+
 - 🔶 **First four Student mockup pages BUILT** — 2026-08-28 (opencode, mockup mode per
       `docs/prompts/student-product/`). `apps/web/src/app/student/**`:
       `/student` (dashboard: continue-learning, XP/streak/daily-goal, HSK 1–9 strip + level

@@ -835,6 +835,109 @@ repo**, since the files are missing.
 
 ---
 
+> Numbering note (2026-09-03): API-008/API-009/DOC-013 live on the unmerged
+> `feat/student-hanlu-ui` branch; API-010/DOC-014 on the open teacher-specs PR (#29). The
+> five entries below were assigned against that full picture — no ID is reused.
+
+### [API-011] Admin user lifecycle transitions accept invalid source states
+
+**Severity**: High
+**Sprint**: Backend Phase 2
+**Status**: Open — found by the 2026-09-03 admin API review
+
+**Description**: `apps/api/src/users/users.service.ts` (branch `feat/student-hanlu-ui` @
+`5e70873`) violates the `02-users.md` §6 state machine:
+
+- `approve` blocks only `active` → **`suspended → active` via approve succeeds** (spec §15:
+  "approve on suspended → 409, DB unchanged"; the only valid suspended→active path is
+  `activate`).
+- `suspend` has **no source check** → `pending → suspended` succeeds. This is the worst
+  branch: it hands Admin a way to remove pending accounts from the approval queue that the
+  spec explicitly forbids (interacts with the C3 "no rejected state" story).
+- `activate` has **no source check** → `pending → active` (bypasses approve semantics) and
+  `active → active` (silent no-op 200) both succeed; spec wants conflicts.
+- Concurrency (INV-USERS-15): transitions are read-then-write with no conditional
+  `UPDATE … WHERE status = <expected>` — two concurrent approves both return 200.
+
+The lifecycle e2e suite covers only the happy paths + approve-on-active, so it cannot catch
+any of this.
+
+**Fix Plan**: conditional updates on all three transitions (`UPDATE … WHERE id = :id AND
+status = :expected`, row-count 0 → conflict), which also solves the concurrency case.
+**Blocked on the registry**: there is no code for "suspend a pending user" /
+"activate an active user" — only `USER_ALREADY_APPROVED` exists. Needs the same
+owner sign-off treatment as API-010.
+
+---
+
+### [API-012] Refresh-token replay returns the wrong error code
+
+**Severity**: Low
+**Sprint**: Sprint 1
+**Status**: Open — found by the 2026-09-03 admin API review
+
+**Description**: `01-auth.md` INV-AUTH-11 and `API_ERROR_CODES.md` both say replay → `401
+AUTH_REFRESH_INVALID`. `auth.service.ts` throws `AUTH_TOKEN_INVALID` instead.
+`AUTH_REFRESH_INVALID` is defined in `error-codes.ts` and never used. The e2e test asserts
+the code's behavior, not the spec's.
+
+**Fix Plan**: throw `AUTH_REFRESH_INVALID` in the replay branch (and the expired-branch
+naming stays as is per registry), update the test, verify the family is actually dead in the
+DB after replay (INV-AUTH-12 — currently untested).
+
+---
+
+### [API-013] No `account_approved` / `account_suspended` notifications on Admin transitions
+
+**Severity**: Medium
+**Sprint**: Backend Phase 2
+**Status**: Open — found by the 2026-09-03 admin API review
+
+**Description**: `02-users.md` INV-USERS-13/14 require exactly one Notification per
+approve/suspend, written in the same transaction as the status change. Nothing is implemented
+— the `Notification` table does not exist in `prisma/schema.prisma` at all (module 07 is
+`proposed`). Teachers/students are not told when their account is approved or locked.
+
+**Fix Plan**: needs the `Notification` model + `referenceType: 'user'` (the enum currently
+lacks it — see `02-users.md` §16), then the in-transaction insert. Test rows already written
+in the spec's §15.
+
+---
+
+### [API-014] Admin class-read endpoints exist in code but in no doc
+
+**Severity**: Medium
+**Sprint**: Backend Phase 2
+**Status**: Open — found by the 2026-09-03 admin API review
+
+**Description**: `apps/api/src/classes/admin-classes.controller.ts` (branch
+`feat/student-hanlu-ui`) adds `GET /api/v1/admin/classes` (list **all** classes system-wide)
+and `GET /api/v1/admin/classes/:id` (any class + roster). `API_ADMIN.md` has no Class
+section. `RBAC_MATRIX.md` says Admin ❌ on Class read; `03-classes-enrollment.md` §5 says
+Admin 👁️ read "display only in session/payroll" — the code is a **superset of both**
+readings (a full management-grade list endpoint). A contract-first violation: endpoints
+shipped before docs, and they side with neither side of an open conflict.
+
+**Fix Plan**: owner decides the Admin class-read scope; then either document the endpoints
+in `API_ADMIN.md` + RBAC matrix, or remove them. Do not leave code as the tiebreaker.
+
+---
+
+### [DOC-015] `TEST_STRATEGY.md` is stale on tooling and envelope
+
+**Severity**: Low
+**Status**: Open — found by the 2026-09-03 admin API review
+
+**Description**: `docs/testing/TEST_STRATEGY.md` says Jest + Supertest (the implementation
+uses `node:test` + `nest build` + `dotenv`), its Supertest example asserts `res.body.success`
+(the flat envelope forbids a `success` flag — `API_CONVENTIONS.md`), and it lists `pnpm
+test:watch` / `test:cov` / `test:e2e` scripts that do not exist in any `package.json`.
+
+**Fix Plan**: rewrite §2/§3/§6 against the actual mechanism (see
+`docs/testing/TEST_PLAN_ADMIN_API.md` §1 for the interim authoritative version).
+
+---
+
 ## Resolved Issues
 
 - **`GIT-002`** `.idea/` tracked in git — resolved, verified 2026-08-25 and 2026-09-01.
