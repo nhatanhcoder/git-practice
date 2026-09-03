@@ -170,9 +170,13 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
 > Added 2026-09-01 from `PROJECT_KNOWLEDGE.md` §8. **Position in the sprint order is a
 > placeholder** — it has never been agreed, and it does not appear in `SPRINT_PLAN.md`.
 - ⛔ **BLOCKED — DOC-011**: the 10 JSON source files (`backend/data/content/`) are **not in this
-      repo**. Nothing below can be specified, let alone built, until they are located
-- ⛔ **BLOCKED — SCOPE-02**: F9–F16 assume single-user self-study; the rest of this plan assumes a
-      multi-role LMS. Two different products
+      repo**. Located outside the repo at `D:\PersonalProject\Chinese UI test\ui-claude\backend\data\content`;
+      validate and choose an import/seed strategy before implementation
+- ✅ **SCOPE-02 resolved 2026-09-03 — ADR-016**: one product with class-learning and self-study
+      lanes. Teachers may assign catalog units as supplemental practice; official grades still
+      require Assignment/Attempt
+- ✅ **SRS decision — ADR-016**: production uses SM-2 (Again=0, Hard=3, Good=4, Easy=5), not
+      the five-box Leitner behavior in the FE mockup
 - ⬜ Content loader: read + validate the JSON files, schema guards
 - ⬜ F9 Pronunciation foundation (pinyin table, tones, tone sandhi, 214 radicals, 4 PDFs)
 - ⬜ F10 Grammar points (browse, auto-generate exercises from `tokens`, progress)
@@ -182,10 +186,11 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
 - ⬜ F14 Workplace roleplay (6 scenarios, multi-turn, keyword scoring)
 - ⬜ F15 Learning path (2 curricula, topic map, side quests, 3 bosses)
 - ⬜ F16 Gamification (XP, 9 named levels, 6 imperial-exam ranks, streaks, 20 badges, leaderboard)
-- ⬜ 7 new Postgres tables per `PROJECT_KNOWLEDGE.md` §8.9 + Prisma migration
+- ⬜ Contract-first entity/module design for catalog, personal progress, supplemental practice
+      and gamification; the 7 Postgres tables in `PROJECT_KNOWLEDGE.md` §8.9 remain proposals
 - ⬜ Widen the `skill` / `skillType` enums 3 → 7 (`grammar`, `character`, `speaking`,
       `pronunciation`) — affects `Assignment.skillType`, `SkillScore.skill`, `Question.skill`
-- ⬜ Answer the 5 open questions in `PROJECT_KNOWLEDGE.md` §8.10
+- ⬜ Answer the 4 remaining open questions in `PROJECT_KNOWLEDGE.md` §8.10; class relationship resolved
 - **DoD**: a learner can go pronunciation → grammar → character → Lego → mock exam, with
       XP/streak/badges updating correctly
 
