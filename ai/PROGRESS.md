@@ -431,16 +431,16 @@ replaces coverage %.
   (*proposed, not agreed*); `API-006` route convention settled **role-prefixed** by the owner and
   applied to `docs/api/modules/03-classes-enrollment.md`. Full gap map in
   `docs/api/modules/_INDEX.md` § 11.
-- ⬜ Teacher module specs — **5 modules, none exist**, suggested dependency order:
+- 🔶 (opencode · 2026-09-03) Teacher module specs — **5 modules, none exist**, suggested dependency order:
   Classes+Lessons → Question Bank → Assignments → Attempts+Grading → Sessions (teacher side) →
   Income. Two things to settle first: Classes+Lessons inherits **SCOPE-01** (module 03 is
   deferred on it), and **Question Bank is MongoDB** — the 16-section template's §7 transaction
   boundary and §12 migration assume SQL and need rethinking, plus `DEBT-001` (no cross-DB
   transactions) applies directly since Question lives in Mongo and Assignment in Postgres
-- ⬜ Teacher-side Sessions transitions (`scheduled → in_progress → completed_pending`) — module 04
+- 🔶 (opencode · 2026-09-03) Teacher-side Sessions transitions (`scheduled → in_progress → completed_pending`) — module 04
   specs only the Admin approve/reject half. This is the same hole `API-004` names: without the
   teacher side, `GET /admin/sessions/pending` is permanently empty
-- ⬜ Lesson row in `RBAC_MATRIX.md` / `PERMISSIONS_TEACHER.md` — needs owner approval (RBAC)
+- 🔶 (opencode · 2026-09-03 · in teacher spec set, pending owner approval) Lesson row in `RBAC_MATRIX.md` / `PERMISSIONS_TEACHER.md` — needs owner approval (RBAC)
 
 ### Backend — not started
 
