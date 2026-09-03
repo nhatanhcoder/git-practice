@@ -1,7 +1,7 @@
 # 🎓 Student — Feature Specification
 
 > **Role**: Student (User)  
-> **Scope**: Combined class learning + self-study, assignments, SRS, learning catalog, gamification, progress, billing  
+> **Scope**: Combined class learning + self-study, assignments, SRS, learning catalog, gamification, progress, billing
 > **Tech**: Next.js 14 (App Router) + NestJS + PostgreSQL (Prisma) + MongoDB
 > **Product decision**: [ADR-016](../../shared/decisions/016-combined-student-learning-domain.md)
 

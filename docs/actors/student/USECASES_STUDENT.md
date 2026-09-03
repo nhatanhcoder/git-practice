@@ -121,7 +121,7 @@
 
 ## UC-S-008: Continue a personal self-study path
 
-**Actor**: Student  
+**Actor**: Student
 **Precondition**: Logged in, account active
 
 **Main Flow**:
@@ -137,7 +137,7 @@
 
 ## UC-S-009: Complete supplemental practice selected by a teacher
 
-**Actors**: Teacher, Student  
+**Actors**: Teacher, Student
 **Precondition**: Student has an active enrollment in a class managed by the teacher
 
 **Main Flow**:
