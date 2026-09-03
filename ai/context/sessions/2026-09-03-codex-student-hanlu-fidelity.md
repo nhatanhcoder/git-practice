@@ -27,3 +27,12 @@
 - Review and merge the UI PR.
 - Resolve `DOC-013` through accepted Student API/entity/auth/RBAC specs, then rerun the docs gate.
 - Run `/design-promote <screen>` only if the human explicitly chooses to promote this shipped Student direction into the project baseline.
+
+**Navigation follow-up (same branch)**:
+- Added idle plus intent-based prefetch for all top-level Student destinations, including
+  `/student/placement`, with visible and accessible transition feedback and Student-scoped
+  loading/error boundaries.
+- Production measurement after warm-up: ~81 ms to URL change and ~117 ms to the destination
+  heading. The route indicator also appeared during a deliberately cold transition.
+- Mandatory screenshots passed 38/38 (`PW_AREA=student`) across desktop and 375px mobile; visual
+  inspection of Dashboard, Learning Path and Foundation found no typography/layout regression.

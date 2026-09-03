@@ -403,6 +403,23 @@ because it is a two-line CSS change and leaving CI red on a pre-existing bug is 
 small cross-area commit.
 
 ---
+
+### [WEB-009] Student route changes felt slow and had no transition feedback
+
+**Severity**: Medium
+**Status**: ✅ Resolved 2026-09-03 — verified in production mode and by the Student screenshot matrix.
+
+**Description**: Student navigation relied only on Next's default route loading. Cold route
+chunks could take long enough to feel unresponsive, while the persistent shell gave no visible
+or accessible indication that navigation had started.
+
+**Fix**: stagger-prefetch the top-level Student routes after first paint, prefetch rail/tab/sheet
+targets on hover or focus, show a capped route progress bar with `aria-busy` and `aria-live`, and
+provide Student-scoped loading and error boundaries. Warm production navigation measured about
+81 ms to URL change and 117 ms to the destination heading. The mandatory Student Playwright run
+passed 38/38 across desktop and 375px mobile.
+
+---
 ### [API-002] Two contradictory rate-reading formulas — wrong amounts
 
 **Severity**: Critical
