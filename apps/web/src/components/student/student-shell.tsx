@@ -152,7 +152,7 @@ export function StudentShell({ children }: { children: ReactNode }) {
   useEffect(() => {
     let timer = 0;
     let index = 0;
-    const routes = ALL_NAV_ITEMS.map((item) => item.to);
+    const routes = [...ALL_NAV_ITEMS.map((item) => item.to), "/student/placement"];
 
     const warmNext = () => {
       const route = routes[index];
