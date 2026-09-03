@@ -31,6 +31,31 @@
 
 ---
 
+## [2026-09-03] — Landing page 1:1 port fixed & verified via Playwright & browser — Antigravity — branch `feat/student-hanlu-ui`
+
+**Context**: User requested: "fix lại cai lading page đi, làm cho nó í chan bên D:\PersonalProject\Chinese UI test\ui-claude\frontend\src\pages\Landing.tsx".
+Landing page at `/student/landing` has been fixed and visually verified against the prototype.
+
+**Done**:
+- Workspace restored to `feat/student-hanlu-ui`.
+- Added dynamic document `<html>` and `<body>` background color sync (`#0a0d13` in dark, `#f6f2ea` in light) and `data-theme` attribute management in `landing-view.tsx`.
+- Added support for both `hanlu-theme` and `hanlo-theme` localStorage keys.
+- Production build verified: `pnpm --filter web build` passed with 0 errors.
+- Automated Playwright screen verification passed (`PW_ROUTES=/student/landing pnpm --filter web test:screens --workers=1`):
+  - Desktop 1280px screen: PASSED (9.5s).
+  - Mobile 375px screen: PASSED (12.3s, 0 horizontal overflow).
+- Visual & functional validation with browser subagent:
+  - 3D Three.js teacher cylinder carousel (WebGL curved geometry, auto-play, flippers).
+  - Student detail modal with dark glassmorphism.
+  - All 8 sections render identically to prototype.
+- 34 unit tests passed: `node --test apps/web/scripts/*.test.mjs`.
+- Dev server running on `http://localhost:3000/student/landing`.
+
+**Blocker / needs follow-up**:
+- Pre-existing `DOC-013` (18 student endpoints in `docs/prompts/student-product/contract-review-student.md` missing from `docs/api`).
+
+---
+
 ## [2026-09-01] — Branch audit, PR #13 merged, PR #14 opened — Claude Code
 
 **Context**: user's first request pointed at a stray checkout
