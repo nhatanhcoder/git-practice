@@ -13,8 +13,12 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import {
+  ArrowRight,
+  Award,
   BookOpen,
   Blocks,
+  Briefcase,
+  ChevronRight,
   Flame,
   GraduationCap,
   Map,
@@ -23,6 +27,7 @@ import {
   Play,
   Puzzle,
   Sparkles,
+  Target,
   Trophy,
   Zap,
 } from "lucide-react";
@@ -56,14 +61,15 @@ const KIND_LABEL: Record<string, string> = {
 };
 
 const SHORTCUTS = [
-  { href: "/student/learning-path", icon: Map, tone: "", title: "Lộ trình HSK", text: "Bản đồ chặng theo giáo trình" },
+  { href: "/student/learning-path", icon: Map, tone: "accent", title: "Lộ trình HSK", text: "Bản đồ bài học, nhiệm vụ phụ và ải trùm." },
   { href: "/student/flashcards", icon: Sparkles, tone: "info", title: "Flashcard", text: "Ôn từ vựng theo cấp" },
   { href: "/student/grammar", icon: BookOpen, tone: "success", title: "Ngữ pháp", text: "Tra cứu và luyện 5 dạng bài" },
   { href: "/student/foundation", icon: Blocks, tone: "epic", title: "Nền tảng", text: "Pinyin, thanh điệu, 214 bộ thủ" },
   { href: "/student/exams", icon: GraduationCap, tone: "", title: "Phòng thi", text: "Đề thi thử có bấm giờ" },
   { href: "/student/writing", icon: PenTool, tone: "info", title: "Luyện viết", text: "Thứ tự nét và bảng 米字格" },
   { href: "/student/lego", icon: Puzzle, tone: "success", title: "Ghép câu", text: "Trật tự từ qua 7 trạm" },
-  { href: "/student/mistakes", icon: NotebookPen, tone: "epic", title: "Sổ tay lỗi sai", text: "Ôn lại đúng chỗ đã sai" },
+  { href: "/student/mistakes", icon: NotebookPen, tone: "accent", title: "Sổ tay lỗi sai", text: "Ôn lại đúng chỗ đã sai" },
+  { href: "/student/workplace", icon: Briefcase, tone: "epic", title: "Mô phỏng công sở", text: "Báo giá, họp nhóm, email, phỏng vấn." },
 ];
 
 export default function StudentDashboard() {
@@ -139,95 +145,104 @@ export default function StudentDashboard() {
         </Panel>
       ) : (
         <>
-          {/* ---------- Hero: rank + streak ---------- */}
-          <section className="hero">
-            <span className="hero__mark han" aria-hidden="true">
-              {profile.rankHanzi}
-            </span>
-            <div className="grow stack gap-2" style={{ position: "relative" }}>
-              <span className="eyebrow">Danh hiệu hiện tại</span>
-              <h2 className="hero__title">{profile.rank}</h2>
-              <p style={{ color: "var(--text-2)", fontSize: "var(--step--1)" }}>{profile.rankBlurb}</p>
-              <div className="hero__meta">
-                <span className="is-xp num">
-                  <Zap size={14} style={{ display: "inline" }} /> {profile.xp.toLocaleString("vi-VN")} XP
-                </span>
-                <span className="dot" aria-hidden="true" />
-                <span>
-                  HSK <span className="num">{profile.currentLevel}</span>
-                </span>
-                <span className="dot" aria-hidden="true" />
-                <span>
-                  <Flame size={14} style={{ display: "inline" }} /> chuỗi{" "}
-                  <span className="num">{profile.streakDays}</span> ngày
-                </span>
-              </div>
-              {profile.nextRank ? (
-                <div className="stack gap-2" style={{ maxWidth: 420, marginTop: "var(--sp-2)" }}>
-                  <Bar value={rankPct} tone="gold" label={`Tiến tới ${profile.nextRank.name}`} />
-                  <span style={{ color: "var(--text-3)", fontSize: "var(--step--2)" }}>
-                    Còn{" "}
-                    <span className="num">
-                      {(profile.xpForNextRank - profile.xpIntoRank).toLocaleString("vi-VN")}
-                    </span>{" "}
-                    XP nữa lên {profile.nextRank.name} {profile.nextRank.hanzi}
-                  </span>
+          {/* Prototype order: continue learning first, rank/streak alongside. */}
+          <div className="dash-hero">
+            <Panel className="hero" aria-labelledby="hero-title">
+              <span className="hero__mark han" aria-hidden="true">学</span>
+              <div className="stack gap-4" style={{ position: "relative" }}>
+                <div className="row gap-2 wrap">
+                  <Chip tone="accent" icon={<Play size={14} />}>Tiếp tục học</Chip>
+                  <Chip>{continueLesson.course} · HSK {continueLesson.level}</Chip>
                 </div>
-              ) : (
-                <Chip tone="warn">Đã đạt danh hiệu cao nhất</Chip>
-              )}
-            </div>
-
-            <div className="stack gap-3" style={{ position: "relative", flex: "none" }}>
-              <span className="eyebrow">Tuần này</span>
-              <div className="streak__week">
-                {weekData.map((d) => (
-                  <span
-                    key={d.label}
-                    className={`streak__day ${d.minutes > 0 ? "is-done" : ""} ${d.isToday ? "is-today" : ""}`}
-                    title={`${d.label}: ${d.minutes} phút`}
-                  >
-                    {d.label}
-                  </span>
-                ))}
-              </div>
-              <span style={{ color: "var(--text-3)", fontSize: "var(--step--2)" }}>
-                Tổng <span className="num">{totalMinutes}</span> phút
-              </span>
-            </div>
-          </section>
-
-          {/* ---------- Continue where you left off ---------- */}
-          <Panel className="panel--pad">
-            <div className="row gap-4 wrap">
-              <span className="hero__mark han" style={{ width: 64, height: 64, fontSize: 26 }} aria-hidden="true">
-                {continueLesson.titleHanzi.slice(0, 2)}
-              </span>
-              <div className="grow stack gap-2">
-                <span className="eyebrow">Học tiếp</span>
-                <h2 style={{ fontSize: "var(--step-2)" }}>{continueLesson.title}</h2>
-                <p style={{ color: "var(--text-3)", fontSize: "var(--step--1)" }}>
-                  {continueLesson.course} · HSK <span className="num">{continueLesson.level}</span> ·{" "}
-                  {continueLesson.unit} · còn khoảng{" "}
-                  <span className="num">{continueLesson.minutesLeft}</span> phút
+                <div className="stack gap-2">
+                  <p className="hero__hanzi han">{continueLesson.titleHanzi}</p>
+                  <p className="hero__pinyin">qù shāngchǎng mǎi dōngxi</p>
+                  <h2 id="hero-title" className="hero__title">{continueLesson.title}</h2>
+                </div>
+                <div className="stack gap-2">
+                  <div className="row gap-3">
+                    <span className="metric__label">Tiến độ bài học</span>
+                    <span className="grow" />
+                    <span className="num" style={{ fontWeight: 700 }}>{continueLesson.progress}%</span>
+                  </div>
+                  <Bar value={continueLesson.progress} label="Tiến độ bài học" />
+                </div>
+                <p className="hero__meta">
+                  <span>{continueLesson.unit}</span>
+                  <span><span className="num">{continueLesson.minutesLeft}</span> phút</span>
+                  <span className="is-xp"><Zap size={14} /><span className="num is-xp">+180</span> XP</span>
                 </p>
-                <Bar value={continueLesson.progress} label="Tiến độ bài học" />
-                <span style={{ color: "var(--text-3)", fontSize: "var(--step--2)" }}>
-                  Từ vựng <span className="num">{continueLesson.vocabDone}/{continueLesson.vocabTotal}</span> ·
-                  Ngữ pháp <span className="num">{continueLesson.grammarDone}/{continueLesson.grammarTotal}</span>
-                </span>
+                <div className="row gap-3 wrap">
+                  <Link href="/student/learning-path/lesson-8" className="btn btn--primary btn--lg">
+                    Tiếp tục {continueLesson.title.split("·")[0]} <ArrowRight size={18} />
+                  </Link>
+                  <Link href="/student/learning-path" className="btn btn--ghost">
+                    Xem toàn bộ lộ trình <ChevronRight size={16} />
+                  </Link>
+                </div>
               </div>
-              <Link href="/student/learning-path" className="btn btn--primary btn--lg">
-                <Play size={18} /> Tiếp tục
-              </Link>
+            </Panel>
+
+            <div className="stack gap-5">
+              <Panel className="panel--pad">
+                <div className="row gap-4">
+                  <Ring value={rankPct} size={76} stroke={7} label="Tiến độ danh hiệu">
+                    <span className="han" style={{ fontSize: 22, fontWeight: 700, color: "var(--accent)" }}>
+                      {profile.rankHanzi}
+                    </span>
+                  </Ring>
+                  <div className="grow stack gap-1">
+                    <span className="metric__label">Danh hiệu</span>
+                    <h2 style={{ fontSize: "var(--step-1)" }}>{profile.rank}</h2>
+                    <span style={{ color: "var(--text-3)", fontSize: "var(--step--1)" }}>
+                      Còn <strong className="num" style={{ color: "var(--gold-400)" }}>
+                        {(profile.xpForNextRank - profile.xpIntoRank).toLocaleString("vi-VN")} XP
+                      </strong> để lên {profile.nextRank?.name ?? "cấp tối đa"}
+                    </span>
+                  </div>
+                </div>
+                <div className="divider" />
+                <div className="row gap-5 wrap">
+                  <Metric label="Tổng XP" value={profile.xp.toLocaleString("vi-VN")} />
+                  <Metric label="Từ đã thuộc" value="412" />
+                  <Metric label="Độ chính xác" value="87%" />
+                </div>
+              </Panel>
+
+              <Panel className="panel--pad streak">
+                <div className="row gap-4">
+                  <span className="streak__flame" aria-hidden="true"><Flame size={25} /></span>
+                  <div className="grow stack gap-1">
+                    <span className="metric__label">Chuỗi ngày học</span>
+                    <p className="metric__value num">{profile.streakDays} <span className="metric__unit">ngày</span></p>
+                  </div>
+                  <Chip tone="info">Kỷ lục {profile.bestStreak}</Chip>
+                </div>
+                <ul className="streak__week" aria-label="Bảy ngày gần nhất">
+                  {weekData.map((d) => (
+                    <li key={d.label} className={`streak__day ${d.minutes > 0 ? "is-done" : ""} ${d.isToday ? "is-today" : ""}`} title={`${d.label}: ${d.minutes} phút`}>
+                      {d.label}
+                    </li>
+                  ))}
+                </ul>
+                <div className="stack gap-2">
+                  <div className="row gap-2">
+                    <span className="metric__label">Mục tiêu hôm nay</span>
+                    <span className="grow" />
+                    <span className="num" style={{ fontSize: "var(--step--1)", fontWeight: 700 }}>{totalMinutes}/30 phút</span>
+                  </div>
+                  <Bar value={(totalMinutes / 30) * 100} size="sm" label="Mục tiêu hôm nay" />
+                </div>
+              </Panel>
             </div>
-          </Panel>
+          </div>
 
           {/* ---------- HSK 1–9 ladder ---------- */}
-          <Panel className="panel--pad">
+          <Panel className="panel--pad stack gap-5">
             <SectionHeader
               title="Bậc HSK 1 – 9"
               sub="Chọn một bậc để xem tiến độ từ vựng, ngữ pháp và điểm thi tốt nhất."
+              action={<Link href="/student/learning-path" className="btn btn--outline btn--sm">Mở bản đồ lộ trình <ChevronRight size={15} /></Link>}
             />
             <LevelSelector
               levels={levelProgress.map((l) => ({
@@ -238,29 +253,35 @@ export default function StudentDashboard() {
               value={level}
               onChange={setLevel}
             />
-            <div className="grid grid--4" style={{ marginTop: "var(--sp-5)" }}>
-              <Metric
-                label="Bài học"
-                value={`${levelRow.lessonsDone}/${levelRow.lessonsTotal}`}
-              />
-              <Metric
-                label="Từ vựng"
-                value={`${levelRow.vocabMastered}/${levelRow.vocabTotal}`}
-              />
-              <Metric
-                label="Ngữ pháp"
-                value={`${levelRow.grammarMastered}/${levelRow.grammarTotal}`}
-              />
-              <Metric
-                label="Điểm thi tốt nhất"
-                value={levelRow.bestExamScore === null ? "—" : `${levelRow.bestExamScore}%`}
-              />
+            <div className="ladder">
+              <div className="ladder__glyph han" aria-hidden="true">{level}</div>
+              <div className="grow stack gap-3">
+                <div className="row gap-2 wrap">
+                  <Chip tone="accent">HSK {level}</Chip>
+                  <strong>{levelRow.state === "completed" ? "Đã hoàn thành" : levelRow.state === "current" ? "Đang học" : "Chưa mở"}</strong>
+                </div>
+                <div className="stack gap-2">
+                  <div className="row gap-2"><span className="metric__label">Tiến độ cấp</span><span className="grow" /><span className="num" style={{ fontWeight: 700 }}>{Math.round((levelRow.lessonsDone / levelRow.lessonsTotal) * 100)}%</span></div>
+                  <Bar value={(levelRow.lessonsDone / levelRow.lessonsTotal) * 100} tone="success" />
+                </div>
+                <div className="row gap-6 wrap">
+                  <Metric label="Bài học" value={`${levelRow.lessonsDone}/${levelRow.lessonsTotal}`} />
+                  <Metric label="Từ vựng" value={`${levelRow.vocabMastered}/${levelRow.vocabTotal}`} />
+                  <Metric label="Ngữ pháp" value={`${levelRow.grammarMastered}/${levelRow.grammarTotal}`} />
+                  <Metric label="Điểm thi" value={levelRow.bestExamScore === null ? "—" : `${levelRow.bestExamScore}%`} />
+                </div>
+                <div className="row gap-3 wrap">
+                  <Link href="/student/learning-path" className="btn btn--primary"><Target size={16} /> Vào lộ trình</Link>
+                  <Link href="/student/grammar" className="btn btn--outline"><BookOpen size={16} /> Ôn ngữ pháp</Link>
+                </div>
+              </div>
             </div>
           </Panel>
 
           {/* ---------- Review queue + week ---------- */}
-          <div className="grid" style={{ gridTemplateColumns: "minmax(0, 1.4fr) minmax(0, 1fr)" }}>
-            <Panel>
+          <div className="dash-split">
+            <div className="stack gap-6">
+              <Panel>
               <div className="panel__head">
                 <div>
                   <h2 className="section-title" style={{ fontSize: "var(--step-2)" }}>
@@ -285,7 +306,7 @@ export default function StudentDashboard() {
                   </button>
                 ) : null}
               </div>
-              <div className="panel__body panel__body--flush">
+                <div className="panel__body panel__body--flush">
                 {queue.length === 0 ? (
                   <EmptyState
                     title="Hàng đợi trống"
@@ -315,10 +336,24 @@ export default function StudentDashboard() {
                     </button>
                   ))
                 )}
-              </div>
-            </Panel>
+                </div>
+              </Panel>
 
-            <div className="stack gap-5">
+              <Panel>
+                <div className="panel__head"><h2 className="section-title" style={{ fontSize: "var(--step-2)" }}>Hoạt động gần đây</h2></div>
+                <div className="panel__body panel__body--flush">
+                  {activity.slice(0, 5).map((a) => (
+                    <div key={a.id} className="rowitem">
+                      <span className="rowitem__icon" aria-hidden="true">{a.kind === "badge" ? <Award size={16} /> : <Sparkles size={16} />}</span>
+                      <span className="grow stack gap-1"><span style={{ fontSize: "var(--step--1)" }}>{a.text}</span>{a.detail ? <span style={{ color: "var(--text-3)", fontSize: "var(--step--2)" }}>{a.detail}</span> : null}</span>
+                      {a.xp ? <Chip tone="warn">+{a.xp} XP</Chip> : null}
+                    </div>
+                  ))}
+                </div>
+              </Panel>
+            </div>
+
+            <div className="stack gap-6">
               <Panel className="panel--pad">
                 <SectionHeader title="Tuần này" sub="Số phút học mỗi ngày" />
                 <div className="chart">
@@ -328,38 +363,13 @@ export default function StudentDashboard() {
                         className={`chart__bar ${d.isToday ? "is-today" : ""}`}
                         style={{ height: `${Math.max(4, (d.minutes / maxMinutes) * 100)}%` }}
                         title={`${d.label}: ${d.minutes} phút · ${d.xp} XP`}
-                      />
+                      ><span className="chart__tip num">{d.minutes} phút</span></div>
                       <span className="chart__label">{d.label}</span>
                     </div>
                   ))}
                 </div>
               </Panel>
 
-              <Panel>
-                <div className="panel__head">
-                  <h2 className="section-title" style={{ fontSize: "var(--step-2)" }}>
-                    Hoạt động gần đây
-                  </h2>
-                </div>
-                <div className="panel__body panel__body--flush">
-                  {activity.slice(0, 5).map((a) => (
-                    <div key={a.id} className="rowitem">
-                      <span className="rowitem__icon" aria-hidden="true">
-                        {a.kind === "badge" ? <Trophy size={16} /> : <Sparkles size={16} />}
-                      </span>
-                      <span className="grow stack gap-1">
-                        <span style={{ fontSize: "var(--step--1)" }}>{a.text}</span>
-                        {a.detail ? (
-                          <span style={{ color: "var(--text-3)", fontSize: "var(--step--2)" }}>
-                            {a.detail}
-                          </span>
-                        ) : null}
-                      </span>
-                      {a.xp ? <Chip tone="warn">+{a.xp} XP</Chip> : null}
-                    </div>
-                  ))}
-                </div>
-              </Panel>
             </div>
           </div>
 
@@ -368,14 +378,13 @@ export default function StudentDashboard() {
             <SectionHeader title="Lối tắt" sub="Chín khu vực học, mở thẳng từ đây." />
             <div className="shortcuts">
               {SHORTCUTS.map((s) => (
-                <Link key={s.href} href={s.href} className="shortcut">
+                <Link key={s.href} href={s.href} className="panel shortcut">
                   <span className={`shortcut__icon ${s.tone ? `shortcut__icon--${s.tone}` : ""}`}>
                     <s.icon size={18} />
                   </span>
-                  <span className="stack gap-1 grow">
-                    <span className="shortcut__title">{s.title}</span>
-                    <span className="shortcut__text">{s.text}</span>
-                  </span>
+                  <span className="shortcut__title">{s.title}</span>
+                  <span className="shortcut__text">{s.text}</span>
+                  <span className="row gap-2 shortcut__go" style={{ fontSize: "var(--step--1)", fontWeight: 600 }}>Mở khu vực <ArrowRight size={14} /></span>
                 </Link>
               ))}
             </div>
