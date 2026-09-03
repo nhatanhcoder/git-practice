@@ -32,6 +32,7 @@
 - `7abb847` — accepted combined learning domain and Student/RBAC rules.
 - `7df8807` — aligned project knowledge, roadmap and domain/API indexes.
 - `3a7129e` — standardized the SM-2 rating/formula contract.
+- `7082962` — removed Markdown trailing whitespace found by the final branch diff check.
 
 **Follow-up**:
 - Write module/entity specs before implementing any new schema or endpoint.
