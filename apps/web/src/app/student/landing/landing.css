@@ -357,8 +357,7 @@
 }
 
 .student-root .lp-hero--fullscreen {
-  min-height: calc(100vh - var(--sitebar-h));
-  min-height: calc(100svh - var(--sitebar-h));
+  min-height: clamp(680px, calc(100svh - var(--sitebar-h)), 820px);
   display: flex;
   align-items: center;
   transition: background 1.5s ease;
@@ -367,7 +366,7 @@
 .student-root .lp-hero__mark {
   position: absolute;
   top: 48%;
-  left: 6%;
+  right: 5%;
   transform: translateY(-50%);
   font-size: clamp(160px, 32vw, 380px);
   color: var(--teacher-theme, var(--accent));
@@ -499,6 +498,24 @@
 
 .student-root .lp-hero__ctas {
   margin-top: var(--sp-3);
+}
+
+/* The paper theme needs firmer foreground values over the teacher gradients.
+   Keep the oversized Hanzi intentionally faint: it is decorative, not copy. */
+.student-root[data-theme="light"] .lp-hero__role,
+.student-root[data-theme="light"] .lp-hero__bio {
+  color: #403b35;
+}
+
+.student-root[data-theme="light"] .lp-hero__exp,
+.student-root[data-theme="light"] .lp-hero__tag,
+.student-root[data-theme="light"] .lp-note {
+  color: #625b52;
+}
+
+.student-root[data-theme="light"] .lp-hero__tag {
+  background: rgba(255, 255, 255, 0.72);
+  border-color: #d7ccbb;
 }
 
 /* ---------- Teacher 3D stage (Three.js) ---------- */
@@ -1308,6 +1325,12 @@
 
 /* ---------- Responsive ---------- */
 @media (max-width: 1024px) {
+  .student-root .lp-hero--fullscreen {
+    min-height: auto;
+  }
+  .student-root .lp-hero__mark {
+    right: 2%;
+  }
   .student-root .lp-hero__split {
     grid-template-columns: 1fr;
     gap: var(--sp-6);
