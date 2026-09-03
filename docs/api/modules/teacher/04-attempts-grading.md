@@ -108,7 +108,7 @@ Every element must reference an answer of this attempt. `teacherScore ≥ 0` (up
 |---|---|
 | INV-TGRD-01 | Ownership is two hops: `attempt → assignment → teacherId === currentUser.id`, checked in the service layer. Not the caller's attempt → `404 ATTEMPT_NOT_FOUND` (do not leak existence across teachers; see §16-Q5 for 403-vs-404). |
 | INV-TGRD-02 | The queue returns only attempts on the caller's assignments; `?status=` filters `Attempt.status`; without it, default `submitted`. |
-| INV-TGRD-03 | Grading requires `Attempt.status = submitted`. An `in_progress` attempt → `400 ATTEMPT_NOT_IN_PROGRESS` semantics do **not** fit — correct mapping: `400` with `ATTEMPT_NOT_IN_PROGRESS` is the student-lane code for editing; here the branch is: grade a non-submitted attempt → `409 ASSIGNMENT_ALREADY_SUBMITTED`? ⛔ **no clean code** — see §9/§16-Q3. |
+| INV-TGRD-03 | Grading requires `Attempt.status = submitted`. Any other status → `409 ATTEMPT_NOT_SUBMITTED`. (The student-lane codes `ATTEMPT_NOT_IN_PROGRESS` / `ATTEMPT_ALREADY_SUBMITTED` are not reused — this branch is teacher-grading-specific.) |
 | INV-TGRD-04 | `teacherScore ≥ 0` per graded answer; no upper bound is enforced because **per-question max score is not modeled** (§16-Q2). The AI suggestion never writes `teacherScore`/`teacherFeedback` — those are the teacher's alone (ENTITY_ATTEMPT_ANSWER: "teacherScore is the final authoritative score; AI score is suggestion only"). |
 | INV-TGRD-05 | Finishing a grade writes, in ONE transaction: the `AttemptAnswer.teacherScore`/`teacherFeedback` values, `Attempt.status = 'graded'`, `Attempt.gradedAt = now()`, `Attempt.totalScore = Σ COALESCE(teacherScore, autoScore)` over all answers of the attempt (ENTITY_ATTEMPT: "totalScore = sum of final scores"). |
 | INV-TGRD-06 | `ai-suggest` (parked): writes **only** `aiSuggestedScore` + `aiFeedback` on Writing answers (`skill = 'writing'`); never touches `teacherScore`, `teacherFeedback`, `autoScore`, or attempt status; requires `Attempt.status = 'submitted'`. Codes `AI_QUOTA_EXCEEDED` / `AI_KEY_INVALID` / `AI_GRADING_FAILED` — *proposed, not agreed*. |
@@ -160,7 +160,7 @@ offered** — §16-Q4. The teacher cannot create, start or submit attempts.
 | Error branch | HTTP | code | Code status |
 |---|---|---|---|
 | Attempt id not found / not the caller's | 404 | `ATTEMPT_NOT_FOUND` | agreed |
-| Grade a non-`submitted` attempt | 409 | ⛔ **no clean code** (`ATTEMPT_ALREADY_SUBMITTED` reads backwards; `ATTEMPT_NOT_IN_PROGRESS` is the student edit code) — §16-Q3 | gap |
+| Grade a non-`submitted` attempt | 409 | `ATTEMPT_NOT_SUBMITTED` | agreed (added 2026-09-03, owner-approved) |
 | `grades[].questionId` not an answer of this attempt | 400 | `VALIDATION_ERROR` | agreed (fallback family) |
 | `teacherScore < 0` / non-numeric | 400 | `VALIDATION_ERROR` | agreed |
 | AI quota exhausted | 429 | `AI_QUOTA_EXCEEDED` | **proposed, not agreed** |
@@ -212,7 +212,7 @@ homework — 3 attempts (`submitted` with 2 MCQ answers auto-scored + 1 writing 
 |---|---|---|
 | INV-TGRD-01 | integration | teacher B reads/grades teacher A's attempt → 404 `ATTEMPT_NOT_FOUND`; queue shows only own-assignment attempts |
 | INV-TGRD-02 | integration | `?status=submitted` filters; default omits `in_progress` and `graded`; `?assignmentId=` narrows |
-| INV-TGRD-03 | integration | grade an `in_progress` attempt → blocked per §9 (⛔ branch assertion); grade a `graded` attempt → blocked |
+| INV-TGRD-03 | integration | grade an `in_progress` attempt → `409 ATTEMPT_NOT_SUBMITTED`; grade a `graded` attempt → `409 ATTEMPT_NOT_SUBMITTED` |
 | INV-TGRD-04 | unit | negative score → 400; AI path (mocked) never writes teacherScore/teacherFeedback |
 | INV-TGRD-05 | integration (real DB) | grade writes answers + status + gradedAt + totalScore = Σ COALESCE(teacherScore, autoScore) atomically; forced failure mid-tx → nothing written |
 | INV-TGRD-06 | integration (mocked AI, parked) | suggestion lands only on writing answers; attempt status unchanged |
@@ -225,7 +225,7 @@ homework — 3 attempts (`submitted` with 2 MCQ answers auto-scored + 1 writing 
 |---|---|---|---|
 | Q1. **AI-suggest implementation parked** (owner, 2026-09-03). Gemini key handling + ADR-014 still open. The endpoint ships as a contract only. | §3.3 | PO | explicit re-open |
 | Q2. **Per-question max score is not modeled** — `Attempt.maxScore` is assignment-level; `AttemptAnswer` has no max. So `teacherScore` has no upper bound. Add a field or accept. | INV-TGRD-04, FE validation parity (FE clamps to a question max it derives itself) | BE lead + PO | before coding |
-| Q3. **No clean code for "grade a non-submitted attempt"** — both candidate codes have wrong semantics. | §9 | BE owner (registry) | before coding |
+| Q3. ~~No clean code for "grade a non-submitted attempt"~~ **RESOLVED 2026-09-03 — `ATTEMPT_NOT_SUBMITTED` (409) added to the registry, owner-approved.** | — | BE owner | done |
 | Q4. Re-grading a `graded` attempt: allowed (idempotent re-commit) or 409? And the double-notification of a repeated grade. | §8, §6 | PO | before coding |
 | Q5. 404 (hide existence) chosen for cross-teacher access — `ATTEMPT_NOT_OWNER` (403) stays student-lane. Confirm. | §9 mapping | BE owner | before coding |
 | Q6. **C1**: `studentName` reads `nickname` vs `fullName`. | §3.1 | BE lead | before locking DTO |

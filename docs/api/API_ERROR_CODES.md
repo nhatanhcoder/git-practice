@@ -98,11 +98,11 @@
 
 ### Lesson Errors (LESSON_*)
 
-> ⚠️ **Proposed, not agreed.** Added 2026-09-01 with the Lessons section of `API_TEACHER.md`
-> (`API-007`). Each code maps to a constraint or business rule already written in
+> ✅ **Agreed 2026-09-03** (owner sign-off with the Teacher module specs). Originally added
+> 2026-09-01 as *proposed* with the Lessons section of `API_TEACHER.md` (`API-007`); each code
+> maps to a constraint already written in
 > [ENTITY_LESSON.md](../entities/postgres/ENTITY_LESSON.md) /
-> [ENTITY_LESSON_ASSIGNMENT.md](../entities/postgres/ENTITY_LESSON_ASSIGNMENT.md) — none was
-> invented — but no BE owner has signed them off, so they are **not usable in code yet**.
+> [ENTITY_LESSON_ASSIGNMENT.md](../entities/postgres/ENTITY_LESSON_ASSIGNMENT.md).
 
 | Code | HTTP | Description |
 |------|------|-------|
@@ -121,6 +121,7 @@
 | `QUESTION_NOT_OWNER` | 403 | Not the author of the question |
 | `QUESTION_AUDIO_REQUIRED` | 400 | This question type requires an audio file |
 | `QUESTION_AUDIO_UPLOAD_FAILED` | 500 | Audio upload failed |
+| `QUESTION_IN_USE` | 409 | Cannot edit/delete — a published assignment uses this question |
 
 ### Assignment Errors (ASSIGNMENT_*)
 
@@ -140,6 +141,7 @@
 | `ATTEMPT_NOT_IN_PROGRESS` | 400 | The attempt is not in progress |
 | `ATTEMPT_NOT_OWNER` | 403 | Not your attempt |
 | `ATTEMPT_TIME_EXCEEDED` | 400 | The time limit has been exceeded |
+| `ATTEMPT_NOT_SUBMITTED` | 409 | Grading requires a submitted attempt |
 
 ### Flashcard Errors (FLASHCARD_*)
 
@@ -165,6 +167,7 @@
 | `SESSION_NOT_FOUND` | 404 | Class session not found |
 | `SESSION_ALREADY_REVIEWED` | 409 | Already approved or rejected — approval is one-way |
 | `SESSION_REJECT_REASON_REQUIRED` | 400 | Rejecting a session requires a reason |
+| `SESSION_INVALID_TRANSITION` | 409 | The session status does not allow this action (teacher start/end/submit from a wrong status) |
 
 ### Invoice Errors (INVOICE_*)
 

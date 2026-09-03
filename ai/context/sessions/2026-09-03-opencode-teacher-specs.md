@@ -67,3 +67,11 @@ mid-conversation).
 2. After auth lands on main: branch `feat/api-teacher`, implement T1→T6 in dependency order
    with e2e tests per module (`pnpm --filter api test`), fixing until green.
 3. AI-suggest stays parked until the owner re-opens the Gemini decision.
+
+**Update (same day, after the first commit)**: the owner approved all four error-code
+decisions — `SESSION_INVALID_TRANSITION` (409), `QUESTION_IN_USE` (409),
+`ATTEMPT_NOT_SUBMITTED` (409) added to `API_ERROR_CODES.md` as agreed, and the `LESSON_*`
+family (6 codes) signed off as agreed. `API_ERROR_CODES.md`, the four specs' §9/§16, the
+teacher `_INDEX.md`, `KNOWN_ISSUES.md` (API-010 → Resolved) and `PROGRESS.md` were updated
+in the same branch. The code phase is now gated **only** on Antigravity's auth landing on
+main.

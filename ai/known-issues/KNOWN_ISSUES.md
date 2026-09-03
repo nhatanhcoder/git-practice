@@ -839,7 +839,10 @@ repo**, since the files are missing.
 
 **Severity**: High
 **Sprint**: Teacher API
-**Status**: Open — **blocks the teacher module code phase**
+**Status**: ✅ Resolved 2026-09-03 (same day, owner-approved) — `SESSION_INVALID_TRANSITION`
+(409) · `QUESTION_IN_USE` (409) · `ATTEMPT_NOT_SUBMITTED` (409) added to
+`API_ERROR_CODES.md` as agreed, and the `LESSON_*` family (6 codes) was signed off as agreed
+in the same decision. The teacher module specs' §9/§16 were updated to match.
 
 **Description**: found 2026-09-03 while writing the Teacher module specs
 (`docs/api/modules/teacher/`). Three frequently-hit branches have no code in
@@ -855,9 +858,9 @@ repo**, since the files are missing.
    `ATTEMPT_ALREADY_SUBMITTED` reads backwards for this branch; `ATTEMPT_NOT_IN_PROGRESS` is
    the student edit code.
 
-Also recorded in the specs' §16 and `teacher/_INDEX.md` §4: `LESSON_*` (6 codes) and `AI_*`
-(3 codes) remain *proposed, not agreed* — the Lesson family gates all of
-`01-classes-lessons.md`'s error surface.
+Also recorded in the specs' §16 and `teacher/_INDEX.md` §4: ~~`LESSON_*` (6 codes) and `AI_*`
+(3 codes) remain *proposed, not agreed*~~ — `LESSON_*` was signed off as **agreed**
+2026-09-03; `AI_*` stays *proposed* (parked with the AI-suggest endpoint, owner decision).
 
 **Fix Plan**: the BE/registry owner adds the missing codes (or signs off mapped reuses) in
 `API_ERROR_CODES.md`. Numbering note: API-008/API-009/DOC-013 are known to exist on a branch

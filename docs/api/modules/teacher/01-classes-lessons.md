@@ -3,7 +3,7 @@
 ---
 module: teacher-classes-lessons
 status: proposed
-blocked_by: LESSON_* error codes are *proposed, not agreed* (API_ERROR_CODES.md)
+blocked_by: —
 owner: BE owner (unset)
 last_updated: 2026-09-03
 ---
@@ -221,12 +221,12 @@ Lesson:  no status column — no state machine. Lifecycle = created → (reorder
 | Class id not found | 404 | `CLASS_NOT_FOUND` | agreed |
 | Class exists, not the caller's | 403 | `CLASS_ACCESS_DENIED` | agreed |
 | Archive an archived class | 400 | `CLASS_ALREADY_ARCHIVED` | agreed |
-| Lesson id not found | 404 | `LESSON_NOT_FOUND` | **proposed, not agreed** |
-| Lesson exists, not the caller's | 403 | `LESSON_ACCESS_DENIED` | **proposed, not agreed** |
-| Delete blocked by active attempts | 409 | `LESSON_HAS_ACTIVE_ATTEMPTS` | **proposed, not agreed** |
-| Reorder unique conflict / partial write | 409 | `LESSON_ORDER_INDEX_CONFLICT` | **proposed, not agreed** |
-| Link pair already exists | 409 | `LESSON_ASSIGNMENT_ALREADY_LINKED` | **proposed, not agreed** |
-| Unlink a pair that is not linked | 404 | `LESSON_ASSIGNMENT_NOT_LINKED` | **proposed, not agreed** |
+| Lesson id not found | 404 | `LESSON_NOT_FOUND` | agreed (2026-09-03) |
+| Lesson exists, not the caller's | 403 | `LESSON_ACCESS_DENIED` | agreed (2026-09-03) |
+| Delete blocked by active attempts | 409 | `LESSON_HAS_ACTIVE_ATTEMPTS` | agreed (2026-09-03) |
+| Reorder unique conflict / partial write | 409 | `LESSON_ORDER_INDEX_CONFLICT` | agreed (2026-09-03) |
+| Link pair already exists | 409 | `LESSON_ASSIGNMENT_ALREADY_LINKED` | agreed (2026-09-03) |
+| Unlink a pair that is not linked | 404 | `LESSON_ASSIGNMENT_NOT_LINKED` | agreed (2026-09-03) |
 | Link an assignment outside the lesson's class | 404 | `ASSIGNMENT_NOT_FOUND` (scoped) | agreed — **scoping choice needs sign-off, §16-Q6** |
 | Field validation (name length, hskLevel, contentType, permutation shape) | 400 | `VALIDATION_ERROR` | agreed (fallback family) |
 
@@ -295,5 +295,5 @@ Seed: 1 teacher + 2 classes (one active, one archived) + 3 active enrollments + 
 | Q4. **C1**: roster uses `User.nickname` (ENTITY_USER) vs `fullName` (API_AUTH) | roster display name | BE lead | before locking DTO |
 | Q5. **C4/DOC-004**: `hskLevel` 1–9 (entity, settled 2026-08-11) vs GLOSSARY still saying 1–6 | create/update validation | PO | docs sweep |
 | Q6. Cross-class link maps to `404 ASSIGNMENT_NOT_FOUND` (scoped-read reading). Confirm or add a dedicated code. | §9 mapping | BE owner | before coding |
-| Q7. `LESSON_*` family is *proposed, not agreed* — sign-off needed before the codes are usable in code | all lesson error branches | BE owner | before coding |
+| Q7. ~~`LESSON_*` family sign-off~~ **RESOLVED 2026-09-03 — owner approved all 6 codes as agreed** (`API_ERROR_CODES.md` § Lesson Errors) | — | BE owner | done |
 | Q8. "Active attempts" = `in_progress \| submitted` here; do **graded** attempts also block lesson delete? (entity wording says "active") | INV-TCL-09 exact predicate | BE lead | before coding |

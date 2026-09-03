@@ -24,11 +24,11 @@ last_updated: 2026-09-03
 
 | # | Module | File | Status | Endpoints | New INV | Blocked by |
 |---|---|---|---|---|---|---|
-| T1 | Classes + Lessons | `01-classes-lessons.md` | 🔶 proposed | 14 | 10 (INV-TCL) | `LESSON_*` codes proposed |
-| T2 | Question Bank (MongoDB) | `02-question-bank.md` | 🔶 proposed | 5 | 7 (INV-TQ) | delete-gate code missing · CR-3 (upload only) |
+| T1 | Classes + Lessons | `01-classes-lessons.md` | 🔶 proposed | 14 | 10 (INV-TCL) | — (`LESSON_*` agreed 2026-09-03) |
+| T2 | Question Bank (MongoDB) | `02-question-bank.md` | 🔶 proposed | 5 | 7 (INV-TQ) | CR-3 (upload flow only; CRUD unblocked) |
 | T3 | Assignments | `03-assignments.md` | 🔶 proposed | 5 | 8 (INV-TASG) | §16 sign-offs |
-| T4 | Attempts + Grading | `04-attempts-grading.md` | 🔶 proposed | 4 | 8 (INV-TGRD) | AI parked · grade-status code gap · per-question max not modeled |
-| T5 | Sessions (teacher side) | `05-sessions.md` | 🔶 proposed | 6 | 9 (INV-TSES) | transition code gap (§16-Q1) |
+| T4 | Attempts + Grading | `04-attempts-grading.md` | 🔶 proposed | 4 | 8 (INV-TGRD) | AI parked · per-question max not modeled |
+| T5 | Sessions (teacher side) | `05-sessions.md` | 🔶 proposed | 6 | 9 (INV-TSES) | Q-SES-2 (re-submit after reject) |
 | T6 | Income (read-only) | `06-income.md` | 🔶 proposed | 2 | 4 (INV-TINC) | — (reads stored data only) |
 
 46 new invariants, each with a test line in its module's §15 — the invariant gate.
@@ -65,10 +65,15 @@ T1 Classes+Lessons ──► T3 Assignments ──► T4 Attempts+Grading
 - Every ownership check is a **service-layer predicate** on `teacherId` (or the class join),
   never the role guard alone.
 - Error-code gaps are recorded as ⛔ in each §9 with a §16 row — no module invents codes.
-  **Three gaps block coding** and need the registry owner:
-  1. teacher-side session transition errors (T5 §16-Q1)
-  2. question edit/delete gated by published assignment (T2 §16-Q1)
-  3. grading a non-`submitted` attempt (T4 §16-Q3)
+  **The three original gaps were closed 2026-09-03 (owner-approved, same day the specs were
+  written):**
+  1. teacher-side session transition errors → **`SESSION_INVALID_TRANSITION` (409)** (T5)
+  2. question edit/delete gated by published assignment → **`QUESTION_IN_USE` (409)** (T2)
+  3. grading a non-`submitted` attempt → **`ATTEMPT_NOT_SUBMITTED` (409)** (T4)
+
+  All three are in `API_ERROR_CODES.md` as agreed, and the `LESSON_*` family (6 codes) was
+  signed off as agreed in the same decision. Remaining *proposed, not agreed*: `AI_*`
+  (parked with the AI-suggest endpoint).
 - MongoDB (T2): template §7/§12 rethought — single-document atomicity, idempotent
   `createIndex` bootstrap, DEBT-001 mitigations documented in T2 §7.
 - Known cross-doc conflicts are **recorded, not silently resolved**: C1 (nickname/fullName),

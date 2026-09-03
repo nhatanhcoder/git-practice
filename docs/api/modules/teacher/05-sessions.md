@@ -3,7 +3,7 @@
 ---
 module: teacher-sessions
 status: proposed
-blocked_by: transition error codes missing (§9) · rejected→resubmit undecided (Q-SES-2)
+blocked_by: rejected→resubmit undecided (Q-SES-2, inherited)
 owner: BE owner (unset)
 last_updated: 2026-09-03
 ---
@@ -122,7 +122,7 @@ actuals non-NULL, `actualEnd > actualStart`).
 | ID | Invariant |
 |---|---|
 | INV-TSES-01 | Create requires `classId` resolving to the caller's own class; `teacherId` is copied from the class, never taken from the payload. New sessions start `status = scheduled` with all actual/rejection/payroll fields NULL. |
-| INV-TSES-02 | `start` is valid only from `scheduled`; it sets `actualStart = now()` (UTC, server clock) and moves to `in_progress`. Any other source status → blocked (§9 transition gap). |
+| INV-TSES-02 | `start` is valid only from `scheduled`; it sets `actualStart = now()` (UTC, server clock) and moves to `in_progress`. Any other source status → `409 SESSION_INVALID_TRANSITION`. |
 | INV-TSES-03 | `end` is valid only from `in_progress`; it sets `actualEnd = now()`. Status does not change. Because `actualStart` is already set, INV-SESSION-13 (`actualEnd > actualStart`) is enforced — the clock makes equals impossible. |
 | INV-TSES-04 | `submit` is valid only from `in_progress`; it moves to `completed_pending`. Per module 04, submit does **not** require `actualEnd` (Q-SES-3 is decided at approve time on the Admin side; the already-built FE additionally gates it client-side — recorded, §16-Q4). |
 | INV-TSES-05 | On submit commit, one `session_submitted_for_review` Notification is inserted **per Admin** (`role = admin`), referenceType `session`, inside the same transaction as the status write. Fan-out-to-all-admins is the working reading of module 04 §10's open point — §16-Q3. |
@@ -171,7 +171,7 @@ Module 04 §6 verbatim — teacher-side rows highlighted:
 
 ## 8. Idempotency & concurrency
 
-- `start` called twice: the second hits `status ≠ scheduled` → transition error (§9 gap).
+- `start` called twice: the second hits `status ≠ scheduled` → `409 SESSION_INVALID_TRANSITION`.
 - Attendance is idempotent by upsert — re-marking overwrites.
 - Submit racing attendance: attendance's status precondition (`in_progress` or
   `completed_pending`) tolerates both orderings.
@@ -184,7 +184,7 @@ Module 04 §6 verbatim — teacher-side rows highlighted:
 |---|---|---|---|
 | Session id not found / not the caller's | 404 | `SESSION_NOT_FOUND` | agreed |
 | Class not found / not the caller's | 404 / 403 | `CLASS_NOT_FOUND` / `CLASS_ACCESS_DENIED` | agreed |
-| `start`/`end`/`submit` from a wrong source status | 409 | ⛔ **no valid code** — `SESSION_ALREADY_REVIEWED` is Admin-flavored ("already approved or rejected"); the code FLOW uses for this branch (SESSION_ALREADY_SUBMITTED, unregistered) must not be used either | gap — §16-Q1 |
+| `start`/`end`/`submit` from a wrong source status | 409 | `SESSION_INVALID_TRANSITION` | agreed (added 2026-09-03, owner-approved) |
 | Attendance: unknown student / non-active enrollment | 400 | `VALIDATION_ERROR` | agreed (fallback family) |
 | Attendance: bad `status` value | 400 | `VALIDATION_ERROR` | agreed |
 | Field validation (topic, times, date order) | 400 | `VALIDATION_ERROR` | agreed |
@@ -236,7 +236,7 @@ for a **second** teacher (ownership tests).
 | INV | Type | Test |
 |---|---|---|
 | INV-TSES-01 | integration | create on another teacher's class → 403; `teacherId` in payload ignored; new row has status `scheduled`, null actuals |
-| INV-TSES-02 | integration | start from `scheduled` → `in_progress` + `actualStart` set; start twice → transition error; start an `approved` session → blocked |
+| INV-TSES-02 | integration | start from `scheduled` → `in_progress` + `actualStart` set; start twice → `409 SESSION_INVALID_TRANSITION`; start an `approved` session → `409 SESSION_INVALID_TRANSITION` |
 | INV-TSES-03 | integration | end from `in_progress` → `actualEnd` set, status unchanged; end before start → blocked; `actualEnd > actualStart` holds (INV-SESSION-13) |
 | INV-TSES-04 | integration | submit from `in_progress` → `completed_pending`; submit without `actualEnd` succeeds (permissive per module 04 — §16-Q4 records the FE's stricter gate) |
 | INV-TSES-05 | integration (real DB) | submit inserts one notification per admin, in-tx (rollback removes them); no notification on start/end |
@@ -250,7 +250,7 @@ for a **second** teacher (ownership tests).
 
 | Question | What it blocks | Owner | Decide by |
 |---|---|---|---|
-| Q1. **No valid code for teacher-side transition errors** (start/end/submit from wrong status). The code FLOW uses here (SESSION_ALREADY_SUBMITTED) is unregistered; `SESSION_ALREADY_REVIEWED` is Admin-flavored. | §9 — the most-hit error branch in the module | BE owner (registry) | before coding |
+| Q1. ~~No valid code for teacher-side transition errors~~ **RESOLVED 2026-09-03 — `SESSION_INVALID_TRANSITION` (409) added to the registry, owner-approved.** | — | BE owner | done |
 | Q2. May a session be created for an **archived** class? (same open question as 01-TCL §16-Q2) | INV-TSES-01 gate | PO | before coding |
 | Q3. Submit fan-out: **all admins** (FLOW §5 mechanism) vs one queue owner. Working reading: all admins. | INV-TSES-05 | PO | before coding |
 | Q4. Q-SES-3 (inherited): submit is permissive about `actualEnd`; the Admin side must decide block-at-approve vs block-at-payroll. The built FE already gates client-side. | INV-TSES-04 boundary with module 04 | BE lead | before Admin payroll code |

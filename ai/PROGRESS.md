@@ -438,9 +438,11 @@ replaces coverage %.
   `session_submitted_for_review` producer — closes the `API-004` producer hole) ·
   `06-income` (read-only, no rate math — closes Q-PAY-7)). All `proposed`, awaiting BE-owner
   sign-off. Owner settled 2026-09-03: SCOPE-01 teacher slice = teacher-side full management;
-  Income = read-only stored data. **Code not started** — blocked on: auth PR (Antigravity,
-  in flight) landing on main, and 3 error-code gaps (API-010). Branch
-  `feat/api-teacher-specs`.
+  Income = read-only stored data. **Error codes settled same day (API-010 resolved)**:
+  `SESSION_INVALID_TRANSITION` / `QUESTION_IN_USE` / `ATTEMPT_NOT_SUBMITTED` added as agreed +
+  `LESSON_*` (6 codes) signed off → the code phase is unblocked on codes.
+  **Code not started** — only gate left: auth PR (Antigravity, in flight) landing on main.
+  Branch `feat/api-teacher-specs`.
 - 🔶 (opencode · 2026-09-03) Teacher-side Sessions transitions (`scheduled → in_progress → completed_pending`) — **specced** in
   `docs/api/modules/teacher/05-sessions.md` (producer of `session_submitted_for_review`;
   re-submit after reject stays open as Q-SES-2). **Code not started** — the endpoints still do

@@ -3,7 +3,7 @@
 ---
 module: teacher-question-bank
 status: proposed
-blocked_by: audio upload mechanism (CR-3 storage undecided) · delete/edit-gate error code missing
+blocked_by: audio upload mechanism (CR-3 storage undecided — upload flow only, CRUD is unblocked)
 owner: BE owner (unset)
 last_updated: 2026-09-03
 ---
@@ -104,7 +104,7 @@ DELETE → `204`.
 | INV-TQ-02 | `subType` must be a member of its `skill`'s group (§3.1). A mismatched pair never persists. |
 | INV-TQ-03 | `correctAnswer` shape follows the subType: `null` for Writing types; `string` for single-answer MCQ; `string[]` for multi / ordering / matching, each element referencing an `options[].id` that exists in the document. |
 | INV-TQ-04 | Listening questions require `content.audioUrl` (non-empty) → `400 QUESTION_AUDIO_REQUIRED`. MCQ subTypes require a non-empty `options` array with unique ids. Writing questions require `content.rubric` and `content.prompt`, and must have `correctAnswer = null`. |
-| INV-TQ-05 | A question referenced by at least one `published` Assignment cannot be edited or deleted (ENTITY_QUESTION: "unless used in a published Assignment"). Draft assignments do not gate. ⛔ **No valid error code exists for this branch** — see §9 / §16. |
+| INV-TQ-05 | A question referenced by at least one `published` Assignment cannot be edited or deleted (ENTITY_QUESTION: "unless used in a published Assignment"). Draft assignments do not gate. → `409 QUESTION_IN_USE`. |
 | INV-TQ-06 | `options[].id` is stable across updates: a PATCH that renames an option id while `correctAnswer` still references the old id is rejected (VALIDATION_ERROR). |
 | INV-TQ-07 | Delete is a hard delete — the schema has no soft-delete field. The INV-TQ-05 gate is the only guard against orphaned `questionIds` references. |
 
@@ -156,7 +156,7 @@ None. `Question` has no status column. Lifecycle: created → updated (while ung
 | Listening without `content.audioUrl` | 400 | `QUESTION_AUDIO_REQUIRED` | agreed |
 | Audio upload failure | 500 | `QUESTION_AUDIO_UPLOAD_FAILED` | agreed |
 | Field validation (skill/subType mismatch, bad `correctAnswer` shape, missing options/rubric) | 400 | `VALIDATION_ERROR` | agreed (fallback family) |
-| **Edit/delete gated by published assignment** | 409 | ⛔ **no valid code exists** | gap — see §16 |
+| **Edit/delete gated by published assignment** | 409 | `QUESTION_IN_USE` | agreed (added 2026-09-03, owner-approved) |
 
 ## 10. Side effects & notifications
 
@@ -208,7 +208,7 @@ Writing with `rubric` + `correctAnswer: null`, one multi-answer Reading with `co
 | INV-TQ-02 | unit + integration | every skill×subType mismatch (27 invalid pairs sampled) → 400; all 9 valid pairs persist |
 | INV-TQ-03 | unit | single → string; multi/ordering/matching → string[]; writing → null enforced |
 | INV-TQ-04 | integration | listening without audioUrl → 400 `QUESTION_AUDIO_REQUIRED`; MCQ without options → 400; writing without rubric/prompt → 400 |
-| INV-TQ-05 | integration (real DB) | seed published assignment referencing q → PATCH/DELETE q → gated; draft assignment does not gate; ⛔ code assertion pending §16 |
+| INV-TQ-05 | integration (real DB) | seed published assignment referencing q → PATCH/DELETE q → `409 QUESTION_IN_USE`; draft assignment does not gate |
 | INV-TQ-06 | unit | PATCH renaming an option id still referenced by `correctAnswer` → 400 |
 | INV-TQ-07 | integration | delete → document gone; re-delete → 404 |
 
@@ -216,7 +216,7 @@ Writing with `rubric` + `correctAnswer: null`, one multi-answer Reading with `co
 
 | Question | What it blocks | Owner | Decide by |
 |---|---|---|---|
-| Q1. **No error code for "question used by a published assignment"** — edit/delete gate has nothing to throw. | INV-TQ-05's HTTP branch; FE error mapping | BE owner (registry) | before coding |
+| Q1. ~~No error code for "question used by a published assignment"~~ **RESOLVED 2026-09-03 — `QUESTION_IN_USE` (409) added to the registry, owner-approved.** | — | BE owner | done |
 | Q2. **CR-3 storage** (Supabase vs Cloudinary) undecided → the audio upload mechanism (and `contentUrl` in module 01) cannot be built. `audioUrl` is specced as an opaque string. | upload flow only — CRUD works without it | PO | before upload work |
 | Q3. No optimistic-concurrency field on Question — last-write-wins on update. Accept, or add `version`? | concurrent edits by the same teacher | BE lead | before coding |
 | Q4. Mongo index bootstrapping: `createIndex` at app start vs a script — pick one and write it down for all future Mongo modules. | §12 mechanism | BE lead | before coding |
