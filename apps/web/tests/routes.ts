@@ -23,6 +23,15 @@ const student: Screen[] = [
   // Student route whose chrome is not covered by any other entry here.
   { path: "/student/landing", name: "landing", area: "student" },
   { path: "/student/learning-path", name: "learning-path", area: "student" },
+  // LMS half. Dynamic ids come from lib/student/lms-data.ts and are spread across the
+  // branches the screens take: a class with lessons, a lesson that has an attachment,
+  // an attempt that is still open, and a result that is only half graded.
+  { path: "/student/classes", name: "classes", area: "student" },
+  { path: "/student/classes/c-hsk3-a", name: "class-detail", area: "student" },
+  { path: "/student/classes/c-hsk3-a/lessons/l-h3-01", name: "lesson-detail", area: "student" },
+  { path: "/student/assignments", name: "assignments", area: "student" },
+  { path: "/student/attempts/at-h3-02", name: "attempt-take", area: "student" },
+  { path: "/student/attempts/at-h3-03/result", name: "attempt-result-partial", area: "student" },
   { path: "/student/learning-path/std-1-l1", name: "learning-path-node", area: "student" },
   // Deliberately not all from level 1 of one curriculum: the id parser used to
   // fall back to "HSK Standard Course, level 1" for everything else, so a level-1

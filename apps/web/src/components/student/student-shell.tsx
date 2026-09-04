@@ -20,6 +20,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   Blocks,
+  ClipboardList,
   BookOpen,
   Briefcase,
   Flame,
@@ -32,6 +33,7 @@ import {
   NotebookPen,
   PenTool,
   Puzzle,
+  School,
   RotateCcw,
   Sparkles,
   Sun,
@@ -53,6 +55,8 @@ interface NavItem {
 
 export const PRIMARY_NAV: NavItem[] = [
   { to: "/student", label: "Trang chủ", short: "Trang chủ", icon: <Home size={18} /> },
+  { to: "/student/classes", label: "Lớp của tôi", short: "Lớp học", icon: <School size={18} /> },
+  { to: "/student/assignments", label: "Bài tập được giao", short: "Bài tập", icon: <ClipboardList size={18} /> },
   { to: "/student/learning-path", label: "Lộ trình HSK", short: "Lộ trình", icon: <Map size={18} /> },
   { to: "/student/flashcards", label: "Từ vựng Flashcard", short: "Từ vựng", icon: <Sparkles size={18} /> },
   { to: "/student/grammar", label: "Ngữ pháp", short: "Ngữ pháp", icon: <BookOpen size={18} /> },
@@ -76,10 +80,23 @@ export const ACHIEVEMENT_NAV: NavItem[] = [
 const ALL_NAV_ITEMS = [...PRIMARY_NAV, ...SECONDARY_NAV, ...ACHIEVEMENT_NAV];
 
 /**
+ * The bottom bar shows four destinations plus "Thêm", not the whole primary group.
+ *
+ * At 375px each tab gets viewport/(n+1) pixels, so the Vietnamese labels start wrapping
+ * and colliding once there are more than five: adding two class-related entries to the
+ * rail squeezed every tab to 47px and broke "Ngữ pháp" across the icon next to it.
+ * Nothing is lost — the sheet below lists every group in full.
+ */
+const TABBAR_NAV = PRIMARY_NAV.slice(0, 4);
+
+/**
  * Longer prefixes first, so `/student/exams/e-h3-1` matches "Phòng thi HSK"
  * rather than falling through to the bare `/student` entry.
  */
 const PAGE_TITLES: [string, string][] = [
+  ["/student/attempts", "Bài làm"],
+  ["/student/classes", "Lớp của tôi"],
+  ["/student/assignments", "Bài tập được giao"],
   ["/student/learning-path", "Lộ trình HSK"],
   ["/student/flashcards", "Flashcard từ vựng"],
   ["/student/grammar", "Thư viện ngữ pháp"],
@@ -390,7 +407,7 @@ export function StudentShell({ children }: { children: ReactNode }) {
 
           {/* ---------- Mobile tab bar ---------- */}
           <nav className="tabbar" aria-label="Điều hướng dưới cùng">
-            {PRIMARY_NAV.map((item) => (
+            {TABBAR_NAV.map((item) => (
               <Link
                 key={item.to}
                 href={item.to}

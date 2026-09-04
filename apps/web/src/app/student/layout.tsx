@@ -5,6 +5,7 @@ import "./base.css";
 import "./layout.css";
 import "./components.css";
 import "./pages.css";
+import "./lms.css";
 
 export const metadata: Metadata = {
   title: "Hán Lộ — Học viện HSK",

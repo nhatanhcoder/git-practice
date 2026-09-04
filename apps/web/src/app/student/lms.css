@@ -1,0 +1,350 @@
+/*
+ * Student LMS half — classes, lessons, assignments, attempts.
+ *
+ * Scoped under `.student-root` like every other Student stylesheet, so Admin and Teacher
+ * (a different design baseline) are untouched. Colours come from the tokens in
+ * `tokens.css`; nothing here picks a hex value of its own.
+ *
+ * Every horizontal row in this file either wraps or allows its children to shrink.
+ * `WEB-008` was three screens dragging the document past 375px because one nowrap row
+ * held content wider than the mobile column.
+ */
+
+/* ---------- class cards ---------- */
+
+.student-root .lms-cards {
+  display: grid;
+  /* auto-fit + minmax, not a fixed column count: at 375px this collapses to one column
+     without a media query, and the min is below the mobile content width. */
+  grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr));
+  gap: var(--sp-4);
+}
+
+.student-root .lms-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  padding: var(--sp-5);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  color: inherit;
+  text-decoration: none;
+  transition: border-color var(--dur-1) var(--ease), transform var(--dur-1) var(--ease);
+}
+
+.student-root .lms-card:hover,
+.student-root .lms-card:focus-visible {
+  border-color: var(--accent);
+  transform: translateY(-2px);
+}
+
+.student-root .lms-card__title {
+  margin: var(--sp-1) 0 0;
+  font-family: var(--font-display, inherit);
+  font-size: 1.05rem;
+  line-height: 1.35;
+}
+
+.student-root .lms-card__meta,
+.student-root .lms-card__code {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  margin: 0;
+  min-width: 0;
+  font-size: 0.85rem;
+  color: var(--fg-muted);
+}
+
+.student-root .lms-card__code {
+  margin-top: auto;
+  padding-top: var(--sp-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.student-root .lms-fact {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  font-size: 0.88rem;
+  color: var(--fg-muted);
+}
+
+/* ---------- lesson rows ---------- */
+
+.student-root .lms-lesson {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-4);
+  padding: var(--sp-4);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  color: inherit;
+  text-decoration: none;
+}
+
+.student-root .lms-lesson:hover,
+.student-root .lms-lesson:focus-visible {
+  border-color: var(--accent);
+}
+
+.student-root .lms-lesson__order {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--surface-2);
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.student-root .lms-lesson__title {
+  display: block;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.student-root .lms-lesson__hanzi {
+  margin-left: var(--sp-2);
+  font-style: normal;
+  font-family: var(--font-hanzi, inherit);
+  color: var(--fg-muted);
+}
+
+.student-root .lms-lesson__summary {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+  margin: var(--sp-1) 0 var(--sp-2);
+  font-size: 0.85rem;
+  color: var(--fg-muted);
+}
+
+.student-root .lms-hanzi {
+  font-family: var(--font-hanzi, inherit);
+  font-size: 1.6rem;
+  color: var(--fg-muted);
+}
+
+.student-root .lms-prose {
+  margin: 0;
+  line-height: 1.7;
+}
+
+.student-root .lms-attach {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  flex-wrap: wrap;
+  padding: var(--sp-3);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+}
+
+/* ---------- assignment rows ---------- */
+
+.student-root .lms-assignment {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  /* Wraps rather than squeezing: the status chip plus the action button do not fit
+     beside a long title at 375px. */
+  flex-wrap: wrap;
+  padding: var(--sp-4);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface);
+}
+
+.student-root .lms-assignment__icon {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+  color: var(--accent);
+}
+
+.student-root .lms-assignment__waiting {
+  font-size: 0.82rem;
+  color: var(--fg-muted);
+}
+
+/* ---------- attempt runner ---------- */
+
+.student-root .attempt-bar {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  flex-wrap: wrap;
+  padding: var(--sp-3) var(--sp-4);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface);
+}
+
+.student-root .attempt-title {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.35;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.student-root .attempt-clock {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-1) var(--sp-3);
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.student-root .attempt-clock.is-urgent {
+  background: color-mix(in srgb, var(--danger) 18%, transparent);
+  color: var(--danger);
+}
+
+.student-root .attempt-save {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  min-width: 84px;
+  font-size: 0.82rem;
+  color: var(--fg-muted);
+}
+
+.student-root .spin {
+  animation: lms-spin 900ms linear infinite;
+}
+
+@keyframes lms-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.student-root .attempt-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 260px;
+  gap: var(--sp-4);
+  align-items: start;
+}
+
+.student-root .attempt-prompt {
+  margin: 0;
+  font-size: 1.05rem;
+  line-height: 1.65;
+}
+
+.student-root .attempt-option {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-4);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  cursor: pointer;
+}
+
+.student-root .attempt-option:hover {
+  border-color: var(--accent);
+}
+
+.student-root .attempt-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+}
+
+.student-root .attempt-chip {
+  width: 38px;
+  height: 38px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: inherit;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+
+.student-root .attempt-chip.is-answered {
+  border-color: var(--success);
+  color: var(--success);
+}
+
+/* Flagged wins over answered — the same precedence the rule module enforces, so the
+   chip and `questionMark()` cannot disagree. */
+.student-root .attempt-chip.is-flagged {
+  border-color: var(--warn);
+  color: var(--warn);
+}
+
+.student-root .attempt-chip.is-current {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-fg, #fff);
+}
+
+/* ---------- result ---------- */
+
+.student-root .result-score {
+  font-family: var(--font-display, inherit);
+  font-size: 2.4rem;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.student-root .result-score__max {
+  font-size: 1.1rem;
+  color: var(--fg-muted);
+}
+
+.student-root .result-row {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-3);
+  flex-wrap: wrap;
+  padding: var(--sp-3);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+}
+
+.student-root .result-row__index {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--surface-2);
+  font-size: 0.82rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.student-root .result-row__note {
+  font-size: 0.85rem;
+  color: var(--fg-muted);
+}
+
+@media (max-width: 900px) {
+  /* The question navigator drops below the question rather than shrinking to a column
+     too narrow for its chips. */
+  .student-root .attempt-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
