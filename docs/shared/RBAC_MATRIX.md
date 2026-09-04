@@ -27,10 +27,10 @@
 | **User** | update own profile | ✅ | 🔒 | 🔒 |
 | **User** | approve / suspend | ✅ | ❌ | ❌ |
 | **Class** | create | ❌ | ✅ | ❌ |
-| **Class** | read (own classes) | ❌ | 🔒 | 🔒 |
+| **Class** | read | 👁️ (audit / session display) | 🔒 (own classes) | 🔒 (enrolled) |
 | **Class** | update / archive | ❌ | 🔒 | ❌ |
 | **ClassEnrollment** | enroll (via code) | ❌ | ❌ | ✅ |
-| **ClassEnrollment** | list (own class) | ❌ | 🔒 | 🔒 |
+| **ClassEnrollment** | list (roster / enrollments) | 👁️ (audit) | 🔒 (own class) | 🔒 (enrolled) |
 | **Question** | create / update / delete | ❌ | ✅ | ❌ |
 | **Question** | read | ❌ | ✅ | 👁️ (in attempt) |
 | **Assignment** | create / update / delete | ❌ | 🔒 | ❌ |

@@ -58,6 +58,7 @@ async function req(
 }
 
 let adminToken: string;
+const createdUserIds: string[] = [];
 
 before(async () => {
   app = await NestFactory.create(AppModule, { logger: false });
@@ -87,9 +88,11 @@ before(async () => {
 });
 
 after(async () => {
-  await prisma.user.deleteMany({
-    where: { email: { contains: 'concurrency.target' } },
-  });
+  if (createdUserIds.length > 0) {
+    await prisma.user.deleteMany({
+      where: { id: { in: createdUserIds } },
+    });
+  }
   await app?.close();
 });
 
@@ -105,6 +108,7 @@ describe('Admin Approval Concurrency & Race Condition Protection', () => {
     });
     const targetId = reg.body.data.id;
     assert.ok(targetId);
+    createdUserIds.push(targetId);
 
     // Fire 2 concurrent approval requests simultaneously
     const [res1, res2] = await Promise.all([
@@ -136,6 +140,8 @@ describe('Admin Approval Concurrency & Race Condition Protection', () => {
       role: 'teacher',
     });
     const targetId = reg.body.data.id;
+    assert.ok(targetId);
+    createdUserIds.push(targetId);
     await req('PATCH', `/admin/users/${targetId}/approve`, undefined, adminToken);
 
     // Fire 2 concurrent suspend requests simultaneously

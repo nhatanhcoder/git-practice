@@ -53,9 +53,15 @@ export class AuthController {
   @ApiOperation({ summary: 'Login with email & password, sets refresh_token cookie' })
   async login(
     @Body() dto: LoginDto,
+    @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const { result, rawRefreshToken } = await this.authService.login(dto);
+    const ip =
+      req.ip ??
+      (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() ??
+      req.socket?.remoteAddress ??
+      '127.0.0.1';
+    const { result, rawRefreshToken } = await this.authService.login(dto, ip);
     res.cookie(COOKIE_NAME, rawRefreshToken, cookieOptions());
     return result;
   }

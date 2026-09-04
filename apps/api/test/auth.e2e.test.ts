@@ -210,6 +210,26 @@ describe('POST /auth/login', () => {
     assert.ok(res.cookieHeader.includes('Path=/api/v1/auth'));
     assert.ok(extractCookie(res.cookieHeader));
   });
+
+  it('enforces login rate limit after 5 failed attempts with 429 AUTH_TOO_MANY_REQUESTS', async () => {
+    const rateLimitEmail = `rate.limit.${Date.now()}@hsk.local`;
+    for (let i = 0; i < 5; i++) {
+      const failRes = await req('POST', '/auth/login', {
+        email: rateLimitEmail,
+        password: 'WrongPassword!',
+      });
+      assert.equal(failRes.status, 401);
+      assert.equal(failRes.body.code, 'AUTH_INVALID_CREDENTIALS');
+    }
+
+    // 6th attempt is blocked with 429
+    const blockedRes = await req('POST', '/auth/login', {
+      email: rateLimitEmail,
+      password: 'WrongPassword!',
+    });
+    assert.equal(blockedRes.status, 429);
+    assert.equal(blockedRes.body.code, 'AUTH_TOO_MANY_REQUESTS');
+  });
 });
 
 describe('POST /auth/refresh & Replay Attack Detection', () => {
