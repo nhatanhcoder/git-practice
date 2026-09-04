@@ -48,9 +48,23 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
 - ✅ F1.1 Account registration (status `pending`, bcrypt cost 12)
 - ✅ F1.2 Login (JWT access 15min + refresh 7d, httpOnly cookie)
 - ✅ F1.3 Account approval (Admin: PATCH /admin/users/:id/approve, suspend, activate)
-- ✅ F1.4 Profile & Admin Users FE integration (connected apps/web/src/app/admin/users, [userId], profile to real /api/v1/admin/users and /api/v1/auth/me)
+- ✅ F1.4 Profile & Admin Users FE integration — **the wiring existed before 2026-09-04 but did
+      not work**: every failure was swallowed and the hardcoded fixtures stayed on screen, so the
+      screens looked healthy while disconnected (`WEB-011`). Now genuinely live against
+      `/api/v1/admin/users` and `/api/v1/auth/me`, with honest loading / empty / forbidden /
+      failed-to-load states and no fallback data anywhere
 - ✅ Refresh Token Rotation + Replay Attack detection (PROJECT_KNOWLEDGE.md 4.1)
 - ✅ Custom decorators `@CurrentUser`, `@Roles`, `@Public`
+- ✅ **Login screen + session handling** (claude · 2026-09-04) — `/login` existed nowhere until
+      now, so the FE was wired to a protected API with no way to get a token; every guarded call
+      401'd and the screens quietly showed mock data instead (`WEB-011`, `WEB-012`). Access token
+      moved out of `localStorage` into an in-memory Zustand store per `working-rules.md` § Auth
+      Rules, with single-flight refresh-and-retry on 401 and `restoreSession()` on mount.
+      **Verified against a real 401**, not assumed: the API was restarted with an 8-second access
+      TTL and the network log showed `401 → /auth/refresh 200 → retry 200`.
+- ✅ **DoD met end to end**: signed in through the browser as `admin@hsk.local`, landed on the
+      admin area, approved `teacher.pending@hsk.local` from the UI, and confirmed the row changed
+      to `active` **in Postgres** (`PATCH /admin/users/:id/approve → 200`). Not a mock.
 - **DoD**: Register → Admin approves → login lands on the correct dashboard per role
 
 ## Sprint 2 — Classes & Enrollment
@@ -138,6 +152,23 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
 - ⬜ F3.5 Search & filter questions (Chinese full-text search)
 - ⬜ F3.6 Edit/delete question (soft delete if already used)
 - ⬜ F4.1 Create Assignment · ⬜ F4.2 Create Mock Test · ⬜ F4.3 Edit/delete Assignment
+- 🔶 (claude · 2026-09-04) **F3.1–F3.5 question bank BUILT on MongoDB** — the first module that
+      actually uses Mongo. The connection had existed since PR #12 but nothing used it: no
+      `src/mongodb/schemas/`, no model, one `InjectConnection` so `/health` could ping it.
+      `question.schema.ts` follows `ENTITY_QUESTION.md` (nine sub-types, options as `{id, text}`,
+      `correctAnswer` typed `string | string[] | null`), and the five endpoints in
+      `API_TEACHER.md` § Question Bank are live. Cross-field rules live in a pure
+      `question-rules.ts`: a sub-type must belong to its skill, writing has no answer but needs a
+      rubric, listening needs audio, an answer must reference option ids that exist, multi-answer
+      sub-types take an array — and **PATCH validates the merged document**, because
+      `{skill: "writing"}` is a legal patch that leaves a correctAnswer behind. Ownership is
+      checked in the service on every read and write; `@Roles('teacher')` only proves the caller
+      is *a* teacher. `/teacher/questions` is wired to it and its mock is gone.
+      13 new e2e tests, 93/93 across the suite against the real Atlas cluster.
+      **Stays 🔶, not ✅**: `F3.6` (no hard delete once a question is used) **is not enforced** —
+      `usageCount` needs the Assignment table, which does not exist (`WEB-013`) — and **listening
+      questions cannot be created from the UI at all** because there is no audio upload and `CR-3`
+      has not decided a storage provider (`API-011`).
 - **DoD**: Create a question set → group into an Assignment assigned to a class
 
 ## Sprint 4 — Taking Tests & Grading (+ AI Suggest)
