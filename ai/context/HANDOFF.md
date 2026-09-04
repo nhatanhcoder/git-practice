@@ -37,32 +37,33 @@
 Addressed all 10 review findings on commit `c4bfbdb` regarding account status lifecycle state machine, concurrency protection on user approval/suspension, atomic refresh token rotation with grace window, exception filter HTTP status preservation, and auth contract alignment.
 
 **Done**:
-1. **User Account Status Lifecycle & Concurrency (Items 1 & 2)**:
+1. **User Account Status Lifecycle & Concurrency (Criterion A1)**:
    - Enforced strict state machine: `pending` → `active` → `suspended` → `active`.
    - Replaced non-atomic queries with atomic conditional updates (`updateMany({ where: { id, status: sourceStatus } })`).
    - Added `USER_ALREADY_SUSPENDED` (409), `USER_ALREADY_ACTIVE` (409), `USER_INVALID_STATUS_TRANSITION` (400) error codes.
-2. **Refresh Token Atomic Rotation, Lost Response Recovery & Invariant Guards (Items 3, 8 & Follow-up 2, 3)**:
+   - Guaranteed returned DTO reflects exact `targetStatus` of the atomic update, preventing interleaved update leakage.
+   - Covered full 9-transition matrix (3 actions × 3 statuses), non-existent UUIDs (404), and malformed IDs (400) with DB immutability assertions.
+2. **Refresh Token Atomic Rotation, Lost Response Recovery & Invariant Guards (Criterion A2)**:
    - Atomic rotation: parent `revokedAt`, `revokedReason = 'rotated'`, `replacedById` set in the exact same interactive transaction as child creation with conditional `where: { id, revokedAt: null }`.
    - Implemented `rotationCache` with 15-second TTL per `01-auth.md` §8 Proposal A: returns identical child raw refresh token cookie during grace period, allowing recovery if first rotation response was dropped.
    - Guarded grace window against expiry (`AUTH_TOKEN_EXPIRED`) and account suspension/pending (`AUTH_ACCOUNT_SUSPENDED`, `AUTH_ACCOUNT_PENDING`) on both parent and child tokens.
    - Re-presenting rotated token outside grace window revokes entire family with `401 AUTH_REFRESH_INVALID`.
    - Updated `POST /auth/logout` to return `204 No Content` per `01-auth.md`.
-3. **Login Rate Limiting (Item 4 & Follow-up 4)**:
+3. **Login Rate Limiting**:
    - Implemented in-memory sliding window rate limiter in `AuthService`: max 5 failed attempts per 15 minutes per `(ip, normalizedEmail)`.
    - Emits `429 AUTH_TOO_MANY_REQUESTS` on 6th attempt; resets counter upon successful authentication.
-4. **RBAC Matrix Alignment (Item 6 & Follow-up 4)**:
+4. **RBAC Matrix Alignment**:
    - Updated `docs/shared/RBAC_MATRIX.md` and `docs/actors/admin/PERMISSIONS_ADMIN.md` to include Admin read-only audit permission for `Class` and `ClassEnrollment` (roster), closing the matrix contradiction.
-5. **Exception Filter Fix (Item 7)**:
+5. **Exception Filter Fix**:
    - Removed status override `if (status !== 404) status = 500`. Preserves client HTTP statuses for bare `HttpException`.
    - Standardized error field to canonical HTTP reason phrase using `http.STATUS_CODES[status]`.
-6. **Production Start Script Fix (Item 9)**:
+6. **Production Start Script Fix**:
    - Changed `apps/api/package.json` `start` and `start:prod` to `node dist/src/main.js`.
-7. **E2E Test Suites & Targeted DB Scoping (Item 10 & Follow-up 1, 4)**:
-   - Scoped `refresh-token-concurrency.e2e.test.ts` to specific `tokenHash`, avoiding broad `updateMany` that risked parallel test flakiness.
+7. **E2E Test Suites & Targeted DB Scoping**:
+   - Scoped `refresh-token-concurrency.e2e.test.ts` to specific `tokenHash`.
    - Scoped `admin-approval-concurrency.e2e.test.ts` cleanup to exact array of tracked `createdUserIds`.
-   - Added assertions for: single active child token in family, usable cookie recovery, grace rejection on expired/suspended accounts, and login rate limiting (429).
    - Verified:
-     - `pnpm --filter api test`: **75/75 tests pass** (14 suites).
+     - `pnpm --filter api test`: **80/80 tests pass** (14 suites).
      - `node --test apps/web/scripts/*.test.mjs`: **39/39 tests pass** (7 suites).
      - `pnpm --filter web build`: **31/31 static pages build cleanly**.
      - `node scripts/check-docs.mjs`: **8/8 checks pass**.

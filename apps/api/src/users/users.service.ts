@@ -98,7 +98,7 @@ export class UsersService {
       where: { id },
       select: DETAIL_SELECT,
     });
-    return toDetail(updated);
+    return { ...toDetail(updated), status: 'active' };
   }
 
   async suspend(id: string): Promise<AdminUserDetail> {
@@ -127,7 +127,7 @@ export class UsersService {
       where: { id },
       select: DETAIL_SELECT,
     });
-    return toDetail(updated);
+    return { ...toDetail(updated), status: 'suspended' };
   }
 
   async activate(id: string): Promise<AdminUserDetail> {
@@ -156,7 +156,7 @@ export class UsersService {
       where: { id },
       select: DETAIL_SELECT,
     });
-    return toDetail(updated);
+    return { ...toDetail(updated), status: 'active' };
   }
 
   private buildWhere(query: ListUsersQuery): Prisma.UserWhereInput {
