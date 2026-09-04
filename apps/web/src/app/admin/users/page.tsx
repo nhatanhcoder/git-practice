@@ -18,6 +18,7 @@ import {
   activateUser, approveUser, fetchAdminUsers, suspendUser,
 } from "../../../lib/admin-users-service";
 import { ApiError } from "../../../lib/api-client";
+import { SessionChip } from "@/components/auth/session-chip";
 import styles from "./users.module.css";
 
 type UserStatus = "pending" | "active" | "suspended";
@@ -185,7 +186,7 @@ function AdminSidebar({ open, close }: { open: boolean; close: () => void }) {
 }
 
 function AdminHeader({ openMenu }: { openMenu: () => void }) {
-  return <header className={styles.topbar}><div className={styles.breadcrumb}><button className={styles.menuButton} onClick={openMenu} aria-label="Mở menu"><Menu size={20} /></button><Link href="/admin">Quản trị</Link><ChevronRight size={14} /><strong>Tài khoản</strong></div><div className={styles.headerActions}><button className={styles.iconButton} aria-label="Thông báo"><Bell size={19} /><span className={styles.notificationDot} /></button><div className={styles.headerDivider} /><Link className={styles.profileButton} href="/admin/profile"><span className={styles.headerAvatar}>AT</span><span className={styles.profileText}><strong>Anh Tuấn</strong><small>Quản trị viên</small></span><ChevronDown size={15} /></Link></div></header>;
+  return <header className={styles.topbar}><div className={styles.breadcrumb}><button className={styles.menuButton} onClick={openMenu} aria-label="Mở menu"><Menu size={20} /></button><Link href="/admin">Quản trị</Link><ChevronRight size={14} /><strong>Tài khoản</strong></div><div className={styles.headerActions}><button className={styles.iconButton} aria-label="Thông báo"><Bell size={19} /><span className={styles.notificationDot} /></button><div className={styles.headerDivider} /><SessionChip classNames={{ button: styles.profileButton, avatar: styles.headerAvatar, text: styles.profileText }} /></div></header>;
 }
 
 function StatusPill({ status }: { status: UserStatus }) {
@@ -215,6 +216,9 @@ function EmptyState({ filtered, onClear }: { filtered: boolean; onClear: () => v
 }
 
 function ReviewSwitcher({ value, onChange }: { value: ReviewState; onChange: (state: ReviewState) => void }) {
+  // WEB-004: design-review scaffolding. It must never reach a real user — over
+  // live data it lets a failed load be repainted as a healthy one.
+  if (process.env.NODE_ENV === "production") return null;
   const states: ReviewState[] = ["ready", "loading", "empty", "partial", "error", "forbidden"];
   return <aside className={styles.stateSwitcher} aria-label="Review State Switcher"><span>REVIEW STATE</span>{states.map((state) => <button key={state} className={value === state ? styles.stateActive : ""} onClick={() => onChange(state)}>{state}</button>)}</aside>;
 }

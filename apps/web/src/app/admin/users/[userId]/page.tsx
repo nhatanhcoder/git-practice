@@ -26,6 +26,7 @@ import { getStatusColor } from "../../../../lib/status";
 import { nextStatus } from "../../../../lib/user-status.js";
 import { activateUser, approveUser, fetchAdminUserDetail, suspendUser } from "../../../../lib/admin-users-service";
 import { ApiError } from "../../../../lib/api-client";
+import { SessionChip } from "@/components/auth/session-chip";
 import styles from "./detail.module.css";
 
 type UserStatus = "pending" | "active" | "suspended";
@@ -258,18 +259,21 @@ export default function AdminUserDetailPage({ params }: { params: { userId: stri
           )}
         </main>
       </div>
+      {/* WEB-004: design-review scaffolding, dev only. */}
+      {process.env.NODE_ENV !== "production" && (
       <div className={`${styles.stateSwitcher} ${styles.detailSwitcher}`}>
-        <span>REVIEW STATE</span>
-        {(["student", "teacher", "loading", "empty", "partial", "error", "forbidden"] as ReviewState[]).map((state) => (
-          <button
-            key={state}
-            className={reviewState === state ? styles.stateActive : ""}
-            onClick={() => switchState(state)}
-          >
-            {state === "student" ? "ready: student" : state === "teacher" ? "ready: teacher" : state}
-          </button>
-        ))}
-      </div>
+          <span>REVIEW STATE</span>
+          {(["student", "teacher", "loading", "empty", "partial", "error", "forbidden"] as ReviewState[]).map((state) => (
+            <button
+              key={state}
+              className={reviewState === state ? styles.stateActive : ""}
+              onClick={() => switchState(state)}
+            >
+              {state === "student" ? "ready: student" : state === "teacher" ? "ready: teacher" : state}
+            </button>
+          ))}
+        </div>
+      )}
       {toast && (
         <div className={styles.toast}>
           <Check size={18} />
@@ -352,14 +356,13 @@ function AdminHeader({ openMenu }: { openMenu: () => void }) {
           <span className={styles.notificationDot} />
         </button>
         <div className={styles.headerDivider} />
-        <Link className={styles.profileButton} href="/admin/profile">
-          <span className={styles.headerAvatar}>AT</span>
-          <span className={styles.profileText}>
-            <strong>Anh Tuấn</strong>
-            <small>Quản trị viên</small>
-          </span>
-          <ChevronDown size={16} />
-        </Link>
+        <SessionChip
+          classNames={{
+            button: styles.profileButton,
+            avatar: styles.headerAvatar,
+            text: styles.profileText,
+          }}
+        />
       </div>
     </header>
   );

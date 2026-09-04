@@ -638,4 +638,12 @@
   .topbar { padding: 0 16px; }
   .content { padding: 16px; }
   .titleRow { flex-direction: column; align-items: flex-start; }
+  /* The teacher select and "Tạo kỳ lương" together measure 393px — wider than the
+     343px content column at 375px — so on one line they pushed the whole page
+     sideways. Caught by the 375px screen check. */
+  .titleControls { flex-wrap: wrap; width: 100%; }
+  .teacherSelect { flex: 1 1 160px; min-width: 0; }
+  /* Year + status + the "4 kỳ lương" count need 361px on one line; the card is 343px
+     at this width, and the count was being squeezed to 30px and spilling out. */
+  .filterCard { flex-wrap: wrap; }
 }

@@ -594,7 +594,7 @@ export default function AdminProfilePage() {
                         placeholder="••••••••"
                       />
                       <p className={styles.helperText}>
-                        Ít nhất 8 ký tự, có chữ hoa và số.
+                        Ít nhất 8 ký tự.
                       </p>
 
                       {/* Password Strength Meter */}
@@ -671,28 +671,31 @@ export default function AdminProfilePage() {
       </div>
 
       {/* Dev Review State Switcher */}
+      {/* WEB-004: design-review scaffolding, dev only. */}
+      {process.env.NODE_ENV !== "production" && (
       <div className={styles.stateSwitcher}>
-        <span>REVIEW STATE</span>
-        {(
-          [
-            "ready",
-            "loading",
-            "saving_profile",
-            "saving_password",
-            "validation_error",
-            "error",
-            "forbidden",
-          ] as ReviewState[]
-        ).map((state) => (
-          <button
-            key={state}
-            className={reviewState === state ? styles.stateActive : ""}
-            onClick={() => applyReviewState(state)}
-          >
-            {state}
-          </button>
-        ))}
-      </div>
+          <span>REVIEW STATE</span>
+          {(
+            [
+              "ready",
+              "loading",
+              "saving_profile",
+              "saving_password",
+              "validation_error",
+              "error",
+              "forbidden",
+            ] as ReviewState[]
+          ).map((state) => (
+            <button
+              key={state}
+              className={reviewState === state ? styles.stateActive : ""}
+              onClick={() => applyReviewState(state)}
+            >
+              {state}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Toast Notification */}
       {toast && (
