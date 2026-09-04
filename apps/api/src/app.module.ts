@@ -10,6 +10,7 @@ import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
 import { ClassesModule } from './classes/classes.module';
 import { LessonsModule } from './lessons/lessons.module';
+import { QuestionsModule } from './questions/questions.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
 
@@ -44,6 +45,7 @@ import { RolesGuard } from './common/guards/roles.guard';
     }),
 
     UsersModule,
+    QuestionsModule,
 
     MongooseModule.forRootAsync({
       imports: [ConfigModule],
