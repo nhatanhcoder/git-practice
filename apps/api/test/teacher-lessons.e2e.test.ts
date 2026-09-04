@@ -216,6 +216,85 @@ describe('Teacher Lessons API', () => {
     assert.equal(res.body.data[1].orderIndex, 2);
   });
 
+  it('rejects a partial reorder payload instead of colliding on the unique index', async () => {
+    // The class has two lessons. Moving only one of them to index 1 leaves the other
+    // still holding index 1, which `@@unique([classId, orderIndex])` cannot allow — the
+    // two-step +10000 shift used to fail halfway with a raw P2002. The DTO's
+    // ArrayMinSize(1) explicitly permits this payload, so the service has to reject it.
+    const res = await req(
+      'PATCH',
+      `/teacher/classes/${classId}/lessons/reorder`,
+      { items: [{ id: lesson1Id, orderIndex: 1 }] },
+      teacherToken,
+    );
+    assert.equal(res.status, 400);
+    assert.equal(res.body.code, 'VALIDATION_ERROR');
+  });
+
+  it('rejects a reorder payload that names the same lesson twice', async () => {
+    const res = await req(
+      'PATCH',
+      `/teacher/classes/${classId}/lessons/reorder`,
+      {
+        items: [
+          { id: lesson1Id, orderIndex: 1 },
+          { id: lesson1Id, orderIndex: 2 },
+        ],
+      },
+      teacherToken,
+    );
+    assert.equal(res.status, 400);
+    assert.equal(res.body.code, 'VALIDATION_ERROR');
+  });
+
+  it('rejects duplicate orderIndex values', async () => {
+    // Both rows would be shifted to the same temporary index in step one, so even the
+    // collision-avoidance step collides.
+    const res = await req(
+      'PATCH',
+      `/teacher/classes/${classId}/lessons/reorder`,
+      {
+        items: [
+          { id: lesson1Id, orderIndex: 1 },
+          { id: lesson2Id, orderIndex: 1 },
+        ],
+      },
+      teacherToken,
+    );
+    assert.equal(res.status, 400);
+    assert.equal(res.body.code, 'VALIDATION_ERROR');
+  });
+
+  it('rejects orderIndex values outside 1..N', async () => {
+    const res = await req(
+      'PATCH',
+      `/teacher/classes/${classId}/lessons/reorder`,
+      {
+        items: [
+          { id: lesson1Id, orderIndex: 1 },
+          { id: lesson2Id, orderIndex: 5 },
+        ],
+      },
+      teacherToken,
+    );
+    assert.equal(res.status, 400);
+    assert.equal(res.body.code, 'VALIDATION_ERROR');
+  });
+
+  it('leaves the ordering untouched after every rejected reorder', async () => {
+    // The rejections above must not have half-applied. After the successful swap the
+    // order is lesson2, lesson1 — and it should still be exactly that.
+    const res = await req('GET', `/teacher/classes/${classId}/lessons`, undefined, teacherToken);
+    assert.equal(res.status, 200);
+    assert.deepEqual(
+      res.body.data.map((l: { id: string; orderIndex: number }) => [l.id, l.orderIndex]),
+      [
+        [lesson2Id, 1],
+        [lesson1Id, 2],
+      ],
+    );
+  });
+
   it('deletes a lesson and re-packs orderIndex', async () => {
     const deleteRes = await req('DELETE', `/teacher/lessons/${lesson2Id}`, undefined, teacherToken);
     assert.equal(deleteRes.status, 200);

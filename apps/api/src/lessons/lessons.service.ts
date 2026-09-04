@@ -154,22 +154,29 @@ export class LessonsService {
       );
     }
 
-    await this.prisma.lesson.delete({ where: { id } });
+    // Delete and repack in one transaction. Separately, a failure between the two left
+    // the class with a hole in its ordering — and since `@@unique([classId, orderIndex])`
+    // makes the next create pick `max + 1`, that hole is permanent and silent.
+    await this.prisma.$transaction(async (tx) => {
+      await tx.lesson.delete({ where: { id } });
 
-    // Pack remaining order indices
-    const remaining = await this.prisma.lesson.findMany({
-      where: { classId: lesson.classId },
-      orderBy: { orderIndex: 'asc' },
-    });
+      const remaining = await tx.lesson.findMany({
+        where: { classId: lesson.classId },
+        orderBy: { orderIndex: 'asc' },
+        select: { id: true, orderIndex: true },
+      });
 
-    for (let i = 0; i < remaining.length; i++) {
-      if (remaining[i].orderIndex !== i + 1) {
-        await this.prisma.lesson.update({
-          where: { id: remaining[i].id },
-          data: { orderIndex: i + 1 },
-        });
+      // Ascending order matters: each row moves down into an index the row before it
+      // has already vacated, so no intermediate state violates the unique constraint.
+      for (let i = 0; i < remaining.length; i++) {
+        if (remaining[i].orderIndex !== i + 1) {
+          await tx.lesson.update({
+            where: { id: remaining[i].id },
+            data: { orderIndex: i + 1 },
+          });
+        }
       }
-    }
+    });
 
     return { message: 'Đã xóa bài học thành công' };
   }
@@ -194,6 +201,43 @@ export class LessonsService {
           `Bài học ${item.id} không thuộc lớp này`,
         );
       }
+    }
+
+    // The payload has to be a complete permutation: every lesson of the class exactly
+    // once, with orderIndex values exactly 1..N. Anything else cannot satisfy
+    // `@@unique([classId, orderIndex])`, and the two-step shift below would fail
+    // halfway through with a raw P2002 rather than a meaningful error:
+    //
+    //   - a partial payload leaves untouched lessons holding target indices. Reordering
+    //     just one lesson of three to index 1 collides with whichever lesson already
+    //     has 1, and `ArrayMinSize(1)` in the DTO explicitly allows that payload.
+    //   - a duplicate orderIndex collides with itself, even in the +10000 step, because
+    //     both rows are shifted to the same temporary value.
+    const seenIds = new Set<string>();
+    for (const item of items) {
+      if (seenIds.has(item.id)) {
+        throw new AppException(
+          ErrorCode.VALIDATION_ERROR,
+          `Bài học ${item.id} xuất hiện nhiều lần trong danh sách sắp xếp`,
+        );
+      }
+      seenIds.add(item.id);
+    }
+
+    if (items.length !== lessons.length) {
+      throw new AppException(
+        ErrorCode.VALIDATION_ERROR,
+        `Danh sách sắp xếp phải chứa đủ ${lessons.length} bài học của lớp, nhận được ${items.length}`,
+      );
+    }
+
+    const indices = items.map((i) => i.orderIndex).sort((a, b) => a - b);
+    const isPermutation = indices.every((value, i) => value === i + 1);
+    if (!isPermutation) {
+      throw new AppException(
+        ErrorCode.VALIDATION_ERROR,
+        `orderIndex phải là các số 1..${lessons.length}, mỗi số đúng một lần`,
+      );
     }
 
     // Two-step transactional update to avoid unique(classId, orderIndex) collision

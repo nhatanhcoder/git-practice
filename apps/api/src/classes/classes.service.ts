@@ -129,8 +129,18 @@ export class ClassesService {
       throw new AppException(ErrorCode.CLASS_NOT_FOUND, 'Không tìm thấy lớp học');
     }
 
-    if (!isAdmin && teacherId && cls.teacherId !== teacherId) {
-      throw new AppException(ErrorCode.CLASS_ACCESS_DENIED, 'Bạn không phải là giáo viên của lớp học này');
+    // Fail closed. The previous condition was `!isAdmin && teacherId && ...`, so calling
+    // this without a teacherId and without isAdmin skipped the ownership check entirely
+    // and returned any class, roster included. Both current callers happen to pass one or
+    // the other, but a default that means "no check" is the wrong way round for the one
+    // place ownership is enforced — RBAC lives in the service layer, not the role guard.
+    if (!isAdmin) {
+      if (!teacherId || cls.teacherId !== teacherId) {
+        throw new AppException(
+          ErrorCode.CLASS_ACCESS_DENIED,
+          'Bạn không phải là giáo viên của lớp học này',
+        );
+      }
     }
 
     return {

@@ -792,6 +792,95 @@ new files appear untracked, the index is unchanged, and HEAD does not move.
 
 ---
 
+### [API-008] `PATCH .../lessons/reorder` accepted payloads the unique index cannot satisfy
+
+**Severity**: High
+**Status**: ✅ Resolved 2026-09-04 — found by a self-review of the Teacher Lessons service.
+
+**Description**: `Lesson` carries `@@unique([classId, orderIndex])`, and `reorder()` avoided
+collisions by shifting every item to `orderIndex + 10000` before writing the real values.
+That works only when the payload is a **complete permutation** of the class's lessons, and
+nothing enforced that. Two payload shapes broke it:
+
+- **Partial payload.** `ReorderLessonsDto` allows `ArrayMinSize(1)`, so reordering one
+  lesson of three to index 1 is a valid request. The lesson that already holds index 1 is
+  untouched, so step two collides with it.
+- **Duplicate `orderIndex`.** Two items sharing an index are shifted to the *same*
+  temporary value, so even the collision-avoidance step collides.
+
+**Impact**: a P2002 escaping as `DUPLICATE_ENTRY` (409) for what is a malformed request,
+from an endpoint whose whole job is ordering. The transaction rolls back, so no data was
+corrupted — but the failure is unexplained to the caller and the FE has no branch for it.
+
+**Fix**: the service now requires the payload to name every lesson of the class exactly
+once with `orderIndex` values exactly `1..N`, rejecting anything else as
+`VALIDATION_ERROR` before touching the database. Four regression tests cover partial,
+duplicate-id, duplicate-index and out-of-range payloads, plus one asserting the stored
+order is unchanged after each rejection.
+
+**Lesson**: the collision-avoidance trick was correct for the input it assumed and had no
+check that the input was that shape. A guard that depends on an unvalidated precondition
+is not a guard.
+
+---
+
+### [API-009] `ClassesService.findById` skipped the ownership check when no teacher id was passed
+
+**Severity**: Medium
+**Status**: ✅ Resolved 2026-09-04 — hardening; no caller was exploiting it.
+
+**Description**: the condition read `if (!isAdmin && teacherId && cls.teacherId !== teacherId)`.
+The `teacherId &&` term means that calling `findById(classId)` with neither a teacher id nor
+`isAdmin` returned **any** class, including its full student roster.
+
+Both current callers are correct — the admin controller passes `isAdmin: true`, the teacher
+controller passes `user.id` — so this was latent rather than live. It is recorded because the
+default was the wrong way round: in the one place ownership is enforced, "argument missing"
+resolved to "no check" instead of "denied".
+
+**Fix**: `if (!isAdmin) { if (!teacherId || cls.teacherId !== teacherId) throw ... }`.
+
+---
+
+### [API-010] `delete` of a lesson re-packed order indices outside the transaction
+
+**Severity**: Medium
+**Status**: ✅ Resolved 2026-09-04.
+
+**Description**: `LessonsService.delete()` deleted the row and then re-packed the remaining
+`orderIndex` values in a loop of separate updates. A failure between the two left a
+permanent hole in the ordering: `create()` assigns `max + 1`, so nothing ever reuses the
+gap, and `@@unique([classId, orderIndex])` means the hole cannot be closed by a later write
+that assumes contiguity.
+
+**Fix**: delete and re-pack now share one `$transaction`. The ascending iteration order is
+kept and now commented — each row moves down into an index the previous row has already
+vacated, so no intermediate state violates the unique constraint.
+
+---
+
+### [DEBT-004] The API e2e suites share one database and were running in parallel
+
+**Severity**: Medium
+**Status**: ✅ Resolved 2026-09-04.
+
+**Description**: `node --test` runs test files in parallel by default. Every suite in
+`apps/api/test/` points at the same development database, and `admin-approval-concurrency`
+and `admin-user-lifecycle` both create users. The INV-USERS-07 pagination test walks every
+page and asserts it sees each row exactly once — with rows being inserted mid-walk it saw
+the total move from 7 to 9 and failed as though pagination had duplicated a row.
+
+**Observed**: one run failed, the next passed with no code change. A test that fails at
+random is worse than a missing test, because it trains people to re-run rather than look.
+
+**Fix**: `--test-concurrency=1` in the `test` script, and a comment at the affected test
+naming the flag so the next person checks it before suspecting the pagination code.
+
+**Not fixed**: the suites still share a database and still write to it. Per-suite schemas or
+a transactional rollback per test would make them independent rather than merely ordered.
+
+---
+
 ## Technical Debt
 
 ### [DEBT-001] No cross-DB transactions
