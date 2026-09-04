@@ -76,6 +76,7 @@
 | `AUTH_TOKEN_INVALID` | 401 | The token is invalid |
 | `AUTH_REFRESH_INVALID` | 401 | The refresh token is invalid or already used |
 | `AUTH_INSUFFICIENT_ROLE` | 403 | Insufficient permission for this action |
+| `AUTH_TOO_MANY_REQUESTS` | 429 | Quá nhiều lần thử đăng nhập, vui lòng thử lại sau |
 
 ### User Errors (USER_*)
 
@@ -83,6 +84,9 @@
 |------|------|-------|
 | `USER_NOT_FOUND` | 404 | User not found |
 | `USER_ALREADY_APPROVED` | 409 | The user has already been approved |
+| `USER_ALREADY_SUSPENDED` | 409 | The user has already been suspended |
+| `USER_ALREADY_ACTIVE` | 409 | The user is already active |
+| `USER_INVALID_STATUS_TRANSITION` | 400 | Invalid user account status transition |
 | `USER_AVATAR_UPLOAD_FAILED` | 500 | Avatar upload failed |
 
 ### Class Errors (CLASS_*)

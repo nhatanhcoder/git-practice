@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "nest start --watch",
     "build": "nest build",
-    "start": "node dist/main.js",
+    "start": "node dist/src/main.js",
+    "start:prod": "node dist/src/main.js",
     "type-check": "tsc --noEmit",
     "test": "nest build && dotenv -e ../../.env -- node --import tsx --test test/*.test.ts",
     "db:generate": "prisma generate",

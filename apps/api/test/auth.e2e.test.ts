@@ -243,13 +243,13 @@ describe('POST /auth/refresh & Replay Attack Detection', () => {
     });
 
     assert.equal(res.status, 401);
-    assert.equal(res.body.code, 'AUTH_TOKEN_INVALID');
+    assert.equal(res.body.code, 'AUTH_REFRESH_INVALID');
   });
 
   it('rejects refresh without cookie', async () => {
     const res = await req('POST', '/auth/refresh');
     assert.equal(res.status, 401);
-    assert.equal(res.body.code, 'AUTH_TOKEN_INVALID');
+    assert.equal(res.body.code, 'AUTH_REFRESH_INVALID');
   });
 });
 
@@ -345,7 +345,7 @@ describe('POST /auth/change-password & POST /auth/logout', () => {
       cookie: `refresh_token=${teacherRefresh}`,
     });
 
-    assert.equal(logoutRes.status, 200);
+    assert.equal(logoutRes.status, 204);
     assert.ok(logoutRes.cookieHeader);
     // Max-Age=0 or Expires in past to clear
     assert.ok(

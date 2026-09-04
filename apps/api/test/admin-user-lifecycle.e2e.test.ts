@@ -113,6 +113,16 @@ describe('Admin User Approval Lifecycle (INV-USERS-08, 09, 10)', () => {
     assert.equal(loginRes.body.code, 'AUTH_ACCOUNT_PENDING');
   });
 
+  it('rejects suspend or activate on a pending user — strict state machine', async () => {
+    const suspendRes = await req('PATCH', `/admin/users/${targetUserId}/suspend`, undefined, adminToken);
+    assert.equal(suspendRes.status, 400);
+    assert.equal(suspendRes.body.code, 'USER_INVALID_STATUS_TRANSITION');
+
+    const activateRes = await req('PATCH', `/admin/users/${targetUserId}/activate`, undefined, adminToken);
+    assert.equal(activateRes.status, 400);
+    assert.equal(activateRes.body.code, 'USER_INVALID_STATUS_TRANSITION');
+  });
+
   it('rejects non-admin calling approve endpoint — INV-USERS-01', async () => {
     const res = await req('PATCH', `/admin/users/${targetUserId}/approve`, undefined, undefined);
     assert.equal(res.status, 401);
@@ -155,6 +165,12 @@ describe('Admin User Approval Lifecycle (INV-USERS-08, 09, 10)', () => {
     assert.equal(res.body.code, 'USER_ALREADY_APPROVED');
   });
 
+  it('returns 409 USER_ALREADY_ACTIVE when activating an active user', async () => {
+    const res = await req('PATCH', `/admin/users/${targetUserId}/activate`, undefined, adminToken);
+    assert.equal(res.status, 409);
+    assert.equal(res.body.code, 'USER_ALREADY_ACTIVE');
+  });
+
   it('suspends active account and blocks authentication — INV-USERS-09', async () => {
     const res = await req('PATCH', `/admin/users/${targetUserId}/suspend`, undefined, adminToken);
     assert.equal(res.status, 200);
@@ -167,6 +183,18 @@ describe('Admin User Approval Lifecycle (INV-USERS-08, 09, 10)', () => {
     });
     assert.equal(loginRes.status, 403);
     assert.equal(loginRes.body.code, 'AUTH_ACCOUNT_SUSPENDED');
+  });
+
+  it('returns 409 USER_ALREADY_SUSPENDED when suspending an already suspended user', async () => {
+    const res = await req('PATCH', `/admin/users/${targetUserId}/suspend`, undefined, adminToken);
+    assert.equal(res.status, 409);
+    assert.equal(res.body.code, 'USER_ALREADY_SUSPENDED');
+  });
+
+  it('rejects approve on a suspended user — must use activate instead', async () => {
+    const res = await req('PATCH', `/admin/users/${targetUserId}/approve`, undefined, adminToken);
+    assert.equal(res.status, 400);
+    assert.equal(res.body.code, 'USER_INVALID_STATUS_TRANSITION');
   });
 
   it('activates suspended account and restores access — INV-USERS-10', async () => {

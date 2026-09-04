@@ -71,7 +71,9 @@ export class AuthController {
     const rawToken = req.cookies?.[COOKIE_NAME];
     try {
       const { result, newRawRefreshToken } = await this.authService.refresh(rawToken);
-      res.cookie(COOKIE_NAME, newRawRefreshToken, cookieOptions());
+      if (newRawRefreshToken) {
+        res.cookie(COOKIE_NAME, newRawRefreshToken, cookieOptions());
+      }
       return result;
     } catch (err) {
       res.clearCookie(COOKIE_NAME, { path: COOKIE_PATH });
@@ -80,7 +82,7 @@ export class AuthController {
   }
 
   @Post('logout')
-  @HttpCode(HttpStatus.OK)
+  @HttpCode(HttpStatus.NO_CONTENT)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Revoke active refresh token and clear cookie' })
   async logout(
@@ -90,7 +92,6 @@ export class AuthController {
     const rawToken = req.cookies?.[COOKIE_NAME];
     await this.authService.logout(rawToken);
     res.clearCookie(COOKIE_NAME, { path: COOKIE_PATH });
-    return { message: 'Đăng xuất thành công' };
   }
 
   @Get('me')

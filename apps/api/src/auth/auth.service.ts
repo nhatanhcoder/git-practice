@@ -153,13 +153,56 @@ export class AuthService {
   }
 
   /**
+   * Handle re-presentation of an already-revoked refresh token.
+   * Checks grace window for benign concurrent races (e.g. multi-tab burst),
+   * otherwise revokes the entire family for replay attack.
+   */
+  private async handleRevokedToken(token: any): Promise<{ result: RefreshResult; newRawRefreshToken: string }> {
+    const isRotated = token.revokedReason === 'rotated';
+    const withinGrace =
+      token.revokedAt && Date.now() - new Date(token.revokedAt).getTime() <= 15_000;
+
+    if (isRotated && withinGrace && token.replacedById) {
+      const child = await this.prisma.refreshToken.findUnique({
+        where: { id: token.replacedById },
+        include: { user: true },
+      });
+      if (child && !child.revokedAt) {
+        // Valid race within grace window: return child's access token
+        const accessToken = await this.mintAccessToken(child.user.id, child.user.email, child.user.role);
+        return {
+          result: { accessToken },
+          newRawRefreshToken: '',
+        };
+      }
+    }
+
+    // Replay attack: revoke the entire family immediately
+    await this.prisma.refreshToken.updateMany({
+      where: {
+        familyId: token.familyId,
+        revokedAt: null,
+      },
+      data: {
+        revokedAt: new Date(),
+        revokedReason: 'replay_attack',
+      },
+    });
+    throw new AppException(
+      ErrorCode.AUTH_REFRESH_INVALID,
+      'Phát hiện token đã qua sử dụng, phiên làm việc đã bị hủy',
+    );
+  }
+
+  /**
    * Rotate refresh token and detect replay attack.
    * INV-AUTH-06: single-use refresh token, rotated on every call.
    * INV-AUTH-07: replay attack revokes the entire token family immediately.
+   * INV-AUTH-10: atomic rotation, parent revoked and replacedById set in same transaction.
    */
   async refresh(rawToken: string | undefined): Promise<{ result: RefreshResult; newRawRefreshToken: string }> {
     if (!rawToken) {
-      throw new AppException(ErrorCode.AUTH_TOKEN_INVALID, 'Thiếu refresh token');
+      throw new AppException(ErrorCode.AUTH_REFRESH_INVALID, 'Thiếu refresh token');
     }
 
     const tokenHash = hashToken(rawToken);
@@ -169,25 +212,12 @@ export class AuthService {
     });
 
     if (!token) {
-      throw new AppException(ErrorCode.AUTH_TOKEN_INVALID, 'Refresh token không hợp lệ');
+      throw new AppException(ErrorCode.AUTH_REFRESH_INVALID, 'Refresh token không hợp lệ');
     }
 
-    // Replay attack detection: token was already revoked!
+    // If token was already revoked, enter grace window vs replay check
     if (token.revokedAt) {
-      await this.prisma.refreshToken.updateMany({
-        where: {
-          familyId: token.familyId,
-          revokedAt: null,
-        },
-        data: {
-          revokedAt: new Date(),
-          revokedReason: 'replay_attack',
-        },
-      });
-      throw new AppException(
-        ErrorCode.AUTH_TOKEN_INVALID,
-        'Phát hiện token đã qua sử dụng, phiên làm việc đã bị hủy',
-      );
+      return this.handleRevokedToken(token);
     }
 
     if (token.expiresAt < new Date()) {
@@ -209,36 +239,52 @@ export class AuthService {
     const newTokenHash = hashToken(newRawRefreshToken);
     const newExpiresAt = new Date(Date.now() + REFRESH_TOKEN_TTL_MS);
 
-    const [newRefreshToken, accessToken] = await this.prisma.$transaction([
-      this.prisma.refreshToken.create({
-        data: {
-          userId: token.userId,
-          familyId: token.familyId, // Keep same family
-          tokenHash: newTokenHash,
-          expiresAt: newExpiresAt,
-        },
-      }),
-      this.prisma.refreshToken.update({
-        where: { id: token.id },
-        data: {
-          revokedAt: new Date(),
-          revokedReason: 'rotated',
-        },
-      }),
-    ]).then(async ([created]) => {
-      // link replacedById
-      await this.prisma.refreshToken.update({
-        where: { id: token.id },
-        data: { replacedById: created.id },
-      });
-      const tokenStr = await this.mintAccessToken(token.user.id, token.user.email, token.user.role);
-      return [created, tokenStr] as const;
-    });
+    try {
+      const accessToken = await this.prisma.$transaction(async (tx) => {
+        // 1. Create child token
+        const created = await tx.refreshToken.create({
+          data: {
+            userId: token.userId,
+            familyId: token.familyId,
+            tokenHash: newTokenHash,
+            expiresAt: newExpiresAt,
+          },
+        });
 
-    return {
-      result: { accessToken },
-      newRawRefreshToken,
-    };
+        // 2. Conditionally update parent: only if still unrevoked!
+        const updated = await tx.refreshToken.updateMany({
+          where: { id: token.id, revokedAt: null },
+          data: {
+            revokedAt: new Date(),
+            revokedReason: 'rotated',
+            replacedById: created.id,
+          },
+        });
+
+        if (updated.count === 0) {
+          // A concurrent request beat us to rotating this token
+          throw new Error('CONCURRENT_ROTATION');
+        }
+
+        return this.mintAccessToken(token.user.id, token.user.email, token.user.role);
+      });
+
+      return {
+        result: { accessToken },
+        newRawRefreshToken,
+      };
+    } catch (err: any) {
+      if (err?.message === 'CONCURRENT_ROTATION') {
+        const reloaded = await this.prisma.refreshToken.findUnique({
+          where: { id: token.id },
+          include: { user: true },
+        });
+        if (reloaded) {
+          return this.handleRevokedToken(reloaded);
+        }
+      }
+      throw err;
+    }
   }
 
   /**
