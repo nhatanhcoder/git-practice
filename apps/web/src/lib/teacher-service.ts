@@ -1,22 +1,24 @@
-import { apiRequest, ApiError } from './api-client';
-import {
-  mockTeacherClasses,
-  mockClassStudents,
-  mockClassLessons,
-  generateEnrollmentCode,
-  type TeacherClass,
-  type ClassStudent,
-  type ClassLesson,
-  type LessonContentType,
+import { apiRequest } from './api-client';
+import type {
+  TeacherClass,
+  ClassStudent,
+  ClassLesson,
+  LessonContentType,
 } from './teacher-data';
 
-export async function fetchTeacherClasses(): Promise<{ classes: TeacherClass[]; isFallback?: boolean }> {
-  try {
-    const res = await apiRequest<TeacherClass[]>('/teacher/classes');
-    return { classes: Array.isArray(res.data) ? res.data : [] };
-  } catch {
-    return { classes: mockTeacherClasses, isFallback: true };
-  }
+/**
+ * Every function here throws on failure. There are no mock fallbacks left.
+ *
+ * They used to return `mockTeacherClasses` / `mockClassLessons` (flagged
+ * `isFallback: true`, which no caller checked) whenever the API was unreachable,
+ * so a signed-out teacher saw a fully populated set of classes that belonged to
+ * nobody. Worse, createTeacherClass fabricated a class WITH an enrollment code
+ * and returned it as created — a code a student could never join with, because
+ * the class did not exist.
+ */
+export async function fetchTeacherClasses(): Promise<{ classes: TeacherClass[] }> {
+  const res = await apiRequest<TeacherClass[]>('/teacher/classes');
+  return { classes: Array.isArray(res.data) ? res.data : [] };
 }
 
 export async function createTeacherClass(data: {
@@ -24,32 +26,17 @@ export async function createTeacherClass(data: {
   hskLevel: number;
   description?: string;
 }): Promise<{ classItem: TeacherClass }> {
-  try {
-    const res = await apiRequest<TeacherClass>('/teacher/classes', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-    return { classItem: res.data };
-  } catch (err) {
-    // Fallback optimistic creation for offline dev / SSG
-    const fallback: TeacherClass = {
-      id: 'c' + Date.now(),
-      name: data.name,
-      hskLevel: data.hskLevel,
-      enrollmentCode: generateEnrollmentCode(data.hskLevel),
-      studentCount: 0,
-      status: 'active',
-      createdAt: new Date().toISOString(),
-      description: data.description || '',
-    };
-    return { classItem: fallback };
-  }
+  const res = await apiRequest<TeacherClass>('/teacher/classes', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+  return { classItem: res.data };
 }
 
 export async function fetchTeacherClassDetail(
   classId: string,
-): Promise<{ classItem: TeacherClass | null; students: ClassStudent[]; isFallback?: boolean }> {
-  try {
+): Promise<{ classItem: TeacherClass; students: ClassStudent[] }> {
+  {
     const res = await apiRequest<any>(`/teacher/classes/${classId}`);
     const d = res.data;
     const classItem: TeacherClass = {
@@ -70,10 +57,6 @@ export async function fetchTeacherClassDetail(
       enrollmentStatus: 'active',
     }));
     return { classItem, students };
-  } catch {
-    const source = mockTeacherClasses.find((c) => c.id === classId) ?? null;
-    const students = source ? mockClassStudents[source.id] ?? [] : [];
-    return { classItem: source, students, isFallback: true };
   }
 }
 
@@ -105,8 +88,8 @@ export async function regenerateEnrollmentCode(classId: string): Promise<{ enrol
 
 export async function fetchClassLessons(
   classId: string,
-): Promise<{ lessons: ClassLesson[]; isFallback?: boolean }> {
-  try {
+): Promise<{ lessons: ClassLesson[] }> {
+  {
     const res = await apiRequest<any[]>(`/teacher/classes/${classId}/lessons`);
     const lessons: ClassLesson[] = (res.data || []).map((l: any) => ({
       id: l.id,
@@ -116,9 +99,6 @@ export async function fetchClassLessons(
       assignmentCount: 0,
     }));
     return { lessons };
-  } catch {
-    const fallback = mockClassLessons[classId] ?? [];
-    return { lessons: fallback, isFallback: true };
   }
 }
 

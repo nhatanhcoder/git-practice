@@ -29,8 +29,6 @@ import {
   classStatusLabels,
   enrollmentStatusLabels,
   generateEnrollmentCode,
-  mockClassStudents,
-  mockTeacherClasses,
   type TeacherClass,
   type ClassStudent,
 } from "@/lib/teacher-data";
@@ -39,6 +37,7 @@ import {
   updateTeacherClass,
   regenerateEnrollmentCode,
 } from "@/lib/teacher-service";
+import { ApiError } from "@/lib/api-client";
 import { avatarToneFor, formatDate, initialsOf } from "@/lib/formatters";
 import styles from "./detail.module.css";
 
@@ -49,10 +48,13 @@ export default function TeacherClassDetailPage({
 }) {
   const { classId } = params;
   const router = useRouter();
-  const source = mockTeacherClasses.find((c) => c.id === classId) ?? null;
-  const [cls, setCls] = useState<TeacherClass | null>(source);
-  const [roster, setRoster] = useState<ClassStudent[]>(source ? mockClassStudents[source.id] ?? [] : []);
-  const [reviewState, setReviewState] = useState<ReviewState>("ready");
+  // Live: GET /api/v1/teacher/classes/:id. It used to seed from mockTeacherClasses
+  // and only overwrite on success, so an unreachable API showed a real-looking
+  // class with a real-looking roster for an id the server may never have seen.
+  const [cls, setCls] = useState<TeacherClass | null>(null);
+  const [roster, setRoster] = useState<ClassStudent[]>([]);
+  const [reviewState, setReviewState] = useState<ReviewState>("loading");
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
   const [toast, setToast] = useState("");
@@ -61,13 +63,24 @@ export default function TeacherClassDetailPage({
     let isMounted = true;
     fetchTeacherClassDetail(classId)
       .then((res) => {
-        if (!isMounted || !res.classItem) return;
+        if (!isMounted) return;
         setCls(res.classItem);
-        if (res.students?.length) {
-          setRoster(res.students);
-        }
+        // Assign unconditionally: `if (res.students?.length)` kept a stale roster
+        // on screen for a class the server says has no students yet.
+        setRoster(res.students ?? []);
+        setReviewState("ready");
       })
-      .catch(() => {});
+      .catch((err: unknown) => {
+        if (!isMounted) return;
+        setCls(null);
+        setRoster([]);
+        setReviewState("error");
+        setLoadError(
+          err instanceof ApiError
+            ? err.message
+            : "Không kết nối được máy chủ. Kiểm tra API có đang chạy không.",
+        );
+      });
     return () => {
       isMounted = false;
     };

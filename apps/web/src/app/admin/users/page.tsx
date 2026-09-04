@@ -1,6 +1,7 @@
 "use client";
 
-// MOCK(F1.3): account data and actions remain in-memory until the admin users API exists.
+// Live data. F1.3 approve / suspend / activate go to the real API and the row is
+// replaced with what the server returned. No offline fallback: see admin-users-service.
 
 import {
   AlertCircle, Bell, BookOpen, Check, ChevronDown, ChevronLeft, ChevronRight,
@@ -13,7 +14,10 @@ import { useEffect, useMemo, useState } from "react";
 import { avatarToneFor, formatDate, formatDateTime, initialsOf } from "../../../lib/formatters";
 import { getStatusColor } from "../../../lib/status";
 import { nextStatus } from "../../../lib/user-status.js";
-import { fetchAdminUsers, type AdminUserItem } from "../../../lib/admin-users-service";
+import {
+  activateUser, approveUser, fetchAdminUsers, suspendUser,
+} from "../../../lib/admin-users-service";
+import { ApiError } from "../../../lib/api-client";
 import styles from "./users.module.css";
 
 type UserStatus = "pending" | "active" | "suspended";
@@ -22,16 +26,6 @@ type Action = "approve" | "suspend" | "activate";
 type ReviewState = "ready" | "loading" | "empty" | "partial" | "error" | "forbidden";
 type User = { id: string; nickname: string; email: string; role: UserRole; status: UserStatus; createdAt: string; lastLoginAt: string | null };
 
-const initialUsers: User[] = [
-  { id: "1", nickname: "Nguyễn Minh Anh", email: "minhanh@example.com", role: "student", status: "pending", createdAt: "2026-08-09", lastLoginAt: null },
-  { id: "2", nickname: "Trần Thu Hà", email: "thuha.teacher@example.com", role: "teacher", status: "pending", createdAt: "2026-08-08", lastLoginAt: null },
-  { id: "3", nickname: "Hoàng Văn Nam", email: "namhoang@example.com", role: "student", status: "active", createdAt: "2026-06-14", lastLoginAt: "2026-08-10 20:05" },
-  { id: "4", nickname: "Lê Quang Dũng", email: "quangdung@example.com", role: "student", status: "active", createdAt: "2026-05-21", lastLoginAt: "2026-08-11 09:14" },
-  { id: "5", nickname: "Vũ Ngọc Bích", email: "bichvu@example.com", role: "student", status: "suspended", createdAt: "2026-04-30", lastLoginAt: "2026-07-28 15:33" },
-  { id: "6", nickname: "Phạm Thị Lan", email: "lan.pham@example.com", role: "teacher", status: "active", createdAt: "2026-03-02", lastLoginAt: "2026-08-11 07:42" },
-  { id: "7", nickname: "Đỗ Hải Yến", email: "haiyen.teacher@example.com", role: "teacher", status: "active", createdAt: "2026-01-19", lastLoginAt: "2026-08-11 08:58" },
-  { id: "8", nickname: "Bùi Anh Tuấn", email: "tuanbui@example.com", role: "admin", status: "active", createdAt: "2025-11-05", lastLoginAt: "2026-08-11 09:31" },
-];
 
 const roleLabels: Record<UserRole, string> = { admin: "Admin", teacher: "Giáo viên", student: "Học sinh" };
 const statusLabels: Record<UserStatus, string> = { pending: "Chờ duyệt", active: "Đang hoạt động", suspended: "Đã khóa" };
@@ -40,11 +34,14 @@ const actionFor = (status: UserStatus): Action => status === "pending" ? "approv
 
 export default function AdminUsersPage() {
   const router = useRouter();
-  const [users, setUsers] = useState(initialUsers);
+  const [users, setUsers] = useState<User[]>([]);
   const [query, setQuery] = useState("");
   const [role, setRole] = useState<UserRole | "all">("all");
   const [status, setStatus] = useState<UserStatus | "all">("all");
-  const [reviewState, setReviewState] = useState<ReviewState>("ready");
+  const [reviewState, setReviewState] = useState<ReviewState>("loading");
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
   const [modal, setModal] = useState<{ user: User; action: Action } | null>(null);
   const [reason, setReason] = useState("");
@@ -54,23 +51,37 @@ export default function AdminUsersPage() {
 
   useEffect(() => {
     let isMounted = true;
+    setReviewState("loading");
+    setLoadError(null);
+
     fetchAdminUsers({ q: query, role, status, sortBy: sort })
       .then((res) => {
         if (!isMounted) return;
         setUsers(res.users as User[]);
-        if (res.users.length === 0 && (query || role !== "all" || status !== "all")) {
-          setReviewState("empty");
-        } else if (reviewState === "loading" || reviewState === "empty") {
-          setReviewState("ready");
-        }
+        setReviewState(res.users.length === 0 ? "empty" : "ready");
       })
-      .catch(() => {
+      .catch((err: unknown) => {
         if (!isMounted) return;
+        // The previous version swallowed this entirely (`.catch(() => {})`), so a
+        // 401 left the hardcoded mock array on screen and the page looked healthy
+        // while being disconnected. Every failure now reaches the user.
+        setUsers([]);
+        if (err instanceof ApiError && err.isForbidden) {
+          setReviewState("forbidden");
+        } else {
+          setReviewState("error");
+          setLoadError(
+            err instanceof ApiError
+              ? err.message
+              : "Không kết nối được máy chủ. Kiểm tra API có đang chạy không.",
+          );
+        }
       });
+
     return () => {
       isMounted = false;
     };
-  }, [query, role, status, sort]);
+  }, [query, role, status, sort, reloadKey]);
 
   const filteredUsers = useMemo(() => {
     const normalized = query.trim().toLocaleLowerCase("vi");
@@ -85,18 +96,39 @@ export default function AdminUsersPage() {
   const displayUsers = reviewState === "empty" ? [] : filteredUsers;
 
   function clearFilters() {
-    setQuery(""); setRole("all"); setStatus("all"); setReviewState("ready");
+    setQuery(""); setRole("all"); setStatus("all"); setReloadKey((k) => k + 1);
   }
 
   function openAction(user: User) {
     setActiveMenu(null); setReason(""); setModal({ user, action: actionFor(user.status) });
   }
 
-  function confirmAction() {
+  async function confirmAction() {
     if (!modal || (modal.action === "suspend" && !reason.trim())) return;
-    const updatedStatus = nextStatus(modal.user.status, modal.action) as UserStatus;
-    setUsers((current) => current.map((user) => user.id === modal.user.id ? { ...user, status: updatedStatus } : user));
-    setToast({ approve: "Đã duyệt tài khoản", suspend: "Đã khóa tài khoản", activate: "Đã mở khóa tài khoản" }[modal.action]);
+
+    // nextStatus() still runs, but only as a client-side guard against offering an
+    // impossible transition. The status actually rendered comes from the server's
+    // response — assuming the transition succeeded is how a rejected change still
+    // shows as done.
+    if (!nextStatus(modal.user.status, modal.action)) return;
+
+    const targetId = modal.user.id;
+    setBusyId(targetId);
+    try {
+      const call = { approve: approveUser, suspend: suspendUser, activate: activateUser }[modal.action];
+      const updated = await call(targetId);
+      setUsers((current) =>
+        current.map((user) =>
+          user.id === targetId ? { ...user, status: updated.status as UserStatus } : user,
+        ),
+      );
+      setToast({ approve: "Đã duyệt tài khoản", suspend: "Đã khóa tài khoản", activate: "Đã mở khóa tài khoản" }[modal.action]);
+    } catch (err) {
+      setToast(err instanceof ApiError ? `Thất bại: ${err.message}` : "Thất bại: không kết nối được máy chủ");
+      setBusyId(null);
+      return;
+    }
+    setBusyId(null);
     setModal(null);
     window.setTimeout(() => setToast(""), 2600);
   }
@@ -128,7 +160,8 @@ export default function AdminUsersPage() {
             <div className={styles.filterMeta}>{hasFilters && <button className={styles.clearButton} onClick={clearFilters}><RotateCcw size={15} />Xóa lọc</button>}<span>{displayUsers.length} tài khoản</span></div>
           </section>
 
-          {reviewState === "error" && <div className={styles.errorBanner} role="alert"><AlertCircle size={19} /><div><strong>Không tải được danh sách tài khoản.</strong><span>Vui lòng kiểm tra kết nối và thử lại.</span></div><button onClick={() => setReviewState("ready")}>Thử lại</button></div>}
+          {reviewState === "error" && <div className={styles.errorBanner} role="alert"><AlertCircle size={19} /><div><strong>Không tải được danh sách tài khoản.</strong><span>{loadError}</span></div><button onClick={() => setReloadKey((k) => k + 1)}>Thử lại</button></div>}
+          {reviewState === "forbidden" && <div className={styles.errorBanner} role="alert"><AlertCircle size={19} /><div><strong>Không đủ quyền xem danh sách tài khoản.</strong><span>Tài khoản đang đăng nhập không phải quản trị viên.</span></div></div>}
 
           <section className={styles.tableCard} aria-label="Danh sách tài khoản">
             {reviewState === "loading" ? <LoadingRows /> : displayUsers.length === 0 ? <EmptyState filtered={hasFilters} onClear={clearFilters} /> : <>
@@ -140,7 +173,7 @@ export default function AdminUsersPage() {
           </section>
         </main>
       </div>
-      <ReviewSwitcher value={reviewState} onChange={changeReviewState} />
+      {process.env.NODE_ENV !== "production" && <ReviewSwitcher value={reviewState} onChange={changeReviewState} />}
       {toast && <div className={styles.toast}><Check size={18} /><span>{toast}</span></div>}
       {modal && <ActionModal modal={modal} reason={reason} setReason={setReason} onClose={() => setModal(null)} onConfirm={confirmAction} />}
     </div>

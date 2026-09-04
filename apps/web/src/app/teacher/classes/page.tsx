@@ -19,7 +19,6 @@ import {
 import {
   classStatusLabels,
   generateEnrollmentCode,
-  mockTeacherClasses,
   type TeacherClass,
 } from "@/lib/teacher-data";
 import {
@@ -28,15 +27,19 @@ import {
   archiveTeacherClass,
 } from "@/lib/teacher-service";
 import { useDismissMenu } from "@/hooks/use-overlay";
+import { ApiError } from "@/lib/api-client";
 import { formatDate } from "@/lib/formatters";
 import styles from "./classes.module.css";
 
 export default function TeacherClassesPage() {
   const router = useRouter();
-  const [classes, setClasses] = useState<TeacherClass[]>(mockTeacherClasses);
+  // Live: GET /api/v1/teacher/classes. Seeding from mockTeacherClasses made an
+  // unreachable API look like a teacher with a full timetable.
+  const [classes, setClasses] = useState<TeacherClass[]>([]);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "archived">("all");
-  const [reviewState, setReviewState] = useState<ReviewState>("ready");
+  const [reviewState, setReviewState] = useState<ReviewState>("loading");
   const [creating, setCreating] = useState(false);
   const [archiving, setArchiving] = useState<TeacherClass | null>(null);
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
@@ -48,8 +51,18 @@ export default function TeacherClassesPage() {
       .then((res) => {
         if (!isMounted) return;
         setClasses(res.classes);
+        setReviewState(res.classes.length === 0 ? "empty" : "ready");
       })
-      .catch(() => {});
+      .catch((err: unknown) => {
+        if (!isMounted) return;
+        setClasses([]);
+        setReviewState("error");
+        setLoadError(
+          err instanceof ApiError
+            ? err.message
+            : "Không kết nối được máy chủ. Kiểm tra API có đang chạy không.",
+        );
+      });
     return () => {
       isMounted = false;
     };
@@ -151,9 +164,9 @@ export default function TeacherClassesPage() {
           <AlertCircle size={19} />
           <div>
             <strong>Không tải được danh sách lớp.</strong>
-            <span>Vui lòng kiểm tra kết nối và thử lại.</span>
+            <span>{loadError}</span>
           </div>
-          <button onClick={() => setReviewState("ready")}>Thử lại</button>
+          <button onClick={() => window.location.reload()}>Thử lại</button>
         </div>
       )}
 

@@ -1,8 +1,16 @@
-import { apiRequest, ApiError } from './api-client';
-import { initialAdminProfile, type UserProfile } from './auth-profile-data';
+import { apiRequest } from './api-client';
+import type { UserProfile } from './auth-profile-data';
 
-export async function fetchMyProfile(): Promise<{ profile: UserProfile; isFallback?: boolean }> {
-  try {
+/**
+ * The signed-in user's own profile.
+ *
+ * Throws on failure. It used to return `initialAdminProfile` — a hardcoded admin
+ * — whenever the call failed, flagged `isFallback: true`, and the screen ignored
+ * the flag. The result was a profile page showing someone else's name and email
+ * to whoever could not reach the API.
+ */
+export async function fetchMyProfile(): Promise<{ profile: UserProfile }> {
+  {
     const res = await apiRequest<{
       id: string;
       email: string;
@@ -30,11 +38,6 @@ export async function fetchMyProfile(): Promise<{ profile: UserProfile; isFallba
         lastLoginAt: d.lastLoginAt,
         initials,
       },
-    };
-  } catch (err) {
-    return {
-      profile: initialAdminProfile,
-      isFallback: true,
     };
   }
 }

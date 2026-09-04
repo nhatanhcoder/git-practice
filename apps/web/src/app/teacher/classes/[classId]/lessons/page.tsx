@@ -27,13 +27,14 @@ import {
 } from "@/components/teacher/teacher-widgets";
 import {
   contentTypeLabels,
-  mockClassLessons,
-  mockTeacherClasses,
   type ClassLesson,
+  type TeacherClass,
   type LessonContentType,
 } from "@/lib/teacher-data";
+import { ApiError } from "@/lib/api-client";
 import {
   fetchClassLessons,
+  fetchTeacherClassDetail,
   createLesson,
   updateLesson,
   deleteLesson,
@@ -55,9 +56,13 @@ export default function TeacherLessonsPage({
 }) {
   const { classId } = params;
   const router = useRouter();
-  const cls = mockTeacherClasses.find((c) => c.id === classId) ?? null;
+  // `cls` used to be looked up in mockTeacherClasses. Real class ids are uuids and
+  // are never in that array, so every genuine class rendered the "Không tìm thấy"
+  // branch — this screen was unreachable for any class that actually exists.
+  const [cls, setCls] = useState<TeacherClass | null>(null);
   const [lessons, setLessons] = useState<ClassLesson[]>([]);
-  const [reviewState, setReviewState] = useState<ReviewState>("ready");
+  const [reviewState, setReviewState] = useState<ReviewState>("loading");
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [editing, setEditing] = useState<{ lesson: ClassLesson | null } | null>(null);
   const [draft, setDraft] = useState<LessonDraft>({ title: "", description: "", contentType: "document" });
   const [deleting, setDeleting] = useState<ClassLesson | null>(null);
@@ -69,12 +74,24 @@ export default function TeacherLessonsPage({
 
   useEffect(() => {
     let isMounted = true;
-    fetchClassLessons(classId)
-      .then((res) => {
+    Promise.all([fetchTeacherClassDetail(classId), fetchClassLessons(classId)])
+      .then(([detail, res]) => {
         if (!isMounted) return;
+        setCls(detail.classItem);
         setLessons(res.lessons);
+        setReviewState("ready");
       })
-      .catch(() => {});
+      .catch((err: unknown) => {
+        if (!isMounted) return;
+        setCls(null);
+        setLessons([]);
+        setReviewState("error");
+        setLoadError(
+          err instanceof ApiError
+            ? err.message
+            : "Không kết nối được máy chủ. Kiểm tra API có đang chạy không.",
+        );
+      });
     return () => {
       isMounted = false;
     };
