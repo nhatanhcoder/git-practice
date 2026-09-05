@@ -112,3 +112,47 @@ the build. An API build that failed with seven TypeScript errors was nearly reco
 because of that pipeline. Check `${PIPESTATUS[0]}` or redirect to a file. The failure itself was
 only a stale generated Prisma client — `main` had gained the Sprint 6 schema when PR #33 merged —
 and `db:generate` fixed it.
+
+
+---
+
+## Second correction — the page had no stylesheet stack at all
+
+The owner reported the CSS was broken. It was, and this is the second defect a pass of mine had
+already called verified.
+
+`landing.css` uses **50 CSS custom properties and defines only 2 of them**. The other 48 live in
+`tokens.css`, which on `feat/student-hanlu-ui` was imported by that branch's
+`student/layout.tsx` and therefore reached every page under `/student`. Porting the page's own
+stylesheet and nothing else left it with no design tokens, no base typography and no button
+styles: text ran to the viewport edge and every colour fell back.
+
+**Why two passes missed it.** The dark hero looked intentional. Both passes asked *does the page
+render* — text present, no sidebar, no horizontal overflow, no failed requests — and never asked
+*does it render the way it was designed*. Nothing errors when `var(--bg)` is undefined; the
+browser silently uses the fallback or nothing at all. Checking that a CSS custom property
+actually resolves is now part of what "verified" has to mean for a ported page.
+
+**Fixed** by porting three of the source branch's six stylesheets into the landing folder, where
+they belong to that route alone:
+
+| File | Lines | Why |
+|---|---|---|
+| `tokens.css` | 196 | the 132 custom properties, scoped to `.student-root` so Admin and Teacher keep their own |
+| `base.css` | 219 | `skip-link`, the small utilities, the `han`/`num` type styles — 10 classes this page uses |
+| `components.css` | 906 | the four `btn--` variants the CTAs use |
+
+`layout.css`, `pages.css` and `lms.css` were deliberately left out: nothing on the page
+references them, and `pages.css` only duplicates `num`, which `base.css` already defines. That
+avoided importing 2,349 lines of other screens' styling.
+
+**Re-verified**: `.student-root` resolves `--bg #0a0d13`, `--accent #ff7454`,
+`--font-display Sora`, and the `h1` computes to Sora. Nav, hero, badges and CTAs all render.
+**No bleed in either direction** — the `/student` bundle still carries main's `sp-*` rules and
+none of these tokens, the landing bundle carries these tokens and no `sp-*` rules, and the
+learner dashboard was opened signed-in and is unchanged. (Main's own `student.css` also defines
+`.student-root`, which is why that name appears in both bundles; it is not leakage.)
+
+**Left for review**: `tokens.css` opens with an `@import` of Google Fonts (Playfair Display,
+Sora, Inter, Noto Serif SC), so this page makes an external font request. Unchanged from the
+source branch, but it deserves a decision before the page is public — as does `WEB-017`.
