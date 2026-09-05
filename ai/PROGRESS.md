@@ -65,6 +65,20 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
 - ✅ **DoD met end to end**: signed in through the browser as `admin@hsk.local`, landed on the
       admin area, approved `teacher.pending@hsk.local` from the UI, and confirmed the row changed
       to `active` **in Postgres** (`PATCH /admin/users/:id/approve → 200`). Not a mock.
+- ✅ (claude · 2026-09-05) **`/student` is now behind a login.** `/admin` and `/teacher` were
+      both wrapped in `RequireAuth`; `/student` was not, so the whole learner area was reachable
+      with no account. It went unnoticed because those screens are mock-backed — nothing fetched,
+      so nothing ever 401'd. The layout stays a server component and renders the guard around the
+      shell, which keeps its `metadata` export (converting the whole layout to `"use client"` is
+      how `/admin` lost its own — `WEB-005`).
+      **Verified in a browser on a production build**, each step observed rather than assumed:
+      anonymous `/student` → `/login?next=%2Fstudent`; a registered-but-unapproved student → **403
+      `AUTH_ACCOUNT_PENDING`** with the pending message shown, *not* "sai mật khẩu"; after
+      `PATCH /admin/users/:id/approve` the same credentials → **200** and land on `/student`;
+      desktop + 375px captured.
+      Two pre-existing defects became visible only because a real account was finally used:
+      `WEB-015` (the shell greets a hardcoded "Mai Anh", not the signed-in user) and `WEB-016`
+      (the DEMO state switcher ships in the production student build).
 - **DoD**: Register → Admin approves → login lands on the correct dashboard per role
 
 ## Sprint 2 — Classes & Enrollment
