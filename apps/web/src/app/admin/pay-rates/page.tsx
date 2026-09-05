@@ -1,8 +1,5 @@
 "use client";
 
-// MOCK(A-PAY-1): GET/POST /api/v1/admin/pay-rates endpoints mock
-// ASSUMPTION(decision-2): Pay-rate unit basis supports per_session and per_hour (0.5h rounded up)
-
 import {
   AlertCircle,
   Bell,
@@ -21,8 +18,16 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { avatarToneFor, formatVnd, initialsOf } from "../../../lib/formatters";
+import {
+  fetchTeacherPayRates,
+  createPayRate,
+  fetchTeacherPayRateHistory,
+  type PayRateType,
+  type TeacherPayRateRow,
+  type PayRateItem,
+} from "../../../lib/admin-payroll-service";
 import styles from "./rates.module.css";
 
 type ReviewState = "ready" | "loading" | "empty" | "error" | "forbidden";
@@ -47,80 +52,64 @@ interface TeacherPayRate {
   history: RateHistoryRecord[];
 }
 
-const initialDefaultRate = {
-  amount: 400000,
-  unit: "per_session" as "per_session" | "per_hour",
-  effectiveFrom: "01/01/2026",
-};
-
-const initialTeacherRates: TeacherPayRate[] = [
-  {
-    id: "t1",
-    name: "Phạm Thị Lan",
-    email: "lan.pt@example.com",
-    unit: "per_session",
-    amount: 450000,
-    isCustom: true,
-    effectiveFrom: "01/06/2026",
-    history: [
-      {
-        id: "h1",
-        period: "01/06/2026 – Hiện tại",
-        amount: 450000,
-        unit: "per_session",
-        updatedBy: "Nguyễn Quản Trị",
-        reason: "Tăng mức lương giáo viên thâm niên",
-      },
-      {
-        id: "h2",
-        period: "01/01/2026 – 31/05/2026",
-        amount: 400000,
-        unit: "per_session",
-        updatedBy: "Nguyễn Quản Trị",
-        reason: "Mức mặc định ban đầu",
-      },
-    ],
-  },
-  {
-    id: "t2",
-    name: "Đỗ Hải Yến",
-    email: "yen.dh@example.com",
-    unit: "per_session",
-    amount: 400000,
-    isCustom: false,
-    effectiveFrom: "01/01/2026",
-    history: [
-      {
-        id: "h3",
-        period: "01/01/2026 – Hiện tại",
-        amount: 400000,
-        unit: "per_session",
-        updatedBy: "Hệ thống",
-        reason: "Áp dụng mức mặc định",
-      },
-    ],
-  },
-];
-
 export default function AdminPayRatesPage() {
   const router = useRouter();
-  const [defaultRate, setDefaultRate] = useState(initialDefaultRate);
-  const [teacherRates, setTeacherRates] = useState<TeacherPayRate[]>(initialTeacherRates);
+  const [defaultRate, setDefaultRate] = useState({
+    amount: 350000,
+    unit: "per_session" as PayRateType,
+    effectiveFrom: "2026-01-01",
+  });
+  const [teacherRates, setTeacherRates] = useState<TeacherPayRate[]>([]);
   const [reviewState, setReviewState] = useState<ReviewState>("ready");
   const [mobileNav, setMobileNav] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   // Edit Modal State
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingTeacher, setEditingTeacher] = useState<TeacherPayRate | null>(null);
   const [editUnit, setEditUnit] = useState<"per_session" | "per_hour">("per_session");
   const [editAmount, setEditAmount] = useState(400000);
-  const [editEffectiveDate, setEditEffectiveDate] = useState("2026-09-01");
+  const [editEffectiveDate, setEditEffectiveDate] = useState("2026-10-01");
   const [editReason, setEditReason] = useState("");
 
   // History Modal State
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [historyTeacher, setHistoryTeacher] = useState<TeacherPayRate | null>(null);
+  const [historyRecords, setHistoryRecords] = useState<RateHistoryRecord[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+
+  async function loadRates() {
+    setLoading(true);
+    setErrorMessage(null);
+    try {
+      const res = await fetchTeacherPayRates();
+      const mapped: TeacherPayRate[] = res.rates.map((r) => ({
+        id: r.teacherId,
+        name: r.teacherName,
+        email: r.teacherEmail,
+        unit: r.current?.rateType ?? "per_session",
+        amount: r.current ? Number(r.current.rateAmount) : 0,
+        isCustom: Boolean(r.current),
+        effectiveFrom: r.current?.effectiveFrom ?? "Chưa thiết lập",
+        history: [],
+      }));
+      setTeacherRates(mapped);
+    } catch (err: any) {
+      if (err?.statusCode === 403) {
+        setReviewState("forbidden");
+      } else {
+        setErrorMessage(err?.message || "Không thể tải biểu thù lao giáo viên");
+      }
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    loadRates();
+  }, []);
 
   function triggerToast(msg: string) {
     setToastMessage(msg);
@@ -131,7 +120,7 @@ export default function AdminPayRatesPage() {
     setEditingTeacher(teacher);
     if (teacher) {
       setEditUnit(teacher.unit);
-      setEditAmount(teacher.amount);
+      setEditAmount(teacher.amount || 350000);
     } else {
       setEditUnit(defaultRate.unit);
       setEditAmount(defaultRate.amount);
@@ -140,47 +129,54 @@ export default function AdminPayRatesPage() {
     setShowEditModal(true);
   }
 
-  function handleSaveRate(e: React.FormEvent) {
+  async function handleSaveRate(e: React.FormEvent) {
     e.preventDefault();
-    if (!editReason.trim()) return;
-
-    if (editingTeacher) {
-      setTeacherRates((prev) =>
-        prev.map((t) => {
-          if (t.id !== editingTeacher.id) return t;
-          const newRecord: RateHistoryRecord = {
-            id: `h-${Date.now()}`,
-            period: `${editEffectiveDate} – Hiện tại`,
-            amount: editAmount,
-            unit: editUnit,
-            updatedBy: "Nguyễn Quản Trị",
-            reason: editReason,
-          };
-          return {
-            ...t,
-            amount: editAmount,
-            unit: editUnit,
-            isCustom: true,
-            effectiveFrom: editEffectiveDate,
-            history: [newRecord, ...t.history],
-          };
-        })
-      );
-      triggerToast(`Đã cập nhật mức lương cho ${editingTeacher.name}`);
-    } else {
+    if (!editingTeacher) {
       setDefaultRate({
         amount: editAmount,
         unit: editUnit,
         effectiveFrom: editEffectiveDate,
       });
-      triggerToast("Đã cập nhật mức lương mặc định");
+      triggerToast("Đã cập nhật mức lương tham chiếu");
+      setShowEditModal(false);
+      return;
     }
-    setShowEditModal(false);
+
+    try {
+      await createPayRate({
+        teacherId: editingTeacher.id,
+        rateType: editUnit,
+        rateAmount: String(editAmount),
+        effectiveFrom: editEffectiveDate,
+      });
+      triggerToast(`Đã thiết lập mức thù lao mới cho ${editingTeacher.name}`);
+      setShowEditModal(false);
+      await loadRates();
+    } catch (err: any) {
+      triggerToast(err?.message || "Thiết lập mức thù lao thất bại");
+    }
   }
 
-  function openHistory(teacher: TeacherPayRate) {
+  async function openHistory(teacher: TeacherPayRate) {
     setHistoryTeacher(teacher);
     setShowHistoryModal(true);
+    setHistoryLoading(true);
+    try {
+      const history = await fetchTeacherPayRateHistory(teacher.id);
+      const mapped: RateHistoryRecord[] = history.map((h) => ({
+        id: h.id,
+        period: `Từ ${h.effectiveFrom} ${h.isCurrent ? "(Hiện tại)" : ""}`,
+        amount: Number(h.rateAmount),
+        unit: h.rateType,
+        updatedBy: "Quản trị viên",
+        reason: h.isCurrent ? "Đang áp dụng" : "Mức cũ",
+      }));
+      setHistoryRecords(mapped);
+    } catch (err: any) {
+      triggerToast(err?.message || "Không thể tải lịch sử");
+    } finally {
+      setHistoryLoading(false);
+    }
   }
 
   function handleStateChange(newState: ReviewState) {
@@ -457,17 +453,23 @@ export default function AdminPayRatesPage() {
             <p>Nhật ký append-only ghi nhận các lần điều chỉnh đơn giá dạy.</p>
 
             <div className={styles.timeline}>
-              {historyTeacher.history.map((h) => (
-                <div key={h.id} className={styles.timelineItem}>
-                  <strong>
-                    {formatVnd(h.amount)} / {h.unit === "per_session" ? "buổi" : "giờ"}
-                  </strong>
-                  <small>
-                    {h.period} • Người cập nhật: {h.updatedBy}
-                  </small>
-                  <div className={styles.timelineReason}>{h.reason}</div>
-                </div>
-              ))}
+              {historyLoading ? (
+                <p>Đang tải lịch sử...</p>
+              ) : historyRecords.length === 0 ? (
+                <p>Chưa có lịch sử thay đổi.</p>
+              ) : (
+                historyRecords.map((h) => (
+                  <div key={h.id} className={styles.timelineItem}>
+                    <strong>
+                      {formatVnd(h.amount)} / {h.unit === "per_session" ? "buổi" : "giờ"}
+                    </strong>
+                    <small>
+                      {h.period} • Người cập nhật: {h.updatedBy}
+                    </small>
+                    <div className={styles.timelineReason}>{h.reason}</div>
+                  </div>
+                ))
+              )}
             </div>
 
             <div className={styles.modalActions}>
