@@ -1055,6 +1055,52 @@ instead, and git would merge both sides cleanly because they touch different lin
 Do not let git auto-merge this file.
 
 
+### [WEB-015] The student shell shows a hardcoded name instead of the signed-in user
+
+**Severity**: High
+**Status**: Open
+
+**Description**: with `/student` now behind a login (2026-09-05), the area was opened as a real
+signed-in account for the first time — `demo.student2@hsk.local`, display name *Học Viên Demo 2*.
+The dashboard greets **"Chào buổi tối, Mai Anh"** and the sidebar footer also reads *Mai Anh*.
+That name is mock data in `src/lib/student/*`; it is not the person holding the session.
+
+**Impact**: the same defect class as `WEB-011` — a screen presenting invented data as the user's
+own. There it was a different person's profile on `/admin/profile`; here every learner sees
+someone else's name, XP (2.450), streak (12 ngày) and progress as their own. Worse than a blank
+state, because nothing signals that it is fake.
+
+**Reproduce**: sign in as any student, open `/student`. The greeting never changes.
+
+**Fix Plan**: read the display name from the auth store (the session already carries it — the
+admin and teacher shells do this), and leave the numbers absent until the progress endpoints
+exist rather than substituting fixtures. Do not paper over it by renaming the fixture.
+
+---
+
+### [WEB-016] The DEMO state switcher ships in the production student build
+
+**Severity**: Medium
+**Status**: Open
+
+**Description**: `WEB-004` recorded the dev-only REVIEW-STATE widget, and `WEB-011`'s fix made it
+dev-only "because over live data it let a failed load be repainted as ready". That fix reached the
+admin and teacher screens but **not** the student ones. Verified 2026-09-05 on a real production
+build (`pnpm --filter web build` then `next start`, so `NODE_ENV=production`): `/student` renders a
+`Sẵn sàng / Đang tải / Rỗng / Lỗi` switcher at both desktop and 375px.
+
+**Impact**: a learner can flip their own dashboard into a fake "Lỗi" or "Rỗng" state, and once the
+screens are wired to real endpoints the same control can repaint a genuinely failed load as
+healthy — exactly the failure `WEB-011` was filed for.
+
+**Fix Plan**: apply the same `process.env.NODE_ENV !== 'production'` gate the admin and teacher
+screens now use. Do it before wiring any student screen to a real endpoint, not after.
+
+**Numbering note**: `WEB-014` is taken by the unmerged branch `feat/s2-student-enrollment`, so
+these start at `WEB-015`. Per `DOC-014`, reconcile by hand on merge.
+
+---
+
 ## Technical Debt
 
 ### [DEBT-001] No cross-DB transactions
