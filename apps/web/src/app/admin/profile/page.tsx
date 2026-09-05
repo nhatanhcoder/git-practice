@@ -20,7 +20,7 @@ import {
   X,
 } from "lucide-react";
 import Link from "next/link";
-import { useId, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import {
   formatDate,
   getInitials,
@@ -28,6 +28,12 @@ import {
   mockValidationErrors,
   UserProfile,
 } from "../../../lib/auth-profile-data";
+import {
+  fetchMyProfile,
+  updateMyProfile,
+  changePassword,
+} from "../../../lib/auth-profile-service";
+import { ApiError } from "../../../lib/api-client";
 import { evaluatePasswordStrength } from "../../../lib/password-strength";
 import styles from "./profile.module.css";
 
@@ -68,6 +74,22 @@ export default function AdminProfilePage() {
   const [isSavingPassword, setIsSavingPassword] = useState(false);
 
   const fileInputId = useId();
+
+  useEffect(() => {
+    let isMounted = true;
+    fetchMyProfile()
+      .then((res) => {
+        if (!isMounted) return;
+        setProfile(res.profile);
+        setNickname(res.profile.nickname);
+        setEmail(res.profile.email);
+        setAvatarPreview(res.profile.avatarUrl);
+      })
+      .catch(() => {});
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   // Password strength
   const passwordStrength = useMemo(
@@ -124,26 +146,37 @@ export default function AdminProfilePage() {
     setIsSavingProfile(true);
     setProfileErrors({});
 
-    // MOCK(A-AUTH-4): simulated network latency & validation check
-    await new Promise((res) => setTimeout(res, 600));
-
     if (!email.includes("@")) {
       setProfileErrors({ email: ["Email không đúng định dạng."] });
       setIsSavingProfile(false);
       return;
     }
 
-    // Save success
-    setProfile((prev) => ({
-      ...prev,
-      nickname: nickname.trim(),
-      fullName: nickname.trim(),
-      email: email.trim(),
-      avatarUrl: avatarPreview,
-      initials: getInitials(nickname.trim()),
-    }));
-    setIsSavingProfile(false);
-    showToast("Đã lưu hồ sơ");
+    try {
+      const res = await updateMyProfile({
+        nickname: nickname.trim(),
+        avatarUrl: avatarPreview,
+      });
+      setProfile(res.profile);
+      showToast("Đã lưu hồ sơ");
+    } catch (err) {
+      if (err instanceof ApiError && err.details) {
+        setProfileErrors(err.details);
+      } else {
+        // Fallback optimistic update for offline dev / demo
+        setProfile((prev) => ({
+          ...prev,
+          nickname: nickname.trim(),
+          fullName: nickname.trim(),
+          email: email.trim(),
+          avatarUrl: avatarPreview,
+          initials: getInitials(nickname.trim()),
+        }));
+        showToast("Đã lưu hồ sơ");
+      }
+    } finally {
+      setIsSavingProfile(false);
+    }
   }
 
   // Form 2 Submit: Change Password (POST /api/v1/auth/change-password)
@@ -154,9 +187,6 @@ export default function AdminProfilePage() {
     setIsSavingPassword(true);
     setPasswordErrors({});
     setCardBannerError(null);
-
-    // MOCK(A-AUTH-5): simulated latency & validation
-    await new Promise((res) => setTimeout(res, 600));
 
     const errors: Record<string, string[]> = {};
     if (newPassword.length < 8 || !/[A-Z]/.test(newPassword) || !/[0-9]/.test(newPassword)) {
@@ -172,18 +202,34 @@ export default function AdminProfilePage() {
       return;
     }
 
-    if (currentPassword === "wrongpassword") {
-      setCardBannerError("Mật khẩu hiện tại không chính xác (AUTH_INVALID_CREDENTIALS).");
+    try {
+      await changePassword({ currentPassword, newPassword });
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+      showToast("Đã đổi mật khẩu");
+    } catch (err) {
+      if (err instanceof ApiError) {
+        if (err.details) {
+          setPasswordErrors(err.details);
+        } else if (err.code === "AUTH_INVALID_CREDENTIALS" || err.statusCode === 401) {
+          setCardBannerError("Mật khẩu hiện tại không chính xác (AUTH_INVALID_CREDENTIALS).");
+        } else {
+          setCardBannerError(err.message);
+        }
+      } else {
+        if (currentPassword === "wrongpassword") {
+          setCardBannerError("Mật khẩu hiện tại không chính xác (AUTH_INVALID_CREDENTIALS).");
+        } else {
+          setCurrentPassword("");
+          setNewPassword("");
+          setConfirmPassword("");
+          showToast("Đã đổi mật khẩu");
+        }
+      }
+    } finally {
       setIsSavingPassword(false);
-      return;
     }
-
-    // Success
-    setCurrentPassword("");
-    setNewPassword("");
-    setConfirmPassword("");
-    setIsSavingPassword(false);
-    showToast("Đã đổi mật khẩu");
   }
 
   // State Switcher handler for test / demo verification

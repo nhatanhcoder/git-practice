@@ -48,7 +48,7 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
 - ✅ F1.1 Account registration (status `pending`, bcrypt cost 12)
 - ✅ F1.2 Login (JWT access 15min + refresh 7d, httpOnly cookie)
 - ⬜ F1.3 Account approval (Admin)
-- 🔶 F1.4 Profile management (built in apps/web/src/app/admin/profile; backend endpoints GET/PATCH /me implemented)
+- ✅ F1.4 Profile & Admin Users FE integration (connected apps/web/src/app/admin/users, [userId], profile to real /api/v1/admin/users and /api/v1/auth/me)
 - ✅ Refresh Token Rotation + Replay Attack detection (PROJECT_KNOWLEDGE.md 4.1)
 - ✅ Custom decorators `@CurrentUser`, `@Roles`, `@Public`
 - **DoD**: Register → Admin approves → login lands on the correct dashboard per role

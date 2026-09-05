@@ -20,11 +20,12 @@ import {
   X,
 } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { avatarToneFor } from "../../../../lib/formatters";
 import { getStatusColor } from "../../../../lib/status";
 import { getStudentDataset, getTeacherDataset, getUserDetailDataset } from "../../../../lib/user-detail-data.js";
 import { nextStatus } from "../../../../lib/user-status.js";
+import { fetchAdminUserDetail } from "../../../../lib/admin-users-service";
 import styles from "./detail.module.css";
 
 type UserStatus = "pending" | "active" | "suspended";
@@ -66,6 +67,35 @@ export default function AdminUserDetailPage({ params }: { params: { userId: stri
   const [reason, setReason] = useState("");
   const [toast, setToast] = useState("");
   const [mobileNav, setMobileNav] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+    fetchAdminUserDetail(params.userId)
+      .then((res) => {
+        if (!isMounted || !res.user) return;
+        setUser((curr) => ({
+          ...curr,
+          id: res.user!.id,
+          nickname: res.user!.nickname || curr.nickname,
+          email: res.user!.email || curr.email,
+          role: res.user!.role || curr.role,
+          status: res.user!.status || curr.status,
+          createdAt: res.user!.createdAt || curr.createdAt,
+          lastLoginAt: res.user!.lastLoginAt,
+          hskLevelGoal: res.user!.hskLevelGoal ?? curr.hskLevelGoal,
+          bio: res.user!.bio ?? curr.bio,
+        }));
+        if (res.user.role === "teacher") {
+          setReviewState("teacher");
+        } else if (res.user.role === "student" || res.user.role === "admin") {
+          setReviewState("student");
+        }
+      })
+      .catch(() => {});
+    return () => {
+      isMounted = false;
+    };
+  }, [params.userId]);
 
   function switchState(state: ReviewState) {
     setReviewState(state);

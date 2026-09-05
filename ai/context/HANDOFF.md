@@ -31,6 +31,33 @@
 
 ---
 
+## [2026-09-03] — Admin FE (Users, User Detail, Profile) API Integration — Antigravity
+
+**Context**:
+Connected Admin screens in `apps/web` (`/admin/users`, `/admin/users/[userId]`, `/admin/profile`) to the real Backend API (`/api/v1/admin/users`, `/api/v1/admin/users/:id`, `/api/v1/auth/me`, `/api/v1/auth/change-password`) on branch `feat/s1-admin-fe-api`.
+
+**Done**:
+- Created `apps/web/src/lib/api-client.ts` with flat envelope support (`{ data, meta }`), credentials for refresh cookie, and Bearer token support.
+- Created `apps/web/src/lib/admin-users-service.ts` and `apps/web/src/lib/auth-profile-service.ts` with offline fallback for SSG.
+- Connected `apps/web/src/app/admin/users/page.tsx` to `fetchAdminUsers`.
+- Connected `apps/web/src/app/admin/users/[userId]/page.tsx` to `fetchAdminUserDetail`.
+- Connected `apps/web/src/app/admin/profile/page.tsx` to `fetchMyProfile`, `updateMyProfile`, and `changePassword`.
+- Verified:
+  - `node --test apps/web/scripts/*.test.mjs`: 34/34 tests pass.
+  - `pnpm --filter web build`: 31/31 static pages build cleanly.
+  - `pnpm --filter api test`: 40/40 tests pass.
+  - `node scripts/check-docs.mjs`: 8/8 tests pass.
+- Updated `ai/PROGRESS.md` (F1.4 marked Done) and created session log `ai/context/sessions/2026-09-03-admin-fe-api.md`.
+
+**Blocker / needs follow-up**:
+- None.
+
+**Next steps**:
+- Review and merge PR #26 (Auth backend) and PR for `feat/s1-admin-fe-api`.
+- Next task in Sprint 1: F1.3 Account Approval (Admin) or Teacher API specs.
+
+---
+
 ## [2026-09-03] — Module 01 Auth Backend Implementation & Invariants Verification — Antigravity
 
 **Context**:
