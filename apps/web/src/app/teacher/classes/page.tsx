@@ -1,8 +1,5 @@
 "use client";
 
-// MOCK(T-CLASS-1,2,5): class list, create and archive stay in-memory until
-// /api/v1/teacher/classes endpoints exist.
-
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AlertCircle, Archive, Inbox, MoreHorizontal, Plus, Search } from "lucide-react";

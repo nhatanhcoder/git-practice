@@ -1,8 +1,6 @@
 "use client";
 
-// MOCK(T-CLASS-3,4,6): class detail, roster, edit and code regeneration are in-memory
-// until /api/v1/teacher/classes/:id endpoints exist. "Average score" and "attendance
-// rate" render as "—" per the contract (no aggregation field / Sprint 5 deferral).
+// "Average score" and "attendance rate" render as "—" per the contract (no aggregation field / Sprint 5 deferral).
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";

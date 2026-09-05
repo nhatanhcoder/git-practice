@@ -1,9 +1,5 @@
 "use client";
 
-// MOCK(teacher-dashboard): class cards are in-memory until GET /api/v1/teacher/classes
-// exists. KPI tiles deliberately absent — no dashboard-aggregation endpoint (contract
-// "Out of scope": do not mock the numbers).
-
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AlertCircle, GraduationCap, Inbox, Plus, Users } from "lucide-react";
