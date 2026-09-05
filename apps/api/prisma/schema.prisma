@@ -142,6 +142,11 @@ model ClassEnrollment {
   studentId String           @map("student_id") @db.Uuid
   status    EnrollmentStatus @default(active)
   joinedAt  DateTime         @default(now()) @map("joined_at")
+  // Set when a student who had left (status = dropped) enrols again. joinedAt keeps the
+  // FIRST join so INV-CLASS-06 (leave keeps history) is not defeated by overwriting it;
+  // without this column the gap between leaving and returning would be invisible, and any
+  // later time-based tuition calculation would silently bill the student for it.
+  rejoinedAt DateTime?       @map("rejoined_at")
   createdAt DateTime         @default(now()) @map("created_at")
   updatedAt DateTime         @updatedAt @map("updated_at")
 

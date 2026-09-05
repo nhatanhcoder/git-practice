@@ -133,7 +133,40 @@ Neither of the two question-marked transitions is specified in any document.
 |---|---|
 | Duplicate `enrollmentCode` generated | `UNIQUE(enrollmentCode)` + retry up to N times. Never trust randomness alone |
 | Two concurrent join requests | `UNIQUE(classId, studentId)` is the last line of defense. Service-level check **is not enough** |
-| Re-join after dropped | Must decide: UPDATE the old record back to `active`, or block? See section 16 |
+| Re-join after dropped | UPDATE the old record back to `active` + stamp `rejoinedAt`. See § 8.1 |
+
+### 8.1 Re-join after `dropped` — decided 2026-09-05
+
+**A student who left and returns reactivates the existing enrollment row.** They are not
+blocked, and no second row is created.
+
+`UNIQUE(classId, studentId)` removes "insert a new enrollment" from the table of options
+entirely, so the real choice was only between reactivating and refusing. Refusing was
+rejected because a student who mis-clicks *Rời lớp* would then be permanently locked out:
+there is no re-admit endpoint for a teacher or an admin in `API_TEACHER.md` or
+`API_ADMIN.md`, so the only recovery would be editing the database by hand — the same
+defect already recorded as `API-003` for payroll periods.
+
+What the implementation does:
+
+| Field | On re-join |
+|---|---|
+| `status` | `dropped` → `active` |
+| `joinedAt` | **unchanged** — keeps the first enrollment date |
+| `rejoinedAt` | set to now (nullable; NULL means "never left and returned") |
+
+`joinedAt` is deliberately not overwritten. INV-CLASS-06 keeps the row on leaving precisely
+so the history survives; overwriting `joinedAt` would defeat that by another route, and it
+would hide the gap between leaving and returning from any later time-based tuition
+calculation.
+
+Concurrency: the reactivation is a conditional update (`WHERE id = ... AND status = 'dropped'`),
+not a read followed by a write. Two simultaneous re-joins therefore change exactly one row;
+the loser sees zero rows affected and receives `CLASS_ALREADY_ENROLLED`, which is accurate by
+that point. The first-time join path relies on the unique constraint and maps P2002 to the
+same code.
+
+Migration: `20260905120000_add_enrollment_rejoined_at` adds the nullable `rejoined_at` column.
 
 ## 9. Error → code mapping
 
@@ -210,7 +243,7 @@ Log: class creation, successful/failed enrollments, wrong-code guessing attempts
 | **SCOPE-01: scope of this module** — full implementation (pull Teacher scope in early) or minimal enough for Sessions? | **All of Sessions + Payroll**. Without Class, `GET /admin/sessions/pending` is permanently empty | - | before Phase 3 |
 | **API-004**: the three transitions `scheduled → in_progress → completed_pending` have no endpoint anywhere | The `session_submitted_for_review` notification has no producer | - | same as SCOPE-01 |
 | Is un-archiving a class allowed? | state machine | - | when working on the module |
-| Re-join after `dropped`: UPDATE back to `active` or block? | INV-CLASS-05, unique constraint | - | when working on the module |
+| ~~Re-join after `dropped`: UPDATE back to `active` or block?~~ **Resolved 2026-09-05 (owner) — UPDATE back to `active`.** See § 8.1 | INV-CLASS-05, unique constraint | owner | ✅ done |
 
 | `hskLevel` of Class says 1–9, GLOSSARY says 1–6 (DOC-004) | validation | - | before migration |
 

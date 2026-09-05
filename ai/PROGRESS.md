@@ -70,10 +70,10 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
 ## Sprint 2 — Classes & Enrollment
 - ✅ F2.1 Create class (unique 8-character enrollment code)
 - ✅ F2.2 Edit class
-- ⬜ F2.3 Join class
-- ⬜ F2.4 Leave class
+- ✅ F2.3 Join class (`POST /student/classes/join`)
+- ✅ F2.4 Leave class (`DELETE /student/classes/:id/leave` — sets `dropped`, keeps the row)
 - ✅ F2.5 View student list in a class
-- ⬜ F2.6 View Student's class list
+- ✅ F2.6 View Student's class list (`GET /student/classes` + `GET /student/classes/:id`)
 - ✅ Teacher Lessons API & Admin Classes API (SCOPE-01 Option A complete)
 - 🔶 (claude · 2026-09-01) **Teacher Page Contracts for this sprint's slice** —
   `/teacher`, `/teacher/classes`, `/teacher/classes/[classId]`,
@@ -144,6 +144,28 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
   `teacher-rules` moved `.ts` → `.js` with JSDoc so the tests import it directly instead of
   regex-stripping TypeScript. 34/34 tests, build green, check-docs 8/8, 9/9 routes 200,
   all three findings re-verified in a **production** build, desktop + 375px.
+- ✅ (claude · 2026-09-05) **Student enrollment API — the missing link in the cross-actor chain.**
+  Admin approval, teacher class creation and the teacher roster were already live; nothing
+  could put a student into a class, so `ClassEnrollment` could never hold real data and every
+  downstream module (assignments, attempts, sessions, invoices) had no foundation. Four
+  endpoints in `apps/api/src/classes/student-classes.controller.ts`, built against the
+  **accepted** spec `03-classes-enrollment.md` — no endpoint, field or error code invented.
+  Ownership is enforced in the service on every read (`@Roles('student')` only proves the
+  caller is *a* student); student payloads omit the enrollment code and the peer roster.
+  Both write paths use conditional updates instead of read-then-write, and the first-time
+  join treats the unique constraint as the real defence per INV-CLASS-05.
+  **Re-join after leaving reactivates the existing row** (owner decision 2026-09-05, closing
+  the open question in that spec § 16; now written up as its § 8.1), keeping `joinedAt` and
+  stamping a new nullable `rejoinedAt` — migration `20260905120000_add_enrollment_rejoined_at`.
+  Verified: `pnpm --filter api build` clean · full API suite **112/112 across 17 suites**
+  (19 new, including two concurrent joins against a real database asserting exactly one row
+  survives) · `check-docs` 8/8.
+  ⚠️ **API only — the Sprint 2 DoD is not fully met.** There is no `/student/classes` route in
+  `apps/web` at all (the student app has only the 9 mocked self-study screens), so a real user
+  still cannot join a class from a browser. The chain is proven end to end by an e2e test, not
+  by a person. FE is the next slice.
+  ⚠️ Built in a sibling worktree `../Real-claude-student` against an **isolated** local database
+  `hsk_dev_student`, because another agent was mid-edit in the main checkout — see `BUILD-002`.
 - **DoD**: Teacher creates class → student joins via code → teacher sees the student in the list
 
 ## Sprint 3 — Question Bank & Assignments
