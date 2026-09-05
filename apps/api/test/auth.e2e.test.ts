@@ -5,6 +5,7 @@ import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, type INestApplication, type ValidationError } from '@nestjs/common';
 import cookieParser from 'cookie-parser';
 import bcrypt from 'bcryptjs';
+import { createHash } from 'node:crypto';
 import { AppModule } from '../dist/src/app.module';
 import { GlobalExceptionFilter } from '../dist/src/common/filters/global-exception.filter';
 import { EnvelopeInterceptor } from '../dist/src/common/interceptors/envelope.interceptor';
@@ -86,6 +87,9 @@ before(async () => {
   await app.listen(0);
   base = (await app.getUrl()).replace('[::1]', 'localhost');
   prisma = app.get(PrismaService);
+  await prisma.user.deleteMany({
+    where: { email: { in: ['new.student@test.local', 'new.teacher@test.local'] } },
+  });
 });
 
 after(async () => {
@@ -210,6 +214,26 @@ describe('POST /auth/login', () => {
     assert.ok(res.cookieHeader.includes('Path=/api/v1/auth'));
     assert.ok(extractCookie(res.cookieHeader));
   });
+
+  it('enforces login rate limit after 5 failed attempts with 429 AUTH_TOO_MANY_REQUESTS', async () => {
+    const rateLimitEmail = `rate.limit.${Date.now()}@hsk.local`;
+    for (let i = 0; i < 5; i++) {
+      const failRes = await req('POST', '/auth/login', {
+        email: rateLimitEmail,
+        password: 'WrongPassword!',
+      });
+      assert.equal(failRes.status, 401);
+      assert.equal(failRes.body.code, 'AUTH_INVALID_CREDENTIALS');
+    }
+
+    // 6th attempt is blocked with 429
+    const blockedRes = await req('POST', '/auth/login', {
+      email: rateLimitEmail,
+      password: 'WrongPassword!',
+    });
+    assert.equal(blockedRes.status, 429);
+    assert.equal(blockedRes.body.code, 'AUTH_TOO_MANY_REQUESTS');
+  });
 });
 
 describe('POST /auth/refresh & Replay Attack Detection', () => {
@@ -236,20 +260,27 @@ describe('POST /auth/refresh & Replay Attack Detection', () => {
     assert.notEqual(newRefreshToken, initialRefreshToken);
   });
 
-  it('detects replay attack when old token is reused and revokes family — INV-AUTH-07', async () => {
-    // Attempting to reuse initialRefreshToken which was rotated above
+  it('detects replay attack when old token is reused outside grace window and revokes family — INV-AUTH-07', async () => {
+    // Advance revokedAt past the 15s grace window for initialRefreshToken
+    const hash = createHash('sha256').update(initialRefreshToken).digest('hex');
+    await prisma.refreshToken.updateMany({
+      where: { tokenHash: hash },
+      data: { revokedAt: new Date(Date.now() - 30_000) },
+    });
+
+    // Attempting to reuse initialRefreshToken outside grace window is a REPLAY ATTACK
     const res = await req('POST', '/auth/refresh', undefined, {
       cookie: `refresh_token=${initialRefreshToken}`,
     });
 
     assert.equal(res.status, 401);
-    assert.equal(res.body.code, 'AUTH_TOKEN_INVALID');
+    assert.equal(res.body.code, 'AUTH_REFRESH_INVALID');
   });
 
   it('rejects refresh without cookie', async () => {
     const res = await req('POST', '/auth/refresh');
     assert.equal(res.status, 401);
-    assert.equal(res.body.code, 'AUTH_TOKEN_INVALID');
+    assert.equal(res.body.code, 'AUTH_REFRESH_INVALID');
   });
 });
 
@@ -345,7 +376,7 @@ describe('POST /auth/change-password & POST /auth/logout', () => {
       cookie: `refresh_token=${teacherRefresh}`,
     });
 
-    assert.equal(logoutRes.status, 200);
+    assert.equal(logoutRes.status, 204);
     assert.ok(logoutRes.cookieHeader);
     // Max-Age=0 or Expires in past to clear
     assert.ok(

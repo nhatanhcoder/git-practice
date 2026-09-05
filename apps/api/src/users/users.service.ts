@@ -72,6 +72,93 @@ export class UsersService {
     return toDetail(row);
   }
 
+  async approve(id: string): Promise<AdminUserDetail> {
+    if (!UUID.test(id)) {
+      throw new AppException(ErrorCode.VALIDATION_ERROR, 'id không đúng định dạng uuid');
+    }
+    // Atomic conditional update: only pending accounts can be approved to active
+    const result = await this.prisma.user.updateMany({
+      where: { id, status: 'pending' },
+      data: { status: 'active' },
+    });
+    if (result.count === 0) {
+      const user = await this.prisma.user.findUnique({ where: { id } });
+      if (!user) {
+        throw new AppException(ErrorCode.USER_NOT_FOUND, 'Không tìm thấy người dùng');
+      }
+      if (user.status === 'active') {
+        throw new AppException(ErrorCode.USER_ALREADY_APPROVED, 'Tài khoản đã được phê duyệt trước đó');
+      }
+      throw new AppException(
+        ErrorCode.USER_INVALID_STATUS_TRANSITION,
+        `Không thể duyệt tài khoản ở trạng thái ${user.status}`,
+      );
+    }
+    const updated = await this.prisma.user.findUniqueOrThrow({
+      where: { id },
+      select: DETAIL_SELECT,
+    });
+    return { ...toDetail(updated), status: 'active' };
+  }
+
+  async suspend(id: string): Promise<AdminUserDetail> {
+    if (!UUID.test(id)) {
+      throw new AppException(ErrorCode.VALIDATION_ERROR, 'id không đúng định dạng uuid');
+    }
+    // Atomic conditional update: only active accounts can be suspended
+    const result = await this.prisma.user.updateMany({
+      where: { id, status: 'active' },
+      data: { status: 'suspended' },
+    });
+    if (result.count === 0) {
+      const user = await this.prisma.user.findUnique({ where: { id } });
+      if (!user) {
+        throw new AppException(ErrorCode.USER_NOT_FOUND, 'Không tìm thấy người dùng');
+      }
+      if (user.status === 'suspended') {
+        throw new AppException(ErrorCode.USER_ALREADY_SUSPENDED, 'Tài khoản đã bị tạm ngưng trước đó');
+      }
+      throw new AppException(
+        ErrorCode.USER_INVALID_STATUS_TRANSITION,
+        `Không thể tạm ngưng tài khoản ở trạng thái ${user.status}`,
+      );
+    }
+    const updated = await this.prisma.user.findUniqueOrThrow({
+      where: { id },
+      select: DETAIL_SELECT,
+    });
+    return { ...toDetail(updated), status: 'suspended' };
+  }
+
+  async activate(id: string): Promise<AdminUserDetail> {
+    if (!UUID.test(id)) {
+      throw new AppException(ErrorCode.VALIDATION_ERROR, 'id không đúng định dạng uuid');
+    }
+    // Atomic conditional update: only suspended accounts can be activated to active
+    const result = await this.prisma.user.updateMany({
+      where: { id, status: 'suspended' },
+      data: { status: 'active' },
+    });
+    if (result.count === 0) {
+      const user = await this.prisma.user.findUnique({ where: { id } });
+      if (!user) {
+        throw new AppException(ErrorCode.USER_NOT_FOUND, 'Không tìm thấy người dùng');
+      }
+      if (user.status === 'active') {
+        throw new AppException(ErrorCode.USER_ALREADY_ACTIVE, 'Tài khoản đang hoạt động');
+      }
+      throw new AppException(
+        ErrorCode.USER_INVALID_STATUS_TRANSITION,
+        `Không thể kích hoạt tài khoản ở trạng thái ${user.status}`,
+      );
+    }
+    const updated = await this.prisma.user.findUniqueOrThrow({
+      where: { id },
+      select: DETAIL_SELECT,
+    });
+    return { ...toDetail(updated), status: 'active' };
+  }
+
   private buildWhere(query: ListUsersQuery): Prisma.UserWhereInput {
     const where: Prisma.UserWhereInput = {};
     if (query.role) where.role = query.role;
@@ -89,3 +176,4 @@ export class UsersService {
     return where;
   }
 }
+

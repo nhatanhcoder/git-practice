@@ -16,9 +16,32 @@ export const ErrorCode = {
   AUTH_TOKEN_INVALID: 'AUTH_TOKEN_INVALID',
   AUTH_REFRESH_INVALID: 'AUTH_REFRESH_INVALID',
   AUTH_INSUFFICIENT_ROLE: 'AUTH_INSUFFICIENT_ROLE',
+  AUTH_TOO_MANY_REQUESTS: 'AUTH_TOO_MANY_REQUESTS',
 
   // User (registry § User Errors)
   USER_NOT_FOUND: 'USER_NOT_FOUND',
+  USER_ALREADY_APPROVED: 'USER_ALREADY_APPROVED',
+  USER_ALREADY_SUSPENDED: 'USER_ALREADY_SUSPENDED',
+  USER_ALREADY_ACTIVE: 'USER_ALREADY_ACTIVE',
+  USER_INVALID_STATUS_TRANSITION: 'USER_INVALID_STATUS_TRANSITION',
+
+  // Class (registry § Class Errors)
+  CLASS_NOT_FOUND: 'CLASS_NOT_FOUND',
+  CLASS_ACCESS_DENIED: 'CLASS_ACCESS_DENIED',
+  CLASS_ALREADY_ARCHIVED: 'CLASS_ALREADY_ARCHIVED',
+  CLASS_ENROLL_CODE_INVALID: 'CLASS_ENROLL_CODE_INVALID',
+  CLASS_ALREADY_ENROLLED: 'CLASS_ALREADY_ENROLLED',
+  CLASS_NOT_ENROLLED: 'CLASS_NOT_ENROLLED',
+
+  // Lesson (registry § Lesson Errors)
+  LESSON_NOT_FOUND: 'LESSON_NOT_FOUND',
+  LESSON_ACCESS_DENIED: 'LESSON_ACCESS_DENIED',
+  LESSON_ORDER_INDEX_CONFLICT: 'LESSON_ORDER_INDEX_CONFLICT',
+
+  // Question bank (registry § Question Errors). MongoDB-backed.
+  QUESTION_NOT_FOUND: 'QUESTION_NOT_FOUND',
+  QUESTION_NOT_OWNER: 'QUESTION_NOT_OWNER',
+  QUESTION_AUDIO_REQUIRED: 'QUESTION_AUDIO_REQUIRED',
 
   // Validation + fallbacks (registry § Validation Errors, § Fallback Errors)
   VALIDATION_ERROR: 'VALIDATION_ERROR',
@@ -30,13 +53,6 @@ export type ErrorCodeValue = (typeof ErrorCode)[keyof typeof ErrorCode];
 
 /**
  * HTTP status for each code, exactly as the registry tables state it.
- *
- * `AUTH_ACCOUNT_SUSPENDED` is 403 here because that is what the registry says. Note
- * that `ENTITY_USER.md` says a suspended user's token is rejected with **401** — the
- * contradiction is open in `01-auth.md` §16 and `02-users.md` §16, and it is not a
- * detail: the frontend treats 401 as "refresh then log out" and 403 as "show a
- * message", so the wrong pick makes the FE refresh in a loop. Following the registry
- * is the conservative reading; revisit when the owner settles it.
  */
 export const ERROR_STATUS: Record<ErrorCodeValue, number> = {
   AUTH_EMAIL_EXISTS: 409,
@@ -47,7 +63,24 @@ export const ERROR_STATUS: Record<ErrorCodeValue, number> = {
   AUTH_TOKEN_INVALID: 401,
   AUTH_REFRESH_INVALID: 401,
   AUTH_INSUFFICIENT_ROLE: 403,
+  AUTH_TOO_MANY_REQUESTS: 429,
   USER_NOT_FOUND: 404,
+  USER_ALREADY_APPROVED: 409,
+  USER_ALREADY_SUSPENDED: 409,
+  USER_ALREADY_ACTIVE: 409,
+  USER_INVALID_STATUS_TRANSITION: 400,
+  CLASS_NOT_FOUND: 404,
+  CLASS_ACCESS_DENIED: 403,
+  CLASS_ALREADY_ARCHIVED: 400,
+  CLASS_ENROLL_CODE_INVALID: 404,
+  CLASS_ALREADY_ENROLLED: 409,
+  CLASS_NOT_ENROLLED: 400,
+  LESSON_NOT_FOUND: 404,
+  LESSON_ACCESS_DENIED: 403,
+  LESSON_ORDER_INDEX_CONFLICT: 409,
+  QUESTION_NOT_FOUND: 404,
+  QUESTION_NOT_OWNER: 403,
+  QUESTION_AUDIO_REQUIRED: 400,
   VALIDATION_ERROR: 400,
   DUPLICATE_ENTRY: 409,
   INTERNAL_SERVER_ERROR: 500,

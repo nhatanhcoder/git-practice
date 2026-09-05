@@ -30,10 +30,25 @@ export function generateRawToken(): string {
   return crypto.randomBytes(32).toString('hex');
 }
 
+interface RotationCacheEntry {
+  accessToken: string;
+  rawRefreshToken: string;
+  expiresAt: number;
+}
+
+interface LoginRateLimitEntry {
+  attempts: number;
+  firstAttemptAt: number;
+}
+
 @Injectable()
 export class AuthService {
   private readonly jwtAccessSecret: string;
   private readonly jwtAccessTtl: string;
+  private readonly rotationCache = new Map<string, RotationCacheEntry>();
+  private readonly loginAttempts = new Map<string, LoginRateLimitEntry>();
+  private static readonly MAX_LOGIN_ATTEMPTS = 5;
+  private static readonly LOGIN_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
 
   constructor(
     @Inject(PrismaService) private readonly prisma: PrismaService,
@@ -47,12 +62,54 @@ export class AuthService {
     this.jwtAccessTtl = this.config.get<string>('JWT_ACCESS_TTL') || '15m';
   }
 
+  private checkLoginRateLimit(ip: string, email: string): void {
+    const key = `${ip}:${email.toLowerCase().trim()}`;
+    const now = Date.now();
+    const entry = this.loginAttempts.get(key);
+    if (!entry) return;
+
+    if (now - entry.firstAttemptAt > AuthService.LOGIN_WINDOW_MS) {
+      this.loginAttempts.delete(key);
+      return;
+    }
+
+    if (entry.attempts >= AuthService.MAX_LOGIN_ATTEMPTS) {
+      throw new AppException(
+        ErrorCode.AUTH_TOO_MANY_REQUESTS,
+        'Quá nhiều lần thử đăng nhập không thành công, vui lòng thử lại sau 15 phút',
+      );
+    }
+  }
+
+  private recordFailedLogin(ip: string, email: string): void {
+    const key = `${ip}:${email.toLowerCase().trim()}`;
+    const now = Date.now();
+    const entry = this.loginAttempts.get(key);
+
+    if (!entry || now - entry.firstAttemptAt > AuthService.LOGIN_WINDOW_MS) {
+      this.loginAttempts.set(key, { attempts: 1, firstAttemptAt: now });
+    } else {
+      entry.attempts += 1;
+    }
+  }
+
+  private clearFailedLogins(ip: string, email: string): void {
+    const key = `${ip}:${email.toLowerCase().trim()}`;
+    this.loginAttempts.delete(key);
+  }
+
   /**
-   * Register a new user with status `pending`.
-   * INV-AUTH-01: bcrypt cost 12.
-   * INV-AUTH-03: status is always pending, admin role is forbidden.
+   * Register a new user. Students are created in 'pending' status (INV-AUTH-03).
+   * Password hashed with bcrypt cost 12 (INV-AUTH-01).
    */
   async register(dto: RegisterDto): Promise<RegisterResult> {
+    if ((dto.role as string) === 'admin') {
+      throw new AppException(
+        ErrorCode.VALIDATION_ERROR,
+        'Không thể tự đăng ký tài khoản với quyền admin',
+      );
+    }
+
     const passwordHash = await bcrypt.hash(dto.password, BCRYPT_COST);
 
     try {
@@ -60,9 +117,9 @@ export class AuthService {
         data: {
           email: dto.email,
           passwordHash,
-          role: dto.role as UserRole,
-          status: 'pending',
           nickname: dto.fullName,
+          role: dto.role ?? 'student',
+          status: 'pending',
         },
       });
 
@@ -76,7 +133,10 @@ export class AuthService {
       };
     } catch (err) {
       if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
-        throw new AppException(ErrorCode.AUTH_EMAIL_EXISTS, 'Email đã được đăng ký');
+        throw new AppException(
+          ErrorCode.AUTH_EMAIL_EXISTS,
+          'Email này đã được sử dụng',
+        );
       }
       throw err;
     }
@@ -84,11 +144,14 @@ export class AuthService {
 
   /**
    * Login with email & password.
-   * INV-AUTH-04: identical 401 for bad email and bad password.
-   * INV-AUTH-05: pending -> 403, suspended -> 403.
-   * Emits new session and returns raw refresh token for cookie.
+   * INV-AUTH-04: constant-time comparison, unified error message.
+   * INV-AUTH-05: pending/suspended accounts rejected after password verification.
+   * INV-AUTH-06: mints access token and writes refresh token hash to DB.
+   * Rate limiting: max 5 failures per 15 minutes per (ip, email).
    */
-  async login(dto: LoginDto): Promise<{ result: LoginResult; rawRefreshToken: string }> {
+  async login(dto: LoginDto, ip = '127.0.0.1'): Promise<{ result: LoginResult; rawRefreshToken: string }> {
+    this.checkLoginRateLimit(ip, dto.email);
+
     const user = await this.prisma.user.findUnique({
       where: { email: dto.email },
     });
@@ -96,6 +159,7 @@ export class AuthService {
     // Constant-time check mitigation if user not found
     if (!user) {
       await bcrypt.hash('dummy-password', BCRYPT_COST);
+      this.recordFailedLogin(ip, dto.email);
       throw new AppException(
         ErrorCode.AUTH_INVALID_CREDENTIALS,
         'Email hoặc mật khẩu không chính xác',
@@ -104,6 +168,7 @@ export class AuthService {
 
     const passwordMatch = await bcrypt.compare(dto.password, user.passwordHash);
     if (!passwordMatch) {
+      this.recordFailedLogin(ip, dto.email);
       throw new AppException(
         ErrorCode.AUTH_INVALID_CREDENTIALS,
         'Email hoặc mật khẩu không chính xác',
@@ -123,6 +188,8 @@ export class AuthService {
         'Tài khoản đã bị tạm khóa',
       );
     }
+
+    this.clearFailedLogins(ip, dto.email);
 
     const rawRefreshToken = generateRawToken();
     const tokenHash = hashToken(rawRefreshToken);
@@ -153,13 +220,87 @@ export class AuthService {
   }
 
   /**
+   * Handle re-presentation of an already-revoked refresh token.
+   * Checks grace window for benign concurrent races (e.g. multi-tab burst),
+   * restores child token cookie via rotationCache (01-auth.md §8 Proposal A),
+   * otherwise revokes the entire family for replay attack.
+   */
+  private async handleRevokedToken(
+    token: any,
+    tokenHash: string,
+  ): Promise<{ result: RefreshResult; newRawRefreshToken: string }> {
+    // Expiry and user status must NOT be bypassed by the grace branch (01-auth.md §8, INV-AUTH-05/10)
+    if (token.expiresAt < new Date()) {
+      throw new AppException(ErrorCode.AUTH_TOKEN_EXPIRED, 'Refresh token đã hết hạn');
+    }
+    if (token.user.status === 'suspended') {
+      throw new AppException(ErrorCode.AUTH_ACCOUNT_SUSPENDED, 'Tài khoản đã bị tạm khóa');
+    }
+    if (token.user.status === 'pending') {
+      throw new AppException(ErrorCode.AUTH_ACCOUNT_PENDING, 'Tài khoản đang chờ phê duyệt');
+    }
+
+    const isRotated = token.revokedReason === 'rotated';
+    const withinGrace =
+      token.revokedAt && Date.now() - new Date(token.revokedAt).getTime() <= 15_000;
+
+    if (isRotated && withinGrace && token.replacedById) {
+      const child = await this.prisma.refreshToken.findUnique({
+        where: { id: token.replacedById },
+        include: { user: true },
+      });
+      if (child && !child.revokedAt && child.expiresAt > new Date()) {
+        if (child.user.status === 'suspended') {
+          throw new AppException(ErrorCode.AUTH_ACCOUNT_SUSPENDED, 'Tài khoản đã bị tạm khóa');
+        }
+        if (child.user.status === 'pending') {
+          throw new AppException(ErrorCode.AUTH_ACCOUNT_PENDING, 'Tài khoản đang chờ phê duyệt');
+        }
+
+        // Return cached rotation result (includes new raw refresh token cookie for lost response recovery)
+        const cached = this.rotationCache.get(tokenHash);
+        if (cached && cached.expiresAt > Date.now()) {
+          return {
+            result: { accessToken: cached.accessToken },
+            newRawRefreshToken: cached.rawRefreshToken,
+          };
+        }
+
+        // Fallback if cache expired
+        const accessToken = await this.mintAccessToken(child.user.id, child.user.email, child.user.role);
+        return {
+          result: { accessToken },
+          newRawRefreshToken: '',
+        };
+      }
+    }
+
+    // Replay attack: revoke the entire family immediately
+    await this.prisma.refreshToken.updateMany({
+      where: {
+        familyId: token.familyId,
+        revokedAt: null,
+      },
+      data: {
+        revokedAt: new Date(),
+        revokedReason: 'replay_attack',
+      },
+    });
+    throw new AppException(
+      ErrorCode.AUTH_REFRESH_INVALID,
+      'Phát hiện token đã qua sử dụng, phiên làm việc đã bị hủy',
+    );
+  }
+
+  /**
    * Rotate refresh token and detect replay attack.
    * INV-AUTH-06: single-use refresh token, rotated on every call.
    * INV-AUTH-07: replay attack revokes the entire token family immediately.
+   * INV-AUTH-10: atomic rotation, parent revoked and replacedById set in same transaction.
    */
   async refresh(rawToken: string | undefined): Promise<{ result: RefreshResult; newRawRefreshToken: string }> {
     if (!rawToken) {
-      throw new AppException(ErrorCode.AUTH_TOKEN_INVALID, 'Thiếu refresh token');
+      throw new AppException(ErrorCode.AUTH_REFRESH_INVALID, 'Thiếu refresh token');
     }
 
     const tokenHash = hashToken(rawToken);
@@ -169,35 +310,21 @@ export class AuthService {
     });
 
     if (!token) {
-      throw new AppException(ErrorCode.AUTH_TOKEN_INVALID, 'Refresh token không hợp lệ');
+      throw new AppException(ErrorCode.AUTH_REFRESH_INVALID, 'Refresh token không hợp lệ');
     }
 
-    // Replay attack detection: token was already revoked!
-    if (token.revokedAt) {
-      await this.prisma.refreshToken.updateMany({
-        where: {
-          familyId: token.familyId,
-          revokedAt: null,
-        },
-        data: {
-          revokedAt: new Date(),
-          revokedReason: 'replay_attack',
-        },
-      });
-      throw new AppException(
-        ErrorCode.AUTH_TOKEN_INVALID,
-        'Phát hiện token đã qua sử dụng, phiên làm việc đã bị hủy',
-      );
-    }
-
+    // Invariant: expired tokens can never be refreshed, even within grace window (01-auth.md §8)
     if (token.expiresAt < new Date()) {
-      await this.prisma.refreshToken.update({
-        where: { id: token.id },
-        data: { revokedAt: new Date(), revokedReason: 'expired' },
-      });
+      if (!token.revokedAt) {
+        await this.prisma.refreshToken.update({
+          where: { id: token.id },
+          data: { revokedAt: new Date(), revokedReason: 'expired' },
+        });
+      }
       throw new AppException(ErrorCode.AUTH_TOKEN_EXPIRED, 'Refresh token đã hết hạn');
     }
 
+    // Invariant: suspended or pending account is rejected before any token emission (INV-AUTH-05)
     if (token.user.status === 'suspended') {
       throw new AppException(ErrorCode.AUTH_ACCOUNT_SUSPENDED, 'Tài khoản đã bị tạm khóa');
     }
@@ -205,40 +332,68 @@ export class AuthService {
       throw new AppException(ErrorCode.AUTH_ACCOUNT_PENDING, 'Tài khoản đang chờ phê duyệt');
     }
 
+    // If token was already revoked, enter grace window vs replay check
+    if (token.revokedAt) {
+      return this.handleRevokedToken(token, tokenHash);
+    }
+
     const newRawRefreshToken = generateRawToken();
     const newTokenHash = hashToken(newRawRefreshToken);
     const newExpiresAt = new Date(Date.now() + REFRESH_TOKEN_TTL_MS);
 
-    const [newRefreshToken, accessToken] = await this.prisma.$transaction([
-      this.prisma.refreshToken.create({
-        data: {
-          userId: token.userId,
-          familyId: token.familyId, // Keep same family
-          tokenHash: newTokenHash,
-          expiresAt: newExpiresAt,
-        },
-      }),
-      this.prisma.refreshToken.update({
-        where: { id: token.id },
-        data: {
-          revokedAt: new Date(),
-          revokedReason: 'rotated',
-        },
-      }),
-    ]).then(async ([created]) => {
-      // link replacedById
-      await this.prisma.refreshToken.update({
-        where: { id: token.id },
-        data: { replacedById: created.id },
-      });
-      const tokenStr = await this.mintAccessToken(token.user.id, token.user.email, token.user.role);
-      return [created, tokenStr] as const;
-    });
+    try {
+      const accessToken = await this.prisma.$transaction(async (tx) => {
+        // 1. Create child token
+        const created = await tx.refreshToken.create({
+          data: {
+            userId: token.userId,
+            familyId: token.familyId,
+            tokenHash: newTokenHash,
+            expiresAt: newExpiresAt,
+          },
+        });
 
-    return {
-      result: { accessToken },
-      newRawRefreshToken,
-    };
+        // 2. Conditionally update parent: only if still unrevoked!
+        const updated = await tx.refreshToken.updateMany({
+          where: { id: token.id, revokedAt: null },
+          data: {
+            revokedAt: new Date(),
+            revokedReason: 'rotated',
+            replacedById: created.id,
+          },
+        });
+
+        if (updated.count === 0) {
+          // A concurrent request beat us to rotating this token
+          throw new Error('CONCURRENT_ROTATION');
+        }
+
+        return this.mintAccessToken(token.user.id, token.user.email, token.user.role);
+      });
+
+      // Cache rotation result for 15s to serve concurrent races and restore lost cookies (01-auth.md §8 Option A)
+      this.rotationCache.set(tokenHash, {
+        accessToken,
+        rawRefreshToken: newRawRefreshToken,
+        expiresAt: Date.now() + 15_000,
+      });
+
+      return {
+        result: { accessToken },
+        newRawRefreshToken,
+      };
+    } catch (err: any) {
+      if (err?.message === 'CONCURRENT_ROTATION') {
+        const reloaded = await this.prisma.refreshToken.findUnique({
+          where: { id: token.id },
+          include: { user: true },
+        });
+        if (reloaded) {
+          return this.handleRevokedToken(reloaded, tokenHash);
+        }
+      }
+      throw err;
+    }
   }
 
   /**

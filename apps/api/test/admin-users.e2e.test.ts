@@ -220,6 +220,12 @@ describe('GET /admin/users', () => {
     assert.equal(res.body.meta.totalPages, Math.ceil(res.body.meta.total / 3));
   });
 
+  // Depends on the user table holding still for the duration of the walk. The suites in
+  // this directory share one database, and `admin-approval-concurrency` and
+  // `admin-user-lifecycle` both create users — run in parallel, this test saw the total
+  // move from 7 to 9 mid-walk and failed as if rows had been duplicated. The package
+  // script now passes `--test-concurrency=1`; if this ever goes flaky again, check that
+  // flag before suspecting the pagination code.
   it('pages without duplicates or gaps — INV-USERS-07', async () => {
     const first = await get('/admin/users?limit=3&page=1', admin);
     const total = first.body.meta.total;

@@ -1,9 +1,14 @@
 "use client";
 
-// MOCK(T-QB-*): question bank CRUD is in-memory until /api/v1/teacher/questions exists.
-// Delete is gated by usageCount (F3.6: soft delete if already used).
+// Live against /api/v1/teacher/questions (MongoDB). The cross-field rules — a
+// writing question has no answer, a listening one needs audio, an answer must
+// match an option id — are enforced by the server and surfaced from its response.
+//
+// ⛔ F3.6 ("cannot delete a question already used in an assignment") is NOT
+// enforced: usageCount would have to come from the Assignment table, which does
+// not exist in Postgres yet. See question-service.fromApiQuestion.
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   AlertCircle,
   Eye,
@@ -26,7 +31,6 @@ import {
 import {
   difficultyLabels,
   expectedResultOf,
-  mockQuestions,
   skillLabels,
   subTypeLabels,
   subTypesBySkill,
@@ -34,6 +38,10 @@ import {
   type Question,
   type Skill,
 } from "@/lib/teacher/question-data";
+import {
+  createQuestion, deleteQuestion, fetchQuestions, updateQuestion,
+} from "@/lib/teacher/question-service";
+import { ApiError } from "@/lib/api-client";
 import { useDismissMenu } from "@/hooks/use-overlay";
 import { formatDate } from "@/lib/formatters";
 import styles from "./questions.module.css";
@@ -64,12 +72,41 @@ const emptyDraft = (): Draft => ({
 });
 
 export default function TeacherQuestionsPage() {
-  const [questions, setQuestions] = useState<Question[]>(mockQuestions);
+  // Live: GET /api/v1/teacher/questions (MongoDB). Seeding from mockQuestions made
+  // an unreachable API look like a stocked question bank.
+  const [questions, setQuestions] = useState<Question[]>([]);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
   const [query, setQuery] = useState("");
   const [skill, setSkill] = useState<Skill | "all">("all");
   const [level, setLevel] = useState<number | "all">("all");
   const [subType, setSubType] = useState<string | "all">("all");
-  const [reviewState, setReviewState] = useState<ReviewState>("ready");
+  const [reviewState, setReviewState] = useState<ReviewState>("loading");
+
+  useEffect(() => {
+    let alive = true;
+    setReviewState("loading");
+    setLoadError(null);
+    fetchQuestions()
+      .then((res) => {
+        if (!alive) return;
+        setQuestions(res.questions);
+        setReviewState(res.questions.length === 0 ? "empty" : "ready");
+      })
+      .catch((err: unknown) => {
+        if (!alive) return;
+        setQuestions([]);
+        setReviewState("error");
+        setLoadError(
+          err instanceof ApiError
+            ? err.message
+            : "Không kết nối được máy chủ. Kiểm tra API có đang chạy không.",
+        );
+      });
+    return () => {
+      alive = false;
+    };
+  }, []);
   const [editing, setEditing] = useState<Question | null | undefined>(undefined); // undefined = closed, null = create
   const [draft, setDraft] = useState<Draft>(emptyDraft());
   const [preview, setPreview] = useState<Question | null>(null);
@@ -117,9 +154,9 @@ export default function TeacherQuestionsPage() {
     setEditing(question);
   }
 
-  function submitDraft() {
+  async function submitDraft() {
     // B2: writing needs a rubric and stores correctAnswer = null; the rest need an answer.
-    if (!valid) return;
+    if (!valid || saving) return;
     const isWriting = draft.skill === "writing";
     const correctAnswer = isWriting ? null : draft.correctAnswer.trim();
     const rubric = isWriting ? draft.rubric.trim() : null;
@@ -127,46 +164,72 @@ export default function TeacherQuestionsPage() {
     const options =
       draft.subType === "multiple_choice_single" || draft.subType === "multiple_choice_multi"
         ? draft.options
-            .split("\n")
+            // Regex, not "\n": a textarea submits CRLF on Windows, which left a
+            // trailing \r on every option's text.
+            .split(/\r?\n/)
             .map((o) => o.trim())
             .filter(Boolean)
             .map((text, i) => ({ id: "ABCDEFGH"[i] ?? String(i + 1), text }))
         : null;
-    // MOCK: POST/PATCH /api/v1/teacher/questions — error codes TODO(error-code) per contract
-    if (editing) {
-      setQuestions((current) =>
-        current.map((x) =>
-          x.id === editing.id
-            ? { ...x, ...draft, content: draft.content.trim(), correctAnswer, rubric, explanation: draft.explanation.trim(), options }
-            : x,
-        ),
+
+    const payload: Question = {
+      id: editing?.id ?? "",
+      ...draft,
+      content: draft.content.trim(),
+      correctAnswer,
+      rubric,
+      explanation: draft.explanation.trim(),
+      options,
+      usageCount: editing?.usageCount ?? 0,
+      createdAt: editing?.createdAt ?? new Date().toISOString(),
+    };
+
+    setSaving(true);
+    try {
+      if (editing) {
+        const saved = await updateQuestion(editing.id, payload);
+        setQuestions((current) => current.map((x) => (x.id === saved.id ? saved : x)));
+        flash("Đã lưu câu hỏi");
+      } else {
+        const saved = await createQuestion(payload);
+        setQuestions((current) => [saved, ...current]);
+        setReviewState("ready");
+        flash("Đã tạo câu hỏi mới");
+      }
+      setEditing(undefined);
+    } catch (err) {
+      // The server owns the cross-field rules (writing has no answer, listening
+      // needs audio, an answer must match an option id). Showing its message is
+      // the only way the teacher learns which rule they broke — the old code
+      // could not fail at all, because it never called anything.
+      flash(
+        err instanceof ApiError
+          ? `Lưu thất bại: ${err.message}`
+          : "Lưu thất bại: không kết nối được máy chủ",
       );
-      flash("Đã lưu câu hỏi");
-    } else {
-      setQuestions((current) => [
-        {
-          id: "q-" + Date.now(),
-          ...draft,
-          content: draft.content.trim(),
-          correctAnswer,
-          rubric,
-          explanation: draft.explanation.trim(),
-          options,
-          usageCount: 0,
-          createdAt: new Date().toISOString().slice(0, 10),
-        },
-        ...current,
-      ]);
-      flash("Đã tạo câu hỏi mới");
+    } finally {
+      setSaving(false);
     }
-    setEditing(undefined);
   }
 
-  function handleDelete() {
+  async function handleDelete() {
     if (!deleting) return;
-    // MOCK: DELETE /api/v1/teacher/questions/:id
-    setQuestions((current) => current.filter((x) => x.id !== deleting.id));
-    flash("Đã xoá câu hỏi");
+    const target = deleting;
+    try {
+      await deleteQuestion(target.id);
+      setQuestions((current) => {
+        const next = current.filter((x) => x.id !== target.id);
+        if (next.length === 0) setReviewState("empty");
+        return next;
+      });
+      flash("Đã xoá câu hỏi");
+    } catch (err) {
+      flash(
+        err instanceof ApiError
+          ? `Xoá thất bại: ${err.message}`
+          : "Xoá thất bại: không kết nối được máy chủ",
+      );
+    }
     setDeleting(null);
   }
 
@@ -247,9 +310,9 @@ export default function TeacherQuestionsPage() {
           <AlertCircle size={19} />
           <div>
             <strong>Không tải được ngân hàng câu hỏi.</strong>
-            <span>Vui lòng kiểm tra kết nối và thử lại.</span>
+            <span>{loadError}</span>
           </div>
-          <button onClick={() => setReviewState("ready")}>Thử lại</button>
+          <button onClick={() => window.location.reload()}>Thử lại</button>
         </div>
       )}
 

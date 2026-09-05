@@ -6,6 +6,7 @@ import {
   HttpStatus,
   Logger,
 } from '@nestjs/common';
+import http from 'node:http';
 import { Prisma } from '@prisma/client';
 import type { Request, Response } from 'express';
 import { ErrorCode } from '../errors/error-codes';
@@ -45,11 +46,24 @@ export class GlobalExceptionFilter implements ExceptionFilter {
         message = shaped.message ?? exception.message;
         details = shaped.details;
       } else {
-        // A bare Nest exception (404 from the router, and so on). Map the status to
-        // a registry code where one exists rather than inventing a name for it.
-        code = status === 404 ? ErrorCode.USER_NOT_FOUND : ErrorCode.INTERNAL_SERVER_ERROR;
-        message = typeof body === 'string' ? body : exception.message;
-        if (status !== 404) status = 500;
+        // A bare Nest exception (router 404, default guard 401/403, 400 validation).
+        // Preserve client HTTP status; do NOT rewrite to 500.
+        if (status === 400) code = ErrorCode.VALIDATION_ERROR;
+        else if (status === 401) code = ErrorCode.AUTH_TOKEN_INVALID;
+        else if (status === 403) code = ErrorCode.AUTH_INSUFFICIENT_ROLE;
+        else if (status === 404) code = ErrorCode.USER_NOT_FOUND;
+        else if (status === 409) code = ErrorCode.DUPLICATE_ENTRY;
+        else if (status === 429) code = ErrorCode.AUTH_TOO_MANY_REQUESTS;
+        else code = ErrorCode.INTERNAL_SERVER_ERROR;
+
+        if (typeof body === 'string') {
+          message = body;
+        } else if (typeof body === 'object' && body !== null && 'message' in body) {
+          const rawMessage = (body as any).message;
+          message = Array.isArray(rawMessage) ? rawMessage.join(', ') : String(rawMessage);
+        } else {
+          message = exception.message;
+        }
       }
     } else if (exception instanceof Prisma.PrismaClientKnownRequestError) {
       if (exception.code === 'P2002') {
@@ -70,7 +84,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
 
     res.status(status).json({
       statusCode: status,
-      error: HttpStatus[status] ?? 'Error',
+      error: http.STATUS_CODES[status] ?? HttpStatus[status] ?? 'Error',
       code,
       message,
       ...(details ? { details } : {}),

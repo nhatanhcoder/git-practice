@@ -31,6 +31,82 @@
 
 ---
 
+## [2026-09-04] — Fix Admin BE & Auth Concurrency, State Machine, and Contract Alignment (Review on c4bfbdb) — Antigravity
+
+**Context**:
+Addressed all 10 review findings on commit `c4bfbdb` regarding account status lifecycle state machine, concurrency protection on user approval/suspension, atomic refresh token rotation with grace window, exception filter HTTP status preservation, and auth contract alignment.
+
+**Done**:
+1. **User Account Status Lifecycle & Concurrency (Criterion A1)**:
+   - Enforced strict state machine: `pending` → `active` → `suspended` → `active`.
+   - Replaced non-atomic queries with atomic conditional updates (`updateMany({ where: { id, status: sourceStatus } })`).
+   - Added `USER_ALREADY_SUSPENDED` (409), `USER_ALREADY_ACTIVE` (409), `USER_INVALID_STATUS_TRANSITION` (400) error codes.
+   - Guaranteed returned DTO reflects exact `targetStatus` of the atomic update, preventing interleaved update leakage.
+   - Covered full 9-transition matrix (3 actions × 3 statuses), non-existent UUIDs (404), and malformed IDs (400) with DB immutability assertions.
+2. **Refresh Token Atomic Rotation, Lost Response Recovery & Invariant Guards (Criterion A2)**:
+   - Atomic rotation: parent `revokedAt`, `revokedReason = 'rotated'`, `replacedById` set in the exact same interactive transaction as child creation with conditional `where: { id, revokedAt: null }`.
+   - Implemented `rotationCache` with 15-second TTL per `01-auth.md` §8 Proposal A: returns identical child raw refresh token cookie during grace period, allowing recovery if first rotation response was dropped.
+   - Guarded grace window against expiry (`AUTH_TOKEN_EXPIRED`) and account suspension/pending (`AUTH_ACCOUNT_SUSPENDED`, `AUTH_ACCOUNT_PENDING`) on both parent and child tokens.
+   - Re-presenting rotated token outside grace window revokes entire family with `401 AUTH_REFRESH_INVALID`.
+   - Updated `POST /auth/logout` to return `204 No Content` per `01-auth.md`.
+3. **Login Rate Limiting**:
+   - Implemented in-memory sliding window rate limiter in `AuthService`: max 5 failed attempts per 15 minutes per `(ip, normalizedEmail)`.
+   - Emits `429 AUTH_TOO_MANY_REQUESTS` on 6th attempt; resets counter upon successful authentication.
+4. **RBAC Matrix Alignment**:
+   - Updated `docs/shared/RBAC_MATRIX.md` and `docs/actors/admin/PERMISSIONS_ADMIN.md` to include Admin read-only audit permission for `Class` and `ClassEnrollment` (roster), closing the matrix contradiction.
+5. **Exception Filter Fix**:
+   - Removed status override `if (status !== 404) status = 500`. Preserves client HTTP statuses for bare `HttpException`.
+   - Standardized error field to canonical HTTP reason phrase using `http.STATUS_CODES[status]`.
+6. **Production Start Script Fix**:
+   - Changed `apps/api/package.json` `start` and `start:prod` to `node dist/src/main.js`.
+7. **E2E Test Suites & Targeted DB Scoping**:
+   - Scoped `refresh-token-concurrency.e2e.test.ts` to specific `tokenHash`.
+   - Scoped `admin-approval-concurrency.e2e.test.ts` cleanup to exact array of tracked `createdUserIds`.
+   - Verified:
+     - `pnpm --filter api test`: **80/80 tests pass** (14 suites).
+     - `node --test apps/web/scripts/*.test.mjs`: **39/39 tests pass** (7 suites).
+     - `pnpm --filter web build`: **31/31 static pages build cleanly**.
+     - `node scripts/check-docs.mjs`: **8/8 checks pass**.
+
+**Blocker / needs follow-up**:
+- None.
+
+**Next steps**:
+- Merge PR #28.
+- Proceed to Sprint 2 Student Enrollment endpoints (`join`, `leave`, `list`).
+
+---
+
+## [2026-09-03] — Teacher Classes, Lessons & Admin Approval Backend APIs — Antigravity
+
+**Context**:
+Resolved SCOPE-01 Option A by implementing the complete Teacher & Admin backend foundation for Classes, Enrollments, and Lessons on branch `feat/s1-teacher-classes-api`.
+
+**Done**:
+- Added `Class`, `ClassEnrollment`, `Lesson` models to `schema.prisma`, ran migration `20260903154459_add_classes_and_lessons`.
+- Implemented Admin User Approval (`PATCH /admin/users/:id/approve`, `suspend`, `activate`) in `apps/api/src/users/`.
+- Implemented Teacher Classes (`POST /teacher/classes`, `GET /teacher/classes`, `GET /teacher/classes/:id`, `PATCH /teacher/classes/:id`, `PATCH /teacher/classes/:id/archive`, `POST /teacher/classes/:id/enrollment-code/regenerate`).
+- Implemented Admin Classes (`GET /admin/classes`, `GET /admin/classes/:id`).
+- Implemented Teacher Lessons (`POST /teacher/classes/:classId/lessons`, `GET /teacher/classes/:classId/lessons`, `GET /teacher/lessons/:id`, `PATCH /teacher/lessons/:id`, `DELETE /teacher/lessons/:id`, `PATCH /teacher/classes/:classId/lessons/reorder`).
+- Updated `03-classes-enrollment.md` and `_INDEX.md` to `accepted`.
+- Connected Teacher Frontend screens (`/teacher/classes`, `/teacher/classes/[classId]`, `/teacher/classes/[classId]/lessons`) to real API via `apps/web/src/lib/teacher-service.ts` with offline fallback.
+- Created `docs/testing/TEACHER_TEST_PLAN_AND_REVIEW.md` (20-item test matrix).
+- Verified:
+  - `pnpm --filter api test`: **64/64 tests pass** (12 suites, covering access control, admin users, auth, user lifecycle, teacher classes, teacher lessons).
+  - `node --test apps/web/scripts/*.test.mjs`: **39/39 tests pass** (7 suites).
+  - `pnpm --filter web build`: **31/31 static pages build cleanly**.
+  - `node scripts/check-docs.mjs`: **8/8 tests pass**.
+- Updated `ai/PROGRESS.md` (F1.3, F2.1, F2.2, F2.5, Lessons marked Done, Teacher FE connected).
+
+**Blocker / needs follow-up**:
+- None.
+
+**Next steps**:
+- Merge PR #28.
+- Proceed to Sprint 2 Student Enrollment (`/student/classes/join`, `/student/classes/:id/leave`, `/student/classes`).
+
+---
+
 ## [2026-09-03] — Admin FE (Users, User Detail, Profile) API Integration — Antigravity
 
 **Context**:

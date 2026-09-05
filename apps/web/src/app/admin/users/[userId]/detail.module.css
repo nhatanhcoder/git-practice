@@ -13,3 +13,10 @@
 .historyCardsMobile{display:none}@keyframes detailShimmer{to{background-position:-200% 0}}
 @media(max-width:1024px){.profileCard{grid-template-columns:auto minmax(0,1fr)}.profileActions{grid-column:1/-1;max-width:none;justify-content:flex-start;padding-left:68px}}
 @media(max-width:767px){.detailContent{padding:20px 16px 48px}.profileCard{grid-template-columns:auto minmax(0,1fr);align-items:start;padding:18px}.profileNameRow{align-items:flex-start;flex-direction:column;gap:6px}.profileNameRow h1{font-size:19px}.profileHeading>p{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.profileActions{grid-column:1/-1;display:grid;width:100%;grid-template-columns:1fr;padding-left:0}.subActionLink{justify-content:center}.detailPrimaryButton,.detailDangerButton{width:100%}.identityCard{padding:18px}.identityCard dl{grid-template-columns:1fr;gap:16px}.identityCard dl div{padding:14px 0 0;border-top:1px solid #e2e8f0;border-left:0}.identityCard dl div:first-child{padding-top:0;border-top:0}.historyTable{display:none}.historyCardsMobile{display:block}.historyCardsMobile article{padding:14px 16px;border-top:1px solid #e2e8f0}.historyCardsMobile article div{display:flex;justify-content:space-between;gap:12px;margin:7px 0}.historyCardsMobile article span{color:#64748b;font-size:12px}.historyCardsMobile article strong{color:#334155;font-size:13px;text-align:right}.detailSwitcher{max-width:calc(100vw - 32px)}.notFound{min-height:65vh}.notFound h1{font-size:19px}}
+
+/* Blocked-history notice. Padded here because .historyCard itself carries no
+   padding — it was built to wrap a full-bleed table, not prose. */
+.historyCard h2 + .historyBlocked{margin:10px 0 0}
+.historyCard:has(.historyBlocked){padding:20px 24px}
+.historyBlocked{margin:0;color:#475569;font-size:13px;line-height:1.6}
+.historyBlocked code{padding:1px 5px;border-radius:4px;background:#f1f5f9;color:#0f172a;font-size:12px}

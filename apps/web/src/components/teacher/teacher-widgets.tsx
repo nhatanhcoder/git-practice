@@ -17,6 +17,9 @@ export function ReviewSwitcher({
   value: ReviewState;
   onChange: (state: ReviewState) => void;
 }) {
+  // WEB-004: design-review scaffolding. It must never reach a real user — over
+  // live data it lets a failed load be repainted as a healthy one.
+  if (process.env.NODE_ENV === "production") return null;
   const states: ReviewState[] = ["ready", "loading", "empty", "partial", "error", "forbidden"];
   return (
     <aside className={styles.stateSwitcher} aria-label="Review State Switcher">

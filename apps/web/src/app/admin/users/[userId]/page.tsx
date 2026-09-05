@@ -23,9 +23,10 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { avatarToneFor } from "../../../../lib/formatters";
 import { getStatusColor } from "../../../../lib/status";
-import { getStudentDataset, getTeacherDataset, getUserDetailDataset } from "../../../../lib/user-detail-data.js";
 import { nextStatus } from "../../../../lib/user-status.js";
-import { fetchAdminUserDetail } from "../../../../lib/admin-users-service";
+import { activateUser, approveUser, fetchAdminUserDetail, suspendUser } from "../../../../lib/admin-users-service";
+import { ApiError } from "../../../../lib/api-client";
+import { SessionChip } from "@/components/auth/session-chip";
 import styles from "./detail.module.css";
 
 type UserStatus = "pending" | "active" | "suspended";
@@ -59,10 +60,13 @@ const actionFor = (status: UserStatus): Action =>
   status === "pending" ? "approve" : status === "active" ? "suspend" : "activate";
 
 export default function AdminUserDetailPage({ params }: { params: { userId: string } }) {
-  const routeData = getUserDetailDataset(params.userId);
-  const initialState: ReviewState = routeData?.user.role === "teacher" ? "teacher" : routeData ? "student" : "error";
-  const [reviewState, setReviewState] = useState<ReviewState>(initialState);
-  const [user, setUser] = useState<DetailUser>((routeData?.user ?? getStudentDataset().user) as DetailUser);
+  // Starts empty. It used to seed itself from getUserDetailDataset() / a mock
+  // student record, which meant an unreachable API rendered a complete, plausible
+  // profile for a user that may not exist. Nothing is shown until the server says
+  // who this is.
+  const [reviewState, setReviewState] = useState<ReviewState>("loading");
+  const [user, setUser] = useState<DetailUser | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [modal, setModal] = useState<Action | null>(null);
   const [reason, setReason] = useState("");
   const [toast, setToast] = useState("");
@@ -70,44 +74,70 @@ export default function AdminUserDetailPage({ params }: { params: { userId: stri
 
   useEffect(() => {
     let isMounted = true;
+    setReviewState("loading");
+    setLoadError(null);
+
     fetchAdminUserDetail(params.userId)
-      .then((res) => {
-        if (!isMounted || !res.user) return;
-        setUser((curr) => ({
-          ...curr,
-          id: res.user!.id,
-          nickname: res.user!.nickname || curr.nickname,
-          email: res.user!.email || curr.email,
-          role: res.user!.role || curr.role,
-          status: res.user!.status || curr.status,
-          createdAt: res.user!.createdAt || curr.createdAt,
-          lastLoginAt: res.user!.lastLoginAt,
-          hskLevelGoal: res.user!.hskLevelGoal ?? curr.hskLevelGoal,
-          bio: res.user!.bio ?? curr.bio,
-        }));
-        if (res.user.role === "teacher") {
-          setReviewState("teacher");
-        } else if (res.user.role === "student" || res.user.role === "admin") {
-          setReviewState("student");
-        }
+      .then((detail) => {
+        if (!isMounted) return;
+        setUser({
+          id: detail.id,
+          nickname: detail.nickname || detail.email,
+          email: detail.email,
+          role: detail.role,
+          status: detail.status as UserStatus,
+          createdAt: detail.createdAt,
+          lastLoginAt: detail.lastLoginAt,
+          initials: (detail.nickname || detail.email).trim().slice(0, 2).toUpperCase(),
+          hskLevelGoal: detail.hskLevelGoal ?? undefined,
+          bio: detail.bio ?? undefined,
+        });
+        setReviewState(detail.role === "teacher" ? "teacher" : "student");
       })
-      .catch(() => {});
+      .catch((err: unknown) => {
+        if (!isMounted) return;
+        setUser(null);
+        if (err instanceof ApiError && err.isForbidden) {
+          setReviewState("forbidden");
+        } else if (err instanceof ApiError && err.statusCode === 404) {
+          setReviewState("empty");
+        } else {
+          setReviewState("error");
+          setLoadError(
+            err instanceof ApiError
+              ? err.message
+              : "Không kết nối được máy chủ. Kiểm tra API có đang chạy không.",
+          );
+        }
+      });
+
     return () => {
       isMounted = false;
     };
   }, [params.userId]);
 
+  // Dev-only state preview. It no longer swaps in mock users — with the screen on
+  // live data, replacing the real profile with a fixture is exactly the confusion
+  // this whole change removes. It only paints the state.
   function switchState(state: ReviewState) {
     setReviewState(state);
-    if (state === "teacher") setUser(getTeacherDataset().user as DetailUser);
-    if (["student", "empty", "partial"].includes(state)) setUser(getStudentDataset().user as DetailUser);
     if (state === "forbidden") setToast("AUTH_INSUFFICIENT_ROLE: Quyền truy cập bị từ chối.");
   }
 
-  function confirm() {
-    if (!modal || (modal === "suspend" && !reason.trim())) return;
-    setUser((current) => ({ ...current, status: nextStatus(current.status, modal) as UserStatus }));
-    setToast({ approve: "Đã duyệt tài khoản", suspend: "Đã khóa tài khoản", activate: "Đã mở khóa tài khoản" }[modal]);
+  async function confirm() {
+    if (!modal || !user || (modal === "suspend" && !reason.trim())) return;
+    if (!nextStatus(user.status, modal)) return;
+
+    try {
+      const call = { approve: approveUser, suspend: suspendUser, activate: activateUser }[modal];
+      const updated = await call(user.id);
+      // The server's status, not a locally computed one.
+      setUser((current) => (current ? { ...current, status: updated.status as UserStatus } : current));
+      setToast({ approve: "Đã duyệt tài khoản", suspend: "Đã khóa tài khoản", activate: "Đã mở khóa tài khoản" }[modal]);
+    } catch (err) {
+      setToast(err instanceof ApiError ? `Thất bại: ${err.message}` : "Thất bại: không kết nối được máy chủ");
+    }
+
     setModal(null);
     setReason("");
     window.setTimeout(() => setToast(""), 2600);
@@ -123,9 +153,11 @@ export default function AdminUserDetailPage({ params }: { params: { userId: stri
           {reviewState === "forbidden" ? (
             <Forbidden />
           ) : reviewState === "error" ? (
-            <NotFound />
+            <LoadFailed message={loadError} />
           ) : reviewState === "loading" ? (
             <DetailLoading />
+          ) : !user ? (
+            <NotFound />
           ) : (
             <>
               <Link className={styles.backLink} href="/admin/users">
@@ -227,25 +259,28 @@ export default function AdminUserDetailPage({ params }: { params: { userId: stri
           )}
         </main>
       </div>
+      {/* WEB-004: design-review scaffolding, dev only. */}
+      {process.env.NODE_ENV !== "production" && (
       <div className={`${styles.stateSwitcher} ${styles.detailSwitcher}`}>
-        <span>REVIEW STATE</span>
-        {(["student", "teacher", "loading", "empty", "partial", "error", "forbidden"] as ReviewState[]).map((state) => (
-          <button
-            key={state}
-            className={reviewState === state ? styles.stateActive : ""}
-            onClick={() => switchState(state)}
-          >
-            {state === "student" ? "ready: student" : state === "teacher" ? "ready: teacher" : state}
-          </button>
-        ))}
-      </div>
+          <span>REVIEW STATE</span>
+          {(["student", "teacher", "loading", "empty", "partial", "error", "forbidden"] as ReviewState[]).map((state) => (
+            <button
+              key={state}
+              className={reviewState === state ? styles.stateActive : ""}
+              onClick={() => switchState(state)}
+            >
+              {state === "student" ? "ready: student" : state === "teacher" ? "ready: teacher" : state}
+            </button>
+          ))}
+        </div>
+      )}
       {toast && (
         <div className={styles.toast}>
           <Check size={18} />
           {toast}
         </div>
       )}
-      {modal && (
+      {modal && user && (
         <ActionModal
           user={user}
           action={modal}
@@ -321,14 +356,13 @@ function AdminHeader({ openMenu }: { openMenu: () => void }) {
           <span className={styles.notificationDot} />
         </button>
         <div className={styles.headerDivider} />
-        <Link className={styles.profileButton} href="/admin/profile">
-          <span className={styles.headerAvatar}>AT</span>
-          <span className={styles.profileText}>
-            <strong>Anh Tuấn</strong>
-            <small>Quản trị viên</small>
-          </span>
-          <ChevronDown size={16} />
-        </Link>
+        <SessionChip
+          classNames={{
+            button: styles.profileButton,
+            avatar: styles.headerAvatar,
+            text: styles.profileText,
+          }}
+        />
       </div>
     </header>
   );
@@ -356,72 +390,28 @@ function Forbidden() {
 }
 
 function HistoryPanels({ state }: { state: ReviewState }) {
-  if (state === "teacher") {
-    const data = getTeacherDataset();
-    return (
-      <div className={styles.historyGrid}>
-        <HistoryCard
-          title="Lớp đang dạy"
-          headers={["Lớp", "Học sinh", "Trạng thái"]}
-          rows={data.classes.map((item: { name: string; students: number }) => [
-            item.name,
-            `${item.students} học sinh`,
-            <MiniPill key={item.name} label="Đang hoạt động" tone="success" />,
-          ])}
-        />
-        <HistoryCard
-          title="Buổi học đã gửi"
-          headers={["Ngày dạy", "Lớp", "Thời lượng", "Trạng thái", "Thao tác"]}
-          rows={data.sessions.map((item: { date: string; className: string; duration: string; status: string }) => [
-            item.date,
-            item.className,
-            item.duration,
-            <MiniPill
-              key={item.date}
-              label={item.status === "approved" ? "Đã duyệt" : "Chờ duyệt"}
-              tone={item.status === "approved" ? "success" : "warning"}
-            />,
-            <Link key={item.date} className={styles.tableActionLink} href="/admin/payroll/sessions">
-              Duyệt buổi học →
-            </Link>,
-          ])}
-        />
-      </div>
-    );
-  }
-
-  const studentData = getStudentDataset();
-  const invoices = (studentData as { invoices?: Array<{ code: string; period: string; amount: string; status: string; invoiceId: string }> }).invoices ?? [];
-  const enrollments = (studentData as { enrollments?: Array<{ level: string; status: string; rate: string }> }).enrollments ?? [];
+  // ⛔ BLOCKED — API-001. `GET /api/v1/admin/users/:id` returns identity fields
+  // only; there is no role-scoped history in the payload (enrollments + attempts
+  // for a student, classes + sessions for a teacher). That gap is recorded in
+  // ai/PROGRESS.md § Needs from the other lane.
+  //
+  // This used to render getStudentDataset() / getTeacherDataset() — invented
+  // classes, scores and attendance shown as if they were this account's record.
+  // An admin deciding whether to suspend someone was reading fiction. Until the
+  // endpoint carries the history, the honest answer is that we do not have it.
+  const label =
+    state === "teacher"
+      ? "lớp đang dạy và buổi dạy gần đây"
+      : "lớp đã tham gia và bài đã làm";
 
   return (
-    <div className={styles.historyGrid}>
-      <HistoryCard
-        title="Lịch sử hóa đơn học phí"
-        headers={["Mã hóa đơn", "Kỳ thu", "Số tiền", "Trạng thái", "Thao tác"]}
-        rows={invoices.map((inv) => [
-          inv.code,
-          inv.period,
-          inv.amount,
-          <MiniPill key={inv.code} label={inv.status === "paid" ? "Đã thanh toán" : "Chờ thanh toán"} tone="success" />,
-          <Link key={inv.code} className={styles.tableActionLink} href={`/admin/invoices/${inv.invoiceId}`}>
-            Xem hóa đơn →
-          </Link>,
-        ])}
-      />
-      <HistoryCard
-        title="Lớp học & Cấp độ niêm yết"
-        headers={["Cấp độ", "Trạng thái", "Mức học phí", "Thao tác"]}
-        rows={enrollments.map((enr) => [
-          enr.level,
-          <MiniPill key={enr.level} label="Đang học" tone="success" />,
-          enr.rate,
-          <Link key={enr.level} className={styles.tableActionLink} href="/admin/tuition-rates">
-            Biểu phí HSK →
-          </Link>,
-        ])}
-      />
-    </div>
+    <section className={styles.historyCard}>
+      <h2>Lịch sử hoạt động</h2>
+      <p className={styles.historyBlocked}>
+        Chưa hiển thị được {label}. Endpoint <code>GET /admin/users/:id</code> hiện chỉ
+        trả về thông tin định danh, chưa kèm lịch sử theo vai trò (API-001).
+      </p>
+    </section>
   );
 }
 
@@ -582,6 +572,28 @@ function ActionModal({
           </button>
         </div>
       </div>
+    </div>
+  );
+}
+
+
+/**
+ * Shown when the request failed for a reason other than 404.
+ *
+ * Kept separate from <NotFound /> on purpose: "we could not reach the server" and
+ * "this account does not exist" lead an admin to two completely different next
+ * actions, and the page used to render the second message for the first problem.
+ */
+function LoadFailed({ message }: { message: string | null }) {
+  return (
+    <div className={styles.emptyState} role="alert">
+      <AlertCircle size={26} />
+      <h2>Không tải được hồ sơ</h2>
+      <p>{message ?? "Không kết nối được máy chủ."}</p>
+      <Link className={styles.backLink} href="/admin/users">
+        <ChevronLeft size={17} />
+        <span>Quay lại danh sách tài khoản</span>
+      </Link>
     </div>
   );
 }

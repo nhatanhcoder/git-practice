@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
+import { AuthProvider } from "@/components/auth/auth-provider";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Tài khoản | HSK Learning Platform",
-  description: "Quản trị tài khoản HSK Learning Platform",
+  title: "HSK Learning Platform",
+  description: "Nền tảng học tiếng Trung HSK 1–9",
 };
 
 export default function RootLayout({
@@ -13,7 +14,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="vi">
-      <body>{children}</body>
+      <body>
+        <AuthProvider>{children}</AuthProvider>
+      </body>
     </html>
   );
 }

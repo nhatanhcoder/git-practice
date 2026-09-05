@@ -24,7 +24,6 @@ import { useEffect, useId, useMemo, useRef, useState } from "react";
 import {
   formatDate,
   getInitials,
-  initialAdminProfile,
   mockValidationErrors,
   UserProfile,
 } from "../../../lib/auth-profile-data";
@@ -53,15 +52,18 @@ export default function AdminProfilePage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Review state switcher (design/dev validation)
-  const [reviewState, setReviewState] = useState<ReviewState>("ready");
+  const [reviewState, setReviewState] = useState<ReviewState>("loading");
 
-  // MOCK(A-AUTH-4): Profile state in memory. Replaced when GET /api/v1/auth/me is wired.
-  const [profile, setProfile] = useState<UserProfile>(initialAdminProfile);
+  // Live: GET /api/v1/auth/me. `initialAdminProfile` used to seed this, so an
+  // unreachable API showed a hardcoded admin's name and email as if it were the
+  // signed-in user's own profile.
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   // Form 1: Profile fields
-  const [nickname, setNickname] = useState(profile.nickname);
-  const [email, setEmail] = useState(profile.email);
-  const [avatarPreview, setAvatarPreview] = useState<string | null>(profile.avatarUrl);
+  const [nickname, setNickname] = useState("");
+  const [email, setEmail] = useState("");
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [profileErrors, setProfileErrors] = useState<Record<string, string[]>>({});
   const [isSavingProfile, setIsSavingProfile] = useState(false);
 
@@ -85,7 +87,19 @@ export default function AdminProfilePage() {
         setEmail(res.profile.email);
         setAvatarPreview(res.profile.avatarUrl);
       })
-      .catch(() => {});
+      .then(() => {
+        if (isMounted) setReviewState("ready");
+      })
+      .catch((err: unknown) => {
+        if (!isMounted) return;
+        setProfile(null);
+        setReviewState("error");
+        setLoadError(
+          err instanceof ApiError
+            ? err.message
+            : "Không kết nối được máy chủ. Kiểm tra API có đang chạy không.",
+        );
+      });
     return () => {
       isMounted = false;
     };
@@ -99,9 +113,10 @@ export default function AdminProfilePage() {
 
   // Profile dirty check
   const isProfileDirty =
-    nickname.trim() !== profile.nickname ||
-    email.trim() !== profile.email ||
-    avatarPreview !== profile.avatarUrl;
+    profile !== null &&
+    (nickname.trim() !== profile.nickname ||
+      email.trim() !== profile.email ||
+      avatarPreview !== profile.avatarUrl);
 
   // Password ready check
   const isPasswordReady =
@@ -160,19 +175,17 @@ export default function AdminProfilePage() {
       setProfile(res.profile);
       showToast("Đã lưu hồ sơ");
     } catch (err) {
+      // No optimistic fallback. This branch used to apply the edit locally and
+      // toast "Đã lưu hồ sơ" when the PATCH had FAILED — the user walked away
+      // believing a change that never reached the database.
       if (err instanceof ApiError && err.details) {
         setProfileErrors(err.details);
       } else {
-        // Fallback optimistic update for offline dev / demo
-        setProfile((prev) => ({
-          ...prev,
-          nickname: nickname.trim(),
-          fullName: nickname.trim(),
-          email: email.trim(),
-          avatarUrl: avatarPreview,
-          initials: getInitials(nickname.trim()),
-        }));
-        showToast("Đã lưu hồ sơ");
+        setCardBannerError(
+          err instanceof ApiError
+            ? `Lưu hồ sơ thất bại: ${err.message}`
+            : "Lưu hồ sơ thất bại: không kết nối được máy chủ.",
+        );
       }
     } finally {
       setIsSavingProfile(false);
@@ -259,6 +272,15 @@ export default function AdminProfilePage() {
 
   const effectiveSavingProfile = isSavingProfile || reviewState === "saving_profile";
   const effectiveSavingPassword = isSavingPassword || reviewState === "saving_password";
+
+  if (!profile) {
+    return (
+      <ProfileUnavailable
+        loading={reviewState === "loading"}
+        message={loadError}
+      />
+    );
+  }
 
   return (
     <div className={styles.appShell}>
@@ -572,7 +594,7 @@ export default function AdminProfilePage() {
                         placeholder="••••••••"
                       />
                       <p className={styles.helperText}>
-                        Ít nhất 8 ký tự, có chữ hoa và số.
+                        Ít nhất 8 ký tự.
                       </p>
 
                       {/* Password Strength Meter */}
@@ -649,28 +671,31 @@ export default function AdminProfilePage() {
       </div>
 
       {/* Dev Review State Switcher */}
+      {/* WEB-004: design-review scaffolding, dev only. */}
+      {process.env.NODE_ENV !== "production" && (
       <div className={styles.stateSwitcher}>
-        <span>REVIEW STATE</span>
-        {(
-          [
-            "ready",
-            "loading",
-            "saving_profile",
-            "saving_password",
-            "validation_error",
-            "error",
-            "forbidden",
-          ] as ReviewState[]
-        ).map((state) => (
-          <button
-            key={state}
-            className={reviewState === state ? styles.stateActive : ""}
-            onClick={() => applyReviewState(state)}
-          >
-            {state}
-          </button>
-        ))}
-      </div>
+          <span>REVIEW STATE</span>
+          {(
+            [
+              "ready",
+              "loading",
+              "saving_profile",
+              "saving_password",
+              "validation_error",
+              "error",
+              "forbidden",
+            ] as ReviewState[]
+          ).map((state) => (
+            <button
+              key={state}
+              className={reviewState === state ? styles.stateActive : ""}
+              onClick={() => applyReviewState(state)}
+            >
+              {state}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Toast Notification */}
       {toast && (
@@ -680,5 +705,38 @@ export default function AdminProfilePage() {
         </div>
       )}
     </div>
+  );
+}
+
+
+/**
+ * Shown while /auth/me is in flight, and when it failed.
+ *
+ * Deliberately not the profile chrome with blank fields: an empty form looks
+ * editable, and submitting it would try to PATCH a profile we could not even
+ * read.
+ */
+function ProfileUnavailable({ loading, message }: { loading: boolean; message: string | null }) {
+  return (
+    <main
+      style={{
+        minHeight: "100dvh",
+        display: "grid",
+        placeItems: "center",
+        padding: 24,
+        fontFamily: "system-ui, sans-serif",
+      }}
+    >
+      <div style={{ textAlign: "center", maxWidth: "42ch", color: "#334155" }}>
+        <h1 style={{ fontSize: "1.05rem", fontWeight: 600, margin: 0 }}>
+          {loading ? "Đang tải hồ sơ…" : "Không tải được hồ sơ"}
+        </h1>
+        {!loading && (
+          <p style={{ marginTop: 8, fontSize: "0.9rem", color: "#64748b" }}>
+            {message ?? "Không kết nối được máy chủ."}
+          </p>
+        )}
+      </div>
+    </main>
   );
 }
