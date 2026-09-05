@@ -1226,6 +1226,15 @@ an unmerged branch; this is DOC-014.
 
 ---
 
+### 2026-09-05 implementation note — `DOC-011`
+
+The SRS runtime and `/student/mistakes` production UI now exist, but no vocabulary catalog was
+copied from the developer-machine-only corpus. The page therefore renders an explicit empty state
+instead of fixtures when `flashcards` is empty. This keeps `DOC-011` open: CI/deploy still need an
+approved, repository-owned source and import/seed strategy. The same audit confirmed that F9–F16,
+S-SRS-6/7 and Student analytics still have no approved transport contracts; they are recorded as
+`NOT IMPLEMENTED`, not counted as passing scope.
+
 ## Resolved Issues
 
 - **`GIT-002`** `.idea/` tracked in git — resolved, verified 2026-08-25 and 2026-09-01.
