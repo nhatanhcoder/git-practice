@@ -70,10 +70,10 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
 ## Sprint 2 — Classes & Enrollment
 - ✅ F2.1 Create class (unique 8-character enrollment code)
 - ✅ F2.2 Edit class
-- ⬜ F2.3 Join class
-- ⬜ F2.4 Leave class
+- 🔶 (claude · 2026-09-05) F2.3 Join class
+- 🔶 (claude · 2026-09-05) F2.4 Leave class
 - ✅ F2.5 View student list in a class
-- ⬜ F2.6 View Student's class list
+- 🔶 (claude · 2026-09-05) F2.6 View Student's class list
 - ✅ Teacher Lessons API & Admin Classes API (SCOPE-01 Option A complete)
 - 🔶 (claude · 2026-09-01) **Teacher Page Contracts for this sprint's slice** —
   `/teacher`, `/teacher/classes`, `/teacher/classes/[classId]`,
