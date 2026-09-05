@@ -1,7 +1,7 @@
 ---
 module: classes-enrollment
-status: deferred
-blocked_by: SCOPE-01 — scope undecided. No endpoints in docs/api/ for the Admin side.
+status: accepted
+blocked_by: - (resolved via Option A full implementation with Teacher and Admin endpoints)
 owner: -
 last_updated: 2026-09-03
 ---
@@ -45,6 +45,8 @@ enrollment rights to Student.
 | PATCH | `/api/v1/teacher/classes/:id/archive` | teacher (own) | Archive class | defined (`API_TEACHER.md`) |
 | GET | `/api/v1/teacher/classes` | teacher (own) | List own classes | defined (`API_TEACHER.md`) |
 | GET | `/api/v1/teacher/classes/:id` | teacher (own) | Class detail — **student list is embedded here** | defined (`API_TEACHER.md`) |
+| GET | `/api/v1/admin/classes` | admin | Read-only audit of all classes for sessions/payroll | accepted |
+| GET | `/api/v1/admin/classes/:id` | admin | Read-only class detail with student roster | accepted |
 | GET | `/api/v1/student/classes` | student (enrolled) | List enrolled classes | defined (`API_STUDENT.md`) |
 | POST | `/api/v1/student/classes/join` | student | Enroll via `enrollmentCode` | defined (`API_STUDENT.md`) |
 | DELETE | `/api/v1/student/classes/:id/leave` | student | Leave class → `status = dropped` | defined (`API_STUDENT.md`) |

@@ -514,21 +514,28 @@ export default function AdminInvoiceGeneratePage() {
         </main>
       </div>
 
-      {/* Review State Switcher Widget */}
-      <aside className={styles.stateSwitcher} aria-label="Review State Switcher">
-        <span>REVIEW STATE</span>
-        {(["ready", "step1", "step2", "step3", "running", "partial", "empty", "error", "forbidden"] as ReviewState[]).map(
-          (state) => (
-            <button
-              key={state}
-              className={reviewState === state ? styles.stateActive : ""}
-              onClick={() => handleStateChange(state)}
-            >
-              {state}
-            </button>
-          ),
-        )}
-      </aside>
+      {/* WEB-004: design-review scaffolding, dev only. Over live data it lets a
+
+          failed load be repainted as a healthy one. */}
+
+      {process.env.NODE_ENV !== "production" && (
+
+        <aside className={styles.stateSwitcher} aria-label="Review State Switcher">
+          <span>REVIEW STATE</span>
+          {(["ready", "step1", "step2", "step3", "running", "partial", "empty", "error", "forbidden"] as ReviewState[]).map(
+            (state) => (
+              <button
+                key={state}
+                className={reviewState === state ? styles.stateActive : ""}
+                onClick={() => handleStateChange(state)}
+              >
+                {state}
+              </button>
+            ),
+          )}
+        </aside>
+
+      )}
 
       {/* Toast */}
       {toastMessage && (

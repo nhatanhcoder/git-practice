@@ -26,6 +26,7 @@ import { useMemo, useState } from "react";
 import { avatarToneFor, formatVnd, initialsOf } from "../../../lib/formatters";
 import { getStatusColor } from "../../../lib/status";
 import styles from "./invoices.module.css";
+import { SessionChip } from "@/components/auth/session-chip";
 
 type InvoiceStatus = "unpaid" | "partially_paid" | "paid" | "void" | "overdue";
 type ReviewState = "ready" | "loading" | "empty" | "partial" | "error" | "forbidden";
@@ -158,16 +159,13 @@ export default function AdminInvoicesPage() {
               <span className={styles.notificationDot} />
             </button>
             <div className={styles.headerDivider} />
-            <Link className={styles.profileButton} href="/admin/profile">
-              <span className={styles.avatar} style={{ backgroundColor: "#E0E7FF", color: "#3730A3" }}>
-                AT
-              </span>
-              <span className={styles.profileText}>
-                <strong>Anh Tuấn</strong>
-                <small>Quản trị viên</small>
-              </span>
-              <ChevronDown size={15} color="#475569" />
-            </Link>
+            <SessionChip
+              classNames={{
+                button: styles.profileButton,
+                avatar: styles.avatar,
+                text: styles.profileText,
+              }}
+            />
           </div>
         </header>
 
@@ -403,19 +401,26 @@ export default function AdminInvoicesPage() {
         </main>
       </div>
 
-      {/* Review State Switcher Widget */}
-      <aside className={styles.stateSwitcher} aria-label="Review State Switcher">
-        <span>REVIEW STATE</span>
-        {(["ready", "loading", "empty", "partial", "error", "forbidden"] as ReviewState[]).map((state) => (
-          <button
-            key={state}
-            className={reviewState === state ? styles.stateActive : ""}
-            onClick={() => handleStateChange(state)}
-          >
-            {state}
-          </button>
-        ))}
-      </aside>
+      {/* WEB-004: design-review scaffolding, dev only. Over live data it lets a
+
+          failed load be repainted as a healthy one. */}
+
+      {process.env.NODE_ENV !== "production" && (
+
+        <aside className={styles.stateSwitcher} aria-label="Review State Switcher">
+          <span>REVIEW STATE</span>
+          {(["ready", "loading", "empty", "partial", "error", "forbidden"] as ReviewState[]).map((state) => (
+            <button
+              key={state}
+              className={reviewState === state ? styles.stateActive : ""}
+              onClick={() => handleStateChange(state)}
+            >
+              {state}
+            </button>
+          ))}
+        </aside>
+
+      )}
 
       {/* Toast */}
       {toastMessage && <div className={styles.toast}>{toastMessage}</div>}

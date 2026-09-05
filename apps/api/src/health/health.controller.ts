@@ -1,17 +1,19 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, Inject } from '@nestjs/common';
 import { InjectConnection } from '@nestjs/mongoose';
 import { Connection } from 'mongoose';
 import { PrismaService } from '../prisma/prisma.service';
+import { Public } from '../common/decorators/public.decorator';
 
 /**
  * GET /health — proves both databases are actually reachable from the running
  * API, not merely configured. Always returns 200 with a per-database verdict;
  * making the whole endpoint 503 when one store is down hides which one it is.
  */
+@Public()
 @Controller('health')
 export class HealthController {
   constructor(
-    private readonly prisma: PrismaService,
+    @Inject(PrismaService) private readonly prisma: PrismaService,
     @InjectConnection() private readonly mongo: Connection,
   ) {}
 

@@ -27,7 +27,7 @@
 | **User** | update own profile | ✅ | 🔒 | 🔒 |
 | **User** | approve / suspend | ✅ | ❌ | ❌ |
 | **Class** | create | ❌ | ✅ | ❌ |
-| **Class** | read (own classes) | ❌ | 🔒 | 🔒 |
+| **Class** | read | 👁️ (audit / session display) | 🔒 (own classes) | 🔒 (enrolled) |
 | **Class** | update / archive | ❌ | 🔒 | ❌ |
 | **ClassEnrollment** | enroll (via code) | ❌ | ❌ | ✅ |
 | **ClassEnrollment** | list (own class) | ❌ | 🔒 | 🔒 |

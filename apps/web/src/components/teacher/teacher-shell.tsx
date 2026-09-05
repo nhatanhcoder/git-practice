@@ -17,8 +17,8 @@ import {
   Wallet,
   X,
 } from "lucide-react";
-import { mockTeacherProfile } from "@/lib/teacher-data";
 import styles from "./teacher-shell.module.css";
+import { SessionChip } from "@/components/auth/session-chip";
 
 interface Crumb {
   label: string;
@@ -132,14 +132,16 @@ export function TeacherShell({
               <span className={styles.notificationDot} />
             </button>
             <div className={styles.headerDivider} />
-            <button className={styles.profileButton} title="Hồ sơ — màn hình chưa được hợp đồng (T-AUTH-6)" aria-label="Hồ sơ (chưa khả dụng)">
-              <span className={styles.headerAvatar}>PL</span>
-              <span className={styles.profileText}>
-                <strong>{mockTeacherProfile.nickname}</strong>
-                <small>{mockTeacherProfile.role}</small>
-              </span>
-              <ChevronRight size={15} className={styles.profileChevron} />
-            </button>
+            {/* Was a hardcoded "PL / Phạm Thị Lan", so the chrome named someone who
+                was not signed in — and there was no way to sign out at all. */}
+            <SessionChip
+              classNames={{
+                button: styles.profileButton,
+                avatar: styles.headerAvatar,
+                text: styles.profileText,
+              }}
+              profileHref="/teacher"
+            />
           </div>
         </header>
         <main className={styles.content}>{children}</main>
