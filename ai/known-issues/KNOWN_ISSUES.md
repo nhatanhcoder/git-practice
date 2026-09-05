@@ -1098,6 +1098,63 @@ screens now use. Do it before wiring any student screen to a real endpoint, not 
 
 **Numbering note**: `WEB-014` is taken by the unmerged branch `feat/s2-student-enrollment`, so
 these start at `WEB-015`. Per `DOC-014`, reconcile by hand on merge.
+### [BUILD-002] A fresh git worktree installs Prisma with an incomplete engines package
+
+**Severity**: Medium
+**Status**: Open — workaround known, root cause not fixed
+
+**Description**: `git worktree add ../Real-<name>` followed by `pnpm install` reports success
+(exit 0, "Done in 27.2s") but leaves
+`node_modules/.pnpm/prisma@5.22.0/node_modules/@prisma/engines/dist/` holding only
+`index.d.ts` and `scripts/` — **`dist/index.js` is missing**. Every Prisma command then dies
+with `Cannot find module .../engines/dist/index.js. Please verify that the package.json has a
+valid "main" entry`, which reads like a corrupt package rather than a partial install.
+
+`pnpm rebuild prisma @prisma/client @prisma/engines` restores the native binaries
+(`query_engine-windows.dll.node`, `schema-engine-windows.exe`) but **still not** `dist/index.js`.
+
+**Impact**: `db:deploy`, `db:migrate`, `db:generate`, `db:seed` and the whole API test suite are
+unrunnable in a new worktree. Since `multi-agent-workflow.md` §5 makes worktrees the prescribed
+way for two agents to work at once, this blocks the project's own concurrency mechanism, and the
+error message points at the wrong thing.
+
+**Workaround** (used 2026-09-05, worked):
+
+```
+cp -r ../Real/node_modules/.pnpm/prisma@5.22.0/node_modules/@prisma/engines/dist/. \
+      node_modules/.pnpm/prisma@5.22.0/node_modules/@prisma/engines/dist/
+```
+
+**Fix Plan**: likely pnpm 10/11 not running the `@prisma/engines` postinstall without approval.
+Try declaring `pnpm.onlyBuiltDependencies` in the root `package.json` and verify from a genuinely
+cold worktree — the store is shared, so a partial extraction can survive a reinstall and make the
+problem look intermittent.
+
+---
+
+### [WEB-014] Student enrollment has a working API and no screen — F2.3/F2.4/F2.6 unreachable
+
+**Severity**: High
+**Status**: Open
+
+**Description**: `POST /student/classes/join`, `GET /student/classes`, `GET /student/classes/:id`
+and `DELETE /student/classes/:id/leave` are implemented and covered by 19 e2e tests
+(2026-09-05), but `apps/web/src/app/student/` contains only the nine mocked self-study routes —
+there is **no `/student/classes` route of any kind**. A student cannot join a class from a
+browser.
+
+**Impact**: the Sprint 2 DoD — *"Teacher creates class → student joins via code → teacher sees
+the student in the list"* — is proven by an automated test and **not** by a person using the
+product. `ai/PROGRESS.md` marks F2.3/F2.4/F2.6 `✅` on the strength of the API; do not read that
+as a shippable flow.
+
+**Fix Plan**: run `flow-mapper` for `/student/classes` and `/student/classes/[classId]` to
+produce Page Contracts (the pipeline is mandatory for any screen), then build and wire them to
+the live endpoints. Do not repeat `WEB-011`: no fallback fixtures, and a failed load must say so.
+
+**Numbering note**: assigned against `origin/main`, where the highest web id is `WEB-013`.
+`DOC-014` warns that `WEB-007`–`WEB-010` were added on an unmerged branch; if another branch has
+also taken `WEB-014`, renumber this on merge rather than dropping either entry.
 
 ---
 
