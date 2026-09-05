@@ -298,3 +298,75 @@ describe('Marketing profile API', () => {
     assert.equal(res.body.data.deleted, false);
   });
 });
+
+describe('Registration carrying a marketing block', () => {
+  const EMAIL = 'test.mkt.signup@hsk.local';
+  const MINOR_EMAIL = 'test.mkt.minor@hsk.local';
+
+  after(async () => {
+    await prisma.user.deleteMany({ where: { email: { in: [EMAIL, MINOR_EMAIL] } } });
+  });
+
+  it('stores the profile submitted with the registration', async () => {
+    const res = await req('POST', '/auth/register', {
+      email: EMAIL,
+      password: 'Password123!',
+      fullName: 'Nguoi Dang Ky',
+      role: 'student',
+      marketing: {
+        birthYear: 1995,
+        learningGoal: 'study_abroad',
+        province: 'Da Nang',
+        marketingConsent: true,
+        consentChannels: ['zalo'],
+      },
+    });
+    assert.equal(res.status, 201, JSON.stringify(res.body));
+    assert.equal(res.body.data.status, 'pending');
+
+    const row = await prisma.userMarketingProfile.findUnique({
+      where: { userId: res.body.data.id },
+    });
+    assert.ok(row, 'the marketing block submitted at signup was not stored');
+    assert.equal(row!.learningGoal, 'study_abroad');
+    assert.equal(row!.marketingConsent, true);
+    assert.deepEqual(row!.consentChannels, ['zalo']);
+    assert.ok(row!.consentedAt);
+  });
+
+  it('refuses a minor self-consenting at signup but still creates the account', async () => {
+    const res = await req('POST', '/auth/register', {
+      email: MINOR_EMAIL,
+      password: 'Password123!',
+      fullName: 'Hoc Sinh Nho',
+      role: 'student',
+      marketing: {
+        birthYear: new Date().getUTCFullYear() - 11,
+        marketingConsent: true,
+        consentChannels: ['email'],
+      },
+    });
+    assert.equal(res.status, 201);
+
+    const row = await prisma.userMarketingProfile.findUnique({
+      where: { userId: res.body.data.id },
+    });
+    assert.equal(row!.marketingConsent, false, 'an 11-year-old consented to advertising at signup');
+    assert.equal(row!.guardianConsentRequired, true);
+    assert.deepEqual(row!.consentChannels, []);
+  });
+
+  it('rejects a malformed marketing block rather than creating a half account', async () => {
+    const before = await prisma.user.count();
+    const res = await req('POST', '/auth/register', {
+      email: 'test.mkt.bad@hsk.local',
+      password: 'Password123!',
+      fullName: 'Khong Hop Le',
+      role: 'student',
+      marketing: { phone: 'khong-phai-so' },
+    });
+    assert.equal(res.status, 400);
+    assert.equal(res.body.code, 'VALIDATION_ERROR');
+    assert.equal(await prisma.user.count(), before, 'a rejected registration still created a user');
+  });
+});

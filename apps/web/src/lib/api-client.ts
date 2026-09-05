@@ -199,6 +199,44 @@ export async function login(email: string, password: string): Promise<AuthUser> 
   return res.data.user;
 }
 
+export interface MarketingSignupBlock {
+  birthYear?: number;
+  gender?: string;
+  province?: string;
+  phone?: string;
+  occupation?: string;
+  learningGoal?: string;
+  currentLevel?: number;
+  referralSource?: string;
+  utmSource?: string;
+  utmMedium?: string;
+  utmCampaign?: string;
+  marketingConsent?: boolean;
+  consentChannels?: string[];
+}
+
+/**
+ * Creates an account. Does NOT sign the person in, and must not pretend to: a new
+ * account is `pending` until an admin approves it, so there is no session to
+ * establish here. The caller sends them to /login with a message saying so.
+ *
+ * The optional marketing block travels with this request rather than being saved
+ * afterwards, for the same reason — there is no session to PATCH it with later.
+ */
+export async function register(input: {
+  email: string;
+  password: string;
+  fullName: string;
+  role: 'student' | 'teacher';
+  marketing?: MarketingSignupBlock;
+}): Promise<{ id: string; email: string; status: string }> {
+  const res = await rawRequest<{ id: string; email: string; status: string }>('/auth/register', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+  return res.data;
+}
+
 export async function logout(): Promise<void> {
   try {
     await rawRequest('/auth/logout', { method: 'POST' });

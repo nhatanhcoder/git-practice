@@ -16,9 +16,9 @@ import { LandingView } from "./landing-view";
 // pages.css and lms.css supply nothing this page references — pages.css only duplicates
 // `num`, which base.css already defines — so importing them would be 2,349 lines of other
 // screens' styling for no gain.
-import "./tokens.css";
-import "./base.css";
-import "./components.css";
+import "@/styles/hanlu/tokens.css";
+import "@/styles/hanlu/base.css";
+import "@/styles/hanlu/components.css";
 import "./landing.css";
 
 export const metadata: Metadata = {

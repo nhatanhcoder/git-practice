@@ -1,5 +1,6 @@
-import { Transform } from 'class-transformer';
-import { IsEmail, IsIn, IsString, Length } from 'class-validator';
+import { Transform, Type } from 'class-transformer';
+import { IsEmail, IsIn, IsOptional, IsString, Length, ValidateNested } from 'class-validator';
+import { UpdateMarketingProfileDto } from './marketing-profile.dto';
 
 export const REGISTER_ROLES = ['student', 'teacher'] as const;
 
@@ -20,4 +21,19 @@ export class RegisterDto {
 
   @IsIn(REGISTER_ROLES, { message: 'role phải là student hoặc teacher' })
   role!: (typeof REGISTER_ROLES)[number];
+
+  /**
+   * Optional marketing profile, sent by step 2 of the signup wizard.
+   *
+   * It has to travel with the registration rather than be saved afterwards: a new account is
+   * `pending` until an admin approves it, so there is no session to call
+   * PATCH /auth/me/marketing with. Collecting it later would mean collecting it days later, or
+   * not at all.
+   *
+   * Skipping step 2 simply omits this, which is a valid registration.
+   */
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => UpdateMarketingProfileDto)
+  marketing?: UpdateMarketingProfileDto;
 }

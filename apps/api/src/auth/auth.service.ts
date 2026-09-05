@@ -115,14 +115,50 @@ export class AuthService {
     const passwordHash = await bcrypt.hash(dto.password, BCRYPT_COST);
 
     try {
-      const user = await this.prisma.user.create({
-        data: {
-          email: dto.email,
-          passwordHash,
-          nickname: dto.fullName,
-          role: dto.role ?? 'student',
-          status: 'pending',
-        },
+      // One transaction: an account created without the marketing row it was submitted with
+      // would leave the person having answered questions nobody stored, with no way to notice.
+      const user = await this.prisma.$transaction(async (tx) => {
+        const created = await tx.user.create({
+          data: {
+            email: dto.email,
+            passwordHash,
+            nickname: dto.fullName,
+            role: dto.role ?? 'student',
+            status: 'pending',
+          },
+        });
+
+        if (dto.marketing) {
+          const m = dto.marketing;
+          const consent = resolveConsent(
+            {
+              marketingConsent: m.marketingConsent,
+              consentChannels: m.consentChannels as MarketingChannelName[] | undefined,
+              birthYear: m.birthYear ?? null,
+            },
+            null,
+          );
+
+          await tx.userMarketingProfile.create({
+            data: {
+              userId: created.id,
+              birthYear: m.birthYear ?? null,
+              gender: m.gender ?? null,
+              province: m.province ?? null,
+              phone: m.phone ?? null,
+              occupation: m.occupation ?? null,
+              learningGoal: m.learningGoal ?? null,
+              currentLevel: m.currentLevel ?? null,
+              referralSource: m.referralSource ?? null,
+              utmSource: m.utmSource ?? null,
+              utmMedium: m.utmMedium ?? null,
+              utmCampaign: m.utmCampaign ?? null,
+              ...consent,
+            },
+          });
+        }
+
+        return created;
       });
 
       return {
