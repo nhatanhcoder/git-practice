@@ -46,6 +46,9 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
 
 ## Sprint 1 — Auth & Users
 - ✅ F1.1 Account registration (status `pending`, bcrypt cost 12)
+- 🔶 (claude · 2026-09-05) **Signup screen + marketing profile** — `/register` does not exist yet;
+      adding it, a separate `UserMarketingProfile` table with its own consent record, and a
+      redesign of `/login` in the Hán Lộ token set. Owner-approved 2026-09-05.
 - ✅ F1.2 Login (JWT access 15min + refresh 7d, httpOnly cookie)
 - ✅ F1.3 Account approval (Admin: PATCH /admin/users/:id/approve, suspend, activate)
 - ✅ F1.4 Profile & Admin Users FE integration — **the wiring existed before 2026-09-04 but did
