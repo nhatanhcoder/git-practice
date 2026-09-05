@@ -217,10 +217,14 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
 - **DoD**: Student runs out of time and attempt auto-submits → Teacher uses AI Suggest to grade Writing → enters final score → Student views the result
 
 ## Sprint 5 — SRS Flashcards & Analytics
-- ⬜ F7.1 Browse & view vocabulary cards · ⬜ F7.2 Add card to review deck
-- ⬜ F7.3 SRS review session (SM-2 algorithm — full formula in PROJECT_KNOWLEDGE.md 4.3)
-- ⬜ F7.4 Review stats (streak, cards learned)
-- ⬜ F6.1 Weekly skill heatmap · ⬜ F6.2 Progress chart
+- 🔶 F7.1 Browse & view vocabulary cards — API + live UI built; production vocabulary catalog
+      remains blocked by `DOC-011` · ✅ F7.2 First review creates the private review state
+- ✅ F7.3 SRS review session — canonical SM-2 ratings 0/3/4/5, ownership locked to the
+      signed-in Student, covered by targeted e2e tests
+- 🔶 F7.4 Review stats — due/learned/retention/review count built; streak intentionally returns
+      `null` until the calendar/timezone rule is approved
+- ⛔ F6.1 Weekly skill heatmap · ⛔ F6.2 Progress chart — names exist in the actor document,
+      but request/response contracts are not approved; no payload was invented
       *(if F9–F16 ever land, `SkillScore.skill` widens 3 → 7 values — `PROJECT_KNOWLEDGE.md` §8. Blocked, see Sprint 5b)*
 - ⬜ F6.3 Class dashboard (Teacher) · ⬜ F6.4 API Quota Monitoring (Admin)
 - **DoD**: Rating a card reschedules it correctly per SM-2. Teacher sees red alerts for weak students.
@@ -246,16 +250,16 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
       require Assignment/Attempt
 - ✅ **SRS decision — ADR-016**: production uses SM-2 (Again=0, Hard=3, Good=4, Easy=5), not
       the five-box Leitner behavior in the FE mockup
-- ⬜ Content loader: read + validate the JSON files, schema guards
-- ⬜ F9 Pronunciation foundation (pinyin table, tones, tone sandhi, 214 radicals, 4 PDFs)
-- ⬜ F10 Grammar points (browse, auto-generate exercises from `tokens`, progress)
-- ⬜ F11 Character writing (stroke-order animation, canvas practice, radical breakdown)
-- ⬜ F12 Lego sentence builder (7 stations, drag-drop with S/T/P/A/V/O/C/Q roles, endless mode)
-- ⬜ F13 HSK mock exams (11 exams / 161 questions, real timers, skill breakdown → `SkillScore`)
-- ⬜ F14 Workplace roleplay (6 scenarios, multi-turn, keyword scoring)
-- ⬜ F15 Learning path (2 curricula, topic map, side quests, 3 bosses)
-- ⬜ F16 Gamification (XP, 9 named levels, 6 imperial-exam ranks, streaks, 20 badges, leaderboard)
-- ⬜ Contract-first entity/module design for catalog, personal progress, supplemental practice
+- ⛔ Content loader: read + validate the JSON files, schema guards — import/seed strategy not approved
+- ⛔ F9 Pronunciation foundation (pinyin table, tones, tone sandhi, 214 radicals, 4 PDFs)
+- ⛔ F10 Grammar points (browse, auto-generate exercises from `tokens`, progress)
+- ⛔ F11 Character writing (stroke-order animation, canvas practice, radical breakdown)
+- ⛔ F12 Lego sentence builder (7 stations, drag-drop with S/T/P/A/V/O/C/Q roles, endless mode)
+- ⛔ F13 HSK mock exams (11 exams / 161 questions, real timers, skill breakdown → `SkillScore`)
+- ⛔ F14 Workplace roleplay (6 scenarios, multi-turn, keyword scoring)
+- ⛔ F15 Learning path (2 curricula, topic map, side quests, 3 bosses)
+- ⛔ F16 Gamification (XP, 9 named levels, 6 imperial-exam ranks, streaks, 20 badges, leaderboard)
+- ⛔ Contract-first entity/module design for catalog, personal progress, supplemental practice
       and gamification; the 7 Postgres tables in `PROJECT_KNOWLEDGE.md` §8.9 remain proposals
 - ⬜ Widen the `skill` / `skillType` enums 3 → 7 (`grammar`, `character`, `speaking`,
       `pronunciation`) — affects `Assignment.skillType`, `SkillScore.skill`, `Question.skill`
