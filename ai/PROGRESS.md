@@ -45,12 +45,12 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
 - **DoD**: API runs on :3001 (Swagger `/api`), Web runs on :3000 and connects to API, CI passes lint+build
 
 ## Sprint 1 — Auth & Users
-- ⬜ F1.1 Account registration (status `pending`, bcrypt cost 12)
-- ⬜ F1.2 Login (JWT access 15min + refresh 7d, rate limit 5 attempts/15min)
+- ✅ F1.1 Account registration (status `pending`, bcrypt cost 12)
+- ✅ F1.2 Login (JWT access 15min + refresh 7d, httpOnly cookie)
 - ⬜ F1.3 Account approval (Admin)
-- 🔶 F1.4 Profile management (built in apps/web/src/app/admin/profile; mocked in-memory until API auth endpoints are live)
-- ⬜ Refresh Token Rotation + Replay Attack detection (PROJECT_KNOWLEDGE.md 4.1)
-- ⬜ Custom decorators `@CurrentUser`, `@Roles`, `@Public`
+- 🔶 F1.4 Profile management (built in apps/web/src/app/admin/profile; backend endpoints GET/PATCH /me implemented)
+- ✅ Refresh Token Rotation + Replay Attack detection (PROJECT_KNOWLEDGE.md 4.1)
+- ✅ Custom decorators `@CurrentUser`, `@Roles`, `@Public`
 - **DoD**: Register → Admin approves → login lands on the correct dashboard per role
 
 ## Sprint 2 — Classes & Enrollment
