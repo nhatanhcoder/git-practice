@@ -792,6 +792,269 @@ new files appear untracked, the index is unchanged, and HEAD does not move.
 
 ---
 
+### [API-008] `PATCH .../lessons/reorder` accepted payloads the unique index cannot satisfy
+
+**Severity**: High
+**Status**: ✅ Resolved 2026-09-04 — found by a self-review of the Teacher Lessons service.
+
+**Description**: `Lesson` carries `@@unique([classId, orderIndex])`, and `reorder()` avoided
+collisions by shifting every item to `orderIndex + 10000` before writing the real values.
+That works only when the payload is a **complete permutation** of the class's lessons, and
+nothing enforced that. Two payload shapes broke it:
+
+- **Partial payload.** `ReorderLessonsDto` allows `ArrayMinSize(1)`, so reordering one
+  lesson of three to index 1 is a valid request. The lesson that already holds index 1 is
+  untouched, so step two collides with it.
+- **Duplicate `orderIndex`.** Two items sharing an index are shifted to the *same*
+  temporary value, so even the collision-avoidance step collides.
+
+**Impact**: a P2002 escaping as `DUPLICATE_ENTRY` (409) for what is a malformed request,
+from an endpoint whose whole job is ordering. The transaction rolls back, so no data was
+corrupted — but the failure is unexplained to the caller and the FE has no branch for it.
+
+**Fix**: the service now requires the payload to name every lesson of the class exactly
+once with `orderIndex` values exactly `1..N`, rejecting anything else as
+`VALIDATION_ERROR` before touching the database. Four regression tests cover partial,
+duplicate-id, duplicate-index and out-of-range payloads, plus one asserting the stored
+order is unchanged after each rejection.
+
+**Lesson**: the collision-avoidance trick was correct for the input it assumed and had no
+check that the input was that shape. A guard that depends on an unvalidated precondition
+is not a guard.
+
+---
+
+### [API-009] `ClassesService.findById` skipped the ownership check when no teacher id was passed
+
+**Severity**: Medium
+**Status**: ✅ Resolved 2026-09-04 — hardening; no caller was exploiting it.
+
+**Description**: the condition read `if (!isAdmin && teacherId && cls.teacherId !== teacherId)`.
+The `teacherId &&` term means that calling `findById(classId)` with neither a teacher id nor
+`isAdmin` returned **any** class, including its full student roster.
+
+Both current callers are correct — the admin controller passes `isAdmin: true`, the teacher
+controller passes `user.id` — so this was latent rather than live. It is recorded because the
+default was the wrong way round: in the one place ownership is enforced, "argument missing"
+resolved to "no check" instead of "denied".
+
+**Fix**: `if (!isAdmin) { if (!teacherId || cls.teacherId !== teacherId) throw ... }`.
+
+---
+
+### [API-010] `delete` of a lesson re-packed order indices outside the transaction
+
+**Severity**: Medium
+**Status**: ✅ Resolved 2026-09-04.
+
+**Description**: `LessonsService.delete()` deleted the row and then re-packed the remaining
+`orderIndex` values in a loop of separate updates. A failure between the two left a
+permanent hole in the ordering: `create()` assigns `max + 1`, so nothing ever reuses the
+gap, and `@@unique([classId, orderIndex])` means the hole cannot be closed by a later write
+that assumes contiguity.
+
+**Fix**: delete and re-pack now share one `$transaction`. The ascending iteration order is
+kept and now commented — each row moves down into an index the previous row has already
+vacated, so no intermediate state violates the unique constraint.
+
+---
+
+### [DEBT-004] The API e2e suites share one database and were running in parallel
+
+**Severity**: Medium
+**Status**: ✅ Resolved 2026-09-04.
+
+**Description**: `node --test` runs test files in parallel by default. Every suite in
+`apps/api/test/` points at the same development database, and `admin-approval-concurrency`
+and `admin-user-lifecycle` both create users. The INV-USERS-07 pagination test walks every
+page and asserts it sees each row exactly once — with rows being inserted mid-walk it saw
+the total move from 7 to 9 and failed as though pagination had duplicated a row.
+
+**Observed**: one run failed, the next passed with no code change. A test that fails at
+random is worse than a missing test, because it trains people to re-run rather than look.
+
+**Fix**: `--test-concurrency=1` in the `test` script, and a comment at the affected test
+naming the flag so the next person checks it before suspecting the pagination code.
+
+**Not fixed**: the suites still share a database and still write to it. Per-suite schemas or
+a transactional rollback per test would make them independent rather than merely ordered.
+
+---
+
+---
+
+### [WEB-011] Wired screens swallowed every API failure and kept showing mock data
+
+**Severity**: Critical
+**Status**: ✅ Resolved 2026-09-04.
+
+**Description**: every screen that had been connected to the API shared one defect: the call was
+real, the failure was discarded, and the hardcoded fixtures stayed on screen. `/admin/users`
+issued `GET /api/v1/admin/users`, received **401** (nothing could log in — see `WEB-012`), ran
+`.catch(() => {})`, and rendered eight invented accounts complete with status badges and
+pagination. It looked like a working screen. The row count even matched the database's eight
+seeded users, by coincidence.
+
+The service layer made it worse rather than better: `admin-users-service` returned
+`FALLBACK_USERS` with `isFallback: true` — a flag **no caller ever read**. `auth-profile-service`
+did the same with a hardcoded admin profile, so an unreachable API showed a *different person's*
+name and email as "my profile". `teacher-service` returned `mockTeacherClasses` /
+`mockClassLessons`, and `createTeacherClass` fabricated a class **with an enrollment code** and
+returned it as created — a code no student could ever join with.
+
+Three more of the same family, found while fixing it:
+
+- `/admin/profile` applied a failed `PATCH /auth/me` locally and toasted "Đã lưu hồ sơ". The user
+  walked away believing a change that never reached the database.
+- `/admin/users/[userId]` rendered `getStudentDataset()` / `getTeacherDataset()` — invented
+  enrollments, scores and attendance — as that account's record. An admin deciding whether to
+  suspend someone was reading fiction. The endpoint carries no history at all (`API-001`), so the
+  panel now says so instead.
+- `/teacher/classes/[classId]/lessons` looked its class up in `mockTeacherClasses`. Real ids are
+  uuids and are never in that array, so **every real class rendered "Không tìm thấy"** — the
+  screen was unreachable for any class that actually existed.
+
+**Fix**: all fallbacks deleted, `user-detail-data.js` removed, errors propagate, and each screen
+distinguishes loading / empty / forbidden / failed-to-load. `WEB-004`'s REVIEW-STATE switcher is
+now dev-only, because over live data it let a failed load be repainted as "ready".
+
+**Lesson**: a fallback the caller never checks is not a fallback, it is a lie with a comment on it.
+"Graceful degradation for offline dev" was the stated intent of every one of these, and the result
+was a UI that could not tell anyone it was disconnected.
+
+---
+
+### [WEB-012] No login screen existed, and the access token was in localStorage
+
+**Severity**: High
+**Status**: ✅ Resolved 2026-09-04.
+
+**Description**: the frontend was wired to a JWT-protected API with **no `/login` route anywhere**
+(`find apps/web/src/app -iname "*login*"` returned nothing), so there was no way to obtain a token
+— which is why every guarded call 401'd and fell into `WEB-011`'s silent mock.
+
+Two rule violations alongside it, both from `ai/rules/working-rules.md` § Auth Rules:
+
+- *"Access token stored in Zustand (memory only, never localStorage)"* — it was in `localStorage`,
+  readable by any injected script and outliving the tab that earned it.
+- *"On 401: auto-call `/auth/refresh` once, then redirect to login"* — there was no refresh branch
+  at all. With a 15-minute access TTL a session died every 15 minutes with no recovery.
+
+**Fix**: `/login`, mapping the registry `code` rather than the HTTP status to its message — a
+pending account and a wrong password are both failed logins needing opposite advice. Token in a
+Zustand store with no `persist`. `restoreSession()` on mount, because a memory-only token means the
+httpOnly refresh cookie is the only thing that survives a reload. `RequireAuth` on `/admin` and
+`/teacher` that waits out the `unknown` state instead of bouncing a signed-in user on every reload.
+
+**The refresh is single-flight, and that is not an optimisation.** Refresh tokens rotate: two
+parallel `/auth/refresh` calls carrying the same cookie make the second look exactly like a
+replayed stolen token, and the replay defence revokes the whole family — logging the real user out
+mid-work. Sharing one promise is what stops a race from causing a forced logout.
+
+**Verified for real**: the API was restarted with an 8-second access TTL, and the browser network
+log showed `GET /admin/users?role=teacher` **401** → `POST /auth/refresh` **200** → the same GET
+**200**, with nothing surfacing to the user.
+
+---
+
+### [API-011] A listening question cannot be created from the UI — audio upload does not exist
+
+**Severity**: Medium
+**Status**: Open
+
+**Description**: `ENTITY_QUESTION.md` requires `content.audioUrl` on a listening question and the
+API enforces it (`QUESTION_AUDIO_REQUIRED`). The question editor has **no audio upload**, and
+`toQuestionDto()` has never set `audioUrl` — its comment says so, and correctly refuses to invent
+one.
+
+**Impact**: a teacher can create reading and writing questions from `/teacher/questions`, but every
+listening question is rejected. Listening questions can only be created by calling the API directly
+with a URL obtained elsewhere.
+
+**Why not "just make audioUrl optional"**: a listening question with no audio is unanswerable. The
+rule is right; the upload is missing. Relaxing the API to make the form pass would move the failure
+from the teacher writing the question to the student sitting the exam.
+
+**Blocked by `CR-3`** — the storage provider is undecided (Supabase Storage vs Cloudinary,
+`PROJECT_KNOWLEDGE.md` §9). Nothing can be uploaded until the owner picks one.
+
+**Fix Plan**: settle CR-3, then add upload to the editor plus a signed-URL endpoint.
+
+---
+
+### [API-012] Two e2e tests depend on a seed row staying `pending`
+
+**Severity**: Medium
+**Status**: Open
+
+**Description**: `admin-users.e2e.test.ts:132` and `auth.e2e.test.ts:181` both use the seeded
+`teacher.pending@hsk.local` and assume its status is still `pending`. Every other suite builds its
+own fixtures with `POST /auth/register` + approve, and tears them down.
+
+**Reproduce**: approve that account once — through the UI, or during any manual check of the
+approve flow — and three tests fail: *refuses a pending account*, *applies role and status filters
+together (INV-USERS-03)*, and *rejects login for pending account (INV-AUTH-05)*. It happened on
+2026-09-04 while verifying the approve button in a browser: the suite went from 93/93 to 90/93 with
+no code change at all.
+
+**Workaround**:
+
+```sql
+UPDATE users SET status='pending' WHERE email='teacher.pending@hsk.local';
+```
+
+or re-run `pnpm --filter api db:seed`.
+
+**Fix Plan**: give those two tests their own registered-and-left-pending account, the way every
+other suite already does. A test that depends on shared mutable state fails for reasons unrelated
+to the code under test, which is the most expensive kind of red.
+
+---
+
+### [WEB-013] The F3.6 delete gate on questions is not enforced — `usageCount` has no source
+
+**Severity**: Medium
+**Status**: Open
+
+**Description**: F3.6 says a question already used in an assignment must not be hard-deleted. The
+UI gate reads `Question.usageCount`, which can only be computed from `Assignment.questionIds[]` —
+and the `Assignment` table does not exist in Postgres yet, so `GET /teacher/questions` cannot
+return it. `fromApiQuestion()` sets `0` and says why at the code.
+
+**Impact**: `/teacher/questions` will let a teacher delete anything. Harmless today, because no
+assignment exists to reference a question; the moment assignments land it silently orphans
+`Assignment.questionIds[]` — and `DEBT-001` means there is no cross-store transaction or foreign
+key to catch it, since Question lives in MongoDB and Assignment in Postgres.
+
+**Fix Plan**: when the Assignments module is built, return `usageCount` on the question list and
+enforce the block in `QuestionsService.remove` — service-side, not only in the UI.
+
+---
+
+### [DOC-014] `KNOWN_ISSUES.md` has diverged across two unmerged branches, risking ID collision
+
+**Severity**: High
+**Status**: Open — **act before either branch is merged**
+
+**Description**: this file is append-only with ids that are never reused, but two long-lived
+branches have been appending to it independently:
+
+- `feat/student-hanlu-ui` added `WEB-007`, `WEB-008`, `WEB-009`, `WEB-010` and `DOC-013`.
+- `feat/s1-teacher-classes-api` (this branch) added `API-010` and `DEBT-004`, neither of which
+  appears on the other branch.
+
+Neither branch can see the other's ids, so the next agent on either one picks the same next number.
+This session skipped `WEB-007`–`WEB-010` and `API-010` on purpose after checking both branches,
+which is why the entries above start at `WEB-011` and `API-011`.
+
+**Impact**: exactly the failure this file's header warns about — the 2026-08-31 chat session
+reissued four live ids working from a stale copy. Here it would come from two *live* branches
+instead, and git would merge both sides cleanly because they touch different lines.
+
+**Fix Plan**: merge the two branches' issue lists by hand, in one commit, before either PR lands.
+Do not let git auto-merge this file.
+
+
 ## Technical Debt
 
 ### [DEBT-001] No cross-DB transactions
@@ -835,106 +1098,61 @@ repo**, since the files are missing.
 
 ---
 
-> Numbering note (2026-09-03): API-008/API-009/DOC-013 live on the unmerged
-> `feat/student-hanlu-ui` branch; API-010/DOC-014 on the open teacher-specs PR (#29). The
-> five entries below were assigned against that full picture — no ID is reused.
-
-### [API-011] Admin user lifecycle transitions accept invalid source states
+### [API-010] Three teacher-API error branches have no usable code — blocks coding
 
 **Severity**: High
-**Sprint**: Backend Phase 2
-**Status**: Open — found by the 2026-09-03 admin API review
+**Sprint**: Teacher API
+**Status**: ✅ Resolved 2026-09-03 (same day, owner-approved) — `SESSION_INVALID_TRANSITION`
+(409) · `QUESTION_IN_USE` (409) · `ATTEMPT_NOT_SUBMITTED` (409) added to
+`API_ERROR_CODES.md` as agreed, and the `LESSON_*` family (6 codes) was signed off as agreed
+in the same decision. The teacher module specs' §9/§16 were updated to match.
 
-**Description**: `apps/api/src/users/users.service.ts` (branch `feat/student-hanlu-ui` @
-`5e70873`) violates the `02-users.md` §6 state machine:
+**Description**: found 2026-09-03 while writing the Teacher module specs
+(`docs/api/modules/teacher/`). Three frequently-hit branches have no code in
+`API_ERROR_CODES.md` that fits, and the registry rule forbids inventing one:
 
-- `approve` blocks only `active` → **`suspended → active` via approve succeeds** (spec §15:
-  "approve on suspended → 409, DB unchanged"; the only valid suspended→active path is
-  `activate`).
-- `suspend` has **no source check** → `pending → suspended` succeeds. This is the worst
-  branch: it hands Admin a way to remove pending accounts from the approval queue that the
-  spec explicitly forbids (interacts with the C3 "no rejected state" story).
-- `activate` has **no source check** → `pending → active` (bypasses approve semantics) and
-  `active → active` (silent no-op 200) both succeed; spec wants conflicts.
-- Concurrency (INV-USERS-15): transitions are read-then-write with no conditional
-  `UPDATE … WHERE status = <expected>` — two concurrent approves both return 200.
+1. **Teacher session transition errors** (start/end/submit from a wrong status) —
+   `05-sessions.md` §9. `SESSION_ALREADY_REVIEWED` is Admin-flavored ("already approved or
+   rejected"); the code `FLOW_SESSION_ATTENDANCE.md` §5 uses for this branch
+   (SESSION_ALREADY_SUBMITTED) is **not in the registry** — `check-docs` confirms it.
+2. **Question edit/delete gated by a published assignment** — `02-question-bank.md` §9
+   (INV-TQ-05). No `QUESTION_*` code covers "in use".
+3. **Grading a non-`submitted` attempt** — `04-attempts-grading.md` §9.
+   `ATTEMPT_ALREADY_SUBMITTED` reads backwards for this branch; `ATTEMPT_NOT_IN_PROGRESS` is
+   the student edit code.
 
-The lifecycle e2e suite covers only the happy paths + approve-on-active, so it cannot catch
-any of this.
+Also recorded in the specs' §16 and `teacher/_INDEX.md` §4: ~~`LESSON_*` (6 codes) and `AI_*`
+(3 codes) remain *proposed, not agreed*~~ — `LESSON_*` was signed off as **agreed**
+2026-09-03; `AI_*` stays *proposed* (parked with the AI-suggest endpoint, owner decision).
 
-**Fix Plan**: conditional updates on all three transitions (`UPDATE … WHERE id = :id AND
-status = :expected`, row-count 0 → conflict), which also solves the concurrency case.
-**Blocked on the registry**: there is no code for "suspend a pending user" /
-"activate an active user" — only `USER_ALREADY_APPROVED` exists. Needs the same
-owner sign-off treatment as API-010.
-
----
-
-### [API-012] Refresh-token replay returns the wrong error code
-
-**Severity**: Low
-**Sprint**: Sprint 1
-**Status**: Open — found by the 2026-09-03 admin API review
-
-**Description**: `01-auth.md` INV-AUTH-11 and `API_ERROR_CODES.md` both say replay → `401
-AUTH_REFRESH_INVALID`. `auth.service.ts` throws `AUTH_TOKEN_INVALID` instead.
-`AUTH_REFRESH_INVALID` is defined in `error-codes.ts` and never used. The e2e test asserts
-the code's behavior, not the spec's.
-
-**Fix Plan**: throw `AUTH_REFRESH_INVALID` in the replay branch (and the expired-branch
-naming stays as is per registry), update the test, verify the family is actually dead in the
-DB after replay (INV-AUTH-12 — currently untested).
+**Fix Plan**: the BE/registry owner adds the missing codes (or signs off mapped reuses) in
+`API_ERROR_CODES.md`. Numbering note: API-008/API-009/DOC-013 are known to exist on a branch
+not yet merged to `main` when this entry was written; this entry is API-010 to avoid reuse.
 
 ---
 
-### [API-013] No `account_approved` / `account_suspended` notifications on Admin transitions
+### [DOC-014] TeacherPayRate read for teachers: three-way contradiction
 
 **Severity**: Medium
-**Sprint**: Backend Phase 2
-**Status**: Open — found by the 2026-09-03 admin API review
+**Sprint**: Teacher API
+**Status**: Open
 
-**Description**: `02-users.md` INV-USERS-13/14 require exactly one Notification per
-approve/suspend, written in the same transaction as the status change. Nothing is implemented
-— the `Notification` table does not exist in `prisma/schema.prisma` at all (module 07 is
-`proposed`). Teachers/students are not told when their account is approved or locked.
+**Description**: found 2026-09-03 while writing `docs/api/modules/teacher/06-income.md` §5.
+Three sources disagree on whether a teacher may read their own pay rate:
 
-**Fix Plan**: needs the `Notification` model + `referenceType: 'user'` (the enum currently
-lacks it — see `02-users.md` §16), then the in-transaction insert. Test rows already written
-in the spec's §15.
+| Source | Says |
+|---|---|
+| `RBAC_MATRIX.md` | no TeacherPayRate read row at all (only "set = Admin") |
+| `PERMISSIONS_TEACHER.md` § Income | "🔒 Read their own TeacherPayRate" — **grants** it |
+| `docs/api/modules/05-payroll.md` §5 | reads the missing row as forbidden ("a teacher can't even read their own rate") |
 
----
+**Impact**: the teacher Income screen has nowhere to show the rate from; any income-adjacent
+FE contract is a guess until settled.
 
-### [API-014] Admin class-read endpoints exist in code but in no doc
-
-**Severity**: Medium
-**Sprint**: Backend Phase 2
-**Status**: Open — found by the 2026-09-03 admin API review
-
-**Description**: `apps/api/src/classes/admin-classes.controller.ts` (branch
-`feat/student-hanlu-ui`) adds `GET /api/v1/admin/classes` (list **all** classes system-wide)
-and `GET /api/v1/admin/classes/:id` (any class + roster). `API_ADMIN.md` has no Class
-section. `RBAC_MATRIX.md` says Admin ❌ on Class read; `03-classes-enrollment.md` §5 says
-Admin 👁️ read "display only in session/payroll" — the code is a **superset of both**
-readings (a full management-grade list endpoint). A contract-first violation: endpoints
-shipped before docs, and they side with neither side of an open conflict.
-
-**Fix Plan**: owner decides the Admin class-read scope; then either document the endpoints
-in `API_ADMIN.md` + RBAC matrix, or remove them. Do not leave code as the tiebreaker.
-
----
-
-### [DOC-015] `TEST_STRATEGY.md` is stale on tooling and envelope
-
-**Severity**: Low
-**Status**: Open — found by the 2026-09-03 admin API review
-
-**Description**: `docs/testing/TEST_STRATEGY.md` says Jest + Supertest (the implementation
-uses `node:test` + `nest build` + `dotenv`), its Supertest example asserts `res.body.success`
-(the flat envelope forbids a `success` flag — `API_CONVENTIONS.md`), and it lists `pnpm
-test:watch` / `test:cov` / `test:e2e` scripts that do not exist in any `package.json`.
-
-**Fix Plan**: rewrite §2/§3/§6 against the actual mechanism (see
-`docs/testing/TEST_PLAN_ADMIN_API.md` §1 for the interim authoritative version).
+**Fix Plan**: PO decides; then align all three docs in one commit. The Teacher income spec
+(06) deliberately reads no rate either way, so it is not blocked — but its DTO cannot grow
+rate fields until this closes. Numbering note: written against a tree where DOC-013 exists on
+an unmerged branch; this is DOC-014.
 
 ---
 

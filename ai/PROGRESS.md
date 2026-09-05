@@ -45,21 +45,36 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
 - **DoD**: API runs on :3001 (Swagger `/api`), Web runs on :3000 and connects to API, CI passes lint+build
 
 ## Sprint 1 — Auth & Users
-- ⬜ F1.1 Account registration (status `pending`, bcrypt cost 12)
-- ⬜ F1.2 Login (JWT access 15min + refresh 7d, rate limit 5 attempts/15min)
-- ⬜ F1.3 Account approval (Admin)
-- 🔶 F1.4 Profile management (built in apps/web/src/app/admin/profile; mocked in-memory until API auth endpoints are live)
-- ⬜ Refresh Token Rotation + Replay Attack detection (PROJECT_KNOWLEDGE.md 4.1)
-- ⬜ Custom decorators `@CurrentUser`, `@Roles`, `@Public`
+- ✅ F1.1 Account registration (status `pending`, bcrypt cost 12)
+- ✅ F1.2 Login (JWT access 15min + refresh 7d, httpOnly cookie)
+- ✅ F1.3 Account approval (Admin: PATCH /admin/users/:id/approve, suspend, activate)
+- ✅ F1.4 Profile & Admin Users FE integration — **the wiring existed before 2026-09-04 but did
+      not work**: every failure was swallowed and the hardcoded fixtures stayed on screen, so the
+      screens looked healthy while disconnected (`WEB-011`). Now genuinely live against
+      `/api/v1/admin/users` and `/api/v1/auth/me`, with honest loading / empty / forbidden /
+      failed-to-load states and no fallback data anywhere
+- ✅ Refresh Token Rotation + Replay Attack detection (PROJECT_KNOWLEDGE.md 4.1)
+- ✅ Custom decorators `@CurrentUser`, `@Roles`, `@Public`
+- ✅ **Login screen + session handling** (claude · 2026-09-04) — `/login` existed nowhere until
+      now, so the FE was wired to a protected API with no way to get a token; every guarded call
+      401'd and the screens quietly showed mock data instead (`WEB-011`, `WEB-012`). Access token
+      moved out of `localStorage` into an in-memory Zustand store per `working-rules.md` § Auth
+      Rules, with single-flight refresh-and-retry on 401 and `restoreSession()` on mount.
+      **Verified against a real 401**, not assumed: the API was restarted with an 8-second access
+      TTL and the network log showed `401 → /auth/refresh 200 → retry 200`.
+- ✅ **DoD met end to end**: signed in through the browser as `admin@hsk.local`, landed on the
+      admin area, approved `teacher.pending@hsk.local` from the UI, and confirmed the row changed
+      to `active` **in Postgres** (`PATCH /admin/users/:id/approve → 200`). Not a mock.
 - **DoD**: Register → Admin approves → login lands on the correct dashboard per role
 
 ## Sprint 2 — Classes & Enrollment
-- ⬜ F2.1 Create class (unique 8-character enrollment code)
-- ⬜ F2.2 Edit class
+- ✅ F2.1 Create class (unique 8-character enrollment code)
+- ✅ F2.2 Edit class
 - ⬜ F2.3 Join class
 - ⬜ F2.4 Leave class
-- ⬜ F2.5 View student list in a class
+- ✅ F2.5 View student list in a class
 - ⬜ F2.6 View Student's class list
+- ✅ Teacher Lessons API & Admin Classes API (SCOPE-01 Option A complete)
 - 🔶 (claude · 2026-09-01) **Teacher Page Contracts for this sprint's slice** —
   `/teacher`, `/teacher/classes`, `/teacher/classes/[classId]`,
   `/teacher/classes/[classId]/lessons` contracted (not built). See
@@ -137,6 +152,23 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
 - ⬜ F3.5 Search & filter questions (Chinese full-text search)
 - ⬜ F3.6 Edit/delete question (soft delete if already used)
 - ⬜ F4.1 Create Assignment · ⬜ F4.2 Create Mock Test · ⬜ F4.3 Edit/delete Assignment
+- 🔶 (claude · 2026-09-04) **F3.1–F3.5 question bank BUILT on MongoDB** — the first module that
+      actually uses Mongo. The connection had existed since PR #12 but nothing used it: no
+      `src/mongodb/schemas/`, no model, one `InjectConnection` so `/health` could ping it.
+      `question.schema.ts` follows `ENTITY_QUESTION.md` (nine sub-types, options as `{id, text}`,
+      `correctAnswer` typed `string | string[] | null`), and the five endpoints in
+      `API_TEACHER.md` § Question Bank are live. Cross-field rules live in a pure
+      `question-rules.ts`: a sub-type must belong to its skill, writing has no answer but needs a
+      rubric, listening needs audio, an answer must reference option ids that exist, multi-answer
+      sub-types take an array — and **PATCH validates the merged document**, because
+      `{skill: "writing"}` is a legal patch that leaves a correctAnswer behind. Ownership is
+      checked in the service on every read and write; `@Roles('teacher')` only proves the caller
+      is *a* teacher. `/teacher/questions` is wired to it and its mock is gone.
+      13 new e2e tests, 93/93 across the suite against the real Atlas cluster.
+      **Stays 🔶, not ✅**: `F3.6` (no hard delete once a question is used) **is not enforced** —
+      `usageCount` needs the Assignment table, which does not exist (`WEB-013`) — and **listening
+      questions cannot be created from the UI at all** because there is no audio upload and `CR-3`
+      has not decided a storage provider (`API-011`).
 - **DoD**: Create a question set → group into an Assignment assigned to a class
 
 ## Sprint 4 — Taking Tests & Grading (+ AI Suggest)
@@ -437,23 +469,31 @@ replaces coverage %.
 
 **Only Auth is ready to code right now.**
 
-### Backend — Teacher module specs (none written)
+### Backend — Teacher module specs
 
 - 🔶 (claude · 2026-09-01) **API surface gaps closed, module specs not started.**
   `API_TEACHER.md` § Lessons written (8 endpoints, `API-007` closed) + `LESSON_*` error family
   (*proposed, not agreed*); `API-006` route convention settled **role-prefixed** by the owner and
   applied to `docs/api/modules/03-classes-enrollment.md`. Full gap map in
   `docs/api/modules/_INDEX.md` § 11.
-- ⬜ Teacher module specs — **5 modules, none exist**, suggested dependency order:
-  Classes+Lessons → Question Bank → Assignments → Attempts+Grading → Sessions (teacher side) →
-  Income. Two things to settle first: Classes+Lessons inherits **SCOPE-01** (module 03 is
-  deferred on it), and **Question Bank is MongoDB** — the 16-section template's §7 transaction
-  boundary and §12 migration assume SQL and need rethinking, plus `DEBT-001` (no cross-DB
-  transactions) applies directly since Question lives in Mongo and Assignment in Postgres
-- ⬜ Teacher-side Sessions transitions (`scheduled → in_progress → completed_pending`) — module 04
-  specs only the Admin approve/reject half. This is the same hole `API-004` names: without the
-  teacher side, `GET /admin/sessions/pending` is permanently empty
-- ⬜ Lesson row in `RBAC_MATRIX.md` / `PERMISSIONS_TEACHER.md` — needs owner approval (RBAC)
+- 🔶 (opencode · 2026-09-03) **Teacher module specs WRITTEN — 6 files, 36 endpoints, 46 new
+  invariants** in `docs/api/modules/teacher/` (`_INDEX.md` + `01-classes-lessons` ·
+  `02-question-bank` (Mongo, §7/§12 rethought) · `03-assignments` · `04-attempts-grading`
+  (AI-suggest specced but **parked** per owner) · `05-sessions` (teacher-side transitions +
+  `session_submitted_for_review` producer — closes the `API-004` producer hole) ·
+  `06-income` (read-only, no rate math — closes Q-PAY-7)). All `proposed`, awaiting BE-owner
+  sign-off. Owner settled 2026-09-03: SCOPE-01 teacher slice = teacher-side full management;
+  Income = read-only stored data. **Error codes settled same day (API-010 resolved)**:
+  `SESSION_INVALID_TRANSITION` / `QUESTION_IN_USE` / `ATTEMPT_NOT_SUBMITTED` added as agreed +
+  `LESSON_*` (6 codes) signed off → the code phase is unblocked on codes.
+  **Code not started** — only gate left: auth PR (Antigravity, in flight) landing on main.
+  Branch `feat/api-teacher-specs`.
+- 🔶 (opencode · 2026-09-03) Teacher-side Sessions transitions (`scheduled → in_progress → completed_pending`) — **specced** in
+  `docs/api/modules/teacher/05-sessions.md` (producer of `session_submitted_for_review`;
+  re-submit after reject stays open as Q-SES-2). **Code not started** — the endpoints still do
+  not exist anywhere; `API-004` stays open until they do.
+- ✅ (opencode · 2026-09-03) Lesson row in `RBAC_MATRIX.md` / `PERMISSIONS_TEACHER.md` — added with the spec set (owner-approved
+  via the 2026-09-03 plan); ownership inherited from the parent class per `ENTITY_LESSON.md`
 
 ### Backend — not started
 

@@ -5,5 +5,9 @@ allowBuilds:
   '@nestjs/core': true
   '@prisma/client': true
   '@prisma/engines': true
+  # Telemetry only (pulled in via @nestjs/swagger). Nothing needs its postinstall
+  # script, and leaving pnpm's placeholder here makes every 'pnpm --filter' command
+  # in the repo fail its dependency check.
+  '@scarf/scarf': false
   esbuild: true
   prisma: true

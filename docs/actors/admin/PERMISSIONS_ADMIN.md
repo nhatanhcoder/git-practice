@@ -34,6 +34,7 @@ Admins hold the **highest privileges** on the platform, with two exceptions: an 
 
 ### Classes / Questions / Assignments
 - ❌ Cannot create, edit, or delete (these are Teacher permissions)
+- 👁️ Read classes and student rosters (read-only audit, for session review and payroll calculation)
 
 ---
 

@@ -9,13 +9,15 @@ last_updated: 2026-09-03
 > Backend specifications for **the entire Admin area**. 8 modules, ~5,000 lines.
 > These are **specs, not code**.
 >
-> ⚠️ **Scope: Admin only.** The folder name says `modules/`, but every file here specs the Admin
-> surface. **The Teacher area has no module spec at all** — see § 11 for what is missing.
+> **Scope: Admin only** — the Teacher area has its own spec set since 2026-09-03:
+> [`teacher/_INDEX.md`](./teacher/_INDEX.md) (6 modules, 36 endpoints). § 11 records the
+> pre-2026-09-03 gap for the history.
 >
 > **Code status (verified 2026-09-01):** `apps/api` exists — NestJS scaffold, `prisma/schema.prisma`,
 > `seed.ts`, health module and migration `20260820000000_init_users` (PR #12). It **implements no
 > module**. `packages/` does not exist. So: the scaffold is real, the modules are not.
 > (This line previously read *"No backend line has been written yet"* — stale since PR #12.)
+> *(Auth + access-control foundation landed after this check — see `ai/PROGRESS.md`.)*
 >
 > Project context: read `docs/BACKEND_PLAN.md` first if you know nothing about the system.
 
@@ -30,9 +32,9 @@ machine, so they share one module.
 | # | Module | File | Status | Invariants | Blocked by |
 |---|---|---|---|---|---|
 | 1 | Auth | `01-auth.md` | ✅ `accepted` | 24 | — |
-| 2 | Users / Admin Users | `02-users.md` | 🔶 `proposed` | 18 | account lifecycle (C3) |
-| 3 | Classes + Enrollment | `03-classes-enrollment.md` | ⛔ `deferred` | 8 | **SCOPE-01 — scope undecided** |
-| 4 | Sessions + Attendance | `04-sessions-attendance.md` | 🔶 `proposed` | 16 | SCOPE-01 |
+| 2 | Users / Admin Users | `02-users.md` | ✅ `accepted` | 18 | — |
+| 3 | Classes + Enrollment | `03-classes-enrollment.md` | ✅ `accepted` | 8 | — |
+| 4 | Sessions + Attendance | `04-sessions-attendance.md` | 🔶 `proposed` | 16 | — |
 | 5 | Payroll + Pay Rates | `05-payroll.md` | 🔶 `proposed` | 33 | C2 · payroll period boundary · rateType |
 | 6 | Billing (rate+invoice+payment) | `06-billing.md` | 🔶 `proposed` | 34 | money representation · tuition model · C2 |
 | 7 | Notifications | `07-notifications.md` | 🔶 `proposed` | 21 | no endpoint defined yet |
@@ -199,6 +201,10 @@ picking a side.
 
 ## 11. Teacher backend — what is missing
 
+> **Status update 2026-09-03: this section is now historical.** The Teacher module specs
+> **exist** — see [`teacher/_INDEX.md`](./teacher/_INDEX.md) (6 modules, 36 endpoints, 46 new
+> invariants). The table below is kept for the record of what the gaps were on 2026-09-01.
+
 Added 2026-09-01. The Teacher FE is built (9 screens, fully mocked — `ai/PROGRESS.md` § Sprint 2)
 and every Teacher endpoint is listed in `docs/api/API_TEACHER.md`, but **no Teacher module spec
 exists**. Nothing below has a §4 invariant set, a §7 transaction boundary or a §15 test matrix.
@@ -230,8 +236,10 @@ Classes+Lessons ──► Question Bank ──► Assignments ──► Attempts
 
 Two things to settle before the first line:
 - **Classes+Lessons inherits SCOPE-01.** Module 03 is deferred on it; a Teacher Classes spec
-  cannot be more decided than the module it sits on.
+  cannot be more decided than the module it sits on. → **Settled 2026-09-03 (owner)**:
+  teacher-side full management; student join/leave stays deferred here.
 - **Question Bank is MongoDB.** Every module in this folder is Prisma/PostgreSQL. The 16-section
   template's §7 (transaction boundary) and §12 (migration) assume SQL; a Mongo module needs those
   two sections rethought, not copied. `DEBT-001` (no cross-DB transactions) applies directly:
   Question lives in Mongo, Assignment in Postgres, and they are linked by `questionIds`.
+  → **Rethought in `teacher/02-question-bank.md` §7/§12** (2026-09-03).

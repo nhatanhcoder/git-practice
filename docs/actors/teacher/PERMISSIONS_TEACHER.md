@@ -6,7 +6,7 @@
 
 ## Summary
 
-Teachers can **create and manage content** (classes, questions, assignments) and **view data for their own classes**. They have no permissions over finances or other teachers' class data.
+Teachers can **create and manage content** (classes, lessons, questions, assignments) and **view data for their own classes**. They have no permissions over finances or other teachers' class data.
 
 ---
 
@@ -16,6 +16,15 @@ Teachers can **create and manage content** (classes, questions, assignments) and
 - ✅ Create / update / archive a class
 - 🔒 Read the class and its student list (only classes they teach)
 - 🔒 Regenerate the enrollmentCode
+
+### Lessons (own class only)
+- 🔒 Create / update / delete / reorder a lesson (only in classes they teach)
+- 🔒 Link / unlink an assignment to a lesson
+- 🔒 Read lessons of their own classes
+
+> Added 2026-09-03 with the Teacher module specs (`docs/api/modules/teacher/01-classes-lessons.md`).
+> Ownership is inherited from the parent class — the same predicate as Classes, per
+> `ENTITY_LESSON.md`.
 
 ### Questions
 - ✅ Create / update / delete a question (any question they created)

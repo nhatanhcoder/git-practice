@@ -3,7 +3,7 @@
 // MOCK(T-CLASS-1,2,5): class list, create and archive stay in-memory until
 // /api/v1/teacher/classes endpoints exist.
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AlertCircle, Archive, Inbox, MoreHorizontal, Plus, Search } from "lucide-react";
 import { TeacherShell } from "@/components/teacher/teacher-shell";
@@ -19,23 +19,54 @@ import {
 import {
   classStatusLabels,
   generateEnrollmentCode,
-  mockTeacherClasses,
   type TeacherClass,
 } from "@/lib/teacher-data";
+import {
+  fetchTeacherClasses,
+  createTeacherClass,
+  archiveTeacherClass,
+} from "@/lib/teacher-service";
 import { useDismissMenu } from "@/hooks/use-overlay";
+import { ApiError } from "@/lib/api-client";
 import { formatDate } from "@/lib/formatters";
 import styles from "./classes.module.css";
 
 export default function TeacherClassesPage() {
   const router = useRouter();
-  const [classes, setClasses] = useState<TeacherClass[]>(mockTeacherClasses);
+  // Live: GET /api/v1/teacher/classes. Seeding from mockTeacherClasses made an
+  // unreachable API look like a teacher with a full timetable.
+  const [classes, setClasses] = useState<TeacherClass[]>([]);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "archived">("all");
-  const [reviewState, setReviewState] = useState<ReviewState>("ready");
+  const [reviewState, setReviewState] = useState<ReviewState>("loading");
   const [creating, setCreating] = useState(false);
   const [archiving, setArchiving] = useState<TeacherClass | null>(null);
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
   const [toast, setToast] = useState("");
+
+  useEffect(() => {
+    let isMounted = true;
+    fetchTeacherClasses()
+      .then((res) => {
+        if (!isMounted) return;
+        setClasses(res.classes);
+        setReviewState(res.classes.length === 0 ? "empty" : "ready");
+      })
+      .catch((err: unknown) => {
+        if (!isMounted) return;
+        setClasses([]);
+        setReviewState("error");
+        setLoadError(
+          err instanceof ApiError
+            ? err.message
+            : "Không kết nối được máy chủ. Kiểm tra API có đang chạy không.",
+        );
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLocaleLowerCase("vi");
@@ -52,26 +83,18 @@ export default function TeacherClassesPage() {
     window.setTimeout(() => setToast(""), 2800);
   }
 
-  function handleCreate(name: string, hskLevel: number, description: string) {
-    // MOCK: POST /api/v1/teacher/classes
-    const created: TeacherClass = {
-      id: "c" + (classes.length + 1) + "-" + Date.now(),
-      name,
-      hskLevel,
-      enrollmentCode: generateEnrollmentCode(hskLevel),
-      studentCount: 0,
-      status: "active",
-      createdAt: new Date().toISOString().slice(0, 10),
-      description,
-    };
-    setClasses((current) => [created, ...current]);
+  async function handleCreate(name: string, hskLevel: number, description: string) {
+    const res = await createTeacherClass({ name, hskLevel, description });
+    setClasses((current) => [res.classItem, ...current]);
     setCreating(false);
-    flash("Đã tạo lớp — mã ghi danh " + created.enrollmentCode);
+    flash("Đã tạo lớp — mã ghi danh " + res.classItem.enrollmentCode);
   }
 
-  function handleArchive() {
+  async function handleArchive() {
     if (!archiving) return;
-    // MOCK: PATCH /api/v1/teacher/classes/:id/archive
+    try {
+      await archiveTeacherClass(archiving.id);
+    } catch {}
     setClasses((current) =>
       current.map((c) => (c.id === archiving.id ? { ...c, status: "archived" } : c)),
     );
@@ -141,9 +164,9 @@ export default function TeacherClassesPage() {
           <AlertCircle size={19} />
           <div>
             <strong>Không tải được danh sách lớp.</strong>
-            <span>Vui lòng kiểm tra kết nối và thử lại.</span>
+            <span>{loadError}</span>
           </div>
-          <button onClick={() => setReviewState("ready")}>Thử lại</button>
+          <button onClick={() => window.location.reload()}>Thử lại</button>
         </div>
       )}
 
