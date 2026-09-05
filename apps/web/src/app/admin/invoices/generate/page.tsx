@@ -1,8 +1,5 @@
 "use client";
 
-// MOCK(A-INV-2): POST /api/v1/admin/invoices/batch and preview endpoint mock
-// ASSUMPTION(decision-1): Billing model is per-student monthly flat rate with append-only history
-
 import {
   AlertCircle,
   Bell,
@@ -16,7 +13,6 @@ import {
   LayoutDashboard,
   Loader2,
   Menu,
-  RotateCcw,
   ShieldCheck,
   Users,
   WalletCards,
@@ -24,64 +20,76 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
-import { avatarToneFor, formatVnd, initialsOf } from "../../../../lib/formatters";
+import { useState } from "react";
+import {
+  BatchPreviewResult,
+  BatchPreviewRow,
+  executeBatchInvoices,
+  previewBatchInvoices,
+} from "../../../../lib/admin-billing-service";
+import { avatarToneFor, formatDate, formatVnd, initialsOf } from "../../../../lib/formatters";
 import styles from "./generate.module.css";
 
-type StepNumber = 1 | 2 | 3 | 4; // 4 is Result panel
-type ReviewState = "ready" | "step1" | "step2" | "step3" | "running" | "partial" | "empty" | "error" | "forbidden";
-
-interface StudentPreview {
-  id: string;
-  student: string;
-  rate: number;
-  effectiveFrom: string;
-  existing: boolean;
-}
-
-const mockPreviewList: StudentPreview[] = [
-  { id: "1", student: "Nguyễn Minh Anh", rate: 2500000, effectiveFrom: "01/03/2026", existing: false },
-  { id: "2", student: "Lê Quang Dũng", rate: 2500000, effectiveFrom: "01/03/2026", existing: false },
-  { id: "3", student: "Hoàng Văn Nam", rate: 2500000, effectiveFrom: "01/06/2026", existing: false },
-  { id: "4", student: "Vũ Ngọc Bích", rate: 2500000, effectiveFrom: "01/03/2026", existing: false },
-  { id: "5", student: "Đặng Thu Trang", rate: 2500000, effectiveFrom: "01/03/2026", existing: false },
-  { id: "6", student: "Trần Bảo Long", rate: 2500000, effectiveFrom: "01/07/2026", existing: false },
-  { id: "7", student: "Ngô Khánh Vy", rate: 2500000, effectiveFrom: "01/03/2026", existing: true },
-];
+type StepNumber = 1 | 2 | 3 | 4;
+type ReviewState = "ready" | "loading" | "empty" | "error" | "forbidden";
 
 export default function AdminInvoiceGeneratePage() {
   const router = useRouter();
   const [step, setStep] = useState<StepNumber>(1);
-  const [selectedPeriod, setSelectedPeriod] = useState("08/2026");
-  const [selectedIds, setSelectedIds] = useState<string[]>(["1", "2", "3", "4", "5", "6"]);
+  const [periodStart, setPeriodStart] = useState("2026-09-01");
+  const [periodEnd, setPeriodEnd] = useState("2026-09-30");
+  const [dueDate, setDueDate] = useState("2026-09-10");
+
+  const [previewData, setPreviewData] = useState<BatchPreviewResult | null>(null);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [executeLoading, setExecuteLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
   const [reviewState, setReviewState] = useState<ReviewState>("ready");
-  const [isRunning, setIsRunning] = useState(false);
   const [mobileNav, setMobileNav] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  // Result dataset (partial success state)
+  // Result dataset
   const [resultData, setResultData] = useState<{
-    created: string[];
-    skipped: { student: string; reason: string }[];
-    failed: { student: string; reason: string }[];
-  }>({
-    created: ["Nguyễn Minh Anh", "Lê Quang Dũng", "Hoàng Văn Nam", "Vũ Ngọc Bích", "Đặng Thu Trang", "Trần Bảo Long"],
-    skipped: [{ student: "Ngô Khánh Vy", reason: "Đã có hóa đơn kỳ này" }],
-    failed: [{ student: "Mai Tuấn Kiệt", reason: "Không tìm thấy mức học phí đang áp dụng" }],
-  });
+    createdCount: number;
+    invoices: { id: string; studentName: string; totalAmount: string }[];
+    skipped: { studentId: string; reason: string }[];
+  } | null>(null);
 
-  const selectedStudents = useMemo(() => {
-    return mockPreviewList.filter((s) => selectedIds.includes(s.id));
-  }, [selectedIds]);
-
-  const totalAmount = useMemo(() => {
-    return selectedStudents.reduce((sum, s) => sum + s.rate, 0);
-  }, [selectedStudents]);
+  async function handleLoadPreview() {
+    setPreviewLoading(true);
+    setErrorMessage(null);
+    try {
+      const res = await previewBatchInvoices({
+        periodStart,
+        periodEnd,
+        dueDate,
+      });
+      setPreviewData(res);
+      // Auto-select all 'ok' outcome rows
+      const eligible = res.rows
+        .filter((r) => r.outcome === "ok")
+        .map((r) => r.studentId);
+      setSelectedIds(eligible);
+      setStep(2);
+    } catch (err: any) {
+      if (err?.statusCode === 403) {
+        setReviewState("forbidden");
+      } else {
+        setErrorMessage(err?.message || "Không thể tải dữ liệu xem trước");
+      }
+    } finally {
+      setPreviewLoading(false);
+    }
+  }
 
   function toggleAll(checked: boolean) {
+    if (!previewData) return;
     if (checked) {
-      // check all non-existing by default
-      const eligible = mockPreviewList.filter((s) => !s.existing).map((s) => s.id);
+      const eligible = previewData.rows
+        .filter((r) => r.outcome === "ok")
+        .map((r) => r.studentId);
       setSelectedIds(eligible);
     } else {
       setSelectedIds([]);
@@ -96,45 +104,49 @@ export default function AdminInvoiceGeneratePage() {
     }
   }
 
-  function handleRunBatch() {
-    setIsRunning(true);
-    setTimeout(() => {
-      setIsRunning(false);
+  async function handleRunBatch() {
+    if (!previewData) return;
+    setExecuteLoading(true);
+    setErrorMessage(null);
+    try {
+      const res = await executeBatchInvoices({
+        periodStart,
+        periodEnd,
+        dueDate,
+        previewHash: previewData.previewHash,
+        studentIds: selectedIds,
+      });
+      setResultData({
+        createdCount: res.generatedCount,
+        invoices: (res.invoices || []).map((inv: any) => ({
+          id: inv.id,
+          studentName: inv.studentName || inv.student?.nickname || "Học sinh",
+          totalAmount: inv.totalAmount ? String(inv.totalAmount) : "0",
+        })),
+        skipped: [],
+      });
       setStep(4);
-    }, 1200);
-  }
-
-  function handleRetryRow(failedStudent: string) {
-    setResultData((prev) => ({
-      ...prev,
-      created: [...prev.created, failedStudent],
-      failed: prev.failed.filter((f) => f.student !== failedStudent),
-    }));
-    setToastMessage(`Đã tạo hóa đơn cho ${failedStudent}`);
-    setTimeout(() => setToastMessage(null), 2500);
-  }
-
-  function handleStateChange(newState: ReviewState) {
-    setReviewState(newState);
-    if (newState === "step1") setStep(1);
-    if (newState === "step2") setStep(2);
-    if (newState === "step3") setStep(3);
-    if (newState === "partial") setStep(4);
-    if (newState === "running") {
-      setStep(3);
-      setIsRunning(true);
-    } else {
-      setIsRunning(false);
-    }
-    if (newState === "forbidden") {
-      setToastMessage("AUTH_INSUFFICIENT_ROLE: Quyền truy cập bị từ chối.");
-      setTimeout(() => router.push("/login"), 1400);
+    } catch (err: any) {
+      setErrorMessage(err?.message || "Không thể thực thi tạo hóa đơn hàng loạt");
+    } finally {
+      setExecuteLoading(false);
     }
   }
+
+  const selectedRows = previewData
+    ? previewData.rows.filter((r) => selectedIds.includes(r.studentId))
+    : [];
+
+  const totalSelectedAmount = selectedRows.reduce((sum, r) => {
+    return sum + (r.totalAmount ? Number(r.totalAmount) : 0);
+  }, 0);
 
   const allEligibleSelected =
-    mockPreviewList.filter((s) => !s.existing).length > 0 &&
-    mockPreviewList.filter((s) => !s.existing).every((s) => selectedIds.includes(s.id));
+    previewData !== null &&
+    previewData.rows.filter((r) => r.outcome === "ok").length > 0 &&
+    previewData.rows
+      .filter((r) => r.outcome === "ok")
+      .every((r) => selectedIds.includes(r.studentId));
 
   return (
     <div className={styles.appShell}>
@@ -143,7 +155,11 @@ export default function AdminInvoiceGeneratePage() {
         <div className={styles.brand}>
           <span className={styles.brandMark}>学</span>
           <span>HSK Platform</span>
-          <button className={styles.closeNav} onClick={() => setMobileNav(false)} aria-label="Đóng menu">
+          <button
+            className={styles.closeNav}
+            onClick={() => setMobileNav(false)}
+            aria-label="Đóng menu"
+          >
             <X size={20} />
           </button>
         </div>
@@ -156,7 +172,10 @@ export default function AdminInvoiceGeneratePage() {
             <Users size={20} />
             <span>Tài khoản</span>
           </Link>
-          <Link className={`${styles.navItem} ${styles.navActive}`} href="/admin/invoices">
+          <Link
+            className={`${styles.navItem} ${styles.navActive}`}
+            href="/admin/invoices"
+          >
             <CircleDollarSign size={20} />
             <span>Học phí</span>
           </Link>
@@ -177,13 +196,23 @@ export default function AdminInvoiceGeneratePage() {
           </div>
         </div>
       </aside>
-      {mobileNav && <button className={styles.navBackdrop} onClick={() => setMobileNav(false)} aria-label="Đóng menu" />}
+      {mobileNav && (
+        <button
+          className={styles.navBackdrop}
+          onClick={() => setMobileNav(false)}
+          aria-label="Đóng menu"
+        />
+      )}
 
       {/* Main Column */}
       <div className={styles.mainColumn}>
         <header className={styles.topbar}>
           <div className={styles.breadcrumb}>
-            <button className={styles.menuButton} onClick={() => setMobileNav(true)} aria-label="Mở menu">
+            <button
+              className={styles.menuButton}
+              onClick={() => setMobileNav(true)}
+              aria-label="Mở menu"
+            >
               <Menu size={20} />
             </button>
             <Link href="/admin">Quản trị</Link>
@@ -198,11 +227,14 @@ export default function AdminInvoiceGeneratePage() {
               <span className={styles.notificationDot} />
             </button>
             <div className={styles.headerDivider} />
-            <Link className={styles.profileButton} href="/admin/profile">
-              <span className={styles.avatar} style={{ backgroundColor: "#E0E7FF", color: "#3730A3" }}>
-                AT
+            <div className={styles.profileButton}>
+              <span
+                className={styles.avatar}
+                style={{ backgroundColor: "#E0E7FF", color: "#3730A3" }}
+              >
+                AD
               </span>
-            </Link>
+            </div>
           </div>
         </header>
 
@@ -215,326 +247,417 @@ export default function AdminInvoiceGeneratePage() {
           <div className={styles.titleArea}>
             <p className={styles.eyebrow}>QUY TRÌNH PHÁT HÀNH</p>
             <h1>Tạo hóa đơn hàng loạt</h1>
-            <p className={styles.subtitle}>Phát hành hóa đơn học phí một tháng cho toàn bộ học sinh đủ điều kiện.</p>
+            <p className={styles.subtitle}>
+              Phát hành hóa đơn học phí theo tháng cho toàn bộ học sinh đủ điều
+              kiện.
+            </p>
           </div>
 
           {/* Stepper Header */}
           {step < 4 && (
             <div className={styles.stepper} aria-label="Tiến trình tạo hóa đơn">
-              <div className={`${styles.stepItem} ${step === 1 ? styles.stepCurrent : step > 1 ? styles.stepCompleted : ""}`}>
-                <div className={styles.stepCircle}>{step > 1 ? <Check size={14} /> : "1"}</div>
+              <div
+                className={`${styles.stepItem} ${
+                  step === 1
+                    ? styles.stepCurrent
+                    : step > 1
+                    ? styles.stepCompleted
+                    : ""
+                }`}
+              >
+                <div className={styles.stepCircle}>
+                  {step > 1 ? <Check size={14} /> : "1"}
+                </div>
                 <span className={styles.stepLabel}>Chọn kỳ</span>
               </div>
-              <div className={`${styles.stepLine} ${step > 1 ? styles.stepLineActive : ""}`} />
-              <div className={`${styles.stepItem} ${step === 2 ? styles.stepCurrent : step > 2 ? styles.stepCompleted : ""}`}>
-                <div className={styles.stepCircle}>{step > 2 ? <Check size={14} /> : "2"}</div>
+              <div
+                className={`${styles.stepLine} ${
+                  step > 1 ? styles.stepLineActive : ""
+                }`}
+              />
+              <div
+                className={`${styles.stepItem} ${
+                  step === 2
+                    ? styles.stepCurrent
+                    : step > 2
+                    ? styles.stepCompleted
+                    : ""
+                }`}
+              >
+                <div className={styles.stepCircle}>
+                  {step > 2 ? <Check size={14} /> : "2"}
+                </div>
                 <span className={styles.stepLabel}>Xem trước</span>
               </div>
-              <div className={`${styles.stepLine} ${step > 2 ? styles.stepLineActive : ""}`} />
-              <div className={`${styles.stepItem} ${step === 3 ? styles.stepCurrent : ""}`}>
+              <div
+                className={`${styles.stepLine} ${
+                  step > 2 ? styles.stepLineActive : ""
+                }`}
+              />
+              <div
+                className={`${styles.stepItem} ${
+                  step === 3 ? styles.stepCurrent : ""
+                }`}
+              >
                 <div className={styles.stepCircle}>3</div>
                 <span className={styles.stepLabel}>Xác nhận</span>
               </div>
             </div>
           )}
 
-          {/* Error State Banner */}
-          {reviewState === "error" && (
+          {/* Error Banner */}
+          {errorMessage && (
             <div className={styles.errorBanner} role="alert">
-              <strong>Không thể phát hành hóa đơn.</strong>
-              <span> Vui lòng kiểm tra lại danh sách hoặc thử lại sau.</span>
+              <strong>Có lỗi xảy ra:</strong>
+              <span> {errorMessage}</span>
             </div>
           )}
 
-          {/* Empty State: No tuition rates configured */}
-          {reviewState === "empty" ? (
-            <div className={styles.emptyCard}>
-              <Inbox size={44} color="#64748B" style={{ margin: "0 auto 12px", opacity: 0.3 }} />
-              <h2>Chưa thiết lập học phí</h2>
-              <p>Cần có mức học phí đang áp dụng trước khi tạo hóa đơn hàng loạt.</p>
-              <Link className={styles.primaryBtn} href="/admin/tuition-rates">
-                Thiết lập học phí
-              </Link>
-            </div>
-          ) : (
-            <div className={styles.wizardCard}>
-              {/* Step 1: Chọn kỳ */}
-              {step === 1 && (
-                <>
-                  <div className={styles.cardBody}>
-                    <div className={styles.step1Group}>
+          <div className={styles.wizardCard}>
+            {/* Step 1: Chọn kỳ */}
+            {step === 1 && (
+              <>
+                <div className={styles.cardBody}>
+                  <div className={styles.step1Group}>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
                       <div>
-                        <label className={styles.formLabel} htmlFor="periodPick">
-                          Kỳ phát hành hóa đơn
-                        </label>
-                        <select
-                          id="periodPick"
-                          className={styles.selectInput}
-                          value={selectedPeriod}
-                          onChange={(e) => setSelectedPeriod(e.target.value)}
+                        <label
+                          className={styles.formLabel}
+                          htmlFor="periodStart"
                         >
-                          <option value="08/2026">Tháng 08/2026 (01/08 – 31/08/2026)</option>
-                          <option value="09/2026">Tháng 09/2026 (01/09 – 30/09/2026)</option>
-                        </select>
+                          Ngày bắt đầu kỳ *
+                        </label>
+                        <input
+                          id="periodStart"
+                          type="date"
+                          className={styles.selectInput}
+                          value={periodStart}
+                          onChange={(e) => setPeriodStart(e.target.value)}
+                        />
                       </div>
-
-                      <div className={styles.eligibilityNote}>
-                        <strong>8 học sinh có mức học phí đang áp dụng · 1 học sinh chưa thiết lập</strong>
-                        <p style={{ marginTop: "4px" }}>
-                          Học sinh chưa có mức học phí sẽ không được tạo hóa đơn.{" "}
-                          <Link href="/admin/tuition-rates">Thiết lập học phí tại đây</Link>.
-                        </p>
+                      <div>
+                        <label className={styles.formLabel} htmlFor="periodEnd">
+                          Ngày kết thúc kỳ *
+                        </label>
+                        <input
+                          id="periodEnd"
+                          type="date"
+                          className={styles.selectInput}
+                          value={periodEnd}
+                          onChange={(e) => setPeriodEnd(e.target.value)}
+                        />
                       </div>
                     </div>
-                  </div>
-                  <div className={styles.cardFooter}>
-                    <Link className={styles.ghostBtn} href="/admin/invoices">
-                      Hủy
-                    </Link>
-                    <button className={styles.primaryBtn} onClick={() => setStep(2)}>
-                      <span>Tiếp tục</span>
-                      <ChevronRight size={16} />
-                    </button>
-                  </div>
-                </>
-              )}
 
-              {/* Step 2: Xem trước */}
-              {step === 2 && (
-                <>
-                  <div className={styles.cardBody} style={{ padding: 0 }}>
-                    <div className={styles.tableWrap}>
-                      <table className={styles.table}>
-                        <thead>
-                          <tr>
-                            <th style={{ width: "40px" }}>
-                              <input
-                                type="checkbox"
-                                checked={allEligibleSelected}
-                                onChange={(e) => toggleAll(e.target.checked)}
-                                aria-label="Chọn tất cả học sinh"
-                              />
-                            </th>
-                            <th>Học sinh</th>
-                            <th className={styles.numeric}>Mức áp dụng</th>
-                            <th>Hiệu lực từ</th>
-                            <th className={styles.numeric}>Thành tiền</th>
-                            <th>Ghi chú</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {mockPreviewList.map((item) => {
-                            const isChecked = selectedIds.includes(item.id);
-                            const tone = avatarToneFor(item.student);
-                            return (
-                              <tr key={item.id} className={item.existing ? styles.rowDimmed : ""}>
-                                <td>
-                                  <input
-                                    type="checkbox"
-                                    checked={isChecked}
-                                    onChange={() => toggleOne(item.id)}
-                                    aria-label={`Chọn ${item.student}`}
-                                  />
-                                </td>
-                                <td>
-                                  <div className={styles.studentCell}>
-                                    <span
-                                      className={styles.studentAvatar}
-                                      style={{ backgroundColor: tone.bg, color: tone.text }}
-                                    >
-                                      {initialsOf(item.student)}
-                                    </span>
-                                    <strong>{item.student}</strong>
-                                  </div>
-                                </td>
-                                <td className={styles.numeric}>{formatVnd(item.rate)}</td>
-                                <td>{item.effectiveFrom}</td>
-                                <td className={styles.numeric} style={{ fontWeight: 600 }}>
-                                  {formatVnd(item.rate)}
-                                </td>
-                                <td>
-                                  {item.existing ? (
-                                    <span className={styles.pillWarning}>Đã có hóa đơn kỳ này</span>
-                                  ) : (
-                                    "—"
-                                  )}
-                                </td>
-                              </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
+                    <div style={{ marginTop: "16px" }}>
+                      <label className={styles.formLabel} htmlFor="dueDate">
+                        Hạn thanh toán *
+                      </label>
+                      <input
+                        id="dueDate"
+                        type="date"
+                        className={styles.selectInput}
+                        value={dueDate}
+                        onChange={(e) => setDueDate(e.target.value)}
+                      />
+                    </div>
+
+                    <div className={styles.eligibilityNote}>
+                      <strong>Lưu ý về quy trình phát hành:</strong>
+                      <p style={{ marginTop: "4px" }}>
+                        Hệ thống sẽ kiểm tra mức học phí đang áp dụng tại ngày
+                        bắt đầu kỳ. Học sinh chưa có biểu học phí hoặc đã có hóa
+                        đơn trong kỳ sẽ được phân loại rõ ràng trong bước Xem
+                        trước.
+                      </p>
                     </div>
                   </div>
-                  <div className={styles.cardFooter}>
-                    <button className={styles.ghostBtn} onClick={() => setStep(1)}>
-                      <ChevronLeft size={16} />
-                      <span>Quay lại</span>
-                    </button>
-                    <button
-                      className={styles.primaryBtn}
-                      disabled={selectedIds.length === 0}
-                      onClick={() => setStep(3)}
+                </div>
+                <div className={styles.cardFooter}>
+                  <Link className={styles.ghostBtn} href="/admin/invoices">
+                    Hủy
+                  </Link>
+                  <button
+                    className={styles.primaryBtn}
+                    onClick={handleLoadPreview}
+                    disabled={previewLoading}
+                  >
+                    {previewLoading ? (
+                      <>
+                        <Loader2 size={16} className="animate-spin" />
+                        <span>Đang tải xem trước...</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>Tiếp tục</span>
+                        <ChevronRight size={16} />
+                      </>
+                    )}
+                  </button>
+                </div>
+              </>
+            )}
+
+            {/* Step 2: Xem trước */}
+            {step === 2 && previewData && (
+              <>
+                <div className={styles.cardBody} style={{ padding: 0 }}>
+                  <div className={styles.tableWrap}>
+                    <table className={styles.table}>
+                      <thead>
+                        <tr>
+                          <th style={{ width: "40px" }}>
+                            <input
+                              type="checkbox"
+                              checked={allEligibleSelected}
+                              onChange={(e) => toggleAll(e.target.checked)}
+                              aria-label="Chọn tất cả học sinh"
+                            />
+                          </th>
+                          <th>Học sinh</th>
+                          <th className={styles.numeric}>Mức áp dụng</th>
+                          <th className={styles.numeric}>Thành tiền</th>
+                          <th>Trạng thái xem trước</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {previewData.rows.map((item) => {
+                          const isEligible = item.outcome === "ok";
+                          const isChecked = selectedIds.includes(item.studentId);
+                          const tone = avatarToneFor(item.studentName);
+                          return (
+                            <tr
+                              key={item.studentId}
+                              className={!isEligible ? styles.rowDimmed : ""}
+                            >
+                              <td>
+                                <input
+                                  type="checkbox"
+                                  disabled={!isEligible}
+                                  checked={isChecked}
+                                  onChange={() => toggleOne(item.studentId)}
+                                  aria-label={`Chọn ${item.studentName}`}
+                                />
+                              </td>
+                              <td>
+                                <div className={styles.studentCell}>
+                                  <span
+                                    className={styles.studentAvatar}
+                                    style={{
+                                      backgroundColor: tone.bg,
+                                      color: tone.text,
+                                    }}
+                                  >
+                                    {initialsOf(item.studentName)}
+                                  </span>
+                                  <strong>{item.studentName}</strong>
+                                </div>
+                              </td>
+                              <td className={styles.numeric}>
+                                {item.rateAmount
+                                  ? formatVnd(Number(item.rateAmount))
+                                  : "—"}
+                              </td>
+                              <td
+                                className={styles.numeric}
+                                style={{ fontWeight: 600 }}
+                              >
+                                {item.totalAmount
+                                  ? formatVnd(Number(item.totalAmount))
+                                  : "—"}
+                              </td>
+                              <td>
+                                {item.outcome === "ok" ? (
+                                  <span
+                                    style={{
+                                      color: "#059669",
+                                      fontWeight: 500,
+                                    }}
+                                  >
+                                    Hợp lệ
+                                  </span>
+                                ) : item.outcome === "duplicate" ? (
+                                  <span className={styles.pillWarning}>
+                                    Đã có hóa đơn kỳ này
+                                  </span>
+                                ) : (
+                                  <span
+                                    style={{
+                                      color: "#DC2626",
+                                      fontWeight: 500,
+                                    }}
+                                  >
+                                    Chưa có biểu học phí
+                                  </span>
+                                )}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+                <div className={styles.cardFooter}>
+                  <button
+                    className={styles.ghostBtn}
+                    onClick={() => setStep(1)}
+                  >
+                    <ChevronLeft size={16} />
+                    <span>Quay lại</span>
+                  </button>
+                  <button
+                    className={styles.primaryBtn}
+                    disabled={selectedIds.length === 0}
+                    onClick={() => setStep(3)}
+                  >
+                    <span>Tiếp tục ({selectedIds.length} học sinh)</span>
+                    <ChevronRight size={16} />
+                  </button>
+                </div>
+              </>
+            )}
+
+            {/* Step 3: Xác nhận */}
+            {step === 3 && (
+              <>
+                <div className={styles.cardBody}>
+                  <div className={styles.confirmSummary}>
+                    <div className={styles.summaryItem}>
+                      <small>Số học sinh</small>
+                      <strong>{selectedIds.length} học sinh</strong>
+                    </div>
+                    <div className={styles.summaryItem}>
+                      <small>Tổng tiền dự kiến</small>
+                      <strong>{formatVnd(totalSelectedAmount)}</strong>
+                    </div>
+                    <div className={styles.summaryItem}>
+                      <small>Kỳ phát hành</small>
+                      <strong>
+                        {formatDate(periodStart)} – {formatDate(periodEnd)}
+                      </strong>
+                    </div>
+                  </div>
+                  <p style={{ fontSize: "13.5px", color: "#475569" }}>
+                    Hệ thống sẽ tạo {selectedIds.length} hóa đơn ở trạng thái{" "}
+                    <strong>Chưa nộp</strong> và gán hạn thanh toán vào ngày{" "}
+                    {formatDate(dueDate)}.
+                  </p>
+                </div>
+                <div className={styles.cardFooter}>
+                  <button
+                    className={styles.ghostBtn}
+                    disabled={executeLoading}
+                    onClick={() => setStep(2)}
+                  >
+                    <ChevronLeft size={16} />
+                    <span>Quay lại</span>
+                  </button>
+                  <button
+                    className={styles.primaryBtn}
+                    disabled={executeLoading || selectedIds.length === 0}
+                    onClick={handleRunBatch}
+                  >
+                    {executeLoading ? (
+                      <>
+                        <Loader2 size={16} className="animate-spin" />
+                        <span>Đang tạo hóa đơn...</span>
+                      </>
+                    ) : (
+                      <span>Xác nhận phát hành hóa đơn</span>
+                    )}
+                  </button>
+                </div>
+              </>
+            )}
+
+            {/* Step 4: Result Panel */}
+            {step === 4 && resultData && (
+              <>
+                <div className={styles.cardBody}>
+                  <div className={styles.resultHeader}>
+                    <span
+                      className={`${styles.resultBadge} ${styles.badgeCreated}`}
                     >
-                      <span>Tiếp tục ({selectedIds.length})</span>
-                      <ChevronRight size={16} />
-                    </button>
-                  </div>
-                </>
-              )}
-
-              {/* Step 3: Xác nhận */}
-              {step === 3 && (
-                <>
-                  <div className={styles.cardBody}>
-                    <div className={styles.confirmSummary}>
-                      <div className={styles.summaryItem}>
-                        <small>Số học sinh</small>
-                        <strong>{selectedStudents.length} học sinh</strong>
-                      </div>
-                      <div className={styles.summaryItem}>
-                        <small>Tổng tiền</small>
-                        <strong>{formatVnd(totalAmount)}</strong>
-                      </div>
-                      <div className={styles.summaryItem}>
-                        <small>Kỳ phát hành</small>
-                        <strong>01/08 – 31/08/2026</strong>
-                      </div>
-                    </div>
-                    <p style={{ fontSize: "13.5px", color: "#475569" }}>
-                      Hệ thống sẽ tạo {selectedStudents.length} hóa đơn ở trạng thái <strong>Chưa nộp</strong> và
-                      thông báo đến các học sinh liên quan.
-                    </p>
-                  </div>
-                  <div className={styles.cardFooter}>
-                    <button className={styles.ghostBtn} disabled={isRunning} onClick={() => setStep(2)}>
-                      <ChevronLeft size={16} />
-                      <span>Quay lại</span>
-                    </button>
-                    <button className={styles.primaryBtn} disabled={isRunning} onClick={handleRunBatch}>
-                      {isRunning ? (
-                        <>
-                          <Loader2 size={16} className="animate-spin" />
-                          <span>Đang tạo…</span>
-                        </>
-                      ) : (
-                        <span>Chạy tạo hóa đơn</span>
-                      )}
-                    </button>
-                  </div>
-                </>
-              )}
-
-              {/* Step 4: Result Panel (Partial State First-Class) */}
-              {step === 4 && (
-                <>
-                  <div className={styles.cardBody}>
-                    <div className={styles.resultHeader}>
-                      <span className={`${styles.resultBadge} ${styles.badgeCreated}`}>
-                        Đã tạo {resultData.created.length}
+                      Đã tạo thành công {resultData.createdCount} hóa đơn
+                    </span>
+                    {resultData.skipped.length > 0 && (
+                      <span
+                        className={`${styles.resultBadge} ${styles.badgeSkipped}`}
+                      >
+                        Bỏ qua {resultData.skipped.length} học sinh
                       </span>
-                      <span className={`${styles.resultBadge} ${styles.badgeSkipped}`}>
-                        Bỏ qua {resultData.skipped.length}
-                      </span>
-                      {resultData.failed.length > 0 && (
-                        <span className={`${styles.resultBadge} ${styles.badgeFailed}`}>
-                          Lỗi {resultData.failed.length}
-                        </span>
-                      )}
-                    </div>
+                    )}
+                  </div>
 
-                    <div className={styles.tableWrap}>
-                      <table className={styles.table}>
-                        <thead>
-                          <tr>
-                            <th>Học sinh</th>
-                            <th>Kết quả</th>
-                            <th>Chi tiết</th>
-                            <th>Thao tác</th>
+                  <div className={styles.tableWrap} style={{ marginTop: "16px" }}>
+                    <table className={styles.table}>
+                      <thead>
+                        <tr>
+                          <th>Học sinh</th>
+                          <th className={styles.numeric}>Số tiền</th>
+                          <th>Trạng thái</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {resultData.invoices.map((inv) => (
+                          <tr key={inv.id}>
+                            <td>
+                              <strong>{inv.studentName}</strong>
+                            </td>
+                            <td
+                              className={styles.numeric}
+                              style={{ fontWeight: 600 }}
+                            >
+                              {formatVnd(Number(inv.totalAmount))}
+                            </td>
+                            <td>
+                              <span
+                                style={{
+                                  color: "#059669",
+                                  fontWeight: 500,
+                                }}
+                              >
+                                Đã tạo
+                              </span>
+                            </td>
                           </tr>
-                        </thead>
-                        <tbody>
-                          {resultData.created.map((name) => (
-                            <tr key={name}>
-                              <td>
-                                <strong>{name}</strong>
-                              </td>
-                              <td>
-                                <span className={`${styles.resultBadge} ${styles.badgeCreated}`}>Đã tạo</span>
-                              </td>
-                              <td style={{ color: "#64748B" }}>Hóa đơn phát hành thành công</td>
-                              <td>—</td>
-                            </tr>
-                          ))}
-                          {resultData.skipped.map((item) => (
-                            <tr key={item.student}>
-                              <td>
-                                <strong>{item.student}</strong>
-                              </td>
-                              <td>
-                                <span className={`${styles.resultBadge} ${styles.badgeSkipped}`}>Bỏ qua</span>
-                              </td>
-                              <td style={{ color: "#64748B" }}>{item.reason}</td>
-                              <td>—</td>
-                            </tr>
-                          ))}
-                          {resultData.failed.map((item) => (
-                            <tr key={item.student}>
-                              <td>
-                                <strong>{item.student}</strong>
-                              </td>
-                              <td>
-                                <span className={`${styles.resultBadge} ${styles.badgeFailed}`}>Lỗi</span>
-                              </td>
-                              <td style={{ color: "#DC2626" }}>{item.reason}</td>
-                              <td>
-                                <button
-                                  className={styles.retryBtn}
-                                  onClick={() => handleRetryRow(item.student)}
-                                >
-                                  <RotateCcw size={12} style={{ display: "inline", marginRight: "4px" }} />
-                                  Thử lại
-                                </button>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
-                  <div className={styles.cardFooter} style={{ justifyContent: "flex-end" }}>
-                    <button className={styles.primaryBtn} onClick={() => router.push("/admin/invoices")}>
-                      Xong
-                    </button>
-                  </div>
-                </>
-              )}
-            </div>
-          )}
+                </div>
+                <div className={styles.cardFooter}>
+                  <Link className={styles.primaryBtn} href="/admin/invoices">
+                    <span>Xem danh sách hóa đơn</span>
+                    <ChevronRight size={16} />
+                  </Link>
+                </div>
+              </>
+            )}
+          </div>
         </main>
       </div>
 
-      {/* WEB-004: design-review scaffolding, dev only. Over live data it lets a
-
-          failed load be repainted as a healthy one. */}
-
+      {/* WEB-004: design-review scaffolding, dev only */}
       {process.env.NODE_ENV !== "production" && (
-
-        <aside className={styles.stateSwitcher} aria-label="Review State Switcher">
+        <aside
+          className={styles.stateSwitcher}
+          aria-label="Review State Switcher"
+        >
           <span>REVIEW STATE</span>
-          {(["ready", "step1", "step2", "step3", "running", "partial", "empty", "error", "forbidden"] as ReviewState[]).map(
+          {(["ready", "loading", "empty", "error", "forbidden"] as ReviewState[]).map(
             (state) => (
               <button
                 key={state}
                 className={reviewState === state ? styles.stateActive : ""}
-                onClick={() => handleStateChange(state)}
+                onClick={() => setReviewState(state)}
               >
                 {state}
               </button>
-            ),
+            )
           )}
         </aside>
-
       )}
 
       {/* Toast */}

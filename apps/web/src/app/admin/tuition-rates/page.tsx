@@ -1,8 +1,5 @@
 "use client";
 
-// MOCK(A-INV-1): GET/POST /api/v1/admin/tuition-rates endpoints mock
-// ASSUMPTION(decision-1): Billing model is flat monthly tuition per student with append-only rate history
-
 import {
   AlertCircle,
   Bell,
@@ -21,211 +18,112 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
-import { formatVnd } from "../../../lib/formatters";
+import { useEffect, useState } from "react";
+import {
+  createTuitionRate,
+  fetchStudentTuitionRateHistory,
+  fetchStudentTuitionRates,
+  StudentTuitionRateRow,
+  TuitionRateHistoryItem,
+} from "../../../lib/admin-billing-service";
+import { formatDate, formatVnd, initialsOf } from "../../../lib/formatters";
 import styles from "./rates.module.css";
 
 type ReviewState = "ready" | "loading" | "empty" | "error" | "forbidden";
 
-interface RateHistoryRecord {
-  id: string;
-  period: string;
-  amount: number;
-  updatedBy: string;
-  reason: string;
-}
-
-interface TuitionRateLevel {
-  id: string;
-  level: string;
-  badgeBg: string;
-  badgeColor: string;
-  amount: number;
-  activeStudents: number;
-  effectiveFrom: string;
-  history: RateHistoryRecord[];
-}
-
-const initialRates: TuitionRateLevel[] = [
-  {
-    id: "hsk-1",
-    level: "HSK 1",
-    badgeBg: "#ECFDF5",
-    badgeColor: "#059669",
-    amount: 1200000,
-    activeStudents: 12,
-    effectiveFrom: "01/01/2026",
-    history: [
-      {
-        id: "h1-1",
-        period: "01/01/2026 – Hiện tại",
-        amount: 1200000,
-        updatedBy: "Hệ thống",
-        reason: "Mức học phí niêm yết chuẩn",
-      },
-    ],
-  },
-  {
-    id: "hsk-2",
-    level: "HSK 2",
-    badgeBg: "#F0F9FF",
-    badgeColor: "#0284C7",
-    amount: 1500000,
-    activeStudents: 18,
-    effectiveFrom: "01/01/2026",
-    history: [
-      {
-        id: "h2-1",
-        period: "01/01/2026 – Hiện tại",
-        amount: 1500000,
-        updatedBy: "Hệ thống",
-        reason: "Mức học phí niêm yết chuẩn",
-      },
-    ],
-  },
-  {
-    id: "hsk-3",
-    level: "HSK 3",
-    badgeBg: "#EFF6FF",
-    badgeColor: "#2563EB",
-    amount: 1800000,
-    activeStudents: 15,
-    effectiveFrom: "01/06/2026",
-    history: [
-      {
-        id: "h3-1",
-        period: "01/06/2026 – Hiện tại",
-        amount: 1800000,
-        updatedBy: "Nguyễn Quản Trị",
-        reason: "Điều chỉnh theo lộ trình nâng cấp giáo trình mới",
-      },
-      {
-        id: "h3-2",
-        period: "01/01/2026 – 31/05/2026",
-        amount: 1600000,
-        updatedBy: "Nguyễn Quản Trị",
-        reason: "Mức học phí niêm yết ban đầu",
-      },
-    ],
-  },
-  {
-    id: "hsk-4",
-    level: "HSK 4",
-    badgeBg: "#F5F3FF",
-    badgeColor: "#7C3AED",
-    amount: 2200000,
-    activeStudents: 8,
-    effectiveFrom: "01/01/2026",
-    history: [
-      {
-        id: "h4-1",
-        period: "01/01/2026 – Hiện tại",
-        amount: 2200000,
-        updatedBy: "Hệ thống",
-        reason: "Mức học phí niêm yết chuẩn",
-      },
-    ],
-  },
-  {
-    id: "hsk-5",
-    level: "HSK 5",
-    badgeBg: "#FFFBEB",
-    badgeColor: "#D97706",
-    amount: 2800000,
-    activeStudents: 4,
-    effectiveFrom: "01/01/2026",
-    history: [
-      {
-        id: "h5-1",
-        period: "01/01/2026 – Hiện tại",
-        amount: 2800000,
-        updatedBy: "Hệ thống",
-        reason: "Mức học phí niêm yết chuẩn",
-      },
-    ],
-  },
-  {
-    id: "hsk-6",
-    level: "HSK 6",
-    badgeBg: "#FEF2F2",
-    badgeColor: "#DC2626",
-    amount: 3500000,
-    activeStudents: 2,
-    effectiveFrom: "01/01/2026",
-    history: [
-      {
-        id: "h6-1",
-        period: "01/01/2026 – Hiện tại",
-        amount: 3500000,
-        updatedBy: "Hệ thống",
-        reason: "Mức học phí niêm yết chuẩn",
-      },
-    ],
-  },
-];
-
 export default function AdminTuitionRatesPage() {
   const router = useRouter();
-  const [rates, setRates] = useState<TuitionRateLevel[]>(initialRates);
+  const [rates, setRates] = useState<StudentTuitionRateRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
   const [reviewState, setReviewState] = useState<ReviewState>("ready");
   const [mobileNav, setMobileNav] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   // Edit Modal State
   const [showEditModal, setShowEditModal] = useState(false);
-  const [editingLevel, setEditingLevel] = useState<TuitionRateLevel | null>(null);
-  const [editAmount, setEditAmount] = useState(1800000);
-  const [editEffectiveDate, setEditEffectiveDate] = useState("2026-09-01");
-  const [editReason, setEditReason] = useState("");
+  const [editingStudent, setEditingStudent] = useState<StudentTuitionRateRow | null>(null);
+  const [editAmount, setEditAmount] = useState(1500000);
+  const [editEffectiveDate, setEditEffectiveDate] = useState(
+    new Date().toISOString().split("T")[0]
+  );
+  const [editSubmitting, setEditSubmitting] = useState(false);
 
   // History Modal State
   const [showHistoryModal, setShowHistoryModal] = useState(false);
-  const [historyLevel, setHistoryLevel] = useState<TuitionRateLevel | null>(null);
+  const [historyStudent, setHistoryStudent] = useState<StudentTuitionRateRow | null>(null);
+  const [historyRecords, setHistoryRecords] = useState<TuitionRateHistoryItem[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
 
-  const totalStudents = rates.reduce((acc, curr) => acc + curr.activeStudents, 0);
+  async function loadRates() {
+    setLoading(true);
+    setErrorMessage(null);
+    try {
+      const res = await fetchStudentTuitionRates();
+      setRates(res.rates);
+    } catch (err: any) {
+      if (err?.statusCode === 403) {
+        setReviewState("forbidden");
+      } else {
+        setErrorMessage(err?.message || "Không thể tải bảng học phí học viên");
+      }
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    loadRates();
+  }, []);
 
   function triggerToast(msg: string) {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 2500);
   }
 
-  function openEdit(level: TuitionRateLevel) {
-    setEditingLevel(level);
-    setEditAmount(level.amount);
-    setEditReason("");
+  function openEdit(student: StudentTuitionRateRow) {
+    setEditingStudent(student);
+    const curr = student.current ? Number(student.current.rateAmount) : 1500000;
+    setEditAmount(curr);
+    setEditEffectiveDate(new Date().toISOString().split("T")[0]);
     setShowEditModal(true);
   }
 
-  function handleSaveRate(e: React.FormEvent) {
+  async function handleSaveRate(e: React.FormEvent) {
     e.preventDefault();
-    if (!editingLevel || !editReason.trim()) return;
+    if (!editingStudent) return;
 
-    setRates((prev) =>
-      prev.map((r) => {
-        if (r.id !== editingLevel.id) return r;
-        const newRecord: RateHistoryRecord = {
-          id: `h-${Date.now()}`,
-          period: `${editEffectiveDate} – Hiện tại`,
-          amount: editAmount,
-          updatedBy: "Nguyễn Quản Trị",
-          reason: editReason,
-        };
-        return {
-          ...r,
-          amount: editAmount,
-          effectiveFrom: editEffectiveDate,
-          history: [newRecord, ...r.history],
-        };
-      })
-    );
-
-    setShowEditModal(false);
-    triggerToast(`Đã điều chỉnh học phí cấp độ ${editingLevel.level}`);
+    setEditSubmitting(true);
+    try {
+      await createTuitionRate({
+        studentId: editingStudent.studentId,
+        rateAmount: String(editAmount),
+        billingCycle: "monthly",
+        effectiveFrom: editEffectiveDate,
+      });
+      setShowEditModal(false);
+      triggerToast(`Đã thiết lập mức học phí cho ${editingStudent.studentName}`);
+      await loadRates();
+    } catch (err: any) {
+      triggerToast(err?.message || "Thiết lập học phí thất bại");
+    } finally {
+      setEditSubmitting(false);
+    }
   }
 
-  function openHistory(level: TuitionRateLevel) {
-    setHistoryLevel(level);
+  async function openHistory(student: StudentTuitionRateRow) {
+    setHistoryStudent(student);
     setShowHistoryModal(true);
+    setHistoryLoading(true);
+    try {
+      const items = await fetchStudentTuitionRateHistory(student.studentId);
+      setHistoryRecords(items);
+    } catch (err: any) {
+      triggerToast(err?.message || "Không thể tải lịch sử học phí");
+    } finally {
+      setHistoryLoading(false);
+    }
   }
 
   function handleStateChange(newState: ReviewState) {
@@ -236,6 +134,8 @@ export default function AdminTuitionRatesPage() {
     }
   }
 
+  const isEmpty = reviewState === "empty" || (!loading && rates.length === 0);
+
   return (
     <div className={styles.appShell}>
       {/* Sidebar */}
@@ -243,7 +143,11 @@ export default function AdminTuitionRatesPage() {
         <div className={styles.brand}>
           <span className={styles.brandMark}>学</span>
           <span>HSK Platform</span>
-          <button className={styles.closeNav} onClick={() => setMobileNav(false)} aria-label="Đóng menu">
+          <button
+            className={styles.closeNav}
+            onClick={() => setMobileNav(false)}
+            aria-label="Đóng menu"
+          >
             <X size={20} />
           </button>
         </div>
@@ -256,7 +160,10 @@ export default function AdminTuitionRatesPage() {
             <Users size={20} />
             <span>Tài khoản</span>
           </Link>
-          <Link className={`${styles.navItem} ${styles.navActive}`} href="/admin/invoices">
+          <Link
+            className={`${styles.navItem} ${styles.navActive}`}
+            href="/admin/invoices"
+          >
             <CircleDollarSign size={20} />
             <span>Học phí</span>
           </Link>
@@ -277,13 +184,23 @@ export default function AdminTuitionRatesPage() {
           </div>
         </div>
       </aside>
-      {mobileNav && <button className={styles.navBackdrop} onClick={() => setMobileNav(false)} aria-label="Đóng menu" />}
+      {mobileNav && (
+        <button
+          className={styles.navBackdrop}
+          onClick={() => setMobileNav(false)}
+          aria-label="Đóng menu"
+        />
+      )}
 
       {/* Main Column */}
       <div className={styles.mainColumn}>
         <header className={styles.topbar}>
           <div className={styles.breadcrumb}>
-            <button className={styles.menuButton} onClick={() => setMobileNav(true)} aria-label="Mở menu">
+            <button
+              className={styles.menuButton}
+              onClick={() => setMobileNav(true)}
+              aria-label="Mở menu"
+            >
               <Menu size={20} />
             </button>
             <Link href="/admin">Quản trị</Link>
@@ -298,90 +215,206 @@ export default function AdminTuitionRatesPage() {
               <span className={styles.notificationDot} />
             </button>
             <div className={styles.headerDivider} />
-            <Link className={styles.profileButton} href="/admin/profile">
-              <span className={styles.avatar} style={{ backgroundColor: "#E0E7FF", color: "#3730A3" }}>
-                AT
+            <div className={styles.profileButton}>
+              <span
+                className={styles.avatar}
+                style={{ backgroundColor: "#E0E7FF", color: "#3730A3" }}
+              >
+                AD
               </span>
-            </Link>
+            </div>
           </div>
         </header>
+
+        {/* Sub-nav tabs for Billing area */}
+        <div
+          style={{
+            display: "flex",
+            gap: "24px",
+            padding: "0 32px",
+            borderBottom: "1px solid #E2E8F0",
+            backgroundColor: "#FFFFFF",
+          }}
+        >
+          <Link
+            href="/admin/invoices"
+            style={{
+              padding: "14px 0",
+              fontSize: "14px",
+              fontWeight: 500,
+              color: "#64748B",
+              textDecoration: "none",
+            }}
+          >
+            Hóa đơn
+          </Link>
+          <Link
+            href="/admin/tuition-rates"
+            style={{
+              padding: "14px 0",
+              fontSize: "14px",
+              fontWeight: 600,
+              color: "#2563EB",
+              borderBottom: "2px solid #2563EB",
+              textDecoration: "none",
+            }}
+          >
+            Đơn giá học phí
+          </Link>
+          <Link
+            href="/admin/invoices/generate"
+            style={{
+              padding: "14px 0",
+              fontSize: "14px",
+              fontWeight: 500,
+              color: "#64748B",
+              textDecoration: "none",
+            }}
+          >
+            Tạo hàng loạt
+          </Link>
+        </div>
 
         <main className={styles.content}>
           <div className={styles.titleRow}>
             <div>
-              <p className={styles.eyebrow}>BIỂU HỌC PHÍ NIÊM YẾT</p>
-              <h1>Đơn giá học phí theo trình độ</h1>
-              <p className={styles.subtitle}>Thiết lập mức học phí trọn gói hàng tháng theo từng cấp độ HSK 1 – HSK 6.</p>
+              <p className={styles.eyebrow}>BIỂU HỌC PHÍ HỌC VIÊN</p>
+              <h1>Đơn giá học phí theo học viên</h1>
+              <p className={styles.subtitle}>
+                Thiết lập mức học phí trọn gói hàng tháng theo mô hình append-only.
+              </p>
             </div>
             <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
               <Link className={styles.secondaryBtn} href="/admin/invoices">
                 <span>Danh sách hóa đơn</span>
               </Link>
-              <span className={styles.totalStudentsBadge}>{totalStudents} học viên đang theo học</span>
+              <span className={styles.totalStudentsBadge}>
+                {rates.length} học viên
+              </span>
             </div>
           </div>
 
           {/* Error Banner */}
-          {reviewState === "error" && (
-            <div style={{ backgroundColor: "rgba(220,38,38,0.08)", borderLeft: "3px solid #DC2626", padding: "12px 16px", borderRadius: "6px", marginBottom: "16px", color: "#991B1B" }}>
-              <span>Không tải được bảng đơn giá học phí.</span>
+          {(errorMessage || reviewState === "error") && (
+            <div
+              style={{
+                backgroundColor: "rgba(220,38,38,0.08)",
+                borderLeft: "3px solid #DC2626",
+                padding: "12px 16px",
+                borderRadius: "6px",
+                marginBottom: "16px",
+                color: "#991B1B",
+              }}
+            >
+              <span>{errorMessage || "Không tải được bảng đơn giá học phí."}</span>
             </div>
           )}
 
           {/* Rates Table */}
-          <section className={styles.tableCard} aria-label="Bảng đơn giá học phí">
-            <div className={styles.tableWrap}>
-              <table className={styles.table}>
-                <thead>
-                  <tr>
-                    <th>Trình độ HSK</th>
-                    <th className={styles.numeric}>Mức học phí / tháng</th>
-                    <th>Học viên đang học</th>
-                    <th>Ngày áp dụng</th>
-                    <th className={styles.numeric}>Thao tác</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {rates.map((r) => (
-                    <tr key={r.id}>
-                      <td>
-                        <span
-                          className={styles.levelBadge}
-                          style={{ backgroundColor: r.badgeBg, color: r.badgeColor }}
-                        >
-                          {r.level}
-                        </span>
-                      </td>
-                      <td className={styles.numeric} style={{ fontWeight: 600, fontSize: "14px" }}>
-                        {formatVnd(r.amount)}
-                      </td>
-                      <td>{r.activeStudents} học viên</td>
-                      <td>{r.effectiveFrom}</td>
-                      <td className={styles.actionLinks}>
-                        <button onClick={() => openHistory(r)}>
-                          <History size={14} style={{ display: "inline", marginRight: "4px" }} />
-                          Lịch sử
-                        </button>
-                        <button onClick={() => openEdit(r)}>
-                          <Pencil size={14} style={{ display: "inline", marginRight: "4px" }} />
-                          Điều chỉnh
-                        </button>
-                      </td>
+          <section
+            className={styles.tableCard}
+            aria-label="Bảng đơn giá học phí"
+          >
+            {loading || reviewState === "loading" ? (
+              <div style={{ padding: "40px", textAlign: "center", color: "#64748B" }}>
+                Đang tải bảng đơn giá học phí...
+              </div>
+            ) : isEmpty ? (
+              <div style={{ padding: "40px", textAlign: "center", color: "#64748B" }}>
+                Chưa có học viên nào trong hệ thống.
+              </div>
+            ) : (
+              <div className={styles.tableWrap}>
+                <table className={styles.table}>
+                  <thead>
+                    <tr>
+                      <th>Học viên</th>
+                      <th className={styles.numeric}>Mức học phí / tháng</th>
+                      <th>Chu kỳ</th>
+                      <th>Ngày áp dụng</th>
+                      <th className={styles.numeric}>Thao tác</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {rates.map((r) => (
+                      <tr key={r.studentId}>
+                        <td>
+                          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                            <span
+                              style={{
+                                width: "32px",
+                                height: "32px",
+                                borderRadius: "50%",
+                                backgroundColor: "#DBEAFE",
+                                color: "#1E40AF",
+                                display: "inline-flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                fontSize: "12px",
+                                fontWeight: 600,
+                              }}
+                            >
+                              {initialsOf(r.studentName)}
+                            </span>
+                            <div>
+                              <strong>{r.studentName}</strong>
+                              <small style={{ display: "block", color: "#64748B" }}>
+                                {r.studentEmail}
+                              </small>
+                            </div>
+                          </div>
+                        </td>
+                        <td
+                          className={styles.numeric}
+                          style={{ fontWeight: 600, fontSize: "14px" }}
+                        >
+                          {r.current
+                            ? formatVnd(Number(r.current.rateAmount))
+                            : "Chưa cấu hình"}
+                        </td>
+                        <td>Hàng tháng</td>
+                        <td>{r.current ? formatDate(r.current.effectiveFrom) : "—"}</td>
+                        <td className={styles.actionLinks}>
+                          <button
+                            onClick={() => openHistory(r)}
+                            type="button"
+                          >
+                            <History
+                              size={14}
+                              style={{ display: "inline", marginRight: "4px" }}
+                            />
+                            Lịch sử ({r.changesCount})
+                          </button>
+                          <button
+                            onClick={() => openEdit(r)}
+                            type="button"
+                          >
+                            <Pencil
+                              size={14}
+                              style={{ display: "inline", marginRight: "4px" }}
+                            />
+                            {r.current ? "Điều chỉnh" : "Thiết lập"}
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </section>
         </main>
       </div>
 
       {/* Edit Rate Modal */}
-      {showEditModal && editingLevel && (
+      {showEditModal && editingStudent && (
         <div className={styles.modalBackdrop} role="dialog" aria-modal="true">
           <div className={styles.modal}>
-            <h2>Điều chỉnh học phí: {editingLevel.level}</h2>
-            <p>Mức học phí mới sẽ áp dụng từ chu kỳ xuất hóa đơn tiếp theo.</p>
+            <h2>Điều chỉnh học phí: {editingStudent.studentName}</h2>
+            <p>
+              Mức học phí mới sẽ áp dụng từ chu kỳ xuất hóa đơn tiếp theo theo mô
+              hình append-only.
+            </p>
             <form onSubmit={handleSaveRate}>
               <div className={styles.formGroup}>
                 <label htmlFor="amountInput">Mức học phí tháng (VNĐ) *</label>
@@ -407,20 +440,9 @@ export default function AdminTuitionRatesPage() {
                 />
               </div>
 
-              <div className={styles.formGroup}>
-                <label htmlFor="reasonInput">Lý do điều chỉnh (ghi vào nhật ký audit) *</label>
-                <textarea
-                  id="reasonInput"
-                  rows={2}
-                  required
-                  placeholder="Nhập lý do điều chỉnh học phí..."
-                  value={editReason}
-                  onChange={(e) => setEditReason(e.target.value)}
-                />
-              </div>
-
               <div className={styles.modalNotice}>
-                Lưu ý: Các hóa đơn đã tạo trước ngày hiệu lực sẽ không bị thay đổi số tiền.
+                Lưu ý: Ngày hiệu lực phải lớn hơn ngày hiệu lực của mức học phí
+                hiện tại.
               </div>
 
               <div className={styles.modalActions}>
@@ -428,11 +450,16 @@ export default function AdminTuitionRatesPage() {
                   type="button"
                   className={styles.cancelBtn}
                   onClick={() => setShowEditModal(false)}
+                  disabled={editSubmitting}
                 >
                   Hủy
                 </button>
-                <button type="submit" className={styles.confirmBtn} disabled={!editReason.trim()}>
-                  Lưu thay đổi
+                <button
+                  type="submit"
+                  className={styles.confirmBtn}
+                  disabled={editSubmitting}
+                >
+                  {editSubmitting ? "Đang lưu..." : "Lưu thay đổi"}
                 </button>
               </div>
             </form>
@@ -441,22 +468,33 @@ export default function AdminTuitionRatesPage() {
       )}
 
       {/* History Modal */}
-      {showHistoryModal && historyLevel && (
+      {showHistoryModal && historyStudent && (
         <div className={styles.modalBackdrop} role="dialog" aria-modal="true">
           <div className={styles.modal}>
-            <h2>Lịch sử điều chỉnh học phí: {historyLevel.level}</h2>
-            <p>Nhật ký append-only ghi nhận các lần điều chỉnh mức học phí.</p>
+            <h2>Lịch sử điều chỉnh học phí: {historyStudent.studentName}</h2>
+            <p>
+              Nhật ký append-only ghi nhận các lần điều chỉnh mức học phí của học
+              viên.
+            </p>
 
             <div className={styles.timeline}>
-              {historyLevel.history.map((h) => (
-                <div key={h.id} className={styles.timelineItem}>
-                  <strong>{formatVnd(h.amount)} / tháng</strong>
-                  <small>
-                    {h.period} • Người cập nhật: {h.updatedBy}
-                  </small>
-                  <div className={styles.timelineReason}>{h.reason}</div>
-                </div>
-              ))}
+              {historyLoading ? (
+                <p>Đang tải lịch sử...</p>
+              ) : historyRecords.length === 0 ? (
+                <p>Chưa có lịch sử thay đổi.</p>
+              ) : (
+                historyRecords.map((h) => (
+                  <div key={h.id} className={styles.timelineItem}>
+                    <strong>
+                      {formatVnd(Number(h.rateAmount))} / tháng
+                    </strong>
+                    <small>
+                      Hiệu lực từ: {formatDate(h.effectiveFrom)}{" "}
+                      {h.isCurrent ? "(Hiện tại)" : ""}
+                    </small>
+                  </div>
+                ))
+              )}
             </div>
 
             <div className={styles.modalActions}>
@@ -472,15 +510,16 @@ export default function AdminTuitionRatesPage() {
         </div>
       )}
 
-      {/* WEB-004: design-review scaffolding, dev only. Over live data it lets a
-
-          failed load be repainted as a healthy one. */}
-
+      {/* WEB-004: design-review scaffolding, dev only */}
       {process.env.NODE_ENV !== "production" && (
-
-        <aside className={styles.stateSwitcher} aria-label="Review State Switcher">
+        <aside
+          className={styles.stateSwitcher}
+          aria-label="Review State Switcher"
+        >
           <span>REVIEW STATE</span>
-          {(["ready", "loading", "empty", "error", "forbidden"] as ReviewState[]).map((state) => (
+          {(
+            ["ready", "loading", "empty", "error", "forbidden"] as ReviewState[]
+          ).map((state) => (
             <button
               key={state}
               className={reviewState === state ? styles.stateActive : ""}
@@ -490,7 +529,6 @@ export default function AdminTuitionRatesPage() {
             </button>
           ))}
         </aside>
-
       )}
 
       {/* Toast */}

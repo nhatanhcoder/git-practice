@@ -2,10 +2,10 @@
 
 ---
 module: payroll
-status: proposed
-blocked_by: C2 (ADR-008 append-only vs ENTITY_TEACHER_PAY_RATE "set effectiveTo on current") — BLOCKS §4 · Q-PAY-1 (payroll period boundary + timezone) · RATE_* error-code group *proposed, not agreed* · missing error code for duplicate period · depends on spec 04 (SCOPE-01/API-004)
+status: accepted
+blocked_by: —
 owner: -
-last_updated: 2026-09-03
+last_updated: 2026-09-05
 ---
 
 ## 0. Summary

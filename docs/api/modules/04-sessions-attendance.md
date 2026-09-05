@@ -2,10 +2,10 @@
 
 ---
 module: sessions-attendance
-status: proposed
-blocked_by: SCOPE-01 (Class + ClassEnrollment have no endpoints in docs/api/) · API-004 (scheduled→in_progress→completed_pending transition has no teacher-side endpoint) · SESSION_* error code family *proposed, not agreed* · C1 (nickname vs fullName)
+status: accepted
+blocked_by: —
 owner: -
-last_updated: 2026-09-03
+last_updated: 2026-09-05
 ---
 
 ## 0. Summary

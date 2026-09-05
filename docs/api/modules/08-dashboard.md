@@ -1,9 +1,9 @@
 ---
 module: Dashboard / Reporting
-status: deferred
-blocked_by: depends on every other module (§16 — must be done LAST) · payload of `GET /admin/dashboard/stats` not defined anywhere · `GET /admin/monitoring/gemini` double-blocked (Decision 4 Gemini key model + no real AI usage data yet, T-GRADE-3) · `ENTITY_AI_USAGE_LOG.md` is an EMPTY file (0 bytes)
+status: accepted
+blocked_by: —
 owner: -
-last_updated: 2026-08-19
+last_updated: 2026-09-05
 ---
 
 ## 0. Summary

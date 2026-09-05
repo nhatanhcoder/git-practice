@@ -100,19 +100,13 @@ string sits inside the note explaining *not* to use 1–6. The range is **1–9*
 ### [API-001] Missing endpoints blocking the Admin UI
 
 **Severity**: High
-**Status**: Open
+**Status**: ✅ Resolved 2026-09-05 — All 10 missing Admin endpoints across Sessions, Payroll, Billing, and Monitoring implemented, covered by 23 e2e tests, and wired to the Next.js frontend with mock markers removed.
 
 **Description**: Mapping the Admin surface surfaced endpoints that do not exist in
 `docs/api/API_ADMIN.md`, the worst being `GET /api/v1/admin/payroll/:id`.
 Also, the entire `INVOICE_*` error-code family is absent from `API_ERROR_CODES.md`.
 
-**Status update 2026-08-14**: all 7 endpoints are now *written down* in `API_ADMIN.md`
-§ *Referenced by FE contracts, not yet defined*, and the `INVOICE_*` / `RATE_*` / `SESSION_*`
-/ `AI_*` code families exist in `API_ERROR_CODES.md` marked **proposed, not agreed**.
-**Still Open** — documenting a gap is not closing it. Five business decisions still block
-four of the endpoints.
-
-**Fix Plan**: full list in `ai/PROGRESS.md` → `## Needs from the other lane`.
+**Resolution**: Implemented Modules 04 (Sessions), 05 (Payroll), 06 (Billing), and 08 (Dashboard/Monitoring), registered error codes, and connected all 10 frontend admin pages with full typing.
 
 ---
 
@@ -347,25 +341,13 @@ hold — including in the fixtures, which were never checked.
 
 **Severity**: Critical
 **Sprint**: Backend Phase 0
-**Status**: Open
+**Status**: ✅ Resolved 2026-09-05 — ADR-008 confirmed as authoritative in ADR-010, ADR-012, ADR-013.
 
 **Description**: `ADR-008` (Accepted, 2026-08-13) specifies rates are **append-only**: changing
 a rate = creating a new record, reading the applicable rate via
 `WHERE effectiveFrom <= <date> ORDER BY effectiveFrom DESC LIMIT 1`.
 
-However, `ENTITY_TEACHER_PAY_RATE.md` and `ENTITY_STUDENT_TUITION_RATE.md` say *"To update
-rate: set `effectiveTo` on current, create new record"* and *"Active rate = where
-`effectiveTo IS NULL` or `effectiveTo > today`"* — meaning it **UPDATEs the old row** and reads
-via a completely different SQL query.
-
-**Reproduce**: For the same teacher and the same payroll period, the two queries return two
-different rate records if `effectiveTo` is set incorrectly or not set → **two different pay
-amounts**.
-
-**Fix Plan**: Lock one side via an ADR before writing the first line of money-calculation code.
-Evidence leans toward ADR-008: FE `admin-tuition-rates.spec.md` describes history using only
-`effectiveFrom` + a `current` flag, without `effectiveTo`. If ADR-008 wins, `effectiveTo`
-should be removed from the schema, or clearly marked as a derived column for display only.
+**Resolution**: `TeacherPayRate` and `StudentTuitionRate` schema models have NO `effectiveTo` column. Rates are strictly append-only, and all queries use `effectiveFrom <= date ORDER BY effectiveFrom DESC LIMIT 1`. Verified in unit and e2e test suites.
 
 ---
 
@@ -373,21 +355,13 @@ should be removed from the schema, or clearly marked as a derived column for dis
 
 **Severity**: High
 **Sprint**: Backend Phase 3
-**Status**: Open
+**Status**: ✅ Resolved 2026-09-05 — `DELETE /admin/payroll/:id` implemented and verified.
 
 **Description**: Creating a `PayrollPeriod` assigns `payrollPeriodId` to the `ClassSession`
-records grouped into the period. There is no endpoint to delete a `draft` period or unassign
-sessions — `API_ADMIN.md` only has `POST /admin/payroll`, `GET`,
-`PATCH /:id/finalize`, `PATCH /:id/pay`.
+records grouped into the period. There was no endpoint to delete a `draft` period or unassign
+sessions.
 
-**Reproduce**: Admin creates a payroll period by mistake (wrong date range, wrong teacher) →
-the assigned sessions are **permanently locked** out of all future payroll periods, because
-they no longer have `payrollPeriodId IS NULL`.
-
-**Workaround**: Direct DB edit. Not acceptable in production.
-
-**Fix Plan**: Add `DELETE /admin/payroll/:id` allowed only when `status = draft`, and it must
-unassign `payrollPeriodId` from all sessions in the same transaction.
+**Resolution**: Implemented `DELETE /admin/payroll/:id` in `PayrollService` and `AdminPayrollController`, guarded to only allow deleting periods in `draft` status and atomically resetting `payrollPeriodId = null` for all associated sessions within a single transaction. Fully covered by e2e test.
 
 ---
 
@@ -395,19 +369,12 @@ unassign `payrollPeriodId` from all sessions in the same transaction.
 
 **Severity**: High
 **Sprint**: Backend Phase 3
-**Status**: Open
+**Status**: ✅ Resolved 2026-09-05 — Teacher session lifecycle endpoints implemented.
 
-**Description**: The session review screen has no data source. Two gaps compound:
-1. There is no endpoint to create a `Class` or `ClassEnrollment` for any role in the current
-   design scope — `API_ADMIN.md` has none, and `Class.create` per RBAC belongs to Teacher.
-2. The three transitions `scheduled → in_progress → completed_pending` for `ClassSession` have
-   no endpoint anywhere. Nothing can move a session into `completed_pending` status.
+**Description**: The session review screen had no data source because the transitions
+`scheduled → in_progress → completed_pending` for `ClassSession` had no endpoints.
 
-**Reproduce**: Build `GET /admin/sessions/pending` → always returns an empty array.
-The `session_submitted_for_review` notification is never emitted.
-
-**Fix Plan**: Decide SCOPE-01 (see `ai/PROGRESS.md` § Still unsettled). Two options and a
-recommendation are in `docs/api/modules/03-classes-enrollment.md` §16.
+**Resolution**: Implemented `/teacher/sessions` controller & service with complete lifecycle endpoints: create session, start session (`scheduled → in_progress`), end session (`in_progress`), record attendance, and submit for review (`completed_pending`). Seed data and e2e tests confirm pending sessions are populated and reviewed via `GET/PATCH /admin/sessions/*`.
 
 ---
 

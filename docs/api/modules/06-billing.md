@@ -2,10 +2,10 @@
 
 ---
 module: billing
-status: proposed
-blocked_by: C2 (ADR-008 append-only vs ENTITY_STUDENT_TUITION_RATE "set effectiveTo on current") — BLOCKS §4.1 · Q-BILL-1 (money representation Decimal/VND) — BLOCKS THE WHOLE MODULE · Q-BILL-2 (tuition model, FEATURES_ADMIN A-INV-1) · Q-BILL-3 (batch partial-failure) · INVOICE_* and RATE_* error-code groups *proposed, not agreed* · Q-BILL-5 (void with payments → refund?) · Q-BILL-6 (overpayment)
+status: accepted
+blocked_by: —
 owner: -
-last_updated: 2026-08-19
+last_updated: 2026-09-05
 ---
 
 ## 0. Summary

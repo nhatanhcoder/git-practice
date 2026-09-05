@@ -34,11 +34,11 @@ machine, so they share one module.
 | 1 | Auth | `01-auth.md` | ✅ `accepted` | 24 | — |
 | 2 | Users / Admin Users | `02-users.md` | ✅ `accepted` | 18 | — |
 | 3 | Classes + Enrollment | `03-classes-enrollment.md` | ✅ `accepted` | 8 | — |
-| 4 | Sessions + Attendance | `04-sessions-attendance.md` | 🔶 `proposed` | 16 | — |
-| 5 | Payroll + Pay Rates | `05-payroll.md` | 🔶 `proposed` | 33 | C2 · payroll period boundary · rateType |
-| 6 | Billing (rate+invoice+payment) | `06-billing.md` | 🔶 `proposed` | 34 | money representation · tuition model · C2 |
+| 4 | Sessions + Attendance | `04-sessions-attendance.md` | ✅ `accepted` | 16 | — |
+| 5 | Payroll + Pay Rates | `05-payroll.md` | ✅ `accepted` | 33 | — |
+| 6 | Billing (rate+invoice+payment) | `06-billing.md` | ✅ `accepted` | 34 | — |
 | 7 | Notifications | `07-notifications.md` | 🔶 `proposed` | 21 | no endpoint defined yet |
-| 8 | Dashboard / Reporting | `08-dashboard.md` | ⛔ `deferred` | 14 | last, per design |
+| 8 | Dashboard / Reporting | `08-dashboard.md` | ✅ `accepted` | 14 | — |
 
 **168 invariants total.** Each invariant has at least one line in the test matrix (section 15)
 of its module — this is the **invariant gate** replacing coverage %.

@@ -1,8 +1,5 @@
 "use client";
 
-// MOCK(A-PAY-5/6/7): GET /api/v1/admin/payroll/:id and PATCH finalize/paid mock
-// ASSUMPTION(decision-3): Payroll period boundary defaults to calendar month with custom date-range support
-
 import {
   AlertCircle,
   Bell,
@@ -17,37 +14,27 @@ import {
   Lock,
   Menu,
   ShieldCheck,
+  Trash2,
   Users,
   WalletCards,
   X,
 } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { useState } from "react";
-import { formatVnd } from "../../../../lib/formatters";
+import { useEffect, useState } from "react";
+import {
+  deletePayrollPeriod,
+  fetchPayrollPeriodDetail,
+  finalizePayrollPeriod,
+  payPayrollPeriod,
+  PayrollPeriodDetail,
+} from "../../../../lib/admin-payroll-service";
+import { formatDate, formatVnd, initialsOf } from "../../../../lib/formatters";
 import { getStatusColor } from "../../../../lib/status";
 import styles from "./detail.module.css";
 
 type PayrollStatus = "draft" | "finalized" | "paid";
 type ReviewState = "ready" | "loading" | "empty" | "error" | "forbidden";
-
-interface SessionLine {
-  date: string;
-  class: string;
-  time: string;
-  rateBasis: string;
-  amount: number;
-}
-
-interface TeacherBreakdown {
-  id: string;
-  name: string;
-  avatarBg: string;
-  avatarText: string;
-  sessions: number;
-  total: number;
-  lines: SessionLine[];
-}
 
 const statusLabels: Record<PayrollStatus, string> = {
   draft: "Nháp",
@@ -55,66 +42,68 @@ const statusLabels: Record<PayrollStatus, string> = {
   paid: "Đã trả",
 };
 
-const initialTeachers: TeacherBreakdown[] = [
-  {
-    id: "t1",
-    name: "Phạm Thị Lan",
-    avatarBg: "#F3E8FF",
-    avatarText: "#7E22CE",
-    sessions: 10,
-    total: 4200000,
-    lines: [
-      { date: "30/07/2026", class: "HSK 2 — Nhóm A", time: "19:00 – 20:30 (90 phút)", rateBasis: "400.000 ₫ / buổi", amount: 400000 },
-      { date: "28/07/2026", class: "HSK 2 — Nhóm A", time: "19:00 – 20:30 (90 phút)", rateBasis: "400.000 ₫ / buổi", amount: 400000 },
-      { date: "23/07/2026", class: "HSK 2 — Nhóm A", time: "19:00 – 20:30 (90 phút)", rateBasis: "400.000 ₫ / buổi", amount: 400000 },
-      { date: "21/07/2026", class: "HSK 2 — Nhóm A", time: "19:00 – 20:30 (90 phút)", rateBasis: "400.000 ₫ / buổi", amount: 400000 },
-      { date: "16/07/2026", class: "HSK 2 — Nhóm A", time: "19:00 – 20:30 (90 phút)", rateBasis: "400.000 ₫ / buổi", amount: 400000 },
-      { date: "14/07/2026", class: "HSK 2 — Nhóm A", time: "19:00 – 20:30 (90 phút)", rateBasis: "400.000 ₫ / buổi", amount: 400000 },
-      { date: "09/07/2026", class: "HSK 2 — Nhóm A", time: "19:00 – 20:30 (90 phút)", rateBasis: "400.000 ₫ / buổi", amount: 400000 },
-      { date: "07/07/2026", class: "HSK 2 — Nhóm A", time: "19:00 – 20:30 (90 phút)", rateBasis: "400.000 ₫ / buổi", amount: 400000 },
-      { date: "02/07/2026", class: "HSK 2 — Nhóm A", time: "19:00 – 20:30 (90 phút)", rateBasis: "400.000 ₫ / buổi", amount: 400000 },
-      { date: "01/07/2026", class: "HSK 2 — Nhóm A", time: "19:00 – 21:00 (120 phút)", rateBasis: "300.000 ₫ / giờ (2h)", amount: 600000 },
-    ],
-  },
-  {
-    id: "t2",
-    name: "Đỗ Hải Yến",
-    avatarBg: "#E0E7FF",
-    avatarText: "#3730A3",
-    sessions: 8,
-    total: 3300000,
-    lines: [
-      { date: "29/07/2026", class: "HSK 3 — Nhóm B", time: "18:00 – 19:30 (90 phút)", rateBasis: "400.000 ₫ / buổi", amount: 400000 },
-      { date: "27/07/2026", class: "HSK 3 — Nhóm B", time: "18:00 – 19:30 (90 phút)", rateBasis: "400.000 ₫ / buổi", amount: 400000 },
-      { date: "22/07/2026", class: "HSK 3 — Nhóm B", time: "18:00 – 19:30 (90 phút)", rateBasis: "400.000 ₫ / buổi", amount: 400000 },
-      { date: "20/07/2026", class: "HSK 3 — Nhóm B", time: "18:00 – 19:30 (90 phút)", rateBasis: "400.000 ₫ / buổi", amount: 400000 },
-      { date: "15/07/2026", class: "HSK 1 — Nhóm C", time: "17:00 – 18:00 (60 phút)", rateBasis: "400.000 ₫ / buổi", amount: 400000 },
-      { date: "13/07/2026", class: "HSK 1 — Nhóm C", time: "17:00 – 18:00 (60 phút)", rateBasis: "400.000 ₫ / buổi", amount: 400000 },
-      { date: "08/07/2026", class: "HSK 1 — Nhóm C", time: "17:00 – 18:00 (60 phút)", rateBasis: "400.000 ₫ / buổi", amount: 400000 },
-      { date: "06/07/2026", class: "HSK 1 — Nhóm C", time: "17:00 – 18:30 (90 phút)", rateBasis: "350.000 ₫ / 1.5h", amount: 500000 },
-    ],
-  },
-];
+interface TeacherGroup {
+  id: string;
+  name: string;
+  sessionCount: number;
+  totalAmount: number;
+  sessions: {
+    id: string;
+    date: string;
+    className: string;
+    time: string;
+    rateBasis: string;
+    amount: number;
+  }[];
+}
 
 export default function AdminPayrollDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const periodId = (params?.periodId as string) || "1";
+  const periodId = (params?.periodId as string) || "";
+
+  const [period, setPeriod] = useState<PayrollPeriodDetail | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const [reviewState, setReviewState] = useState<ReviewState>("ready");
   const [mobileNav, setMobileNav] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  const [periodStatus, setPeriodStatus] = useState<PayrollStatus>("draft");
-  const [paidDate, setPaidDate] = useState<string | null>(null);
-  const [expandedTeachers, setExpandedTeachers] = useState<string[]>(["t1", "t2"]);
+  const [expandedTeachers, setExpandedTeachers] = useState<string[]>([]);
 
   // Modals
   const [showFinalizeModal, setShowFinalizeModal] = useState(false);
   const [showPaidModal, setShowPaidModal] = useState(false);
-  const [paidInputDate, setPaidInputDate] = useState("2026-08-03");
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [actionLoading, setActionLoading] = useState(false);
 
-  const statusTheme = getStatusColor(periodStatus);
+  async function loadDetail() {
+    if (!periodId) return;
+    setLoading(true);
+    setErrorMessage(null);
+    try {
+      const data = await fetchPayrollPeriodDetail(periodId);
+      setPeriod(data);
+      if (data.teacherId) {
+        setExpandedTeachers([data.teacherId]);
+      }
+    } catch (err: any) {
+      if (err?.statusCode === 403) {
+        setReviewState("forbidden");
+      } else if (err?.statusCode === 404) {
+        setReviewState("error");
+      } else {
+        setErrorMessage(err?.message || "Không thể tải chi tiết kỳ lương");
+      }
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    loadDetail();
+  }, [periodId]);
 
   function triggerToast(msg: string) {
     setToastMessage(msg);
@@ -129,17 +118,47 @@ export default function AdminPayrollDetailPage() {
     }
   }
 
-  function confirmFinalize() {
-    setPeriodStatus("finalized");
-    setShowFinalizeModal(false);
-    triggerToast("Đã chốt kỳ lương");
+  async function confirmFinalize() {
+    setActionLoading(true);
+    try {
+      await finalizePayrollPeriod(periodId);
+      setShowFinalizeModal(false);
+      triggerToast("Đã chốt kỳ lương");
+      await loadDetail();
+    } catch (err: any) {
+      triggerToast(err?.message || "Không thể chốt kỳ lương");
+    } finally {
+      setActionLoading(false);
+    }
   }
 
-  function confirmMarkPaid() {
-    setPeriodStatus("paid");
-    setPaidDate(paidInputDate);
-    setShowPaidModal(false);
-    triggerToast("Đã ghi nhận chi trả kỳ lương");
+  async function confirmMarkPaid() {
+    setActionLoading(true);
+    try {
+      await payPayrollPeriod(periodId);
+      setShowPaidModal(false);
+      triggerToast("Đã ghi nhận chi trả kỳ lương");
+      await loadDetail();
+    } catch (err: any) {
+      triggerToast(err?.message || "Không thể ghi nhận chi trả");
+    } finally {
+      setActionLoading(false);
+    }
+  }
+
+  async function confirmDelete() {
+    setActionLoading(true);
+    try {
+      await deletePayrollPeriod(periodId);
+      setShowDeleteModal(false);
+      triggerToast("Đã xóa kỳ lương và hoàn trả trạng thái buổi học");
+      setTimeout(() => {
+        router.push("/admin/payroll");
+      }, 700);
+    } catch (err: any) {
+      triggerToast(err?.message || "Không thể xóa kỳ lương");
+      setActionLoading(false);
+    }
   }
 
   function handleStateChange(newState: ReviewState) {
@@ -150,6 +169,42 @@ export default function AdminPayrollDetailPage() {
     }
   }
 
+  // Aggregate sessions for the teacher
+  const teacherGroups: TeacherGroup[] = [];
+  if (period) {
+    const sessionsList = (period.sessions || []).map((s) => {
+      const timeStr =
+        s.actualStart && s.actualEnd
+          ? `${formatDate(s.actualStart)} ${s.actualStart.slice(11, 16)}–${s.actualEnd.slice(11, 16)}`
+          : formatDate(s.scheduledDate);
+      return {
+        id: s.sessionId,
+        date: formatDate(s.scheduledDate),
+        className: s.className || "Lớp học",
+        time: timeStr,
+        rateBasis: s.appliedRateAmount
+          ? `${formatVnd(Number(s.appliedRateAmount))} / ${
+              s.appliedRateType === "per_session" ? "buổi" : "giờ"
+            }`
+          : "—",
+        amount: Number(s.amount),
+      };
+    });
+
+    teacherGroups.push({
+      id: period.teacherId,
+      name: period.teacherName || "Giáo viên",
+      sessionCount: period.totalSessions ?? sessionsList.length,
+      totalAmount: Number(period.totalAmount),
+      sessions: sessionsList,
+    });
+  }
+
+  const periodStatus: PayrollStatus = period?.status || "draft";
+  const statusTheme = getStatusColor(periodStatus);
+  const totalSessionsCount = period?.totalSessions ?? 0;
+  const totalAmountNum = Number(period?.totalAmount || 0);
+
   return (
     <div className={styles.appShell}>
       {/* Sidebar */}
@@ -157,7 +212,11 @@ export default function AdminPayrollDetailPage() {
         <div className={styles.brand}>
           <span className={styles.brandMark}>学</span>
           <span>HSK Platform</span>
-          <button className={styles.closeNav} onClick={() => setMobileNav(false)} aria-label="Đóng menu">
+          <button
+            className={styles.closeNav}
+            onClick={() => setMobileNav(false)}
+            aria-label="Đóng menu"
+          >
             <X size={20} />
           </button>
         </div>
@@ -174,7 +233,10 @@ export default function AdminPayrollDetailPage() {
             <CircleDollarSign size={20} />
             <span>Học phí</span>
           </Link>
-          <Link className={`${styles.navItem} ${styles.navActive}`} href="/admin/payroll">
+          <Link
+            className={`${styles.navItem} ${styles.navActive}`}
+            href="/admin/payroll"
+          >
             <WalletCards size={20} />
             <span>Lương</span>
           </Link>
@@ -191,13 +253,23 @@ export default function AdminPayrollDetailPage() {
           </div>
         </div>
       </aside>
-      {mobileNav && <button className={styles.navBackdrop} onClick={() => setMobileNav(false)} aria-label="Đóng menu" />}
+      {mobileNav && (
+        <button
+          className={styles.navBackdrop}
+          onClick={() => setMobileNav(false)}
+          aria-label="Đóng menu"
+        />
+      )}
 
       {/* Main Column */}
       <div className={styles.mainColumn}>
         <header className={styles.topbar}>
           <div className={styles.breadcrumb}>
-            <button className={styles.menuButton} onClick={() => setMobileNav(true)} aria-label="Mở menu">
+            <button
+              className={styles.menuButton}
+              onClick={() => setMobileNav(true)}
+              aria-label="Mở menu"
+            >
               <Menu size={20} />
             </button>
             <Link href="/admin">Quản trị</Link>
@@ -212,11 +284,14 @@ export default function AdminPayrollDetailPage() {
               <span className={styles.notificationDot} />
             </button>
             <div className={styles.headerDivider} />
-            <Link className={styles.profileButton} href="/admin/profile">
-              <span className={styles.avatar} style={{ backgroundColor: "#E0E7FF", color: "#3730A3" }}>
-                AT
+            <div className={styles.profileButton}>
+              <span
+                className={styles.avatar}
+                style={{ backgroundColor: "#E0E7FF", color: "#3730A3" }}
+              >
+                AD
               </span>
-            </Link>
+            </div>
           </div>
         </header>
 
@@ -226,42 +301,63 @@ export default function AdminPayrollDetailPage() {
             <span>Quay lại danh sách kỳ lương</span>
           </Link>
 
-          {reviewState === "error" ? (
+          {loading || reviewState === "loading" ? (
+            <div style={{ padding: "40px", textAlign: "center", color: "#64748B" }}>
+              Đang tải chi tiết kỳ lương...
+            </div>
+          ) : reviewState === "error" || !period ? (
             <div className={styles.emptyCard}>
-              <AlertCircle size={44} color="#DC2626" style={{ margin: "0 auto 12px" }} />
+              <AlertCircle
+                size={44}
+                color="#DC2626"
+                style={{ margin: "0 auto 12px" }}
+              />
               <h2>Không tìm thấy kỳ lương này</h2>
               <p>Mã kỳ lương không tồn tại trong hệ thống.</p>
             </div>
           ) : (
             <>
               {/* Header Card */}
-              <section className={styles.headerCard} aria-label="Thông tin kỳ lương">
+              <section
+                className={styles.headerCard}
+                aria-label="Thông tin kỳ lương"
+              >
                 <div>
                   <div className={styles.periodTitle}>
-                    <h1>01/07 – 31/07/2026</h1>
+                    <h1>
+                      {formatDate(period.periodStart)} –{" "}
+                      {formatDate(period.periodEnd)}
+                    </h1>
                     <span
                       className={styles.statusPill}
-                      style={{ backgroundColor: statusTheme.bg, color: statusTheme.text }}
+                      style={{
+                        backgroundColor: statusTheme.bg,
+                        color: statusTheme.text,
+                      }}
                     >
                       <i className={styles.statusDot} />
-                      {statusLabels[periodStatus]}
+                      {statusLabels[periodStatus] || periodStatus}
                     </span>
                   </div>
-                  <span className={styles.periodSubtitle}>Tháng 7 · 2026 • Mã kỳ: PER-2607</span>
+                  <span className={styles.periodSubtitle}>
+                    Mã kỳ: {period.code} • Giáo viên: {period.teacherName}
+                  </span>
                 </div>
 
                 <div className={styles.headerMetrics}>
                   <div className={styles.metricItem}>
                     <small>Số buổi học</small>
-                    <strong>{reviewState === "empty" ? 0 : 18} buổi</strong>
+                    <strong>{totalSessionsCount} buổi</strong>
                   </div>
                   <div className={styles.metricItem}>
                     <small>Giáo viên</small>
-                    <strong>{reviewState === "empty" ? 0 : 2} GV</strong>
+                    <strong>{period.teacherName}</strong>
                   </div>
-                  <div className={`${styles.metricItem} ${styles.metricHeadline}`}>
+                  <div
+                    className={`${styles.metricItem} ${styles.metricHeadline}`}
+                  >
                     <small>Tổng chi lương</small>
-                    <strong>{reviewState === "empty" ? "0 ₫" : "7.500.000 ₫"}</strong>
+                    <strong>{formatVnd(totalAmountNum)}</strong>
                   </div>
                 </div>
 
@@ -270,20 +366,45 @@ export default function AdminPayrollDetailPage() {
                     <>
                       <button
                         className={styles.primaryAction}
-                        disabled={reviewState === "empty"}
                         onClick={() => setShowFinalizeModal(true)}
+                        disabled={totalSessionsCount === 0}
                       >
                         <Lock size={15} />
                         <span>Chốt kỳ lương</span>
                       </button>
-                      {reviewState === "empty" && (
-                        <span className={styles.actionHelp}>Không thể chốt kỳ lương rỗng.</span>
+                      <button
+                        type="button"
+                        className={styles.secondaryButton}
+                        style={{
+                          backgroundColor: "#FEE2E2",
+                          color: "#DC2626",
+                          border: "none",
+                          padding: "8px 14px",
+                          borderRadius: "6px",
+                          cursor: "pointer",
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "6px",
+                          fontWeight: 500,
+                        }}
+                        onClick={() => setShowDeleteModal(true)}
+                      >
+                        <Trash2 size={15} />
+                        <span>Hủy kỳ lương nháp</span>
+                      </button>
+                      {totalSessionsCount === 0 && (
+                        <span className={styles.actionHelp}>
+                          Kỳ lương chưa có buổi học nào.
+                        </span>
                       )}
                     </>
                   )}
 
                   {periodStatus === "finalized" && (
-                    <button className={styles.primaryAction} onClick={() => setShowPaidModal(true)}>
+                    <button
+                      className={styles.primaryAction}
+                      onClick={() => setShowPaidModal(true)}
+                    >
                       <Check size={16} />
                       <span>Đánh dấu đã trả</span>
                     </button>
@@ -292,42 +413,63 @@ export default function AdminPayrollDetailPage() {
                   {periodStatus === "paid" && (
                     <div className={styles.paidBadge}>
                       <Check size={15} />
-                      <span>Đã chi trả ngày {paidDate || "03/08/2026"}</span>
+                      <span>
+                        Đã chi trả ngày {formatDate(period.paidAt)}
+                      </span>
                     </div>
                   )}
                 </div>
               </section>
 
               {/* Teacher Breakdown Accordions */}
-              {reviewState === "empty" ? (
+              {totalSessionsCount === 0 ? (
                 <div className={styles.emptyCard}>
-                  <Inbox size={44} color="#64748B" style={{ margin: "0 auto 12px", opacity: 0.25 }} />
+                  <Inbox
+                    size={44}
+                    color="#64748B"
+                    style={{ margin: "0 auto 12px", opacity: 0.25 }}
+                  />
                   <h2>Kỳ lương chưa có dữ liệu</h2>
-                  <p>Chưa có buổi học nào được duyệt trong khoảng thời gian này.</p>
+                  <p>
+                    Chưa có buổi học nào được duyệt trong khoảng thời gian này.
+                  </p>
                 </div>
               ) : (
-                <section className={styles.teachersContainer} aria-label="Bảng chi tiết theo giáo viên">
-                  {initialTeachers.map((teacher) => {
+                <section
+                  className={styles.teachersContainer}
+                  aria-label="Bảng chi tiết theo giáo viên"
+                >
+                  {teacherGroups.map((teacher) => {
                     const isOpen = expandedTeachers.includes(teacher.id);
                     return (
                       <article key={teacher.id} className={styles.teacherCard}>
-                        <div className={styles.teacherHeader} onClick={() => toggleTeacher(teacher.id)}>
+                        <div
+                          className={styles.teacherHeader}
+                          onClick={() => toggleTeacher(teacher.id)}
+                          style={{ cursor: "pointer" }}
+                        >
                           <div className={styles.teacherMeta}>
                             <span
                               className={styles.teacherAvatarLarge}
-                              style={{ backgroundColor: teacher.avatarBg, color: teacher.avatarText }}
+                              style={{
+                                backgroundColor: "#EDE9FE",
+                                color: "#5B21B6",
+                              }}
                             >
-                              {teacher.name === "Phạm Thị Lan" ? "PL" : "ĐY"}
+                              {initialsOf(teacher.name)}
                             </span>
                             <div>
                               <strong>{teacher.name}</strong>
-                              <small>{teacher.sessions} buổi học đã duyệt</small>
+                              <small>
+                                {teacher.sessionCount} buổi học đã duyệt
+                              </small>
                             </div>
                           </div>
                           <div className={styles.teacherFigures}>
-                            <strong>{formatVnd(teacher.total)}</strong>
                             <ChevronDown
-                              className={`${styles.chevronIcon} ${isOpen ? styles.chevronOpen : ""}`}
+                              className={`${styles.chevronIcon} ${
+                                isOpen ? styles.chevronOpen : ""
+                              }`}
                               size={18}
                             />
                           </div>
@@ -345,13 +487,18 @@ export default function AdminPayrollDetailPage() {
                               </tr>
                             </thead>
                             <tbody>
-                              {teacher.lines.map((line, idx) => (
-                                <tr key={idx}>
+                              {teacher.sessions.map((line) => (
+                                <tr key={line.id}>
                                   <td>{line.date}</td>
-                                  <td>{line.class}</td>
-                                  <td style={{ color: "#475569" }}>{line.time}</td>
+                                  <td>{line.className}</td>
+                                  <td style={{ color: "#475569" }}>
+                                    {line.time}
+                                  </td>
                                   <td>{line.rateBasis}</td>
-                                  <td className={styles.numeric} style={{ fontWeight: 600 }}>
+                                  <td
+                                    className={styles.numeric}
+                                    style={{ fontWeight: 600 }}
+                                  >
                                     {formatVnd(line.amount)}
                                   </td>
                                 </tr>
@@ -370,21 +517,33 @@ export default function AdminPayrollDetailPage() {
       </div>
 
       {/* Finalize Modal */}
-      {showFinalizeModal && (
+      {showFinalizeModal && period && (
         <div className={styles.modalBackdrop} role="dialog" aria-modal="true">
           <div className={styles.modal}>
-            <h2>Chốt kỳ lương 01/07 – 31/07/2026</h2>
-            <p>Sau khi chốt, tổng số buổi và mức chi lương sẽ được khóa và không thể chỉnh sửa thêm.</p>
+            <h2>
+              Chốt kỳ lương {formatDate(period.periodStart)} –{" "}
+              {formatDate(period.periodEnd)}
+            </h2>
+            <p>
+              Sau khi chốt, tổng số buổi và mức chi lương sẽ được khóa và không thể
+              chỉnh sửa thêm.
+            </p>
             <div className={styles.modalActions}>
               <button
                 type="button"
                 className={styles.cancelBtn}
                 onClick={() => setShowFinalizeModal(false)}
+                disabled={actionLoading}
               >
                 Hủy
               </button>
-              <button type="button" className={styles.confirmBtn} onClick={confirmFinalize}>
-                Chốt kỳ lương
+              <button
+                type="button"
+                className={styles.confirmBtn}
+                onClick={confirmFinalize}
+                disabled={actionLoading}
+              >
+                {actionLoading ? "Đang chốt..." : "Chốt kỳ lương"}
               </button>
             </div>
           </div>
@@ -392,46 +551,85 @@ export default function AdminPayrollDetailPage() {
       )}
 
       {/* Mark Paid Modal */}
-      {showPaidModal && (
+      {showPaidModal && period && (
         <div className={styles.modalBackdrop} role="dialog" aria-modal="true">
           <div className={styles.modal}>
             <h2>Đánh dấu đã chi trả</h2>
-            <p>Xác nhận đã thanh toán toàn bộ 7.500.000 ₫ cho 2 giáo viên trong kỳ lương này.</p>
-            <div className={styles.formGroup}>
-              <label htmlFor="paidDate">Ngày chi trả *</label>
-              <input
-                id="paidDate"
-                type="date"
-                required
-                value={paidInputDate}
-                onChange={(e) => setPaidInputDate(e.target.value)}
-              />
-            </div>
+            <p>
+              Xác nhận đã thanh toán toàn bộ {formatVnd(totalAmountNum)} cho giáo
+              viên {period.teacherName} trong kỳ lương này.
+            </p>
             <div className={styles.modalActions}>
               <button
                 type="button"
                 className={styles.cancelBtn}
                 onClick={() => setShowPaidModal(false)}
+                disabled={actionLoading}
               >
                 Hủy
               </button>
-              <button type="button" className={styles.confirmBtn} onClick={confirmMarkPaid}>
-                Xác nhận đã trả
+              <button
+                type="button"
+                className={styles.confirmBtn}
+                onClick={confirmMarkPaid}
+                disabled={actionLoading}
+              >
+                {actionLoading ? "Đang xử lý..." : "Xác nhận đã trả"}
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* WEB-004: design-review scaffolding, dev only. Over live data it lets a
+      {/* Delete Draft Modal (API-003) */}
+      {showDeleteModal && period && (
+        <div className={styles.modalBackdrop} role="dialog" aria-modal="true">
+          <div className={styles.modal}>
+            <h2>Hủy kỳ lương nháp</h2>
+            <p>
+              Hành động này sẽ giải phóng tất cả các buổi học trong kỳ lương trở
+              lại trạng thái đã duyệt chưa gán kỳ lương.
+            </p>
+            <div className={styles.modalActions}>
+              <button
+                type="button"
+                className={styles.cancelBtn}
+                onClick={() => setShowDeleteModal(false)}
+                disabled={actionLoading}
+              >
+                Quay lại
+              </button>
+              <button
+                type="button"
+                style={{
+                  backgroundColor: "#DC2626",
+                  color: "#FFFFFF",
+                  border: "none",
+                  padding: "8px 16px",
+                  borderRadius: "6px",
+                  cursor: "pointer",
+                  fontWeight: 600,
+                }}
+                onClick={confirmDelete}
+                disabled={actionLoading}
+              >
+                {actionLoading ? "Đang hủy..." : "Xác nhận hủy"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
-          failed load be repainted as a healthy one. */}
-
+      {/* WEB-004: design-review scaffolding, dev only */}
       {process.env.NODE_ENV !== "production" && (
-
-        <aside className={styles.stateSwitcher} aria-label="Review State Switcher">
+        <aside
+          className={styles.stateSwitcher}
+          aria-label="Review State Switcher"
+        >
           <span>REVIEW STATE</span>
-          {(["ready", "loading", "empty", "error", "forbidden"] as ReviewState[]).map((state) => (
+          {(
+            ["ready", "loading", "empty", "error", "forbidden"] as ReviewState[]
+          ).map((state) => (
             <button
               key={state}
               className={reviewState === state ? styles.stateActive : ""}
@@ -441,7 +639,6 @@ export default function AdminPayrollDetailPage() {
             </button>
           ))}
         </aside>
-
       )}
 
       {/* Toast */}

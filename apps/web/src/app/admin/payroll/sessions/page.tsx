@@ -1,8 +1,5 @@
 "use client";
 
-// MOCK(A-PAY-2/3): GET /api/v1/admin/sessions/pending and PATCH approve/reject endpoints mock
-// ASSUMPTION(decision-2): Pay-rate unit basis supports per_session and per_hour (0.5h rounded up)
-
 import {
   AlertCircle,
   Bell,
@@ -21,8 +18,14 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { avatarToneFor, initialsOf } from "../../../../lib/formatters";
+import {
+  fetchPendingSessions,
+  approveSession,
+  rejectSession,
+  type PendingSessionItem,
+} from "../../../../lib/admin-sessions-service";
 import styles from "./sessions.module.css";
 
 type ReviewState = "ready" | "loading" | "empty" | "error" | "drawer" | "forbidden";
@@ -47,82 +50,69 @@ interface SessionQueueItem {
   attendance: AttendanceSummary;
 }
 
-const initialSessions: SessionQueueItem[] = [
-  {
-    id: "sess-1",
-    teacher: "Phạm Thị Lan",
-    class: "HSK 2 — Nhóm A",
-    date: "08/08/2026",
-    scheduled: "19:00 – 20:30",
-    actual: "19:05 – 20:35",
-    minutes: 90,
-    topic: "Bài 12 — Trợ từ ngữ khí 吗 / 呢",
-    notes: "Học sinh nắm bài tốt, cần luyện thêm phát âm.",
-    attendance: { present: 7, excused: 1, unexcused: 0, total: 8 },
-  },
-  {
-    id: "sess-2",
-    teacher: "Phạm Thị Lan",
-    class: "HSK 2 — Nhóm A",
-    date: "06/08/2026",
-    scheduled: "19:00 – 20:30",
-    actual: "19:00 – 20:30",
-    minutes: 90,
-    topic: "Bài 11 — Câu hỏi lựa chọn",
-    notes: "",
-    attendance: { present: 8, excused: 0, unexcused: 0, total: 8 },
-  },
-  {
-    id: "sess-3",
-    teacher: "Đỗ Hải Yến",
-    class: "HSK 3 — Nhóm B",
-    date: "06/08/2026",
-    scheduled: "18:00 – 19:30",
-    actual: "18:10 – 19:25",
-    minutes: 75,
-    topic: "Bài 8 — Bổ ngữ kết quả",
-    notes: "Kết thúc sớm 5 phút.",
-    attendance: { present: 5, excused: 0, unexcused: 1, total: 6 },
-  },
-  {
-    id: "sess-4",
-    teacher: "Đỗ Hải Yến",
-    class: "HSK 1 — Nhóm C",
-    date: "05/08/2026",
-    scheduled: "17:00 – 18:00",
-    actual: "17:00 – 18:00",
-    minutes: 60,
-    topic: "Bài 5 — Số đếm và ngày tháng",
-    notes: "",
-    attendance: { present: 4, excused: 1, unexcused: 0, total: 5 },
-  },
-  {
-    id: "sess-5",
-    teacher: "Phạm Thị Lan",
-    class: "HSK 2 — Nhóm A",
-    date: "01/08/2026",
-    scheduled: "19:00 – 20:30",
-    actual: "19:00 – 20:50",
-    minutes: 110,
-    topic: "Bài 10 — Ôn tập giữa kỳ",
-    notes: "Dạy bù 20 phút cho phần ôn tập.",
-    attendance: { present: 8, excused: 0, unexcused: 0, total: 8 },
-  },
-];
+function mapToQueueItem(s: PendingSessionItem): SessionQueueItem {
+  let minutes = 90;
+  let actualStr = "Chưa ghi nhận";
+  if (s.actualStart && s.actualEnd) {
+    const diffMs = new Date(s.actualEnd).getTime() - new Date(s.actualStart).getTime();
+    minutes = Math.max(0, Math.round(diffMs / (1000 * 60)));
+    actualStr = `${s.actualStart.slice(11, 16)} – ${s.actualEnd.slice(11, 16)}`;
+  }
+
+  return {
+    id: s.id,
+    teacher: s.teacherName,
+    class: s.className,
+    date: s.scheduledDate,
+    scheduled: `${s.scheduledStart} – ${s.scheduledEnd}`,
+    actual: actualStr,
+    minutes,
+    topic: s.topic,
+    notes: s.notes ?? "",
+    attendance: {
+      present: s.attendanceSummary.present,
+      excused: s.attendanceSummary.absentExcused,
+      unexcused: s.attendanceSummary.absentUnexcused,
+      total: s.attendanceSummary.marked,
+    },
+  };
+}
 
 export default function AdminSessionReviewPage() {
   const router = useRouter();
-  const [sessions, setSessions] = useState<SessionQueueItem[]>(initialSessions);
+  const [sessions, setSessions] = useState<SessionQueueItem[]>([]);
   const [teacherFilter, setTeacherFilter] = useState("all");
   const [activeSession, setActiveSession] = useState<SessionQueueItem | null>(null);
   const [reviewState, setReviewState] = useState<ReviewState>("ready");
   const [mobileNav, setMobileNav] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   // Reject modal
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
   const [sessionToReject, setSessionToReject] = useState<SessionQueueItem | null>(null);
+
+  useEffect(() => {
+    async function loadSessions() {
+      setLoading(true);
+      setErrorMessage(null);
+      try {
+        const res = await fetchPendingSessions();
+        setSessions(res.sessions.map(mapToQueueItem));
+      } catch (err: any) {
+        if (err?.statusCode === 403) {
+          setReviewState("forbidden");
+        } else {
+          setErrorMessage(err?.message || "Không thể tải danh sách buổi học chờ duyệt");
+        }
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadSessions();
+  }, []);
 
   const filteredSessions = useMemo(() => {
     return sessions.filter((s) => teacherFilter === "all" || s.teacher === teacherFilter);
@@ -133,12 +123,17 @@ export default function AdminSessionReviewPage() {
     setTimeout(() => setToastMessage(null), 2500);
   }
 
-  function handleApprove(session: SessionQueueItem) {
-    setSessions((prev) => prev.filter((s) => s.id !== session.id));
-    if (activeSession?.id === session.id) {
-      setActiveSession(null);
+  async function handleApprove(session: SessionQueueItem) {
+    try {
+      await approveSession(session.id);
+      setSessions((prev) => prev.filter((s) => s.id !== session.id));
+      if (activeSession?.id === session.id) {
+        setActiveSession(null);
+      }
+      triggerToast("Đã duyệt buổi học");
+    } catch (err: any) {
+      triggerToast(err?.message || "Duyệt buổi học thất bại");
     }
-    triggerToast("Đã duyệt buổi học");
   }
 
   function openRejectModal(session: SessionQueueItem) {
@@ -147,20 +142,25 @@ export default function AdminSessionReviewPage() {
     setShowRejectModal(true);
   }
 
-  function confirmReject() {
+  async function confirmReject() {
     if (!sessionToReject || !rejectReason.trim()) return;
-    setSessions((prev) => prev.filter((s) => s.id !== sessionToReject.id));
-    if (activeSession?.id === sessionToReject.id) {
-      setActiveSession(null);
+    try {
+      await rejectSession(sessionToReject.id, rejectReason.trim());
+      setSessions((prev) => prev.filter((s) => s.id !== sessionToReject.id));
+      if (activeSession?.id === sessionToReject.id) {
+        setActiveSession(null);
+      }
+      setShowRejectModal(false);
+      triggerToast("Đã từ chối buổi học");
+    } catch (err: any) {
+      triggerToast(err?.message || "Từ chối buổi học thất bại");
     }
-    setShowRejectModal(false);
-    triggerToast("Đã từ chối buổi học");
   }
 
   function handleStateChange(newState: ReviewState) {
     setReviewState(newState);
     if (newState === "drawer") {
-      setActiveSession(filteredSessions[0] || initialSessions[0]);
+      setActiveSession(filteredSessions[0] || sessions[0] || null);
     } else {
       setActiveSession(null);
     }
@@ -170,7 +170,11 @@ export default function AdminSessionReviewPage() {
     }
   }
 
-  const isEmpty = reviewState === "empty" || filteredSessions.length === 0;
+  const teacherOptions = useMemo(() => {
+    return Array.from(new Set(sessions.map((s) => s.teacher))).filter(Boolean);
+  }, [sessions]);
+
+  const isEmpty = reviewState === "empty" || (!loading && filteredSessions.length === 0);
 
   return (
     <div className={styles.appShell}>
@@ -267,17 +271,27 @@ export default function AdminSessionReviewPage() {
                 onChange={(e) => setTeacherFilter(e.target.value)}
               >
                 <option value="all">Tất cả giáo viên</option>
-                <option value="Phạm Thị Lan">Phạm Thị Lan</option>
-                <option value="Đỗ Hải Yến">Đỗ Hải Yến</option>
+                {teacherOptions.map((name) => (
+                  <option key={name} value={name}>
+                    {name}
+                  </option>
+                ))}
               </select>
             </div>
           </section>
 
           {/* Error Banner */}
-          {reviewState === "error" && (
+          {(errorMessage || reviewState === "error") && (
             <div style={{ backgroundColor: "rgba(220,38,38,0.08)", borderLeft: "3px solid #DC2626", padding: "12px 16px", borderRadius: "6px", marginBottom: "16px", color: "#991B1B", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <span>Không tải được danh sách buổi học chờ duyệt.</span>
-              <button style={{ backgroundColor: "#DC2626", color: "#fff", padding: "4px 10px", borderRadius: "4px" }} onClick={() => setReviewState("ready")}>Thử lại</button>
+              <span>{errorMessage || "Không tải được danh sách buổi học chờ duyệt."}</span>
+              <button style={{ backgroundColor: "#DC2626", color: "#fff", padding: "4px 10px", borderRadius: "4px", border: "none", cursor: "pointer" }} onClick={() => { setErrorMessage(null); setReviewState("ready"); }}>Thử lại</button>
+            </div>
+          )}
+
+          {/* Loading Indicator */}
+          {(loading || reviewState === "loading") && (
+            <div style={{ padding: "32px", textAlign: "center", color: "#64748B" }}>
+              Đang tải danh sách buổi học chờ duyệt...
             </div>
           )}
 

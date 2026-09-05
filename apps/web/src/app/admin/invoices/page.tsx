@@ -1,8 +1,5 @@
 "use client";
 
-// MOCK(A-INV-4): GET /api/v1/admin/invoices and meta.summary mock dataset
-// ASSUMPTION(decision-1): Billing model is per-student monthly flat rate with append-only history
-
 import {
   AlertCircle,
   Bell,
@@ -22,45 +19,23 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
-import { avatarToneFor, formatVnd, initialsOf } from "../../../lib/formatters";
+import { useEffect, useMemo, useState } from "react";
+import {
+  fetchInvoices,
+  fetchInvoiceSummary,
+  InvoiceStatus,
+  InvoiceSummary,
+  StudentInvoiceItem,
+} from "../../../lib/admin-billing-service";
+import { avatarToneFor, formatDate, formatVnd, initialsOf } from "../../../lib/formatters";
 import { getStatusColor } from "../../../lib/status";
 import styles from "./invoices.module.css";
 import { SessionChip } from "@/components/auth/session-chip";
 
-type InvoiceStatus = "unpaid" | "partially_paid" | "paid" | "void" | "overdue";
 type ReviewState = "ready" | "loading" | "empty" | "partial" | "error" | "forbidden";
-
-interface InvoiceItem {
-  id: string;
-  student: string;
-  period: string;
-  total: number;
-  paid: number;
-  status: InvoiceStatus;
-}
-
-const mockInvoices: InvoiceItem[] = [
-  { id: "INV-2608-001", student: "Nguyễn Minh Anh", period: "01/08 – 31/08/2026", total: 2500000, paid: 2500000, status: "paid" },
-  { id: "INV-2608-002", student: "Lê Quang Dũng", period: "01/08 – 31/08/2026", total: 2500000, paid: 2500000, status: "paid" },
-  { id: "INV-2608-003", student: "Hoàng Văn Nam", period: "01/08 – 31/08/2026", total: 2500000, paid: 2500000, status: "paid" },
-  { id: "INV-2608-004", student: "Vũ Ngọc Bích", period: "01/08 – 31/08/2026", total: 2500000, paid: 2500000, status: "paid" },
-  { id: "INV-2608-005", student: "Đặng Thu Trang", period: "01/08 – 31/08/2026", total: 2500000, paid: 2500000, status: "paid" },
-  { id: "INV-2608-006", student: "Trần Bảo Long", period: "01/08 – 31/08/2026", total: 2500000, paid: 1000000, status: "partially_paid" },
-  { id: "INV-2608-007", student: "Ngô Khánh Vy", period: "01/08 – 31/08/2026", total: 2500000, paid: 0, status: "unpaid" },
-  { id: "INV-2608-008", student: "Mai Tuấn Kiệt", period: "01/08 – 31/08/2026", total: 2500000, paid: 0, status: "void" },
-];
-
-const mockSummary = {
-  paidStudents: 5,
-  totalStudents: 8,
-  collected: 12500000,
-  outstanding: 7500000,
-};
 
 const statusLabels: Record<InvoiceStatus, string> = {
   unpaid: "Chưa nộp",
-  overdue: "Quá hạn",
   partially_paid: "Còn nợ một phần",
   paid: "Đã nộp",
   void: "Đã hủy",
@@ -68,26 +43,57 @@ const statusLabels: Record<InvoiceStatus, string> = {
 
 export default function AdminInvoicesPage() {
   const router = useRouter();
-  const [selectedPeriod, setSelectedPeriod] = useState("08/2026");
+  const [invoices, setInvoices] = useState<StudentInvoiceItem[]>([]);
+  const [summary, setSummary] = useState<InvoiceSummary | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [reviewState, setReviewState] = useState<ReviewState>("ready");
   const [mobileNav, setMobileNav] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  const filteredInvoices = useMemo(() => {
-    if (selectedPeriod !== "08/2026") {
-      return [];
+  async function loadData() {
+    setLoading(true);
+    setErrorMessage(null);
+    try {
+      const [invRes, sumRes] = await Promise.all([
+        fetchInvoices({
+          status: statusFilter !== "all" ? (statusFilter as InvoiceStatus) : undefined,
+        }),
+        fetchInvoiceSummary(),
+      ]);
+      setInvoices(invRes.invoices);
+      setSummary(sumRes);
+    } catch (err: any) {
+      if (err?.statusCode === 403) {
+        setReviewState("forbidden");
+      } else {
+        setErrorMessage(err?.message || "Không thể tải danh sách hóa đơn");
+      }
+    } finally {
+      setLoading(false);
     }
-    const query = searchQuery.trim().toLowerCase();
-    return mockInvoices.filter((item) => {
-      const matchName = !query || item.student.toLowerCase().includes(query);
-      const matchStatus = statusFilter === "all" || item.status === statusFilter;
-      return matchName && matchStatus;
-    });
-  }, [selectedPeriod, searchQuery, statusFilter]);
+  }
 
-  const showEmpty = reviewState === "empty" || filteredInvoices.length === 0;
+  useEffect(() => {
+    loadData();
+  }, [statusFilter]);
+
+  const filteredInvoices = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+    return invoices.filter((item) => {
+      const matchName =
+        !query ||
+        item.studentName.toLowerCase().includes(query) ||
+        item.studentEmail.toLowerCase().includes(query);
+      return matchName;
+    });
+  }, [invoices, searchQuery]);
+
+  const showEmpty =
+    reviewState === "empty" || (!loading && filteredInvoices.length === 0);
 
   function handleStateChange(newState: ReviewState) {
     setReviewState(newState);
@@ -99,6 +105,11 @@ export default function AdminInvoicesPage() {
     }
   }
 
+  const paidCount = summary?.countByStatus.paid ?? 0;
+  const totalCount = summary?.invoiceCount ?? 0;
+  const collectedAmount = Number(summary?.totalPaid ?? 0);
+  const outstandingAmount = Number(summary?.totalOutstanding ?? 0);
+
   return (
     <div className={styles.appShell}>
       {/* Sidebar */}
@@ -106,7 +117,11 @@ export default function AdminInvoicesPage() {
         <div className={styles.brand}>
           <span className={styles.brandMark}>学</span>
           <span>HSK Platform</span>
-          <button className={styles.closeNav} onClick={() => setMobileNav(false)} aria-label="Đóng menu">
+          <button
+            className={styles.closeNav}
+            onClick={() => setMobileNav(false)}
+            aria-label="Đóng menu"
+          >
             <X size={20} />
           </button>
         </div>
@@ -119,7 +134,10 @@ export default function AdminInvoicesPage() {
             <Users size={20} />
             <span>Tài khoản</span>
           </Link>
-          <Link className={`${styles.navItem} ${styles.navActive}`} href="/admin/invoices">
+          <Link
+            className={`${styles.navItem} ${styles.navActive}`}
+            href="/admin/invoices"
+          >
             <CircleDollarSign size={20} />
             <span>Học phí</span>
           </Link>
@@ -140,13 +158,23 @@ export default function AdminInvoicesPage() {
           </div>
         </div>
       </aside>
-      {mobileNav && <button className={styles.navBackdrop} onClick={() => setMobileNav(false)} aria-label="Đóng menu" />}
+      {mobileNav && (
+        <button
+          className={styles.navBackdrop}
+          onClick={() => setMobileNav(false)}
+          aria-label="Đóng menu"
+        />
+      )}
 
       {/* Main Column */}
       <div className={styles.mainColumn}>
         <header className={styles.topbar}>
           <div className={styles.breadcrumb}>
-            <button className={styles.menuButton} onClick={() => setMobileNav(true)} aria-label="Mở menu">
+            <button
+              className={styles.menuButton}
+              onClick={() => setMobileNav(true)}
+              aria-label="Mở menu"
+            >
               <Menu size={20} />
             </button>
             <span>Quản trị</span>
@@ -175,23 +203,21 @@ export default function AdminInvoicesPage() {
             <div>
               <p className={styles.eyebrow}>QUẢN LÝ THU PHÍ</p>
               <h1>Học phí</h1>
-              <p className={styles.subtitle}>Danh sách và tiến độ thu học phí theo từng kỳ của toàn bộ học sinh.</p>
+              <p className={styles.subtitle}>
+                Danh sách và tiến độ thu học phí theo từng kỳ của toàn bộ học sinh.
+              </p>
             </div>
             <div className={styles.titleControls}>
-              <select
-                className={styles.periodSelect}
-                value={selectedPeriod}
-                onChange={(e) => setSelectedPeriod(e.target.value)}
-                aria-label="Chọn kỳ thu học phí"
+              <Link
+                className={styles.secondaryButton}
+                href="/admin/tuition-rates"
               >
-                <option value="08/2026">Tháng 08/2026</option>
-                <option value="07/2026">Tháng 07/2026</option>
-                <option value="06/2026">Tháng 06/2026</option>
-              </select>
-              <Link className={styles.secondaryButton} href="/admin/tuition-rates">
                 <span>Mức học phí</span>
               </Link>
-              <Link className={styles.primaryButton} href={`/admin/invoices/generate?period=${selectedPeriod}`}>
+              <Link
+                className={styles.primaryButton}
+                href="/admin/invoices/generate"
+              >
                 <Plus size={16} />
                 <span>Tạo hóa đơn tháng…</span>
               </Link>
@@ -200,7 +226,7 @@ export default function AdminInvoicesPage() {
 
           {/* KPI Row */}
           <section className={styles.kpiRow} aria-label="Chỉ số thu học phí">
-            {reviewState === "loading" ? (
+            {loading || reviewState === "loading" ? (
               <>
                 <div className={styles.kpiSkeleton} />
                 <div className={styles.kpiSkeleton} />
@@ -211,22 +237,32 @@ export default function AdminInvoicesPage() {
                 <div className={styles.kpiCard}>
                   <span className={styles.kpiLabel}>ĐÃ THU</span>
                   <span className={styles.kpiValue}>
-                    {mockSummary.paidStudents}/{mockSummary.totalStudents} học sinh
+                    {paidCount}/{totalCount} hóa đơn
                   </span>
                   <div className={styles.meterTrack}>
                     <div
                       className={styles.meterFill}
-                      style={{ width: `${(mockSummary.paidStudents / mockSummary.totalStudents) * 100}%` }}
+                      style={{
+                        width: `${
+                          totalCount > 0
+                            ? (paidCount / totalCount) * 100
+                            : 0
+                        }%`,
+                      }}
                     />
                   </div>
                 </div>
                 <div className={styles.kpiCard}>
                   <span className={styles.kpiLabel}>TỔNG THU</span>
-                  <span className={styles.kpiValue}>{formatVnd(mockSummary.collected)}</span>
+                  <span className={styles.kpiValue}>
+                    {formatVnd(collectedAmount)}
+                  </span>
                 </div>
                 <div className={styles.kpiCard}>
                   <span className={styles.kpiLabel}>CÒN NỢ</span>
-                  <span className={styles.kpiValue}>{formatVnd(mockSummary.outstanding)}</span>
+                  <span className={styles.kpiValue}>
+                    {formatVnd(outstandingAmount)}
+                  </span>
                 </div>
               </>
             )}
@@ -238,7 +274,7 @@ export default function AdminInvoicesPage() {
               <Search className={styles.searchIcon} size={17} />
               <input
                 type="text"
-                placeholder="Tìm học sinh"
+                placeholder="Tìm học sinh theo tên, email..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
@@ -255,23 +291,28 @@ export default function AdminInvoicesPage() {
               <option value="paid">Đã nộp</option>
               <option value="void">Đã hủy</option>
             </select>
-            <span className={styles.filterCount}>{filteredInvoices.length} hóa đơn</span>
+            <span className={styles.filterCount}>
+              {filteredInvoices.length} hóa đơn
+            </span>
           </section>
 
           {/* Error Banner */}
-          {reviewState === "error" && (
+          {(errorMessage || reviewState === "error") && (
             <div className={styles.errorBanner} role="alert">
               <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                 <AlertCircle size={18} />
-                <span>Không tải được danh sách hóa đơn.</span>
+                <span>{errorMessage || "Không tải được danh sách hóa đơn."}</span>
               </div>
-              <button onClick={() => setReviewState("ready")}>Thử lại</button>
+              <button onClick={() => loadData()}>Thử lại</button>
             </div>
           )}
 
           {/* Table Card */}
-          <section className={styles.tableCard} aria-label="Bảng danh sách hóa đơn">
-            {reviewState === "loading" ? (
+          <section
+            className={styles.tableCard}
+            aria-label="Bảng danh sách hóa đơn"
+          >
+            {loading || reviewState === "loading" ? (
               <div>
                 {[1, 2, 3, 4, 5].map((i) => (
                   <div key={i} className={styles.skeletonRow} />
@@ -280,10 +321,16 @@ export default function AdminInvoicesPage() {
             ) : showEmpty ? (
               <div className={styles.emptyState}>
                 <Inbox className={styles.emptyIcon} />
-                <h2>Chưa tạo hóa đơn cho kỳ này</h2>
-                <p>Tạo hóa đơn hàng loạt cho tất cả học sinh đã có mức học phí đang áp dụng.</p>
-                <Link className={styles.primaryButton} href={`/admin/invoices/generate?period=${selectedPeriod}`}>
-                  Tạo hóa đơn tháng 8
+                <h2>Chưa có hóa đơn nào</h2>
+                <p>
+                  Tạo hóa đơn hàng loạt cho tất cả học sinh đã có mức học phí đang
+                  áp dụng.
+                </p>
+                <Link
+                  className={styles.primaryButton}
+                  href="/admin/invoices/generate"
+                >
+                  Tạo hóa đơn hàng loạt
                 </Link>
               </div>
             ) : (
@@ -293,8 +340,8 @@ export default function AdminInvoicesPage() {
                     <thead>
                       <tr>
                         <th>Học sinh</th>
-                        <th>Kỳ</th>
-                        <th className={styles.numeric}>Tổng</th>
+                        <th>Kỳ thu phí</th>
+                        <th className={styles.numeric}>Tổng tiền</th>
                         <th className={styles.numeric}>Đã nộp</th>
                         <th className={styles.numeric}>Còn nợ</th>
                         <th>Trạng thái</th>
@@ -302,32 +349,53 @@ export default function AdminInvoicesPage() {
                     </thead>
                     <tbody>
                       {filteredInvoices.map((inv) => {
-                        const tone = avatarToneFor(inv.student);
-                        const outstanding = inv.total - inv.paid;
+                        const tone = avatarToneFor(inv.studentName);
                         const statusTheme = getStatusColor(inv.status);
+                        const periodStr = `${formatDate(inv.periodStart)} – ${formatDate(inv.periodEnd)}`;
+                        const isOutstanding = Number(inv.outstandingAmount) > 0;
                         return (
                           <tr
                             key={inv.id}
                             onClick={() => router.push(`/admin/invoices/${inv.id}`)}
                             tabIndex={0}
-                            onKeyDown={(e) => e.key === "Enter" && router.push(`/admin/invoices/${inv.id}`)}
+                            onKeyDown={(e) =>
+                              e.key === "Enter" &&
+                              router.push(`/admin/invoices/${inv.id}`)
+                            }
+                            style={{ cursor: "pointer" }}
                           >
                             <td>
                               <div className={styles.studentCell}>
                                 <span
                                   className={styles.studentAvatar}
-                                  style={{ backgroundColor: tone.bg, color: tone.text }}
+                                  style={{
+                                    backgroundColor: tone.bg,
+                                    color: tone.text,
+                                  }}
                                 >
-                                  {initialsOf(inv.student)}
+                                  {initialsOf(inv.studentName)}
                                 </span>
-                                <strong>{inv.student}</strong>
+                                <div>
+                                  <strong>{inv.studentName}</strong>
+                                  <small style={{ display: "block", color: "#64748B" }}>
+                                    {inv.studentEmail}
+                                  </small>
+                                </div>
                               </div>
                             </td>
-                            <td>{inv.period}</td>
-                            <td className={styles.numeric}>{formatVnd(inv.total)}</td>
-                            <td className={styles.numeric}>{formatVnd(inv.paid)}</td>
-                            <td className={`${styles.numeric} ${outstanding > 0 ? styles.outstanding : ""}`}>
-                              {formatVnd(outstanding)}
+                            <td>{periodStr}</td>
+                            <td className={styles.numeric}>
+                              {formatVnd(Number(inv.totalAmount))}
+                            </td>
+                            <td className={styles.numeric}>
+                              {formatVnd(Number(inv.paidAmount))}
+                            </td>
+                            <td
+                              className={`${styles.numeric} ${
+                                isOutstanding ? styles.outstanding : ""
+                              }`}
+                            >
+                              {formatVnd(Number(inv.outstandingAmount))}
                             </td>
                             <td>
                               <span
@@ -338,7 +406,7 @@ export default function AdminInvoicesPage() {
                                 }}
                               >
                                 <i className={styles.statusDot} />
-                                {statusLabels[inv.status]}
+                                {statusLabels[inv.status] || inv.status}
                               </span>
                             </td>
                           </tr>
@@ -351,8 +419,7 @@ export default function AdminInvoicesPage() {
                 {/* Mobile Card List (<768px) */}
                 <div className={styles.mobileList}>
                   {filteredInvoices.map((inv) => {
-                    const tone = avatarToneFor(inv.student);
-                    const outstanding = inv.total - inv.paid;
+                    const tone = avatarToneFor(inv.studentName);
                     const statusTheme = getStatusColor(inv.status);
                     return (
                       <article
@@ -364,11 +431,14 @@ export default function AdminInvoicesPage() {
                           <div className={styles.studentCell}>
                             <span
                               className={styles.studentAvatar}
-                              style={{ backgroundColor: tone.bg, color: tone.text }}
+                              style={{
+                                backgroundColor: tone.bg,
+                                color: tone.text,
+                              }}
                             >
-                              {initialsOf(inv.student)}
+                              {initialsOf(inv.studentName)}
                             </span>
-                            <strong>{inv.student}</strong>
+                            <strong>{inv.studentName}</strong>
                           </div>
                           <span
                             className={styles.statusPill}
@@ -381,16 +451,29 @@ export default function AdminInvoicesPage() {
                             {statusLabels[inv.status]}
                           </span>
                         </div>
-                        <dl className={styles.mobileDetails}>
-                          <dt>Kỳ:</dt>
-                          <dd>{inv.period}</dd>
-                          <dt>Tổng:</dt>
-                          <dd>{formatVnd(inv.total)}</dd>
-                          <dt>Đã nộp:</dt>
-                          <dd>{formatVnd(inv.paid)}</dd>
-                          <dt>Còn nợ:</dt>
-                          <dd className={outstanding > 0 ? styles.outstanding : ""}>{formatVnd(outstanding)}</dd>
-                        </dl>
+                        <div className={styles.mobileAmounts}>
+                          <div>
+                            <small>Tổng thu</small>
+                            <strong>{formatVnd(Number(inv.totalAmount))}</strong>
+                          </div>
+                          <div>
+                            <small>Đã thu</small>
+                            <strong>{formatVnd(Number(inv.paidAmount))}</strong>
+                          </div>
+                          <div>
+                            <small>Còn nợ</small>
+                            <strong
+                              style={{
+                                color:
+                                  Number(inv.outstandingAmount) > 0
+                                    ? "#DC2626"
+                                    : "#10B981",
+                              }}
+                            >
+                              {formatVnd(Number(inv.outstandingAmount))}
+                            </strong>
+                          </div>
+                        </div>
                       </article>
                     );
                   })}
@@ -401,15 +484,23 @@ export default function AdminInvoicesPage() {
         </main>
       </div>
 
-      {/* WEB-004: design-review scaffolding, dev only. Over live data it lets a
-
-          failed load be repainted as a healthy one. */}
-
+      {/* WEB-004: design-review scaffolding, dev only */}
       {process.env.NODE_ENV !== "production" && (
-
-        <aside className={styles.stateSwitcher} aria-label="Review State Switcher">
+        <aside
+          className={styles.stateSwitcher}
+          aria-label="Review State Switcher"
+        >
           <span>REVIEW STATE</span>
-          {(["ready", "loading", "empty", "partial", "error", "forbidden"] as ReviewState[]).map((state) => (
+          {(
+            [
+              "ready",
+              "loading",
+              "empty",
+              "partial",
+              "error",
+              "forbidden",
+            ] as ReviewState[]
+          ).map((state) => (
             <button
               key={state}
               className={reviewState === state ? styles.stateActive : ""}
@@ -419,11 +510,14 @@ export default function AdminInvoicesPage() {
             </button>
           ))}
         </aside>
-
       )}
 
       {/* Toast */}
-      {toastMessage && <div className={styles.toast}>{toastMessage}</div>}
+      {toastMessage && (
+        <div className={styles.toast}>
+          <span>{toastMessage}</span>
+        </div>
+      )}
     </div>
   );
 }

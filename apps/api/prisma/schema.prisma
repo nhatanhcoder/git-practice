@@ -71,10 +71,18 @@ model User {
   createdAt   DateTime  @default(now()) @map("created_at")
   updatedAt   DateTime  @updatedAt @map("updated_at")
 
-  refreshTokens   RefreshToken[]
-  classesTeaching Class[]
-  enrollments     ClassEnrollment[]
-  lessonsCreated  Lesson[]
+  refreshTokens    RefreshToken[]
+  classesTeaching  Class[]
+  enrollments      ClassEnrollment[]
+  lessonsCreated   Lesson[]
+  sessionsTeaching ClassSession[]       @relation("TeacherSessions")
+  attendances      SessionAttendance[]  @relation("StudentAttendances")
+  payRates         TeacherPayRate[]     @relation("TeacherPayRates")
+  payrollPeriods   PayrollPeriod[]      @relation("TeacherPayrollPeriods")
+  tuitionRates     StudentTuitionRate[] @relation("StudentTuitionRates")
+  invoices         StudentInvoice[]     @relation("StudentInvoices")
+  recordedPayments TuitionPayment[]     @relation("AdminRecordedPayments")
+  notifications    Notification[]       @relation("UserNotifications")
 
   @@index([status])
   @@index([role, status])
@@ -130,6 +138,7 @@ model Class {
   teacher        User        @relation(fields: [teacherId], references: [id], onDelete: Cascade)
   enrollments    ClassEnrollment[]
   lessons        Lesson[]
+  sessions       ClassSession[]
 
   @@index([teacherId])
   @@index([status])
@@ -179,4 +188,230 @@ model Lesson {
   @@index([teacherId])
   @@map("lessons")
 }
+
+enum SessionStatus {
+  scheduled
+  in_progress
+  completed_pending
+  approved
+  rejected
+
+  @@map("session_status")
+}
+
+enum AttendanceStatus {
+  present
+  absent_excused
+  absent_unexcused
+
+  @@map("attendance_status")
+}
+
+enum PayRateType {
+  per_session
+  per_hour
+
+  @@map("pay_rate_type")
+}
+
+enum PayrollStatus {
+  draft
+  finalized
+  paid
+
+  @@map("payroll_status")
+}
+
+enum TuitionBillingCycle {
+  monthly
+
+  @@map("tuition_billing_cycle")
+}
+
+enum InvoiceStatus {
+  unpaid
+  partially_paid
+  paid
+  void
+
+  @@map("invoice_status")
+}
+
+enum NotificationType {
+  account_approved
+  account_suspended
+  new_assignment
+  deadline_reminder
+  graded
+  new_invoice
+  session_submitted_for_review
+  session_approved
+  session_rejected
+  new_teacher_registration
+  new_student_registration
+
+  @@map("notification_type")
+}
+
+model ClassSession {
+  id              String             @id @default(uuid()) @db.Uuid
+  classId         String             @map("class_id") @db.Uuid
+  teacherId       String             @map("teacher_id") @db.Uuid
+  scheduledDate   DateTime           @map("scheduled_date") @db.Date
+  scheduledStart  String             @map("scheduled_start") @db.VarChar(10)
+  scheduledEnd    String             @map("scheduled_end") @db.VarChar(10)
+  actualStart     DateTime?          @map("actual_start")
+  actualEnd       DateTime?          @map("actual_end")
+  topic           String             @db.VarChar(300)
+  notes           String?            @db.Text
+  status          SessionStatus      @default(scheduled)
+  rejectionReason String?            @map("rejection_reason") @db.Text
+  payrollPeriodId String?            @map("payroll_period_id") @db.Uuid
+  createdAt       DateTime           @default(now()) @map("created_at")
+  updatedAt       DateTime           @updatedAt @map("updated_at")
+
+  class           Class              @relation(fields: [classId], references: [id], onDelete: Cascade)
+  teacher         User               @relation("TeacherSessions", fields: [teacherId], references: [id], onDelete: Cascade)
+  payrollPeriod   PayrollPeriod?     @relation(fields: [payrollPeriodId], references: [id], onDelete: SetNull)
+  attendances     SessionAttendance[]
+
+  @@index([classId])
+  @@index([teacherId])
+  @@index([status])
+  @@index([payrollPeriodId])
+  @@index([scheduledDate])
+  @@map("class_sessions")
+}
+
+model SessionAttendance {
+  id        String           @id @default(uuid()) @db.Uuid
+  sessionId String           @map("session_id") @db.Uuid
+  studentId String           @map("student_id") @db.Uuid
+  status    AttendanceStatus @default(present)
+  createdAt DateTime         @default(now()) @map("created_at")
+  updatedAt DateTime         @updatedAt @map("updated_at")
+
+  session   ClassSession     @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  student   User             @relation("StudentAttendances", fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, studentId])
+  @@index([sessionId])
+  @@index([studentId])
+  @@map("session_attendances")
+}
+
+model TeacherPayRate {
+  id            String      @id @default(uuid()) @db.Uuid
+  teacherId     String      @map("teacher_id") @db.Uuid
+  rateType      PayRateType @map("rate_type")
+  rateAmount    Decimal     @map("rate_amount") @db.Decimal(12, 2)
+  effectiveFrom DateTime    @map("effective_from") @db.Date
+  createdAt     DateTime    @default(now()) @map("created_at")
+  updatedAt     DateTime    @updatedAt @map("updated_at")
+
+  teacher       User        @relation("TeacherPayRates", fields: [teacherId], references: [id], onDelete: Cascade)
+
+  @@unique([teacherId, effectiveFrom])
+  @@index([teacherId])
+  @@map("teacher_pay_rates")
+}
+
+model PayrollPeriod {
+  id            String         @id @default(uuid()) @db.Uuid
+  code          String         @db.VarChar(50)
+  teacherId     String         @map("teacher_id") @db.Uuid
+  periodStart   DateTime       @map("period_start") @db.Date
+  periodEnd     DateTime       @map("period_end") @db.Date
+  status        PayrollStatus  @default(draft)
+  totalSessions Int            @map("total_sessions")
+  totalAmount   Decimal        @map("total_amount") @db.Decimal(12, 2)
+  paidAt        DateTime?      @map("paid_at")
+  createdAt     DateTime       @default(now()) @map("created_at")
+  updatedAt     DateTime       @updatedAt @map("updated_at")
+
+  teacher       User           @relation("TeacherPayrollPeriods", fields: [teacherId], references: [id], onDelete: Cascade)
+  sessions      ClassSession[]
+
+  @@unique([teacherId, periodStart, periodEnd])
+  @@index([teacherId])
+  @@index([status])
+  @@map("payroll_periods")
+}
+
+model StudentTuitionRate {
+  id            String              @id @default(uuid()) @db.Uuid
+  studentId     String              @map("student_id") @db.Uuid
+  rateAmount    Decimal             @map("rate_amount") @db.Decimal(12, 2)
+  billingCycle  TuitionBillingCycle @default(monthly) @map("billing_cycle")
+  effectiveFrom DateTime            @map("effective_from") @db.Date
+  createdAt     DateTime            @default(now()) @map("created_at")
+  updatedAt     DateTime            @updatedAt @map("updated_at")
+
+  student       User                @relation("StudentTuitionRates", fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, effectiveFrom])
+  @@index([studentId])
+  @@map("student_tuition_rates")
+}
+
+model StudentInvoice {
+  id          String         @id @default(uuid()) @db.Uuid
+  code        String         @unique @db.VarChar(50)
+  studentId   String         @map("student_id") @db.Uuid
+  periodStart DateTime       @map("period_start") @db.Date
+  periodEnd   DateTime       @map("period_end") @db.Date
+  dueDate     DateTime       @map("due_date") @db.Date
+  totalAmount Decimal        @map("total_amount") @db.Decimal(12, 2)
+  paidAmount  Decimal        @default(0) @map("paid_amount") @db.Decimal(12, 2)
+  status      InvoiceStatus  @default(unpaid)
+  createdAt   DateTime       @default(now()) @map("created_at")
+  updatedAt   DateTime       @updatedAt @map("updated_at")
+
+  student     User           @relation("StudentInvoices", fields: [studentId], references: [id], onDelete: Cascade)
+  payments    TuitionPayment[]
+
+  @@unique([studentId, periodStart, periodEnd])
+  @@index([studentId])
+  @@index([status])
+  @@map("student_invoices")
+}
+
+model TuitionPayment {
+  id                   String         @id @default(uuid()) @db.Uuid
+  invoiceId            String         @map("invoice_id") @db.Uuid
+  amount               Decimal        @db.Decimal(12, 2)
+  paidAt               DateTime       @default(now()) @map("paid_at")
+  paymentMethod        String         @map("payment_method") @db.VarChar(50)
+  transactionReference String?        @map("transaction_reference") @db.VarChar(200)
+  recordedBy           String         @map("recorded_by") @db.Uuid
+  createdAt            DateTime       @default(now()) @map("created_at")
+  updatedAt            DateTime       @updatedAt @map("updated_at")
+
+  invoice              StudentInvoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  recorder             User           @relation("AdminRecordedPayments", fields: [recordedBy], references: [id], onDelete: Restrict)
+
+  @@index([invoiceId])
+  @@index([recordedBy])
+  @@map("tuition_payments")
+}
+
+model Notification {
+  id            String           @id @default(uuid()) @db.Uuid
+  userId        String           @map("user_id") @db.Uuid
+  type          NotificationType
+  referenceId   String?          @map("reference_id") @db.VarChar(100)
+  referenceType String?          @map("reference_type") @db.VarChar(50)
+  isRead        Boolean          @default(false) @map("is_read")
+  readAt        DateTime?        @map("read_at")
+  payload       Json?            @db.JsonB
+  createdAt     DateTime         @default(now()) @map("created_at")
+  updatedAt     DateTime         @updatedAt @map("updated_at")
+
+  user          User             @relation("UserNotifications", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([type])
+  @@map("notifications")
+}
+
 
