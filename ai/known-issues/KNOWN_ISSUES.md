@@ -1157,6 +1157,24 @@ dropped — leaving it half-ported is the worst of the three states.
 
 ## Technical Debt
 
+### [DEBT-005] The landing page ships ~8.5 MB of uncompressed teacher photos
+
+**Severity**: Low
+**Status**: Open
+
+**Description**: `apps/web/public/teachers/*.png` are four PNGs of 1.9–2.3 MB each, committed
+as-is from `feat/student-hanlu-ui`. They are texture sources for the three.js carousel on
+`/student/landing`, which is now the only page reachable without logging in.
+
+**Impact**: the first paint of the only public page pulls ~8.5 MB. On a phone connection that is
+the whole first impression.
+
+**Fix Plan**: compress and resize to the size the cylinder faces actually sample, or convert to
+WebP with a PNG fallback. Do this before the page is linked anywhere public — see `WEB-017`,
+which has to be settled first anyway.
+
+---
+
 ### [DEBT-001] No cross-DB transactions
 
 **Severity**: Medium

@@ -65,3 +65,50 @@ before reading the suspect file.**
 2. `WEB-017` before the landing page is shown to anyone real.
 3. `/admin` should adopt the same server-layout-plus-client-guard shape; it lost its per-area
    metadata by making the whole layout a client component (`WEB-005`).
+
+---
+
+## Correction (same day) — the first verification pass missed four 404s
+
+The owner asked for a re-test, and it found a real defect the first pass had reported as
+verified. The landing page requested four teacher photos that were never ported with it:
+
+```
+404 /teachers/teacher_zhang_wei-v2.png
+404 /teachers/teacher_li_ruolan-v2.png
+404 /teachers/teacher_nguyen_tuan-v2.png
+404 /teachers/teacher_tran_dinh-v2.png
+```
+
+They are the textures the three.js cylinder maps onto its faces, so the carousel rendered as
+empty dark panels. Nothing throws when an image 404s — the page just looks wrong, and on a
+dark-themed hero it looked like a styling choice.
+
+**Why the first pass missed it**: it checked rendered text, the absence of the learner sidebar
+and horizontal overflow — all of which passed — and never opened the network log. The lesson is
+narrow and worth keeping: *rendered text is not a rendered page*. A missing asset is invisible to
+every check that only reads the DOM.
+
+Fixed by porting `apps/web/public/teachers/*.png` (four files, ~8.5 MB total, recorded as
+`DEBT-005`). Re-verified: all four serve 200 at full size, and the only failing request left on
+the page is `POST /auth/refresh 401`, which is correct for an anonymous visitor.
+
+### What the re-test covered that the first pass did not
+
+- **All nine learner routes, signed in** (`/student` plus grammar, foundation, learning-path,
+  exams, writing, workplace, mistakes, leaderboard): each keeps its URL and renders with the
+  learner sidebar. This was the real regression risk of moving nine folders into `(app)`, and the
+  first pass had only checked `/student`.
+- **All nine learner routes, anonymous**: each redirects to `/login?next=<its own path>`.
+- **The landing page while signed in**: stays public and still shows no learner sidebar.
+- **A genuine anonymous state.** The first anonymous check was not anonymous — the browser still
+  held a valid refresh cookie, and `POST /auth/refresh` returned 200. A real sign-out (204, then
+  refresh 401) was needed before the guard results meant anything.
+- `pnpm --filter api test` **141/141 across 23 suites** against current `main`, `check-docs` 8/8,
+  both builds clean.
+
+**Also learned**: `pnpm --filter api build | tail -3` reports the exit status of `tail`, not of
+the build. An API build that failed with seven TypeScript errors was nearly recorded as passing
+because of that pipeline. Check `${PIPESTATUS[0]}` or redirect to a file. The failure itself was
+only a stale generated Prisma client — `main` had gained the Sprint 6 schema when PR #33 merged —
+and `db:generate` fixed it.
