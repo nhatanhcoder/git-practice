@@ -46,6 +46,22 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
 
 ## Sprint 1 — Auth & Users
 - ✅ F1.1 Account registration (status `pending`, bcrypt cost 12)
+- ✅ (claude · 2026-09-05) **Signup screen + marketing profile.** `/register` did not exist at
+      all — the only way to create an account was to POST `/auth/register` by hand. Now a
+      two-step wizard (step 2 skippable), `/login` rebuilt on the Hán Lộ tokens, and a separate
+      `UserMarketingProfile` table carrying demographics, intent, attribution and its own consent
+      record. Owner-approved 2026-09-05: separate table, two-step, Hán Lộ direction.
+      Both steps submit together **because they must** — a new account is `pending`, so there is
+      no session to save a profile with afterwards. UTM is read from the URL silently;
+      `referralSource` is the asked version of the same question.
+      Consent is separate, unticked by default, stamped with a version and timestamp, and a birth
+      year under 16 refuses self-consent and marks the row.
+      **Verified against the real API in a browser**: registered through the form with UTM on the
+      URL and confirmed **in Postgres** that every field landed, phone normalised, diacritics
+      intact, consent stamped. 164/164 API tests across 26 suites, web build clean, check-docs 8/8.
+      ⚠️ Three gaps recorded in the session file: no Page Contract was written for either screen
+      (the pipeline asks for one), no Admin surface exists to read the collected data, and the
+      consent wording is placeholder text nobody with authority has approved.
 - ✅ F1.2 Login (JWT access 15min + refresh 7d, httpOnly cookie)
 - ✅ F1.3 Account approval (Admin: PATCH /admin/users/:id/approve, suspend, activate)
 - ✅ F1.4 Profile & Admin Users FE integration — **the wiring existed before 2026-09-04 but did
@@ -306,6 +322,23 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
 ---
 
 ## Off-sprint / spike
+
+- ✅ (claude · 2026-09-05) **`/student/landing` restored and made public.** The route 404'd: it
+  existed only on `feat/student-hanlu-ui`, whose PR #24 was closed without merging. Ported the
+  page plus `SiteShell`, `landing-data`, the three.js teacher stage and the student `Modal`,
+  and added the `three` dependency, which `main` lacked.
+  The real work was the guard interaction: PR #32 had just put **every** `/student` route behind
+  `RequireAuth`, so restoring the files alone gave a landing page that rendered and then
+  redirected to `/login?next=%2Fstudent%2Flanding` — and it sat inside `StudentShell`, which put
+  a learner sidebar around a page that brings its own `SiteShell`. Guarded routes moved into a
+  `(app)` route group; route groups add nothing to the URL, so `/student` and the eight learner
+  routes keep their paths (confirmed in the build output).
+  **Verified in a browser on a production build**: anonymous `/student/landing` stays put and
+  renders fully (teacher carousel, 3D canvas, stats) with no sidebar; anonymous `/student` still
+  redirects to `/login?next=%2Fstudent`; 375px has no horizontal overflow.
+  ⚠️ Recorded as `WEB-017`: the page is prototype content — invented teachers and student results
+  — and it is now the one page a stranger can read without logging in.
+
 _(work done outside sprint order. Recorded so another agent does not rebuild it, and so
 nobody mistakes a mock for a finished feature. See `working-rules.md` § Definition of Done.)_
 
