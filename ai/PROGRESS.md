@@ -46,9 +46,22 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
 
 ## Sprint 1 — Auth & Users
 - ✅ F1.1 Account registration (status `pending`, bcrypt cost 12)
-- 🔶 (claude · 2026-09-05) **Signup screen + marketing profile** — `/register` does not exist yet;
-      adding it, a separate `UserMarketingProfile` table with its own consent record, and a
-      redesign of `/login` in the Hán Lộ token set. Owner-approved 2026-09-05.
+- ✅ (claude · 2026-09-05) **Signup screen + marketing profile.** `/register` did not exist at
+      all — the only way to create an account was to POST `/auth/register` by hand. Now a
+      two-step wizard (step 2 skippable), `/login` rebuilt on the Hán Lộ tokens, and a separate
+      `UserMarketingProfile` table carrying demographics, intent, attribution and its own consent
+      record. Owner-approved 2026-09-05: separate table, two-step, Hán Lộ direction.
+      Both steps submit together **because they must** — a new account is `pending`, so there is
+      no session to save a profile with afterwards. UTM is read from the URL silently;
+      `referralSource` is the asked version of the same question.
+      Consent is separate, unticked by default, stamped with a version and timestamp, and a birth
+      year under 16 refuses self-consent and marks the row.
+      **Verified against the real API in a browser**: registered through the form with UTM on the
+      URL and confirmed **in Postgres** that every field landed, phone normalised, diacritics
+      intact, consent stamped. 164/164 API tests across 26 suites, web build clean, check-docs 8/8.
+      ⚠️ Three gaps recorded in the session file: no Page Contract was written for either screen
+      (the pipeline asks for one), no Admin surface exists to read the collected data, and the
+      consent wording is placeholder text nobody with authority has approved.
 - ✅ F1.2 Login (JWT access 15min + refresh 7d, httpOnly cookie)
 - ✅ F1.3 Account approval (Admin: PATCH /admin/users/:id/approve, suspend, activate)
 - ✅ F1.4 Profile & Admin Users FE integration — **the wiring existed before 2026-09-04 but did
