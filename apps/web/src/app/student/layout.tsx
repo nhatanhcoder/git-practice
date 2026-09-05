@@ -1,31 +1,18 @@
-import type { Metadata } from "next";
-import { RequireAuth } from "@/components/auth/require-auth";
-import { StudentShell } from "@/components/student/student-shell";
-import "./student.css";
-
-export const metadata: Metadata = {
-  title: "Hành trình HSK — Khu vực học tập",
-  description: "Mockup prototype khu vực học tập HSK 1–9 cho học viên.",
-};
-
 /**
- * Every /student route requires a signed-in student. Until now this area had no guard at
- * all — /admin and /teacher were gated and /student was not, so anyone could browse the
- * whole learner area without an account. The screens are still mock-backed, which is
- * exactly why the gap survived unnoticed: nothing 401'd, because nothing was being fetched.
+ * Segment layout for everything under /student.
  *
- * Kept as a server component so the metadata export above still works (a "use client"
- * layout cannot export metadata). RequireAuth is the client boundary, rendered from here —
- * the pattern /admin should move to as well, since it lost its per-area metadata by making
- * the whole layout a client component (WEB-005).
+ * Deliberately does nothing. The guard, the learner shell and student.css all moved down
+ * into the `(app)` route group, because they must not apply to every child of this segment:
+ * /student/landing is a public marketing page, and a layout here would gate it behind a
+ * login and wrap it in the learner sidebar. A child layout cannot escape its parent, so the
+ * only way to have both a guarded area and a public sibling under one segment is to keep
+ * this level empty and put the guarded routes in a group.
  *
- * As on the other two areas this is a UX gate, not a security boundary: the API's
- * JwtAuthGuard and RolesGuard are what actually protect student data.
+ * `(app)` contributes nothing to the URL, so /student and /student/grammar are unchanged.
+ *
+ * Do not add a guard, a shell or a stylesheet here. Add it to `(app)/layout.tsx` instead,
+ * or the public pages break silently — the page still renders, then redirects.
  */
-export default function StudentLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <RequireAuth role="student">
-      <StudentShell>{children}</StudentShell>
-    </RequireAuth>
-  );
+export default function StudentSegmentLayout({ children }: { children: React.ReactNode }) {
+  return <>{children}</>;
 }
