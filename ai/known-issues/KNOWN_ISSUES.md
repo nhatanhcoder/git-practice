@@ -1098,6 +1098,64 @@ repo**, since the files are missing.
 
 ---
 
+### [API-010] Three teacher-API error branches have no usable code — blocks coding
+
+**Severity**: High
+**Sprint**: Teacher API
+**Status**: ✅ Resolved 2026-09-03 (same day, owner-approved) — `SESSION_INVALID_TRANSITION`
+(409) · `QUESTION_IN_USE` (409) · `ATTEMPT_NOT_SUBMITTED` (409) added to
+`API_ERROR_CODES.md` as agreed, and the `LESSON_*` family (6 codes) was signed off as agreed
+in the same decision. The teacher module specs' §9/§16 were updated to match.
+
+**Description**: found 2026-09-03 while writing the Teacher module specs
+(`docs/api/modules/teacher/`). Three frequently-hit branches have no code in
+`API_ERROR_CODES.md` that fits, and the registry rule forbids inventing one:
+
+1. **Teacher session transition errors** (start/end/submit from a wrong status) —
+   `05-sessions.md` §9. `SESSION_ALREADY_REVIEWED` is Admin-flavored ("already approved or
+   rejected"); the code `FLOW_SESSION_ATTENDANCE.md` §5 uses for this branch
+   (SESSION_ALREADY_SUBMITTED) is **not in the registry** — `check-docs` confirms it.
+2. **Question edit/delete gated by a published assignment** — `02-question-bank.md` §9
+   (INV-TQ-05). No `QUESTION_*` code covers "in use".
+3. **Grading a non-`submitted` attempt** — `04-attempts-grading.md` §9.
+   `ATTEMPT_ALREADY_SUBMITTED` reads backwards for this branch; `ATTEMPT_NOT_IN_PROGRESS` is
+   the student edit code.
+
+Also recorded in the specs' §16 and `teacher/_INDEX.md` §4: ~~`LESSON_*` (6 codes) and `AI_*`
+(3 codes) remain *proposed, not agreed*~~ — `LESSON_*` was signed off as **agreed**
+2026-09-03; `AI_*` stays *proposed* (parked with the AI-suggest endpoint, owner decision).
+
+**Fix Plan**: the BE/registry owner adds the missing codes (or signs off mapped reuses) in
+`API_ERROR_CODES.md`. Numbering note: API-008/API-009/DOC-013 are known to exist on a branch
+not yet merged to `main` when this entry was written; this entry is API-010 to avoid reuse.
+
+---
+
+### [DOC-014] TeacherPayRate read for teachers: three-way contradiction
+
+**Severity**: Medium
+**Sprint**: Teacher API
+**Status**: Open
+
+**Description**: found 2026-09-03 while writing `docs/api/modules/teacher/06-income.md` §5.
+Three sources disagree on whether a teacher may read their own pay rate:
+
+| Source | Says |
+|---|---|
+| `RBAC_MATRIX.md` | no TeacherPayRate read row at all (only "set = Admin") |
+| `PERMISSIONS_TEACHER.md` § Income | "🔒 Read their own TeacherPayRate" — **grants** it |
+| `docs/api/modules/05-payroll.md` §5 | reads the missing row as forbidden ("a teacher can't even read their own rate") |
+
+**Impact**: the teacher Income screen has nowhere to show the rate from; any income-adjacent
+FE contract is a guess until settled.
+
+**Fix Plan**: PO decides; then align all three docs in one commit. The Teacher income spec
+(06) deliberately reads no rate either way, so it is not blocked — but its DTO cannot grow
+rate fields until this closes. Numbering note: written against a tree where DOC-013 exists on
+an unmerged branch; this is DOC-014.
+
+---
+
 ## Resolved Issues
 
 - **`GIT-002`** `.idea/` tracked in git — resolved, verified 2026-08-25 and 2026-09-01.
