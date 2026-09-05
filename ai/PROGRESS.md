@@ -193,9 +193,9 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
 > `docs/roadmap/SPRINT_PLAN.md` both specify Sprint 6 in full with a DoD, and the authority cited
 > for holding it (`DECISIONS.md` #5) **does not exist** (**DOC-008**). Two of three sources say
 > in scope. Owner decides — `PROJECT_KNOWLEDGE.md` §9 **CR-13**.
-- ⏸ ClassSession + SessionAttendance (attendance)
-- ⏸ TeacherPayRate + PayrollPeriod (teacher payroll)
-- ⏸ StudentTuitionRate + StudentInvoice + TuitionPayment (tuition, VietQR)
+- 🔶 (Antigravity · 2026-09-05) ClassSession + SessionAttendance (attendance & review)
+- 🔶 (Antigravity · 2026-09-05) TeacherPayRate + PayrollPeriod (teacher payroll & rates)
+- 🔶 (Antigravity · 2026-09-05) StudentTuitionRate + StudentInvoice + TuitionPayment (tuition, invoices & payments)
 - ⏸ F8.1–F8.5 In-app notifications (partly tied to this module, the rest belongs to Sprint 4)
 
 ## Sprint 5b — Learning Content Modules (F9–F16) 🆕
@@ -360,16 +360,16 @@ nobody mistakes a mock for a finished feature. See `working-rules.md` § Definit
   stay `⬜`. Next step is to fix the spec template from what this spike taught, *then* wire
   the real API.
 
-- 🔶 **`/admin/invoices`** (antigravity · 2026-08-16) — Building tuition billing list screen (A-INV-4). Fully mocked, baseline v2.
-- 🔶 **`/admin/invoices/[invoiceId]`** (antigravity · 2026-08-16) — Building invoice detail & reconciliation screen (A-INV-3,5). Fully mocked, baseline v2.
-- 🔶 **`/admin/invoices/generate`** (antigravity · 2026-08-16) — Building batch invoice generation wizard (A-INV-2). Fully mocked, baseline v2.
-- 🔶 **`/admin/payroll/sessions`** (antigravity · 2026-08-16) — Building session review queue screen (A-PAY-2,3). Fully mocked, baseline v2.
-- 🔶 **`/admin/payroll`** (antigravity · 2026-08-16) — Building payroll periods ledger screen (A-PAY-4,7). Fully mocked, baseline v2.
-- 🔶 **`/admin/payroll/[periodId]`** (antigravity · 2026-08-16) — Building payroll period detail screen (A-PAY-5,6,7). Fully mocked, baseline v2.
-- 🔶 **`/admin/pay-rates`** (antigravity · 2026-08-16) — Building teacher pay rates management screen (A-PAY-1). Fully mocked, baseline v2.
-- 🔶 **`/admin/tuition-rates`** (antigravity · 2026-08-16) — Building tuition rates by HSK level screen (A-INV-1). Fully mocked, baseline v2.
-- 🔶 **`/admin/monitoring`** (antigravity · 2026-08-16) — Building system monitoring & logs dashboard (A-DASH-3). Fully mocked, baseline v2.
-- 🔶 **`/admin`** (antigravity · 2026-08-16) — Building admin dashboard command center (A-DASH-1,2,4). Fully mocked, baseline v2.
+- 🔶 **`/admin/invoices`** (Antigravity · 2026-09-05) — Wire live backend API (GET /admin/invoices, meta.summary)
+- 🔶 **`/admin/invoices/[invoiceId]`** (Antigravity · 2026-09-05) — Wire live backend API (GET /admin/invoices/:id, void, payments)
+- 🔶 **`/admin/invoices/generate`** (Antigravity · 2026-09-05) — Wire live backend API (preview, batch generate)
+- 🔶 **`/admin/payroll/sessions`** (Antigravity · 2026-09-05) — Wire live backend API (GET /admin/sessions/pending, approve, reject)
+- 🔶 **`/admin/payroll`** (Antigravity · 2026-09-05) — Wire live backend API (GET /admin/payroll, POST /admin/payroll, DELETE draft)
+- 🔶 **`/admin/payroll/[periodId]`** (Antigravity · 2026-09-05) — Wire live backend API (GET /admin/payroll/:id, finalize, pay)
+- 🔶 **`/admin/pay-rates`** (Antigravity · 2026-09-05) — Wire live backend API (GET/POST /admin/pay-rates append-only)
+- 🔶 **`/admin/tuition-rates`** (Antigravity · 2026-09-05) — Wire live backend API (GET/POST /admin/tuition-rates append-only)
+- 🔶 **`/admin/monitoring`** (Antigravity · 2026-09-05) — Wire live backend API (GET /admin/monitoring/gemini, health probes)
+- 🔶 **`/admin`** (Antigravity · 2026-09-05) — Wire live backend API (GET /admin/dashboard/stats)
 
 
 ---
