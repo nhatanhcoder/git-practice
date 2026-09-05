@@ -163,6 +163,10 @@
 | `PAYROLL_SESSION_NOT_COMPLETED` | 400 | The class session is not yet completed |
 | `PAYROLL_PERIOD_NOT_FOUND` | 404 | Payroll period not found |
 | `PAYROLL_PERIOD_FINALIZED` | 409 | The payroll period is finalized and cannot be edited |
+| `PAYROLL_PERIOD_ALREADY_PAID` | 409 | The payroll period is already marked paid |
+| `PAYROLL_PERIOD_DUPLICATE` | 409 | A payroll period already exists for this teacher in that date range |
+| `PAYROLL_PERIOD_OVERLAP` | 409 | The payroll period overlaps an existing period for this teacher |
+| `PAYROLL_SESSION_HOURLY_MISSING_TIME` | 400 | Hourly pay calculation requires actualStart and actualEnd |
 
 ### Session Review Errors (SESSION_*)
 
@@ -175,8 +179,7 @@
 
 ### Invoice Errors (INVOICE_*)
 
-> ⚠️ **Proposed, not agreed.** Blocked on the tuition model decision
-> (FEATURES_ADMIN A-INV-1). Confirm before Sprint 3.
+> ✅ **Agreed 2026-09-05** per ADR-013.
 
 | Code | HTTP | Description |
 |------|------|-------|
@@ -187,11 +190,12 @@
 | `INVOICE_NO_TUITION_RATE` | 400 | No `StudentTuitionRate` is in effect for this student on the billing date |
 | `INVOICE_PAYMENT_EXCEEDS_TOTAL` | 400 | The recorded payment exceeds the outstanding balance |
 | `INVOICE_BATCH_PARTIAL_FAILURE` | 422 | Batch generation partly failed — `details` lists the failed student IDs |
+| `INVOICE_VOID_WITH_PAYMENTS_FORBIDDEN` | 409 | Cannot void an invoice with recorded payments |
+| `INVOICE_PREVIEW_HASH_MISMATCH` | 409 | Batch preview hash mismatch or data has changed |
 
 ### Rate Errors (RATE_*)
 
-> ⚠️ **Proposed, not agreed.** Rates are append-only — see
-> [ADR 008](../shared/decisions/008-append-only-rates.md).
+> ✅ **Agreed 2026-09-05** per ADR-008, ADR-012, ADR-013.
 
 | Code | HTTP | Description |
 |------|------|-------|
@@ -201,13 +205,19 @@
 
 ### AI / Gemini Errors (AI_*)
 
-> ⚠️ **Proposed, not agreed.** Blocked on the Gemini key model decision (UC-A-005).
+> ✅ **Agreed 2026-09-05** per ADR-014.
 
 | Code | HTTP | Description |
 |------|------|-------|
 | `AI_QUOTA_EXCEEDED` | 429 | The Gemini quota for this key is exhausted |
 | `AI_KEY_INVALID` | 401 | The configured Gemini API key was rejected |
 | `AI_GRADING_FAILED` | 502 | Gemini returned an unusable grading response |
+
+### Idempotency Errors (IDEMPOTENCY_*)
+
+| Code | HTTP | Description |
+|------|------|-------|
+| `IDEMPOTENCY_KEY_CONFLICT` | 422 | Request payload differs from the previous request with this idempotency key |
 
 ### Fallback Errors — emitted by the Global Exception Filter
 
@@ -233,7 +243,6 @@ in production logs = an error branch someone forgot to map.
 | Code | HTTP | Description | Needed for |
 |------|------|-------------|---------|
 | `TOO_MANY_REQUESTS` | 429 | Rate limit exceeded | `API_CONVENTIONS.md` has no rate-limit section yet — must be written first |
-| `PAYROLL_PERIOD_DUPLICATE` | 409 | A payroll period already exists for this teacher in that date range | `POST /admin/payroll` — `PAYROLL_PERIOD_FINALIZED` currently carries 3 different meanings |
 
 ### Validation Errors (VALIDATION_*)
 
