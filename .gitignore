@@ -12,6 +12,7 @@ dist/
 # AI agent scratch — worktrees must NEVER live inside the repo (see ai/rules/multi-agent-workflow.md §5)
 .claude/
 .idea/
+.codegraph/
 
 # os / logs
 *.log

@@ -7,6 +7,7 @@ import { PendingSessionsQuery, SessionSort } from './dto/pending-sessions.query'
 import { RejectSessionDto } from './dto/reject-session.dto';
 import { CreateSessionDto } from './dto/create-session.dto';
 import { MarkAttendanceDto } from './dto/mark-attendance.dto';
+import { TeacherListSessionsQuery } from './dto/teacher-list-sessions.query';
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -460,5 +461,94 @@ export class SessionsService {
     }
 
     return { success: true, count: dto.records.length };
+  }
+
+  async teacherListSessions(teacherId: string, query: TeacherListSessionsQuery) {
+    const page = query.page ?? 1;
+    const limit = query.limit ?? 20;
+
+    const where: Prisma.ClassSessionWhereInput = {
+      teacherId,
+    };
+
+    if (query.classId) where.classId = query.classId;
+    if (query.status) where.status = query.status;
+
+    const from = query.from || query.dateFrom;
+    const to = query.to || query.dateTo;
+    if (from || to) {
+      where.scheduledDate = {};
+      if (from) where.scheduledDate.gte = new Date(`${from}T00:00:00.000Z`);
+      if (to) where.scheduledDate.lte = new Date(`${to}T00:00:00.000Z`);
+    }
+
+    const orderBy: Prisma.ClassSessionOrderByWithRelationInput =
+      query.sort === SessionSort.scheduledDate_asc
+        ? { scheduledDate: 'asc' }
+        : { scheduledDate: 'desc' };
+
+    const [total, sessions] = await this.prisma.$transaction([
+      this.prisma.classSession.count({ where }),
+      this.prisma.classSession.findMany({
+        where,
+        include: {
+          class: {
+            select: { id: true, name: true, hskLevel: true },
+          },
+          attendances: {
+            select: { status: true },
+          },
+        },
+        orderBy,
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+    ]);
+
+    const data = sessions.map((s) => {
+      let present = 0;
+      let absentExcused = 0;
+      let absentUnexcused = 0;
+
+      for (const a of s.attendances) {
+        if (a.status === AttendanceStatus.present) present++;
+        else if (a.status === AttendanceStatus.absent_excused) absentExcused++;
+        else if (a.status === AttendanceStatus.absent_unexcused) absentUnexcused++;
+      }
+
+      return {
+        id: s.id,
+        classId: s.classId,
+        className: s.class.name,
+        scheduledDate: s.scheduledDate.toISOString().slice(0, 10),
+        scheduledStart: s.scheduledStart,
+        scheduledEnd: s.scheduledEnd,
+        actualStart: s.actualStart?.toISOString() ?? null,
+        actualEnd: s.actualEnd?.toISOString() ?? null,
+        topic: s.topic,
+        notes: s.notes,
+        status: s.status,
+        rejectionReason: s.rejectionReason,
+        payrollPeriodId: s.payrollPeriodId,
+        attendanceSummary: {
+          present,
+          absentExcused,
+          absentUnexcused,
+          total: s.attendances.length,
+        },
+        createdAt: s.createdAt.toISOString(),
+        updatedAt: s.updatedAt.toISOString(),
+      };
+    });
+
+    return {
+      data,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
   }
 }

@@ -111,6 +111,7 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
   gating, sessions with scheduled→completed_pending machine (start/attendance/submit) +
   rejection-reason modal, income view-only with period drawer (money display-only, from
   envelope totals — no client arithmetic). Sidebar: 7 live items + Analytics disabled (S5).
+- 🔶 (Antigravity · 2026-09-05) **Wire Teacher FE + BE for 4 screens** (Dashboard `/teacher`, Sessions `/teacher/sessions`, Income `/teacher/income`, stale markers clean-up; assignments & grading kept blocked). Branch `feat/teacher-4-pages`.
 - 🔶 (claude · 2026-09-02) **7 Teacher UI bugs fixed** (mock FE only; screens stay `🔶` because
   they are still fully mocked — no API). Detail in `KNOWN_ISSUES.md` `WEB-006`.
   **A1** session submit no longer writes the scheduled end into `actualEnd` — that laundered an
