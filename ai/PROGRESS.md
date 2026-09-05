@@ -306,6 +306,23 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
 ---
 
 ## Off-sprint / spike
+
+- ✅ (claude · 2026-09-05) **`/student/landing` restored and made public.** The route 404'd: it
+  existed only on `feat/student-hanlu-ui`, whose PR #24 was closed without merging. Ported the
+  page plus `SiteShell`, `landing-data`, the three.js teacher stage and the student `Modal`,
+  and added the `three` dependency, which `main` lacked.
+  The real work was the guard interaction: PR #32 had just put **every** `/student` route behind
+  `RequireAuth`, so restoring the files alone gave a landing page that rendered and then
+  redirected to `/login?next=%2Fstudent%2Flanding` — and it sat inside `StudentShell`, which put
+  a learner sidebar around a page that brings its own `SiteShell`. Guarded routes moved into a
+  `(app)` route group; route groups add nothing to the URL, so `/student` and the eight learner
+  routes keep their paths (confirmed in the build output).
+  **Verified in a browser on a production build**: anonymous `/student/landing` stays put and
+  renders fully (teacher carousel, 3D canvas, stats) with no sidebar; anonymous `/student` still
+  redirects to `/login?next=%2Fstudent`; 375px has no horizontal overflow.
+  ⚠️ Recorded as `WEB-017`: the page is prototype content — invented teachers and student results
+  — and it is now the one page a stranger can read without logging in.
+
 _(work done outside sprint order. Recorded so another agent does not rebuild it, and so
 nobody mistakes a mock for a finished feature. See `working-rules.md` § Definition of Done.)_
 
