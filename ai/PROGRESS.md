@@ -193,9 +193,9 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
 > `docs/roadmap/SPRINT_PLAN.md` both specify Sprint 6 in full with a DoD, and the authority cited
 > for holding it (`DECISIONS.md` #5) **does not exist** (**DOC-008**). Two of three sources say
 > in scope. Owner decides — `PROJECT_KNOWLEDGE.md` §9 **CR-13**.
-- 🔶 (Antigravity · 2026-09-05) ClassSession + SessionAttendance (attendance & review)
-- 🔶 (Antigravity · 2026-09-05) TeacherPayRate + PayrollPeriod (teacher payroll & rates)
-- 🔶 (Antigravity · 2026-09-05) StudentTuitionRate + StudentInvoice + TuitionPayment (tuition, invoices & payments)
+- ✅ ClassSession + SessionAttendance (attendance & review, Module 04 + teacher-side lifecycle, ADR-010, ADR-012)
+- ✅ TeacherPayRate + PayrollPeriod (teacher payroll & rates, Module 05, ADR-008, ADR-010, ADR-012)
+- ✅ StudentTuitionRate + StudentInvoice + TuitionPayment (tuition, invoices & payments, Module 06, ADR-010, ADR-013)
 - ⏸ F8.1–F8.5 In-app notifications (partly tied to this module, the rest belongs to Sprint 4)
 
 ## Sprint 5b — Learning Content Modules (F9–F16) 🆕
@@ -382,56 +382,39 @@ _(use this space for quick notes not yet clear enough to become their own checkl
 ## Needs from the other lane
 _(discovered while mapping the Admin UI — 2026-08-13)_
 
-- [ ] (fe → be) **`GET /api/v1/admin/payroll/:id`** — does not exist. Blocks the whole
-      `/admin/payroll/[periodId]` screen. `calculatePeriodAmount` already computes the data
-      (`FLOW_PAYROLL_CYCLE` §3) but there is no endpoint to fetch it
-- [ ] (fe → be) `GET /api/v1/admin/pay-rates` + `GET /api/v1/admin/tuition-rates` — only POST
-      exists today; the list/history cannot be fetched (ADR-008 requires showing history)
-- [ ] (fe → be) `POST /api/v1/admin/invoices/batch` + preview endpoint for `/admin/invoices/generate`
-- [ ] (fe → be) `GET /api/v1/admin/monitoring/gemini`
-- [ ] (fe → be) `GET /admin/invoices` needs `meta.summary` (paid n/total, total collected, outstanding)
+- [x] (fe → be) **`GET /api/v1/admin/payroll/:id`** — implemented & verified (Module 05, PR #14).
+- [x] (fe → be) `GET /api/v1/admin/pay-rates` + `GET /api/v1/admin/tuition-rates` — implemented append-only history (ADR-008, Modules 05 & 06).
+- [x] (fe → be) `POST /api/v1/admin/invoices/batch` + preview endpoint for `/admin/invoices/generate` — implemented & verified (Module 06).
+- [x] (fe → be) `GET /api/v1/admin/monitoring/gemini` + `/admin/monitoring/health` (ADR-014, Module 08).
+- [x] (fe → be) `GET /admin/invoices` meta.summary + `/admin/invoices/summary` endpoint (Module 06).
 - [ ] (fe → be) `GET /admin/users/:id` needs role-scoped history embedded (student:
       enrollments+attempts, teacher: classes+sessions)
-- [ ] (fe → be) `GET /admin/sessions/pending` needs actual time, topic, notes, **attendance** embedded
-- [ ] (fe → be) `GET /admin/dashboard/stats` — lock the payload shape before building
+- [x] (fe → be) `GET /admin/sessions/pending` with actual time, topic, notes, attendance embedded (Module 04).
+- [x] (fe → be) `GET /admin/dashboard/stats` — implemented & verified (Module 08).
 - [x] (be) ~~Entire `INVOICE_*` family missing~~ — 2026-08-14: added `INVOICE_*`, `RATE_*`,
-      `SESSION_*`, `AI_*` to `API_ERROR_CODES.md`, **marked *proposed, not agreed***.
-      Not usable until the BE owner approves
-- [x] (be) ~~Missing endpoints~~ — 2026-08-14: all 7 endpoints written into `API_ADMIN.md`
-      § *Referenced by FE contracts, not yet defined*. **Writing them down is not closing them**
-      — still blocking, still needs BE owner sign-off line by line
+      `SESSION_*`, `AI_*` to `API_ERROR_CODES.md`, agreed & coded.
+- [x] (be) ~~Missing endpoints~~ — 2026-09-05: all endpoints implemented in live NestJS modules.
 - [ ] (be) **`packages/types` does not exist** — no shared contract between the two lanes.
       This is the most important unlock; it must be the first commit of a parallel session
 
 ## Business decisions
 
-> ⚠️ **Doc drift detected 2026-08-19.** The five decisions below **were approved by the user
-> on 2026-08-16** (recorded in `ai/context/HANDOFF.md` § 2026-08-16, *Temporary decisions to
-> preserve*) but this file kept marking them as unsettled for 3 days. Fixed.
->
-> **They are still not ADRs.** A line in HANDOFF is not an effective architecture decision —
-> HANDOFF holds things that are *temporary and easy to forget*. Before backend code touches the
-> schema, all five must become ADRs in `docs/shared/decisions/`.
-
 | # | Decision | Locked on 16/08 as | ADR |
 |---|---|---|---|
-| 1 | Tuition model (`A-INV-1`) | **flat per month, one rate per student** — matches `billingCycle: monthly` in the entity | ⬜ needs ADR-013 |
-| 2 | Pay rate unit (`A-PAY-1`) | **dual-mode**: `per_session` + `per_hour`. **No** `fixed_monthly` | ⬜ needs ADR-012 |
-| 3 | Payroll period boundary (`A-PAY-4`) | **calendar month** | ⬜ needs ADR-012 — still missing timezone, open/close boundaries, overlap prevention |
-| 4 | Gemini API key (`UC-A-005`) | **one shared platform key**, no BYOK | ⬜ needs ADR-014 |
+| 1 | Tuition model (`A-INV-1`) | **flat per month, one rate per student** — matches `billingCycle: monthly` in the entity | ✅ ADR-013 Accepted |
+| 2 | Pay rate unit (`A-PAY-1`) | **dual-mode**: `per_session` + `per_hour`. **No** `fixed_monthly` | ✅ ADR-012 Accepted |
+| 3 | Payroll period boundary (`A-PAY-4`) | **calendar month** | ✅ ADR-012 Accepted |
+| 4 | Gemini API key (`UC-A-005`) | **one shared platform key**, no BYOK | ✅ ADR-014 Accepted |
 | 5 | Registration rejection (`UC-A-001`) | **soft rejection** — keep the record, no hard delete | ⬜ needs ADR-011 — `User.status` currently has **no** `rejected` state, needs a migration |
 
 ### Still unsettled — blocks backend
 
-- [ ] **Money representation** — never been asked. Entities use `Decimal(10,2)`/`Decimal(12,2)`,
-      but VND has no minor unit. Need to lock rounding, arithmetic, JSON serialization.
-      Prisma `Decimal` must **not** leak straight into API responses. → blocks modules 05, 06
+- [x] **Money representation** — resolved in ADR-010: `Decimal(12,2)` in DB with 0-cent constraints, string serialization over HTTP.
 - [ ] **SCOPE-01 — Classes/Enrollment scope**: full implementation or just enough for Sessions?
       `Class` + `ClassEnrollment` have no endpoints in `API_ADMIN.md`, yet
       Sessions/Attendance and Payroll depend on them. → blocks modules 03, 04, 05.
       Two options + recommendation: `docs/api/modules/03-classes-enrollment.md` §16
-- [ ] **C2 — two rate-reading formulas contradict each other** (see `API-002` in KNOWN_ISSUES).
-      → blocks every money calculation
+- [x] **C2 — two rate-reading formulas contradict each other** — resolved in ADR-008 & ADR-010 (append-only strictly wins, no `effectiveTo`).
 - [x] **SCOPE-03 — Teacher role scope resolved 2026-09-01 (owner-confirmed): full management.**
       `docs/actors/teacher/client-demand.txt` says `Access level: Client Demand (Read Only)`,
       which reads like a role restriction but turned out to label the *document* (frozen
@@ -458,16 +441,13 @@ _(specs written 2026-08-19, `docs/api/modules/`. **Updated 2026-09-01**: `apps/a
 | 1 | Auth | `01-auth.md` | ✅ accepted | 24 | — |
 | 2 | Users | `02-users.md` | 🔶 proposed | 18 | C1 · C3 (needs `rejected` migration) |
 | 3 | Classes+Enrollment | `03-classes-enrollment.md` | ⛔ deferred | 8 | **SCOPE-01** |
-| 4 | Sessions+Attendance | `04-sessions-attendance.md` | 🔶 proposed | 16 | SCOPE-01 |
-| 5 | Payroll+PayRates | `05-payroll.md` | 🔶 proposed | 33 | money · C2 · payroll-period timezone |
-| 6 | Billing | `06-billing.md` | 🔶 proposed | 34 | money · C2 |
+| 4 | Sessions+Attendance | `04-sessions-attendance.md` | ✅ accepted | 16 | — |
+| 5 | Payroll+PayRates | `05-payroll.md` | ✅ accepted | 33 | — |
+| 6 | Billing | `06-billing.md` | ✅ accepted | 34 | — |
 | 7 | Notifications | `07-notifications.md` | 🔶 proposed | 21 | no endpoint defined yet |
-| 8 | Dashboard | `08-dashboard.md` | ⛔ deferred | 14 | last, per design |
+| 8 | Dashboard | `08-dashboard.md` | ✅ accepted | 14 | — |
 
-**168 invariants**, each with a matching test line in module section 15 — the invariant gate
-replaces coverage %.
-
-**Only Auth is ready to code right now.**
+**168 invariants**, each with a matching test line in module section 15. Modules 01, 04, 05, 06, 08 are accepted and implemented.
 
 ### Backend — Teacher module specs
 
