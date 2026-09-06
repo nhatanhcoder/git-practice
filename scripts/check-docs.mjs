@@ -135,7 +135,7 @@ if (existsSync(INDEX)) {
     if (!m) continue;
     const [, route, status] = m;
     const seg = route.replace(/^\//, '').replace(/\[([^\]]+)\]/g, '[$1]');
-    const onDisk = existsSync(join(ROOT, 'apps/web/src/app', seg, 'page.tsx'));
+    const onDisk = pageExists(seg);
     if (onDisk && status !== 'built')
       fail('status-drift', `${route} exists in apps/web but _INDEX.md says "${status}"`);
     if (!onDisk && status === 'built')
@@ -209,3 +209,41 @@ for (const [check, msgs] of Object.entries(byCheck)) {
 }
 console.error(`\ncheck-docs FAILED: ${failures.length} violation(s).`);
 process.exit(1);
+
+/**
+ * Does a route have a page on disk?
+ *
+ * A URL segment is not always a directory segment: Next.js route groups are real folders whose
+ * names are wrapped in parentheses and contribute nothing to the URL, so `/student/mistakes`
+ * can legitimately live at `app/student/(app)/mistakes/page.tsx`. Checking only the literal
+ * path reported that as "marked built but missing" for every route that moved into a group — a
+ * false failure that blocks CI while the page is there and working.
+ *
+ * Tries the literal name at each level first, then any `(group)` directory beside it. Groups
+ * can nest, so this recurses rather than special-casing a single level.
+ */
+function pageExists(seg) {
+  const parts = seg.split('/').filter(Boolean);
+
+  const walk = (dirAbs, i) => {
+    if (i === parts.length) return existsSync(join(dirAbs, 'page.tsx'));
+
+    const direct = join(dirAbs, parts[i]);
+    if (existsSync(direct) && walk(direct, i + 1)) return true;
+
+    let entries;
+    try {
+      entries = readdirSync(dirAbs, { withFileTypes: true });
+    } catch {
+      return false;
+    }
+    for (const e of entries) {
+      if (e.isDirectory() && e.name.startsWith('(') && e.name.endsWith(')')) {
+        if (walk(join(dirAbs, e.name), i)) return true;
+      }
+    }
+    return false;
+  };
+
+  return walk(join(ROOT, 'apps/web/src/app'), 0);
+}
