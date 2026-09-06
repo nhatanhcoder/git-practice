@@ -8,6 +8,10 @@
  * counter would jump around and the last card would never render.
  *
  * MOCK(student): box moves go to the store; nothing is submitted.
+ *
+ * A05: development only. The queue, the boxes and the XP all live in `localStorage`, so in a
+ * production build this route renders a notice instead — a deep link straight here must not
+ * open a demo session and pass it off as the learner's own review history.
  */
 
 import { useMemo, useState } from "react";
@@ -24,6 +28,11 @@ import {
 import { useToast } from "@/components/student/toast";
 import { useStudentStore } from "@/lib/student/store";
 import { boxInterval } from "@/lib/student/student-rules";
+import {
+  MISTAKES_ROUTE,
+  SRS_ROUTE,
+  isMistakeDemoEnabled,
+} from "@/lib/student/srs-routes";
 
 /** XP for each card answered right. */
 const XP_PER_CORRECT = 15;
@@ -68,10 +77,35 @@ export default function MistakeReviewPage() {
     setPicked(null);
   }
 
+  // Placed after every hook on purpose: an early return above them would make the hook order
+  // conditional. `process.env.NODE_ENV` is a build-time constant so the branch never flips at
+  // runtime, but writing it this way keeps the component legal React either way.
+  if (!isMistakeDemoEnabled(process.env.NODE_ENV)) {
+    return (
+      <>
+        <Link href={MISTAKES_ROUTE} className="backlink">
+          <ArrowLeft size={14} /> Sổ tay lỗi sai
+        </Link>
+        <PageHead title="Phiên ôn tập" />
+        <Panel className="panel--pad">
+          <EmptyState
+            title="Phiên ôn demo không có ở bản chính thức"
+            text="Phiên này chạy trên dữ liệu mô phỏng trong trình duyệt. Sổ tay lỗi sai thật cần các endpoint Sprint 4 (Assignments & Attempts). Để ôn từ vựng ngay, hãy mở Flashcard."
+            action={
+              <Link href={SRS_ROUTE} className="btn btn--primary">
+                Mở Flashcard từ vựng
+              </Link>
+            }
+          />
+        </Panel>
+      </>
+    );
+  }
+
   if (queue.length === 0) {
     return (
       <>
-        <Link href="/student/mistakes" className="backlink">
+        <Link href={MISTAKES_ROUTE} className="backlink">
           <ArrowLeft size={14} /> Sổ tay lỗi sai
         </Link>
         <PageHead title="Phiên ôn tập" />
@@ -94,7 +128,7 @@ export default function MistakeReviewPage() {
     const pct = Math.round((right / queue.length) * 100);
     return (
       <>
-        <Link href="/student/mistakes" className="backlink">
+        <Link href={MISTAKES_ROUTE} className="backlink">
           <ArrowLeft size={14} /> Sổ tay lỗi sai
         </Link>
         <PageHead title="Xong phiên ôn" sub={`Đúng ${right}/${queue.length} · +${right * XP_PER_CORRECT} XP`} />
@@ -111,7 +145,7 @@ export default function MistakeReviewPage() {
               Thẻ trả lời đúng đã lên hộp kế tiếp; thẻ sai quay về hộp 1 và sẽ gặp lại sớm.
             </p>
             <div className="row gap-3 wrap" style={{ justifyContent: "center" }}>
-              <Link href="/student/mistakes" className="btn btn--outline">
+              <Link href={MISTAKES_ROUTE} className="btn btn--outline">
                 Xem sổ tay
               </Link>
               <Link href="/student" className="btn btn--primary">
@@ -126,7 +160,7 @@ export default function MistakeReviewPage() {
 
   return (
     <>
-      <Link href="/student/mistakes" className="backlink">
+      <Link href={MISTAKES_ROUTE} className="backlink">
         <ArrowLeft size={14} /> Sổ tay lỗi sai
       </Link>
 

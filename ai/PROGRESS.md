@@ -335,6 +335,25 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
 
 ## Off-sprint / spike
 
+- ✅ (claude · 2026-09-06) **A05 — SRS về đúng route chính.** Màn SRS nối API thật đang nằm ở
+  `/student/mistakes`, còn `/student/flashcards` phục vụ một bản Leitner mock — nên mục sidebar
+  tên "Flashcard" mở đúng bản giả, và màn duy nhất gọi endpoint thật thì không ai tìm ra. A00 đã
+  chốt route từ trước; code chưa bao giờ theo. Nay `git mv` màn thật sang `/student/flashcards`;
+  `/student/mistakes` thành sổ tay lỗi sai đúng nghĩa (nguồn từ bài tập/bài thi, endpoint thuộc
+  Sprint 4, **không** render hàng thẻ nào — dựng thẻ demo ở đó là lặp lại `WEB-011`);
+  `/student/mistakes/review` chỉ còn ở dev, chặn ngay trên chính route đó vì deep link vào thẳng.
+  **Không redirect** giữa hai route — A00 cấm, và đó là hai chức năng khác nhau.
+  Ba route thành hằng số trong `lib/student/srs-routes.ts` (shell nav, bảng tiêu đề và link
+  dashboard cùng import), vì lỗi cần sửa chính là literal link trôi khỏi màn nó đặt tên.
+  Cổng production đặt **dưới** mọi hook, có test giữ đúng thứ tự đó.
+  Verify trên production build với API thật: 8/8 mục TEST A05; chấm một thẻ thật →
+  `POST .../review` → thống kê lên "ĐÃ HỌC 1 · GHI NHỚ 100% · LƯỢT ÔN 1" và **giữ nguyên sau
+  reload**; 375px không tràn ngang. Web tests **69/69** (9 mới) · check-docs 8/8 · build sạch.
+  Fixture (2 thẻ + 1 review state) đã xoá sạch, kiểm lại còn 0.
+  ⚠️ Ghi mới `WEB-018`: landing công khai vẫn quảng cáo sổ tay lỗi sai là "5 hộp SRS".
+  ⚠️ `vocabBox` / `rateVocab` / `vocabTopics` giờ không còn consumer — để **A12** dọn, không xoá
+  ở đây theo đúng quy tắc 7.
+
 - ✅ (claude · 2026-09-06) **A04 — Cứng hoá tải/chấm SRS.** Backend không đổi; đây là phía client
   từ chối hiển thị thứ server chưa xác nhận. **Bốn lỗi thật, mỗi lỗi đều tái hiện được trước khi
   sửa**: (1) response về sai thứ tự repaint danh sách — ép trễ `hskLevel=9` 2.5s, thứ tự thật là

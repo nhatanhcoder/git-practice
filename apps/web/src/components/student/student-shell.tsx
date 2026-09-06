@@ -48,6 +48,11 @@ import { useStudentProfile, useStudentStore } from "@/lib/student/store";
 import { useDisplayIdentity } from "@/lib/student/identity";
 import { useStudentPreferences } from "@/lib/student/preferences";
 import { useAuthStore } from "@/lib/auth/auth-store";
+import {
+  MISTAKES_REVIEW_ROUTE,
+  MISTAKES_ROUTE,
+  SRS_ROUTE,
+} from "@/lib/student/srs-routes";
 
 interface NavItem {
   to: string;
@@ -61,14 +66,14 @@ export const PRIMARY_NAV: NavItem[] = [
   { to: "/student/classes", label: "Lớp của tôi", short: "Lớp học", icon: <School size={18} /> },
   { to: "/student/assignments", label: "Bài tập được giao", short: "Bài tập", icon: <ClipboardList size={18} /> },
   { to: "/student/learning-path", label: "Lộ trình HSK", short: "Lộ trình", icon: <Map size={18} /> },
-  { to: "/student/flashcards", label: "Từ vựng Flashcard", short: "Từ vựng", icon: <Sparkles size={18} /> },
+  { to: SRS_ROUTE, label: "Từ vựng Flashcard", short: "Từ vựng", icon: <Sparkles size={18} /> },
   { to: "/student/grammar", label: "Ngữ pháp", short: "Ngữ pháp", icon: <BookOpen size={18} /> },
   { to: "/student/foundation", label: "Nền tảng", short: "Nền tảng", icon: <Blocks size={18} /> },
 ];
 
 export const SECONDARY_NAV: NavItem[] = [
   { to: "/student/exams", label: "Phòng thi HSK", short: "Thi thử", icon: <GraduationCap size={18} /> },
-  { to: "/student/mistakes", label: "Sổ tay lỗi sai", short: "Lỗi sai", icon: <NotebookPen size={18} /> },
+  { to: MISTAKES_ROUTE, label: "Sổ tay lỗi sai", short: "Lỗi sai", icon: <NotebookPen size={18} /> },
   { to: "/student/writing", label: "Luyện viết chữ", short: "Viết chữ", icon: <PenTool size={18} /> },
   { to: "/student/lego", label: "Ghép câu Lego", short: "Ghép câu", icon: <Puzzle size={18} /> },
   { to: "/student/workplace", label: "Mô phỏng công sở", short: "Công sở", icon: <Briefcase size={18} /> },
@@ -101,12 +106,12 @@ const PAGE_TITLES: [string, string][] = [
   ["/student/classes", "Lớp của tôi"],
   ["/student/assignments", "Bài tập được giao"],
   ["/student/learning-path", "Lộ trình HSK"],
-  ["/student/flashcards", "Flashcard từ vựng"],
+  [SRS_ROUTE, "Flashcard từ vựng"],
   ["/student/grammar", "Thư viện ngữ pháp"],
   ["/student/foundation", "Nền tảng"],
   ["/student/writing", "Luyện viết chữ"],
-  ["/student/mistakes/review", "Phiên ôn lỗi sai"],
-  ["/student/mistakes", "Sổ tay lỗi sai"],
+  [MISTAKES_REVIEW_ROUTE, "Phiên ôn lỗi sai"],
+  [MISTAKES_ROUTE, "Sổ tay lỗi sai"],
   ["/student/exams", "Phòng thi HSK"],
   ["/student/workplace", "Mô phỏng công sở"],
   ["/student/lego", "Ghép câu Lego"],

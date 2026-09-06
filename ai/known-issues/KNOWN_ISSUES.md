@@ -1171,6 +1171,30 @@ dropped — leaving it half-ported is the worst of the three states.
 
 ---
 
+### [WEB-018] The public landing page advertises the mistake notebook as a working SRS
+
+**Severity**: Low
+**Status**: Open
+
+**Description**: `/student/landing` renders a card reading *"Sổ tay lỗi sai — Năm hộp lặp lại
+ngắt quãng, thẻ quay lại đúng lúc bạn sắp quên"* with the count *"5 hộp SRS"*, linking to
+`/student/mistakes`. A05 separated the two features per A00: the mistake notebook collects
+questions answered wrongly in assignments and mock exams, its endpoints belong to Sprint 4, and
+the route now renders an honest "chưa có dữ liệu" state. The five-box Leitner behaviour the card
+describes was the mock scheduler, which ADR-016 already replaced with SM-2 for production.
+
+**Impact**: the one page a stranger can read without an account promises a feature that, when
+clicked, says it does not exist yet. The vocabulary SRS the copy actually describes is real and
+lives at `/student/flashcards`, so the link is also pointing at the wrong screen.
+
+**Fix Plan**: point that card at `/student/flashcards` and rewrite the copy for SM-2, or drop the
+card until the notebook has a backend. Belongs with `WEB-017`, which already covers the landing
+page asserting things that are not true; do not fix it in isolation from that decision.
+
+**Numbering note**: assigned against both `main` and the unmerged `codex/a02-isolate-demo`, whose
+highest web id is also `WEB-017`. Per `DOC-014`, reconcile by hand if another branch takes it.
+
+
 ## Technical Debt
 
 ### [DEBT-005] The landing page ships ~8.5 MB of uncompressed teacher photos
