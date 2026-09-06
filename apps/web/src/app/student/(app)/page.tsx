@@ -45,6 +45,7 @@ import { DemoStateSwitcher, LevelSelector, type DemoState } from "@/components/s
 import { Drawer, Modal } from "@/components/student/overlay";
 import { useToast } from "@/components/student/toast";
 import { useStudentProfile, useStudentStore } from "@/lib/student/store";
+import { useDisplayIdentity } from "@/lib/student/identity";
 import { boxInterval, rankProgress, reviewQueueFromMistakes } from "@/lib/student/student-rules";
 import { levelProgress } from "@/lib/student/mock-user";
 import { continueLesson } from "@/lib/student/dashboard-data";
@@ -81,6 +82,9 @@ function greeting() {
 export default function StudentDashboard() {
   const [demo, setDemo] = useState<DemoState>("ready");
   const profile = useStudentProfile();
+  // A01: the greeting name comes from the live session. Everything else on
+  // this page (level, xp, streak, rank, queue) is still mock progress data.
+  const identity = useDisplayIdentity();
   const mistakes = useStudentStore((s) => s.mistakes);
   const activity = useStudentStore((s) => s.activity);
   const weekData = useStudentStore((s) => s.week);
@@ -129,7 +133,25 @@ export default function StudentDashboard() {
           </p>
           <h1 className="pagehead__title">
             {greeting()},{" "}
-            <em style={{ color: "var(--accent)" }}>{profile.name.split(" ").slice(-2).join(" ")}</em>
+            {identity.ready ? (
+              <em style={{ color: "var(--accent)" }}>{identity.name.split(" ").slice(-2).join(" ")}</em>
+            ) : (
+              <>
+                <span
+                  aria-hidden="true"
+                  style={{
+                    display: "inline-block",
+                    width: 120,
+                    height: "0.9em",
+                    borderRadius: 6,
+                    backgroundColor: "var(--text-3)",
+                    opacity: 0.25,
+                    verticalAlign: "baseline",
+                  }}
+                />
+                <span className="sr-only">đang tải tên hiển thị</span>
+              </>
+            )}
           </h1>
           <p className="pagehead__sub">
             HSK {profile.currentLevel} · còn <strong>{Math.max(0, 30 - minutesToday)} phút</strong> nữa đạt mục tiêu hôm nay ·{" "}
