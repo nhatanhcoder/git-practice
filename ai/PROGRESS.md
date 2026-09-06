@@ -197,6 +197,11 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
   by a person. FE is the next slice.
   ⚠️ Built in a sibling worktree `../Real-claude-student` against an **isolated** local database
   `hsk_dev_student`, because another agent was mid-edit in the main checkout — see `BUILD-002`.
+- ✅ (antigravity · 2026-09-06) **Student Classes Page Contracts (TASK A00)** — wrote missing
+  Page Contracts `student-classes-list.md` (`/student/classes`) and `student-class-detail.md`
+  (`/student/classes/[classId]`), aligned with accepted backend endpoints (`join`, `leave`,
+  `detail`, `list`) in `StudentClassesController`. Closes contract gap `DOC-016` and prepares
+  for wiring frontend to live endpoints.
 - **DoD**: Teacher creates class → student joins via code → teacher sees the student in the list
 
 ## Sprint 3 — Question Bank & Assignments
@@ -233,6 +238,9 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
 - **DoD**: Student runs out of time and attempt auto-submits → Teacher uses AI Suggest to grade Writing → enters final score → Student views the result
 
 ## Sprint 5 — SRS Flashcards & Analytics
+- 🔶 F7.1–F7.4 SRS Flashcards contract aligned (antigravity · 2026-09-06, TASK A00) — `student-srs.md`
+  and `student-srs.spec.md` updated from misplaced `/student/mistakes` to canonical `/student/flashcards`.
+  Separated vocabulary flashcards from mistake notebook (`S-MSTK`).
 - 🔶 F7.1 Browse & view vocabulary cards — API + live UI built; production vocabulary catalog
       remains blocked by `DOC-011` · ✅ F7.2 First review creates the private review state
 - ✅ F7.3 SRS review session — canonical SM-2 ratings 0/3/4/5, ownership locked to the
