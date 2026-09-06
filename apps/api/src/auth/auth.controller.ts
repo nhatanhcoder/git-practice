@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   HttpStatus,
@@ -18,6 +19,7 @@ import { CurrentUser, type AuthenticatedUser } from '../common/decorators/curren
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
+import { UpdateMarketingProfileDto } from './dto/marketing-profile.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 
 const COOKIE_NAME = 'refresh_token';
@@ -115,6 +117,29 @@ export class AuthController {
     @Body() dto: UpdateProfileDto,
   ) {
     return this.authService.updateProfile(user.id, dto);
+  }
+
+  @Get('me/marketing')
+  @ApiOperation({ summary: "Read the caller's own marketing profile (null if never filled in)" })
+  getMarketing(@CurrentUser() user: AuthenticatedUser) {
+    return this.authService.getMarketingProfile(user.id);
+  }
+
+  @Patch('me/marketing')
+  @ApiOperation({ summary: "Create or update the caller's own marketing profile" })
+  updateMarketing(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() dto: UpdateMarketingProfileDto,
+  ) {
+    return this.authService.upsertMarketingProfile(user.id, dto);
+  }
+
+  @Delete('me/marketing')
+  @ApiOperation({
+    summary: 'Withdraw consent and delete the collected marketing data (account is kept)',
+  })
+  deleteMarketing(@CurrentUser() user: AuthenticatedUser) {
+    return this.authService.deleteMarketingProfile(user.id);
   }
 
   @Post('change-password')

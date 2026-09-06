@@ -1,0 +1,601 @@
+/* ============================================================================
+   Auth screens — /login and /register.
+
+   Built on the Hán Lộ tokens (tokens.css) so someone arriving from
+   /student/landing does not walk into a different product. Every colour here is
+   a var(); nothing is hardcoded.
+
+   Motion is deliberate rather than decorative: the art panel drifts slowly
+   enough to read as depth and not as movement, fields respond to focus so the
+   caret is never in doubt, and the error banner shakes once because a message
+   that appears silently above the fold gets missed. Everything is switched off
+   under prefers-reduced-motion — an animated background is exactly the kind of
+   thing that makes a page unusable for someone with vestibular sensitivity.
+   ============================================================================ */
+
+.auth-root {
+  min-height: 100dvh;
+  display: grid;
+  grid-template-columns: 1.05fr 1fr;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-body, "Inter", system-ui, sans-serif);
+}
+
+/* ---------- art panel ---------- */
+
+.auth-art {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: clamp(32px, 4vw, 64px);
+  isolation: isolate;
+  background:
+    radial-gradient(120% 90% at 15% 10%, color-mix(in oklab, var(--accent) 22%, transparent), transparent 60%),
+    radial-gradient(90% 80% at 85% 80%, color-mix(in oklab, var(--epic, #7c3aed) 20%, transparent), transparent 65%),
+    linear-gradient(160deg, color-mix(in oklab, var(--bg) 80%, #000), var(--bg));
+}
+
+/* Two slow, offset blooms. Separate layers so they can drift at different
+   speeds — one moving gradient reads as a glitch, two read as depth. */
+.auth-art::before,
+.auth-art::after {
+  content: "";
+  position: absolute;
+  inset: -35%;
+  z-index: -1;
+  background: radial-gradient(
+    closest-side,
+    color-mix(in oklab, var(--accent) 30%, transparent),
+    transparent
+  );
+  filter: blur(40px);
+  animation: authDrift 26s ease-in-out infinite alternate;
+}
+
+.auth-art::after {
+  background: radial-gradient(
+    closest-side,
+    color-mix(in oklab, var(--jade-400, #34d399) 22%, transparent),
+    transparent
+  );
+  animation-duration: 34s;
+  animation-direction: alternate-reverse;
+}
+
+@keyframes authDrift {
+  from {
+    transform: translate3d(-6%, -4%, 0) scale(1);
+  }
+  to {
+    transform: translate3d(7%, 5%, 0) scale(1.12);
+  }
+}
+
+/* The oversized glyph is the page's one piece of ornament. It sits behind the
+   copy at low opacity, so it reads as texture and never competes for attention. */
+.auth-glyph {
+  position: absolute;
+  right: -4%;
+  bottom: -14%;
+  z-index: -1;
+  font-family: var(--font-serif, "Noto Serif SC", serif);
+  font-size: clamp(280px, 34vw, 560px);
+  line-height: 1;
+  color: color-mix(in oklab, var(--accent) 12%, transparent);
+  user-select: none;
+  pointer-events: none;
+  animation: authGlyphFloat 18s ease-in-out infinite alternate;
+}
+
+@keyframes authGlyphFloat {
+  from {
+    transform: translateY(0) rotate(-1.5deg);
+  }
+  to {
+    transform: translateY(-22px) rotate(1.5deg);
+  }
+}
+
+.auth-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.auth-brand__mark {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: var(--accent);
+  color: #fff;
+  font-family: var(--font-serif, serif);
+  font-size: 22px;
+  box-shadow: 0 8px 26px -10px var(--accent);
+}
+
+.auth-art__copy {
+  max-width: 30ch;
+}
+
+.auth-art__title {
+  font-family: var(--font-display, "Sora", system-ui, sans-serif);
+  font-size: clamp(28px, 3.2vw, 44px);
+  line-height: 1.12;
+  margin: 0 0 14px;
+}
+
+.auth-art__lead {
+  color: var(--fg-muted, #9aa4b2);
+  font-size: 15px;
+  line-height: 1.65;
+  margin: 0;
+}
+
+.auth-art__stats {
+  display: flex;
+  gap: clamp(18px, 3vw, 40px);
+  margin-top: 28px;
+  padding: 0;
+  list-style: none;
+}
+
+.auth-art__stat strong {
+  display: block;
+  font-family: var(--font-display, "Sora", sans-serif);
+  font-size: 26px;
+  color: var(--accent);
+}
+
+.auth-art__stat span {
+  font-size: 12.5px;
+  color: var(--fg-muted, #9aa4b2);
+}
+
+/* ---------- form panel ---------- */
+
+.auth-panel {
+  display: grid;
+  place-items: center;
+  padding: clamp(28px, 4vw, 56px);
+}
+
+.auth-card {
+  width: min(420px, 100%);
+  animation: authCardIn 620ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes authCardIn {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.auth-title {
+  font-family: var(--font-display, "Sora", sans-serif);
+  font-size: 27px;
+  margin: 0 0 6px;
+}
+
+.auth-sub {
+  color: var(--fg-muted, #9aa4b2);
+  font-size: 14px;
+  margin: 0 0 26px;
+}
+
+/* Each field enters a beat after the one above it. The stagger is small enough
+   to feel like one movement rather than a queue. */
+.auth-field {
+  display: block;
+  margin-bottom: 16px;
+  animation: authCardIn 520ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: calc(var(--i, 0) * 70ms + 90ms);
+}
+
+.auth-label {
+  display: block;
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--fg-muted, #9aa4b2);
+  margin-bottom: 7px;
+}
+
+.auth-input,
+.auth-select {
+  width: 100%;
+  padding: 13px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--line, #232a36);
+  background: color-mix(in oklab, var(--bg) 55%, #fff 4%);
+  color: var(--fg);
+  font: inherit;
+  font-size: 15px;
+  transition:
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    background-color 180ms ease;
+}
+
+.auth-input::placeholder {
+  color: color-mix(in oklab, var(--fg-muted, #9aa4b2) 70%, transparent);
+}
+
+.auth-input:focus-visible,
+.auth-select:focus-visible {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px color-mix(in oklab, var(--accent) 22%, transparent);
+}
+
+.auth-input[aria-invalid="true"] {
+  border-color: var(--danger, #ef4444);
+}
+
+.auth-hint {
+  margin: 6px 0 0;
+  font-size: 12.5px;
+  color: var(--fg-muted, #9aa4b2);
+}
+
+/* ---------- role / choice chips ---------- */
+
+.auth-choices {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.auth-choice {
+  position: relative;
+  display: block;
+  padding: 13px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--line, #232a36);
+  background: color-mix(in oklab, var(--bg) 55%, #fff 4%);
+  cursor: pointer;
+  transition:
+    border-color 160ms ease,
+    transform 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.auth-choice:hover {
+  transform: translateY(-1px);
+}
+
+.auth-choice input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.auth-choice:has(input:checked) {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--accent) 18%, transparent);
+}
+
+.auth-choice:has(input:focus-visible) {
+  box-shadow: 0 0 0 4px color-mix(in oklab, var(--accent) 30%, transparent);
+}
+
+.auth-choice strong {
+  display: block;
+  font-size: 14.5px;
+}
+
+.auth-choice span {
+  font-size: 12.5px;
+  color: var(--fg-muted, #9aa4b2);
+}
+
+/* ---------- consent ---------- */
+
+/* Consent is visually separate from the rest of the form on purpose. Bundling it
+   into the flow of ordinary fields is what makes a consent unusable later. */
+.auth-consent {
+  display: flex;
+  gap: 11px;
+  align-items: flex-start;
+  padding: 14px;
+  margin: 6px 0 18px;
+  border-radius: 12px;
+  border: 1px dashed var(--line, #232a36);
+  background: color-mix(in oklab, var(--bg) 60%, #fff 3%);
+}
+
+.auth-consent input {
+  margin-top: 3px;
+  width: 17px;
+  height: 17px;
+  accent-color: var(--accent);
+  flex: none;
+}
+
+.auth-consent__text {
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--fg-muted, #9aa4b2);
+}
+
+.auth-channels {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+  animation: authCardIn 300ms ease both;
+}
+
+.auth-channel {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 11px;
+  border-radius: 999px;
+  border: 1px solid var(--line, #232a36);
+  font-size: 12.5px;
+  cursor: pointer;
+  transition: border-color 150ms ease;
+}
+
+.auth-channel:has(input:checked) {
+  border-color: var(--accent);
+  color: var(--fg);
+}
+
+.auth-channel input {
+  accent-color: var(--accent);
+}
+
+/* ---------- submit ---------- */
+
+.auth-submit {
+  width: 100%;
+  padding: 14px 18px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--accent);
+  color: #fff;
+  font: inherit;
+  font-weight: 650;
+  font-size: 15px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  box-shadow: 0 14px 30px -14px var(--accent);
+  transition:
+    transform 140ms ease,
+    filter 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.auth-submit:hover:not(:disabled) {
+  filter: brightness(1.06);
+  transform: translateY(-1px);
+}
+
+.auth-submit:active:not(:disabled) {
+  transform: translateY(0) scale(0.985);
+}
+
+.auth-submit:disabled {
+  opacity: 0.62;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.auth-spinner {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid color-mix(in oklab, #fff 45%, transparent);
+  border-top-color: #fff;
+  animation: authSpin 700ms linear infinite;
+}
+
+@keyframes authSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.auth-ghost {
+  width: 100%;
+  margin-top: 10px;
+  padding: 12px 18px;
+  border-radius: 12px;
+  border: 1px solid var(--line, #232a36);
+  background: transparent;
+  color: var(--fg-muted, #9aa4b2);
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+  transition:
+    border-color 150ms ease,
+    color 150ms ease;
+}
+
+.auth-ghost:hover {
+  border-color: var(--accent);
+  color: var(--fg);
+}
+
+/* ---------- messages ---------- */
+
+/* Shakes once. A message that fades in above the fold is routinely missed, and
+   this one is usually the difference between retrying and giving up. */
+.auth-banner {
+  padding: 12px 14px;
+  border-radius: 11px;
+  font-size: 13.5px;
+  line-height: 1.55;
+  margin-bottom: 18px;
+  border: 1px solid;
+  animation: authShake 420ms cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+.auth-banner--error {
+  border-color: color-mix(in oklab, var(--danger, #ef4444) 45%, transparent);
+  background: color-mix(in oklab, var(--danger, #ef4444) 12%, transparent);
+  color: color-mix(in oklab, var(--danger, #ef4444) 70%, #fff);
+}
+
+.auth-banner--ok {
+  border-color: color-mix(in oklab, var(--jade-400, #34d399) 45%, transparent);
+  background: color-mix(in oklab, var(--jade-400, #34d399) 12%, transparent);
+  color: color-mix(in oklab, var(--jade-400, #34d399) 75%, #fff);
+  animation-name: authCardIn;
+}
+
+@keyframes authShake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(-6px);
+  }
+  40% {
+    transform: translateX(5px);
+  }
+  60% {
+    transform: translateX(-3px);
+  }
+  80% {
+    transform: translateX(2px);
+  }
+}
+
+/* ---------- wizard steps ---------- */
+
+.auth-steps {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 22px;
+}
+
+.auth-step {
+  flex: 1;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--line, #232a36);
+  overflow: hidden;
+}
+
+.auth-step__fill {
+  display: block;
+  height: 100%;
+  width: 0;
+  background: var(--accent);
+  transition: width 420ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.auth-step--done .auth-step__fill,
+.auth-step--current .auth-step__fill {
+  width: 100%;
+}
+
+.auth-stepLabel {
+  font-size: 12px;
+  color: var(--fg-muted, #9aa4b2);
+  white-space: nowrap;
+}
+
+.auth-foot {
+  margin-top: 22px;
+  font-size: 13.5px;
+  color: var(--fg-muted, #9aa4b2);
+  text-align: center;
+}
+
+.auth-foot a {
+  color: var(--accent);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.auth-foot a:hover {
+  text-decoration: underline;
+}
+
+.auth-grid2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+/* ---------- responsive ---------- */
+
+@media (max-width: 900px) {
+  .auth-root {
+    grid-template-columns: 1fr;
+  }
+
+  /* The art panel becomes a header strip rather than disappearing: it carries
+     the brand, and dropping it entirely makes the mobile page look like a
+     different site from the one the person just left. */
+  .auth-art {
+    min-height: 210px;
+    padding: 22px;
+  }
+
+  .auth-art__stats {
+    display: none;
+  }
+
+  .auth-glyph {
+    font-size: 240px;
+    bottom: -28%;
+  }
+}
+
+@media (max-width: 480px) {
+  .auth-grid2,
+  .auth-choices {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ---------- reduced motion ---------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-art::before,
+  .auth-art::after,
+  .auth-glyph,
+  .auth-card,
+  .auth-field,
+  .auth-banner,
+  .auth-channels {
+    animation: none !important;
+  }
+
+  .auth-step__fill {
+    transition: none;
+  }
+
+  .auth-submit:hover:not(:disabled),
+  .auth-choice:hover {
+    transform: none;
+  }
+
+  /* The spinner is the one exception: it is the only signal that a submit is in
+     flight, so it keeps turning — just slower. */
+  .auth-spinner {
+    animation-duration: 1.6s;
+  }
+}

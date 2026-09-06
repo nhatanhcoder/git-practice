@@ -75,14 +75,15 @@ model User {
   classesTeaching  Class[]
   enrollments      ClassEnrollment[]
   lessonsCreated   Lesson[]
-  sessionsTeaching ClassSession[]       @relation("TeacherSessions")
-  attendances      SessionAttendance[]  @relation("StudentAttendances")
-  payRates         TeacherPayRate[]     @relation("TeacherPayRates")
-  payrollPeriods   PayrollPeriod[]      @relation("TeacherPayrollPeriods")
-  tuitionRates     StudentTuitionRate[] @relation("StudentTuitionRates")
-  invoices         StudentInvoice[]     @relation("StudentInvoices")
-  recordedPayments TuitionPayment[]     @relation("AdminRecordedPayments")
-  notifications    Notification[]       @relation("UserNotifications")
+  sessionsTeaching ClassSession[]        @relation("TeacherSessions")
+  attendances      SessionAttendance[]   @relation("StudentAttendances")
+  payRates         TeacherPayRate[]      @relation("TeacherPayRates")
+  payrollPeriods   PayrollPeriod[]       @relation("TeacherPayrollPeriods")
+  tuitionRates     StudentTuitionRate[]  @relation("StudentTuitionRates")
+  invoices         StudentInvoice[]      @relation("StudentInvoices")
+  recordedPayments TuitionPayment[]      @relation("AdminRecordedPayments")
+  notifications    Notification[]        @relation("UserNotifications")
+  marketingProfile UserMarketingProfile? @relation("UserMarketingProfile")
 
   @@index([status])
   @@index([role, status])
@@ -100,7 +101,7 @@ model RefreshToken {
   expiresAt     DateTime  @map("expires_at")
   createdAt     DateTime  @default(now()) @map("created_at")
 
-  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([familyId])
@@ -135,10 +136,10 @@ model Class {
   createdAt      DateTime    @default(now()) @map("created_at")
   updatedAt      DateTime    @updatedAt @map("updated_at")
 
-  teacher        User        @relation(fields: [teacherId], references: [id], onDelete: Cascade)
-  enrollments    ClassEnrollment[]
-  lessons        Lesson[]
-  sessions       ClassSession[]
+  teacher     User              @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  enrollments ClassEnrollment[]
+  lessons     Lesson[]
+  sessions    ClassSession[]
 
   @@index([teacherId])
   @@index([status])
@@ -146,21 +147,21 @@ model Class {
 }
 
 model ClassEnrollment {
-  id        String           @id @default(uuid()) @db.Uuid
-  classId   String           @map("class_id") @db.Uuid
-  studentId String           @map("student_id") @db.Uuid
-  status    EnrollmentStatus @default(active)
-  joinedAt  DateTime         @default(now()) @map("joined_at")
+  id         String           @id @default(uuid()) @db.Uuid
+  classId    String           @map("class_id") @db.Uuid
+  studentId  String           @map("student_id") @db.Uuid
+  status     EnrollmentStatus @default(active)
+  joinedAt   DateTime         @default(now()) @map("joined_at")
   // Set when a student who had left (status = dropped) enrols again. joinedAt keeps the
   // FIRST join so INV-CLASS-06 (leave keeps history) is not defeated by overwriting it;
   // without this column the gap between leaving and returning would be invisible, and any
   // later time-based tuition calculation would silently bill the student for it.
-  rejoinedAt DateTime?       @map("rejoined_at")
-  createdAt DateTime         @default(now()) @map("created_at")
-  updatedAt DateTime         @updatedAt @map("updated_at")
+  rejoinedAt DateTime?        @map("rejoined_at")
+  createdAt  DateTime         @default(now()) @map("created_at")
+  updatedAt  DateTime         @updatedAt @map("updated_at")
 
-  class     Class            @relation(fields: [classId], references: [id], onDelete: Cascade)
-  student   User             @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  class   Class @relation(fields: [classId], references: [id], onDelete: Cascade)
+  student User  @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
   @@unique([classId, studentId])
   @@index([classId])
@@ -180,8 +181,8 @@ model Lesson {
   createdAt   DateTime          @default(now()) @map("created_at")
   updatedAt   DateTime          @updatedAt @map("updated_at")
 
-  class       Class             @relation(fields: [classId], references: [id], onDelete: Cascade)
-  teacher     User              @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  class   Class @relation(fields: [classId], references: [id], onDelete: Cascade)
+  teacher User  @relation(fields: [teacherId], references: [id], onDelete: Cascade)
 
   @@unique([classId, orderIndex])
   @@index([classId])
@@ -254,26 +255,26 @@ enum NotificationType {
 }
 
 model ClassSession {
-  id              String             @id @default(uuid()) @db.Uuid
-  classId         String             @map("class_id") @db.Uuid
-  teacherId       String             @map("teacher_id") @db.Uuid
-  scheduledDate   DateTime           @map("scheduled_date") @db.Date
-  scheduledStart  String             @map("scheduled_start") @db.VarChar(10)
-  scheduledEnd    String             @map("scheduled_end") @db.VarChar(10)
-  actualStart     DateTime?          @map("actual_start")
-  actualEnd       DateTime?          @map("actual_end")
-  topic           String             @db.VarChar(300)
-  notes           String?            @db.Text
-  status          SessionStatus      @default(scheduled)
-  rejectionReason String?            @map("rejection_reason") @db.Text
-  payrollPeriodId String?            @map("payroll_period_id") @db.Uuid
-  createdAt       DateTime           @default(now()) @map("created_at")
-  updatedAt       DateTime           @updatedAt @map("updated_at")
+  id              String        @id @default(uuid()) @db.Uuid
+  classId         String        @map("class_id") @db.Uuid
+  teacherId       String        @map("teacher_id") @db.Uuid
+  scheduledDate   DateTime      @map("scheduled_date") @db.Date
+  scheduledStart  String        @map("scheduled_start") @db.VarChar(10)
+  scheduledEnd    String        @map("scheduled_end") @db.VarChar(10)
+  actualStart     DateTime?     @map("actual_start")
+  actualEnd       DateTime?     @map("actual_end")
+  topic           String        @db.VarChar(300)
+  notes           String?       @db.Text
+  status          SessionStatus @default(scheduled)
+  rejectionReason String?       @map("rejection_reason") @db.Text
+  payrollPeriodId String?       @map("payroll_period_id") @db.Uuid
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
 
-  class           Class              @relation(fields: [classId], references: [id], onDelete: Cascade)
-  teacher         User               @relation("TeacherSessions", fields: [teacherId], references: [id], onDelete: Cascade)
-  payrollPeriod   PayrollPeriod?     @relation(fields: [payrollPeriodId], references: [id], onDelete: SetNull)
-  attendances     SessionAttendance[]
+  class         Class               @relation(fields: [classId], references: [id], onDelete: Cascade)
+  teacher       User                @relation("TeacherSessions", fields: [teacherId], references: [id], onDelete: Cascade)
+  payrollPeriod PayrollPeriod?      @relation(fields: [payrollPeriodId], references: [id], onDelete: SetNull)
+  attendances   SessionAttendance[]
 
   @@index([classId])
   @@index([teacherId])
@@ -291,8 +292,8 @@ model SessionAttendance {
   createdAt DateTime         @default(now()) @map("created_at")
   updatedAt DateTime         @updatedAt @map("updated_at")
 
-  session   ClassSession     @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  student   User             @relation("StudentAttendances", fields: [studentId], references: [id], onDelete: Cascade)
+  session ClassSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  student User         @relation("StudentAttendances", fields: [studentId], references: [id], onDelete: Cascade)
 
   @@unique([sessionId, studentId])
   @@index([sessionId])
@@ -309,7 +310,7 @@ model TeacherPayRate {
   createdAt     DateTime    @default(now()) @map("created_at")
   updatedAt     DateTime    @updatedAt @map("updated_at")
 
-  teacher       User        @relation("TeacherPayRates", fields: [teacherId], references: [id], onDelete: Cascade)
+  teacher User @relation("TeacherPayRates", fields: [teacherId], references: [id], onDelete: Cascade)
 
   @@unique([teacherId, effectiveFrom])
   @@index([teacherId])
@@ -317,20 +318,20 @@ model TeacherPayRate {
 }
 
 model PayrollPeriod {
-  id            String         @id @default(uuid()) @db.Uuid
-  code          String         @db.VarChar(50)
-  teacherId     String         @map("teacher_id") @db.Uuid
-  periodStart   DateTime       @map("period_start") @db.Date
-  periodEnd     DateTime       @map("period_end") @db.Date
-  status        PayrollStatus  @default(draft)
-  totalSessions Int            @map("total_sessions")
-  totalAmount   Decimal        @map("total_amount") @db.Decimal(12, 2)
-  paidAt        DateTime?      @map("paid_at")
-  createdAt     DateTime       @default(now()) @map("created_at")
-  updatedAt     DateTime       @updatedAt @map("updated_at")
+  id            String        @id @default(uuid()) @db.Uuid
+  code          String        @db.VarChar(50)
+  teacherId     String        @map("teacher_id") @db.Uuid
+  periodStart   DateTime      @map("period_start") @db.Date
+  periodEnd     DateTime      @map("period_end") @db.Date
+  status        PayrollStatus @default(draft)
+  totalSessions Int           @map("total_sessions")
+  totalAmount   Decimal       @map("total_amount") @db.Decimal(12, 2)
+  paidAt        DateTime?     @map("paid_at")
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
 
-  teacher       User           @relation("TeacherPayrollPeriods", fields: [teacherId], references: [id], onDelete: Cascade)
-  sessions      ClassSession[]
+  teacher  User           @relation("TeacherPayrollPeriods", fields: [teacherId], references: [id], onDelete: Cascade)
+  sessions ClassSession[]
 
   @@unique([teacherId, periodStart, periodEnd])
   @@index([teacherId])
@@ -347,7 +348,7 @@ model StudentTuitionRate {
   createdAt     DateTime            @default(now()) @map("created_at")
   updatedAt     DateTime            @updatedAt @map("updated_at")
 
-  student       User                @relation("StudentTuitionRates", fields: [studentId], references: [id], onDelete: Cascade)
+  student User @relation("StudentTuitionRates", fields: [studentId], references: [id], onDelete: Cascade)
 
   @@unique([studentId, effectiveFrom])
   @@index([studentId])
@@ -355,20 +356,20 @@ model StudentTuitionRate {
 }
 
 model StudentInvoice {
-  id          String         @id @default(uuid()) @db.Uuid
-  code        String         @unique @db.VarChar(50)
-  studentId   String         @map("student_id") @db.Uuid
-  periodStart DateTime       @map("period_start") @db.Date
-  periodEnd   DateTime       @map("period_end") @db.Date
-  dueDate     DateTime       @map("due_date") @db.Date
-  totalAmount Decimal        @map("total_amount") @db.Decimal(12, 2)
-  paidAmount  Decimal        @default(0) @map("paid_amount") @db.Decimal(12, 2)
-  status      InvoiceStatus  @default(unpaid)
-  createdAt   DateTime       @default(now()) @map("created_at")
-  updatedAt   DateTime       @updatedAt @map("updated_at")
+  id          String        @id @default(uuid()) @db.Uuid
+  code        String        @unique @db.VarChar(50)
+  studentId   String        @map("student_id") @db.Uuid
+  periodStart DateTime      @map("period_start") @db.Date
+  periodEnd   DateTime      @map("period_end") @db.Date
+  dueDate     DateTime      @map("due_date") @db.Date
+  totalAmount Decimal       @map("total_amount") @db.Decimal(12, 2)
+  paidAmount  Decimal       @default(0) @map("paid_amount") @db.Decimal(12, 2)
+  status      InvoiceStatus @default(unpaid)
+  createdAt   DateTime      @default(now()) @map("created_at")
+  updatedAt   DateTime      @updatedAt @map("updated_at")
 
-  student     User           @relation("StudentInvoices", fields: [studentId], references: [id], onDelete: Cascade)
-  payments    TuitionPayment[]
+  student  User             @relation("StudentInvoices", fields: [studentId], references: [id], onDelete: Cascade)
+  payments TuitionPayment[]
 
   @@unique([studentId, periodStart, periodEnd])
   @@index([studentId])
@@ -377,18 +378,18 @@ model StudentInvoice {
 }
 
 model TuitionPayment {
-  id                   String         @id @default(uuid()) @db.Uuid
-  invoiceId            String         @map("invoice_id") @db.Uuid
-  amount               Decimal        @db.Decimal(12, 2)
-  paidAt               DateTime       @default(now()) @map("paid_at")
-  paymentMethod        String         @map("payment_method") @db.VarChar(50)
-  transactionReference String?        @map("transaction_reference") @db.VarChar(200)
-  recordedBy           String         @map("recorded_by") @db.Uuid
-  createdAt            DateTime       @default(now()) @map("created_at")
-  updatedAt            DateTime       @updatedAt @map("updated_at")
+  id                   String   @id @default(uuid()) @db.Uuid
+  invoiceId            String   @map("invoice_id") @db.Uuid
+  amount               Decimal  @db.Decimal(12, 2)
+  paidAt               DateTime @default(now()) @map("paid_at")
+  paymentMethod        String   @map("payment_method") @db.VarChar(50)
+  transactionReference String?  @map("transaction_reference") @db.VarChar(200)
+  recordedBy           String   @map("recorded_by") @db.Uuid
+  createdAt            DateTime @default(now()) @map("created_at")
+  updatedAt            DateTime @updatedAt @map("updated_at")
 
-  invoice              StudentInvoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
-  recorder             User           @relation("AdminRecordedPayments", fields: [recordedBy], references: [id], onDelete: Restrict)
+  invoice  StudentInvoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  recorder User           @relation("AdminRecordedPayments", fields: [recordedBy], references: [id], onDelete: Restrict)
 
   @@index([invoiceId])
   @@index([recordedBy])
@@ -407,11 +408,107 @@ model Notification {
   createdAt     DateTime         @default(now()) @map("created_at")
   updatedAt     DateTime         @updatedAt @map("updated_at")
 
-  user          User             @relation("UserNotifications", fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation("UserNotifications", fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([type])
   @@map("notifications")
 }
 
+// ============================================================================
+// Marketing profile — optional data collected to target advertising.
+//
+// Deliberately a separate table rather than more columns on User. Three reasons,
+// all of which cost more to retrofit than to build:
+//
+//  1. Different lifecycle. When a person withdraws consent this row is deleted;
+//     their account is not. One DELETE on one table, with no chance of taking an
+//     identity column with it.
+//  2. Different read path. Every query that loads a User for auth would otherwise
+//     also carry gender, phone and birth year. Keeping them apart means a service
+//     has to ask for this data on purpose.
+//  3. Different authority. RBAC gives Admin read access here; the owner reads and
+//     edits their own. Nothing in the learning domain reads it at all.
+//
+// Every field is nullable on purpose: the two-step signup lets a person create an
+// account and skip this entirely, and a half-filled profile is normal, not an error.
+// ============================================================================
 
+enum Gender {
+  female
+  male
+  other
+  prefer_not_to_say
+}
+
+enum Occupation {
+  student
+  office_worker
+  teacher
+  freelancer
+  other
+}
+
+// The strongest single signal for ad copy: someone studying to go abroad and
+// someone studying for work respond to completely different messages.
+enum LearningGoal {
+  study_abroad
+  work
+  certificate
+  hobby
+  other
+}
+
+enum MarketingChannel {
+  email
+  sms
+  zalo
+}
+
+model UserMarketingProfile {
+  id     String @id @default(uuid()) @db.Uuid
+  userId String @unique @map("user_id") @db.Uuid
+
+  // Demographics. Birth YEAR only, never a full date of birth: a year is enough to
+  // build an age bracket, and it is the field that tells us whether the account
+  // holder is a minor — which decides whether the consent below is valid at all.
+  birthYear  Int?        @map("birth_year")
+  gender     Gender?
+  province   String?     @db.VarChar(100)
+  phone      String?     @db.VarChar(20)
+  occupation Occupation?
+
+  // Intent
+  learningGoal LearningGoal? @map("learning_goal")
+  currentLevel Int?          @map("current_level")
+
+  // Attribution. referralSource is what the person says; the utm* fields are what
+  // the link said. They disagree often, and both are worth keeping.
+  referralSource String? @map("referral_source") @db.VarChar(100)
+  utmSource      String? @map("utm_source") @db.VarChar(100)
+  utmMedium      String? @map("utm_medium") @db.VarChar(100)
+  utmCampaign    String? @map("utm_campaign") @db.VarChar(150)
+
+  // Consent. Without a true value here none of the fields above may be used for
+  // advertising, so this is the column that gives the rest of the table its purpose.
+  // consentedAt and consentVersion exist to make consent provable after the fact;
+  // "the checkbox was ticked" is not evidence if nobody recorded when, or to what.
+  marketingConsent Boolean            @default(false) @map("marketing_consent")
+  consentChannels  MarketingChannel[] @map("consent_channels")
+  consentVersion   String?            @map("consent_version") @db.VarChar(20)
+  consentedAt      DateTime?          @map("consented_at")
+  withdrawnAt      DateTime?          @map("withdrawn_at")
+
+  // Set when birthYear says the account holder is under 16. Their data must not be
+  // used for advertising on the account holder's own consent alone.
+  guardianConsentRequired Boolean @default(false) @map("guardian_consent_required")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user User @relation("UserMarketingProfile", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([marketingConsent])
+  @@index([learningGoal])
+  @@map("user_marketing_profiles")
+}
