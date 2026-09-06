@@ -17,6 +17,7 @@
 
 import { useEffect, useState, type MouseEvent, type ReactNode } from "react";
 import Link from "next/link";
+import { logout } from "@/lib/api-client";
 import { usePathname, useRouter } from "next/navigation";
 import {
   Blocks,
@@ -29,6 +30,7 @@ import {
   LayoutGrid,
   Map,
   Medal,
+  LogOut,
   Moon,
   NotebookPen,
   PenTool,
@@ -483,6 +485,23 @@ export function StudentShell({ children }: { children: ReactNode }) {
                 }}
               >
                 <RotateCcw size={16} /> Đặt lại tiến độ demo
+              </button>
+
+              {/* Signing out is the one action here that leaves the area, so it sits last and
+                  apart. logout() clears the in-memory token and the refresh cookie even when
+                  the server call fails — a network error must not leave a signed-out person
+                  still looking signed in. */}
+              <button
+                type="button"
+                className="btn btn--ghost btn--block"
+                style={{ marginTop: "var(--sp-2)", color: "var(--danger)" }}
+                onClick={async () => {
+                  setProfileOpen(false);
+                  await logout();
+                  router.replace("/login");
+                }}
+              >
+                <LogOut size={16} /> Đăng xuất
               </button>
             </div>
           </Sheet>

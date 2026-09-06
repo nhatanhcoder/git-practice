@@ -1,4 +1,8 @@
+"use client";
+
 import Link from "next/link";
+import { Moon, Sun } from "lucide-react";
+import { useHanluTheme } from "@/lib/student/use-theme";
 
 /**
  * The split layout both /login and /register sit in.
@@ -17,20 +21,36 @@ export function AuthShell({
   lead: string;
   children: React.ReactNode;
 }) {
+  // Same light/dark choice as the landing page and the learner shell — one stored value,
+  // read here rather than hardcoded. Someone who picks light on the landing page and then
+  // signs in should not be thrown back into dark.
+  const { theme, toggleTheme } = useHanluTheme();
+
   return (
-    <div className="auth-root student-root" data-theme="dark">
+    <div className="auth-root student-root" data-theme={theme}>
       <aside className="auth-art">
         {/* Decorative: announced to nobody, and it must not land in the tab order. */}
         <span className="auth-glyph" aria-hidden="true">
           汉
         </span>
 
-        <Link href="/student/landing" className="auth-brand">
-          <span className="auth-brand__mark" aria-hidden="true">
-            汉
-          </span>
-          Hán Lộ
-        </Link>
+        <div className="auth-art__top">
+          <Link href="/student/landing" className="auth-brand">
+            <span className="auth-brand__mark" aria-hidden="true">
+              汉
+            </span>
+            Hán Lộ
+          </Link>
+
+          <button
+            type="button"
+            className="auth-themeBtn"
+            onClick={toggleTheme}
+            aria-label={theme === "dark" ? "Chuyển sang giao diện sáng" : "Chuyển sang giao diện tối"}
+          >
+            {theme === "dark" ? <Sun size={17} /> : <Moon size={17} />}
+          </button>
+        </div>
 
         <div className="auth-art__copy">
           <h2 className="auth-art__title">{title}</h2>

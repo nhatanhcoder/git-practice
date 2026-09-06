@@ -6,7 +6,13 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { ApiError, login } from "@/lib/api-client";
 import { useAuthStore, type UserRole } from "@/lib/auth/auth-store";
 import { AuthShell } from "@/components/auth/auth-shell";
+// Same stack as /student/landing, in the same order. auth.css only adds the split layout and
+// its motion on top; without base.css the headings fall back to the app-wide styles and read
+// as washed-out grey on the dark ground, which is what "chữ bị chìm" was.
 import "@/styles/hanlu/tokens.css";
+import "@/styles/hanlu/base.css";
+import "@/styles/hanlu/components.css";
+import "@/styles/hanlu/ground.css";
 import "@/styles/hanlu/auth.css";
 
 const HOME_FOR_ROLE: Record<UserRole, string> = {

@@ -15,3 +15,11 @@ html:has(.student-root),
 body:has(.student-root) {
   background: #0a0d13;
 }
+
+/* The ground has to follow the theme too. Hardcoding the dark value left the page edges dark
+   after switching to light — visible as a dark band around a light layout, which reads as a
+   rendering fault rather than a theme. */
+html:has(.student-root[data-theme="light"]),
+body:has(.student-root[data-theme="light"]) {
+  background: #f6f2ea;
+}

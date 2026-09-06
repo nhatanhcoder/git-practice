@@ -5,7 +5,13 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ApiError, register, type MarketingSignupBlock } from "@/lib/api-client";
 import { AuthShell } from "@/components/auth/auth-shell";
+// Same stack as /student/landing, in the same order. auth.css only adds the split layout and
+// its motion on top; without base.css the headings fall back to the app-wide styles and read
+// as washed-out grey on the dark ground, which is what "chữ bị chìm" was.
 import "@/styles/hanlu/tokens.css";
+import "@/styles/hanlu/base.css";
+import "@/styles/hanlu/components.css";
+import "@/styles/hanlu/ground.css";
 import "@/styles/hanlu/auth.css";
 
 /** Codes from docs/api/API_ERROR_CODES.md — mapped by code, never by HTTP status. */

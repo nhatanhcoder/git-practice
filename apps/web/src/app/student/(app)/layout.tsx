@@ -3,16 +3,18 @@ import { RequireAuth } from "@/components/auth/require-auth";
 import { StudentChrome } from "@/components/student/student-chrome";
 
 // The Hán Lộ stylesheet stack, in the source branch's order — tokens first, because every
-// sheet below it reads the custom properties it defines. They live one level up, at the
-// segment root, so /student/landing can reach the same tokens without being dragged inside
-// this guarded group.
-import "../tokens.css";
-import "../base.css";
-import "../layout.css";
-import "../components.css";
-import "../pages.css";
-import "../lms.css";
-import "../student-ground.css";
+// sheet below it reads the custom properties it defines.
+//
+// One copy, in src/styles/hanlu/, shared by this area, /student/landing and the auth
+// screens. They were briefly duplicated (an identical tokens.css in two places), which is
+// how a design system quietly splits in two.
+import "@/styles/hanlu/tokens.css";
+import "@/styles/hanlu/base.css";
+import "@/styles/hanlu/layout.css";
+import "@/styles/hanlu/components.css";
+import "@/styles/hanlu/pages.css";
+import "@/styles/hanlu/lms.css";
+import "@/styles/hanlu/ground.css";
 
 export const metadata: Metadata = {
   title: "Hán Lộ — Học viện HSK",

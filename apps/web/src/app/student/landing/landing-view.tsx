@@ -46,6 +46,7 @@ import {
   Trophy,
 } from "lucide-react";
 import { Modal } from "@/components/student/overlay";
+import { useHanluTheme } from "@/lib/student/use-theme";
 import { SiteShell } from "@/components/site/site-shell";
 import {
   CONTENT_COUNTS,
@@ -274,17 +275,13 @@ export function LandingView() {
   const [rotationStep, setRotationStep] = useState(0);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
 
-  // Theme is scoped to this wrapper, like StudentShell. Applied after mount so
-  // the server and the first client render agree; dark is the default.
-  const [theme, setTheme] = useState<"dark" | "light">("dark");
-  useEffect(() => {
-    try {
-      const saved = window.localStorage.getItem("hanlu-theme") || window.localStorage.getItem("hanlo-theme");
-      if (saved === "light") setTheme("light");
-    } catch {
-      /* prototype: ignore storage errors */
-    }
-  }, []);
+  // Theme is scoped to this wrapper, like StudentShell — but the VALUE is shared.
+  //
+  // This used to keep its own useState mirrored to localStorage["hanlu-theme"], while the
+  // learner shell kept the same choice in the zustand store under "hanlu-student". Two keys,
+  // never reading each other: switching to light here and then signing in put you back in
+  // dark. useHanluTheme() is now the single source both read.
+  const { theme, toggleTheme } = useHanluTheme();
 
   /**
    * Keep <html> and <body> backgrounds synced with the theme while mounted,
@@ -315,18 +312,6 @@ export function LandingView() {
     };
   }, [theme]);
 
-  function toggleTheme() {
-    setTheme((t) => {
-      const nextTheme = t === "dark" ? "light" : "dark";
-      try {
-        window.localStorage.setItem("hanlu-theme", nextTheme);
-        window.localStorage.setItem("hanlo-theme", nextTheme);
-      } catch {
-        /* prototype: ignore storage errors */
-      }
-      return nextTheme;
-    });
-  }
 
   const activeTeacherIdx = ((rotationStep % TEACHERS.length) + TEACHERS.length) % TEACHERS.length;
   const activeTeacher = TEACHERS[activeTeacherIdx];
