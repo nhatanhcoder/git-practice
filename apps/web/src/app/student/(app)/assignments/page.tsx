@@ -25,6 +25,7 @@ import {
   Panel,
   SkeletonPanel,
 } from "@/components/student/primitives";
+import { UnavailableState } from "@/components/student/unavailable-state";
 import { DemoStateSwitcher, type DemoState } from "@/components/student/controls";
 import { assignments, studentClasses, type AssignmentStatus } from "@/lib/student/lms-data";
 import { actionForAssignment } from "@/lib/student/lms-rules";
@@ -54,6 +55,15 @@ function formatDue(iso: string): string {
 }
 
 export default function AssignmentsPage() {
+  if (process.env.NODE_ENV === "production") {
+    return (
+      <UnavailableState
+        title="Bài tập về nhà"
+        description="Chức năng bài tập về nhà chưa được kết nối máy chủ dữ liệu trong phiên bản hiện tại (Sprint 4). Vui lòng quay lại sau."
+      />
+    );
+  }
+
   const [demo, setDemo] = useState<DemoState>("ready");
   const [classFilter, setClassFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<AssignmentStatus | "all">("all");

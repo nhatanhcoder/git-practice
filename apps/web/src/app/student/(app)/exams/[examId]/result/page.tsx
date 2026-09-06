@@ -24,6 +24,7 @@ import {
   Ring,
   SectionHeader,
 } from "@/components/student/primitives";
+import { UnavailableState } from "@/components/student/unavailable-state";
 import { Segmented } from "@/components/student/controls";
 import { Modal } from "@/components/student/overlay";
 import { useStudentProfile, useStudentStore } from "@/lib/student/store";
@@ -33,6 +34,14 @@ import { SECTION_LABEL, exams, getPaper } from "@/lib/student/content";
 const SECTION_PASS_RATE = 0.6;
 
 export default function ExamResultPage() {
+  if (process.env.NODE_ENV === "production") {
+    return (
+      <UnavailableState
+        title="Kết quả thi thử"
+        description="Chức năng kết quả thi thử chưa được kết nối máy chủ dữ liệu trong phiên bản hiện tại (Sprint 5). Vui lòng quay lại sau."
+      />
+    );
+  }
   const params = useParams<{ examId: string }>();
   const examId = decodeURIComponent(params?.examId ?? "");
   const attempts = useStudentStore((s) => s.attempts);

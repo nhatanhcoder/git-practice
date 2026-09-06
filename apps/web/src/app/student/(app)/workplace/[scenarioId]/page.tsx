@@ -25,6 +25,7 @@ import {
   Panel,
   SectionHeader,
 } from "@/components/student/primitives";
+import { UnavailableState } from "@/components/student/unavailable-state";
 import { AudioButton } from "@/components/student/controls";
 import { useToast } from "@/components/student/toast";
 import { useStudentStore } from "@/lib/student/store";
@@ -40,6 +41,14 @@ interface Exchange {
 }
 
 export default function ScenarioPage() {
+  if (process.env.NODE_ENV === "production") {
+    return (
+      <UnavailableState
+        title="Tình huống công sở"
+        description="Chức năng tình huống giao tiếp công sở chưa được kết nối máy chủ dữ liệu trong phiên bản hiện tại. Vui lòng quay lại sau."
+      />
+    );
+  }
   const params = useParams<{ scenarioId: string }>();
   const scenarioId = decodeURIComponent(params?.scenarioId ?? "");
   const scenario = scenarios.find((s) => s.id === scenarioId) ?? null;

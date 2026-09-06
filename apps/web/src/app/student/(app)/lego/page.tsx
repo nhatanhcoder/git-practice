@@ -29,8 +29,17 @@ import { useStudentStore } from "@/lib/student/store";
 import { ROLE_LABEL, legoStations } from "@/lib/student/content";
 import { legoStarsFor, shuffleBlocks, withLegoProgress } from "@/lib/student/student-rules";
 import type { LegoBlock, LegoStation } from "@/lib/student/types";
+import { UnavailableState } from "@/components/student/unavailable-state";
 
 export default function LegoPage() {
+  if (process.env.NODE_ENV === "production") {
+    return (
+      <UnavailableState
+        title="Ghép câu Lego"
+        description="Chức năng ghép câu Lego chưa được kết nối máy chủ dữ liệu trong phiên bản hiện tại. Vui lòng quay lại sau."
+      />
+    );
+  }
   const [demo, setDemo] = useState<DemoState>("ready");
   const [playing, setPlaying] = useState<LegoStation | null>(null);
   const [sIdx, setSIdx] = useState(0);

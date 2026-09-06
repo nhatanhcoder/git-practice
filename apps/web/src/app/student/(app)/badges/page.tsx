@@ -29,6 +29,7 @@ import { useStudentStore } from "@/lib/student/store";
 import { badgeDefs } from "@/lib/student/content";
 import { evaluateBadges } from "@/lib/student/student-rules";
 import type { Badge, BadgeCategory, BadgeRarity } from "@/lib/student/types";
+import { UnavailableState } from "@/components/student/unavailable-state";
 
 const CATEGORIES: BadgeCategory[] = [
   "Chuỗi ngày",
@@ -47,6 +48,14 @@ const RARITY_TONE: Record<BadgeRarity, "neutral" | "info" | "epic" | "warn"> = {
 };
 
 export default function BadgesPage() {
+  if (process.env.NODE_ENV === "production") {
+    return (
+      <UnavailableState
+        title="Kho huy hiệu"
+        description="Hệ thống huy hiệu chưa được kết nối máy chủ dữ liệu trong phiên bản hiện tại. Vui lòng quay lại sau."
+      />
+    );
+  }
   const [demo, setDemo] = useState<DemoState>("ready");
   const [category, setCategory] = useState<BadgeCategory | "all">("all");
   const [onlyLocked, setOnlyLocked] = useState(false);

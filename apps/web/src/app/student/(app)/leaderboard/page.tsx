@@ -26,6 +26,7 @@ import { useStudentProfile } from "@/lib/student/store";
 import { rivals } from "@/lib/student/content";
 import { getLeaderboard } from "@/lib/student/student-rules";
 import type { LeaderScope } from "@/lib/student/types";
+import { UnavailableState } from "@/components/student/unavailable-state";
 
 const SCOPE_LABEL: Record<LeaderScope, string> = {
   week: "Tuần này",
@@ -34,6 +35,14 @@ const SCOPE_LABEL: Record<LeaderScope, string> = {
 };
 
 export default function LeaderboardPage() {
+  if (process.env.NODE_ENV === "production") {
+    return (
+      <UnavailableState
+        title="Bảng xếp hạng"
+        description="Bảng xếp hạng chưa được kết nối máy chủ dữ liệu trong phiên bản hiện tại. Vui lòng quay lại sau."
+      />
+    );
+  }
   const [demo, setDemo] = useState<DemoState>("ready");
   const [scope, setScope] = useState<LeaderScope>("week");
   const profile = useStudentProfile();

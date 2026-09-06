@@ -26,6 +26,7 @@ import {
   PenTool,
   Play,
   Puzzle,
+  School,
   Sparkles,
   Target,
   Zap,
@@ -77,6 +78,46 @@ function greeting() {
   if (hour < 14) return "Chào buổi trưa";
   if (hour < 18) return "Chào buổi chiều";
   return "Chào buổi tối";
+}
+
+/**
+ * A02: production dashboard body. The mock widgets above present local demo
+ * progress as the signed-in learner's own; until real endpoints exist, the
+ * production build shows only what actually works (flashcards, mistakes and
+ * classes are live API) and says so, instead of fabricating progress.
+ */
+function ProductionWelcome() {
+  const liveShortcuts = [
+    { href: "/student/flashcards", icon: Sparkles, tone: "info", title: "Flashcard SRS", text: "Ôn từ vựng theo lịch SM-2, lưu theo tài khoản." },
+    { href: "/student/mistakes", icon: NotebookPen, tone: "accent", title: "Sổ tay lỗi sai", text: "Ôn lại những thẻ bạn trả lời sai." },
+    { href: "/student/classes", icon: School, tone: "success", title: "Lớp của tôi", text: "Tham gia lớp bằng mã do giáo viên cấp." },
+  ];
+  return (
+    <>
+      <Panel className="panel--pad stack gap-3">
+        <h2 style={{ fontSize: "var(--step-2)", margin: 0 }}>Chào mừng đến Hán Lộ</h2>
+        <p style={{ color: "var(--text-2)", margin: 0, maxWidth: "60ch" }}>
+          Các khu vực học tập đang được kết nối từng bước với máy chủ. Hiện tại bạn có thể bắt đầu
+          với các tính năng dưới đây — tiến độ được ghi nhận theo tài khoản của bạn.
+        </p>
+      </Panel>
+      <section>
+        <SectionHeader title="Khả dụng ngay" sub="Ba khu vực đã kết nối máy chủ dữ liệu thật." />
+        <div className="shortcuts">
+          {liveShortcuts.map((s) => (
+            <Link key={s.href} href={s.href} className="panel shortcut">
+              <span className={`shortcut__icon shortcut__icon--${s.tone}`}>
+                <s.icon size={18} />
+              </span>
+              <span className="shortcut__title">{s.title}</span>
+              <span className="shortcut__text">{s.text}</span>
+              <span className="row gap-2 shortcut__go" style={{ fontSize: "var(--step--1)", fontWeight: 600 }}>Mở khu vực <ArrowRight size={14} /></span>
+            </Link>
+          ))}
+        </div>
+      </section>
+    </>
+  );
 }
 
 export default function StudentDashboard() {
@@ -154,14 +195,22 @@ export default function StudentDashboard() {
             )}
           </h1>
           <p className="pagehead__sub">
-            HSK {profile.currentLevel} · còn <strong>{Math.max(0, 30 - minutesToday)} phút</strong> nữa đạt mục tiêu hôm nay ·{" "}
-            <strong>{queue.length} thẻ</strong> đến hạn ôn.
+            {process.env.NODE_ENV === "production" ? (
+              "Chào mừng bạn đến với khu vực học tập HSK."
+            ) : (
+              <>
+                HSK {profile.currentLevel} · còn <strong>{Math.max(0, 30 - minutesToday)} phút</strong> nữa đạt mục tiêu hôm nay ·{" "}
+                <strong>{queue.length} thẻ</strong> đến hạn ôn.
+              </>
+            )}
           </p>
         </div>
         <DemoStateSwitcher value={demo} onChange={setDemo} />
       </header>
 
-      {demo === "loading" ? (
+      {process.env.NODE_ENV === "production" ? (
+        <ProductionWelcome />
+      ) : demo === "loading" ? (
         <SkeletonPanel rows={4} height={160} />
       ) : demo === "error" ? (
         <Panel className="panel--pad">

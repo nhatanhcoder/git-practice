@@ -48,6 +48,7 @@ import {
   tones,
 } from "@/lib/student/foundation-data";
 import { radicals, type Radical } from "@/lib/student/radicals-data";
+import { UnavailableState } from "@/components/student/unavailable-state";
 
 type TabId = "pinyin" | "tones" | "radicals" | "listening" | "speaking";
 
@@ -590,6 +591,14 @@ function FoundationInner() {
 }
 
 export default function FoundationPage() {
+  if (process.env.NODE_ENV === "production") {
+    return (
+      <UnavailableState
+        title="Nền tảng phát âm"
+        description="Nội dung nền tảng (pinyin, thanh điệu, bộ thủ) chưa được kết nối máy chủ dữ liệu trong phiên bản hiện tại. Vui lòng quay lại sau."
+      />
+    );
+  }
   return (
     <Suspense fallback={<SkeletonPanel rows={5} height={200} />}>
       <FoundationInner />

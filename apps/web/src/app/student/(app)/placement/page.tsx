@@ -27,12 +27,21 @@ import {
   Ring,
   SectionHeader,
 } from "@/components/student/primitives";
+import { UnavailableState } from "@/components/student/unavailable-state";
 import { useToast } from "@/components/student/toast";
 import { useStudentStore } from "@/lib/student/store";
 import { placementQuestions } from "@/lib/student/content";
 import { placementLevel } from "@/lib/student/student-rules";
 
 export default function PlacementPage() {
+  if (process.env.NODE_ENV === "production") {
+    return (
+      <UnavailableState
+        title="Kiểm tra xếp cấp"
+        description="Chức năng kiểm tra xếp cấp chưa được kết nối máy chủ dữ liệu trong phiên bản hiện tại. Vui lòng quay lại sau."
+      />
+    );
+  }
   const [idx, setIdx] = useState(0);
   const [picked, setPicked] = useState<number | null>(null);
   const [answers, setAnswers] = useState<Record<string, boolean>>({});

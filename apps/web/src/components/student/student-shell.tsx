@@ -46,6 +46,8 @@ import { ToastProvider } from "./toast";
 import { Sheet } from "./overlay";
 import { useStudentProfile, useStudentStore } from "@/lib/student/store";
 import { useDisplayIdentity } from "@/lib/student/identity";
+import { useStudentPreferences } from "@/lib/student/preferences";
+import { useAuthStore } from "@/lib/auth/auth-store";
 
 interface NavItem {
   to: string;
@@ -134,12 +136,13 @@ export function StudentShell({ children }: { children: ReactNode }) {
   // mock progress store above. `profile` below is now progress-only in the
   // spots this shell renders (rank/level/xp/streak stay mock until their API).
   const identity = useDisplayIdentity();
-  const theme = useStudentStore((s) => s.theme);
-  const showPinyin = useStudentStore((s) => s.showPinyin);
-  const showMeaning = useStudentStore((s) => s.showMeaning);
-  const toggleTheme = useStudentStore((s) => s.toggleTheme);
-  const togglePinyin = useStudentStore((s) => s.togglePinyin);
-  const toggleMeaning = useStudentStore((s) => s.toggleMeaning);
+  const authUser = useAuthStore((s) => s.user);
+  const theme = useStudentPreferences((s) => s.theme);
+  const showPinyin = useStudentPreferences((s) => s.showPinyin);
+  const showMeaning = useStudentPreferences((s) => s.showMeaning);
+  const toggleTheme = useStudentPreferences((s) => s.toggleTheme);
+  const togglePinyin = useStudentPreferences((s) => s.togglePinyin);
+  const toggleMeaning = useStudentPreferences((s) => s.toggleMeaning);
   const resetProgress = useStudentStore((s) => s.resetProgress);
   const hydrated = useStudentStore((s) => s.hydrated);
 
@@ -348,7 +351,9 @@ export function StudentShell({ children }: { children: ReactNode }) {
                         {identity.name}
                       </span>
                       <span style={{ color: "var(--text-3)", fontSize: "var(--step--2)" }}>
-                        {profile.rank} · HSK {profile.currentLevel}
+                        {process.env.NODE_ENV === "production"
+                          ? "Học viên"
+                          : `${profile.rank} · HSK ${profile.currentLevel}`}
                       </span>
                     </span>
                   </>
@@ -489,7 +494,16 @@ export function StudentShell({ children }: { children: ReactNode }) {
                     <div className="stack gap-1 grow">
                       <span style={{ fontWeight: 600 }}>{identity.name}</span>
                       <span style={{ color: "var(--text-3)", fontSize: "var(--step--1)" }}>
-                        {profile.rank} · HSK {profile.currentLevel} · {profile.joinedLabel}
+                        {process.env.NODE_ENV === "production"
+                          ? `${authUser?.email ?? "Học viên"}${
+                              authUser?.createdAt
+                                ? ` · Tham gia ${new Date(authUser.createdAt).toLocaleDateString("vi-VN", {
+                                    month: "numeric",
+                                    year: "numeric",
+                                  })}`
+                                : ""
+                            }`
+                          : `${profile.rank} · HSK ${profile.currentLevel} · ${profile.joinedLabel}`}
                       </span>
                     </div>
                   </>
@@ -513,26 +527,30 @@ export function StudentShell({ children }: { children: ReactNode }) {
                   </>
                 )}
               </div>
-              <p style={{ color: "var(--text-3)", fontSize: "var(--step--1)" }}>
-                Bản mockup: mọi tiến độ được lưu trong trình duyệt này, chưa có tài khoản thật.
-              </p>
-              <Link
-                href="/student/placement"
-                className="btn btn--outline btn--block"
-                onClick={() => setProfileOpen(false)}
-              >
-                <Target size={16} /> Làm bài kiểm tra xếp cấp
-              </Link>
-              <button
-                type="button"
-                className="btn btn--outline btn--block"
-                onClick={() => {
-                  resetProgress();
-                  setProfileOpen(false);
-                }}
-              >
-                <RotateCcw size={16} /> Đặt lại tiến độ demo
-              </button>
+              {process.env.NODE_ENV !== "production" && (
+                <>
+                  <p style={{ color: "var(--text-3)", fontSize: "var(--step--1)" }}>
+                    Bản mockup: mọi tiến độ được lưu trong trình duyệt này, chưa có tài khoản thật.
+                  </p>
+                  <Link
+                    href="/student/placement"
+                    className="btn btn--outline btn--block"
+                    onClick={() => setProfileOpen(false)}
+                  >
+                    <Target size={16} /> Làm bài kiểm tra xếp cấp
+                  </Link>
+                  <button
+                    type="button"
+                    className="btn btn--outline btn--block"
+                    onClick={() => {
+                      resetProgress();
+                      setProfileOpen(false);
+                    }}
+                  >
+                    <RotateCcw size={16} /> Đặt lại tiến độ demo
+                  </button>
+                </>
+              )}
             </div>
           </Sheet>
         </div>

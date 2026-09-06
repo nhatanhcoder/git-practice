@@ -39,6 +39,7 @@ import {
   type Curriculum,
   type PathNode,
 } from "@/lib/student/learning-path-data";
+import { UnavailableState } from "@/components/student/unavailable-state";
 
 const LEVELS = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 const CURRICULUM_HANZI: Record<Curriculum, string> = {
@@ -47,6 +48,14 @@ const CURRICULUM_HANZI: Record<Curriculum, string> = {
 };
 
 export default function LearningPathPage() {
+  if (process.env.NODE_ENV === "production") {
+    return (
+      <UnavailableState
+        title="Lộ trình HSK"
+        description="Lộ trình học tập chưa được kết nối máy chủ dữ liệu trong phiên bản hiện tại. Vui lòng quay lại sau."
+      />
+    );
+  }
   const [demo, setDemo] = useState<DemoState>("ready");
   const profile = useStudentProfile();
   const [curriculum, setCurriculum] = useState<Curriculum>("hsk_standard_course");
