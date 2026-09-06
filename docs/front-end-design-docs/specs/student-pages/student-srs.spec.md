@@ -1,11 +1,11 @@
 ---
 status: built
 design_baseline: v1
-route: /student/mistakes
-last_updated: 2026-09-05
+route: /student/flashcards
+last_updated: 2026-09-06
 ---
 
-# Student SRS Review — Page Spec
+# Student Vocabulary Flashcard SRS — Page Spec
 
 > Paste with `_DESIGN-SYSTEM.md`. If you were not given it, stop and ask — do not invent tokens.
 
@@ -28,7 +28,7 @@ Student only. State belongs to the signed-in Student; `userId` never appears in 
 
 ## 4. Page structure
 
-Title and level selector; four compact statistics; Browse/Due tabs; card list in Browse; focused
+Title and level selector; four compact statistics; Browse/Due tabs; card list in Browse with "Ôn thẻ này" action; focused
 flashcard in review. No assignment mistakes, saved-word bank, XP or leaderboard.
 
 ## 5. Component specs
@@ -48,7 +48,7 @@ retry; Forbidden via shell; Offline as an error with no fake fallback.
 
 ## 8. Copy
 
-`Ôn tập SRS`, `Duyệt từ vựng`, `Thẻ đến hạn`, `Lật thẻ`, `Quên`, `Khó`, `Tốt`, `Dễ`.
+`Flashcard từ vựng HSK`, `Duyệt từ vựng`, `Thẻ đến hạn`, `Ôn thẻ này`, `Lật thẻ`, `Quên`, `Khó`, `Tốt`, `Dễ`.
 
 ## 9. Interactions
 
@@ -57,5 +57,5 @@ after a successful response. At 375px the stats and list collapse to one column.
 
 ## 10. Do NOT
 
-Do not expose another student's state, simulate vocabulary, show rating buttons before reveal, or
+Do not expose another student's state, simulate vocabulary, show rating buttons before reveal, conflate flashcards with assignment mistakes, or
 claim streak is available while the timezone contract is unresolved.

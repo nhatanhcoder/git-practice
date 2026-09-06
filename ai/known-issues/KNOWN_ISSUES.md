@@ -1280,6 +1280,19 @@ FE contract is a guess until settled.
 rate fields until this closes. Numbering note: written against a tree where DOC-013 exists on
 an unmerged branch; this is DOC-014.
 
+### [DOC-016] Student Page Contracts & SRS route misalignment (`/student/mistakes` vs `/student/flashcards`)
+
+**Severity**: Medium
+**Status**: Open — Contracts audited and aligned 2026-09-06 (TASK A00); frontend wiring reconciliation pending
+
+**Description**: The original student SRS Page Contract (`student-srs.md`) was declared with `route: /student/mistakes`, but all of its endpoints (`/student/flashcards/*`), DTOs, and error codes belonged to vocabulary flashcards, while explicitly marking assignment mistake collection as out of scope. In the frontend, `/student/flashcards` retained Leitner local mocks, whereas `/student/mistakes` was wired to the real NestJS API. Furthermore, `student-classes-list.md` was referenced by code but did not exist on disk.
+
+**Resolution / Action Taken (2026-09-06)**:
+- Re-pointed `student-srs.md` and `student-srs.spec.md` to `route: /student/flashcards`.
+- Drafted missing Page Contracts `student-classes-list.md` (`/student/classes`) and `student-class-detail.md` (`/student/classes/[classId]`).
+- Updated `student-flow.md` and `pages/_INDEX.md`.
+- Kept `/student/mistakes` separate as `S-MSTK` (diagnostic mistake notebook), awaiting Sprint 4 Assignment/Attempt mistake collection backend rather than conflating it with flashcards or performing an unapproved redirect.
+
 ---
 
 ### 2026-09-05 implementation note — `DOC-011`
