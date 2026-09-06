@@ -12,33 +12,45 @@ const config: Config = {
         background: "var(--background)",
         foreground: "var(--foreground)",
         // Student prototype tokens (mockup mode — allowed by docs/prompts/student-product)
+        // Student area palette — the Hán Lộ "mực & chu sa" set, dark.
+        //
+        // These names are roles, not colours, which is the only reason re-theming the whole
+        // learner area was a single-file change: 695 class usages across 11 files inherit
+        // whatever these values are. Nothing was rewritten at the call sites.
+        //
+        // Values are plain hex on purpose. 17 usages carry a Tailwind opacity modifier
+        // (bg-sp-primary/20 and similar), and Tailwind can only inject alpha into a colour it
+        // can parse — pointing these at var(--x) or rgba() would silently break those 17.
+        //
+        // Mapped from src/styles/hanlu/tokens.css (.student-root[data-theme="dark"]) so the
+        // learner area, the landing page and the auth screens read as one product.
         sp: {
-          bg: "#F5F6FC",
-          card: "#FFFFFF",
-          line: "#E4E7F5",
-          ink: "#1E1B4B",
-          ink2: "#4B4D63",
-          ink3: "#8B8DA3",
-          primary: "#4F46E5",
-          "primary-strong": "#4338CA",
-          "primary-soft": "#EEF0FE",
-          "primary-line": "#C7D2FE",
-          accent: "#EA580C",
-          "accent-strong": "#C2410C",
-          "accent-soft": "#FDEEE2",
-          ok: "#16A34A",
-          "ok-soft": "#E8F6EE",
-          warn: "#D97706",
-          "warn-soft": "#FCF3E1",
-          danger: "#DC2626",
-          "danger-soft": "#FBEAEA",
-          xp: "#F59E0B",
-          "xp-soft": "#FEF3DC",
-          streak: "#F97316",
-          locked: "#9AA0B0",
-          "locked-soft": "#F0F1F6",
-          boss: "#7C3AED",
-          "boss-soft": "#F1EAFE",
+          bg: "#0A0D13", // --bg
+          card: "#121722", // --surface
+          line: "#253044", // --line
+          ink: "#EEF2F8", // --text-1
+          ink2: "#A9B4C6", // --text-2
+          ink3: "#77839A", // --text-3
+          primary: "#FF7454", // --cinnabar-400
+          "primary-strong": "#F0532F", // --cinnabar-500
+          "primary-soft": "#2B1A15", // cinnabar laid over --bg, opaque so /nn still works
+          "primary-line": "#5C3627",
+          accent: "#F5B942", // --gold-400 — the second accent, kept distinct from primary
+          "accent-strong": "#DC9A1C", // --gold-500
+          "accent-soft": "#2B2416",
+          ok: "#35C795", // --jade-400
+          "ok-soft": "#10281F",
+          warn: "#F5B942", // --gold-400
+          "warn-soft": "#2B2416",
+          danger: "#FF6B81", // --rose-400
+          "danger-soft": "#2D1820",
+          xp: "#F5B942", // --gold-400
+          "xp-soft": "#2B2416",
+          streak: "#FF9C86", // --cinnabar-300
+          locked: "#77839A", // --text-3
+          "locked-soft": "#19202D", // --surface-2
+          boss: "#8E7CFF", // --violet-400
+          "boss-soft": "#221D33",
         },
       },
       fontFamily: {
