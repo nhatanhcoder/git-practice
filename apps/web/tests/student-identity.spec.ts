@@ -23,7 +23,6 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/api/v
 const A = { email: "student@hsk.local", password: "Password123!", nickname: "Em Học Sinh Chăm Chỉ" };
 const B = { email: "a01.student@hsk.local", password: "Password123!", nickname: "B Tran Test" };
 const FIXTURE_NAME = "Nguyễn Minh Anh";
-const NULL_MODE = process.env.A01_NULL === "1";
 
 const IGNORED_CONSOLE = [/Download the React DevTools/i, /\[Fast Refresh\]/i, /favicon\.ico/i];
 
@@ -59,11 +58,16 @@ test.describe("A01 student identity", () => {
     await page.goto("/student");
     await expect(page.getByRole("heading", { name: /Chăm Chỉ/ })).toBeVisible();
 
-    // Sidebar userchip + profile sheet.
-    await expect(page.locator(".userchip")).toContainText(A.nickname);
-    await expect(page.locator(".userchip .avatar").first()).toHaveText("EC");
-    await page.locator(".userchip").click();
-    await expect(page.getByRole("dialog")).toContainText(A.nickname);
+    // Sidebar userchip + profile sheet (desktop only: the rail that hosts
+    // the userchip is hidden below 768px, so there is nothing to open there —
+    // the mobile identity surface is the greeting, asserted below).
+    const desktop = (testInfo.project.use.viewport?.width ?? 1280) >= 768;
+    if (desktop) {
+      await expect(page.locator(".userchip")).toContainText(A.nickname);
+      await expect(page.locator(".userchip .avatar").first()).toHaveText("EC");
+      await page.locator(".userchip").click();
+      await expect(page.getByRole("dialog")).toContainText(A.nickname);
+    }
 
     // The fixture person must not appear anywhere.
     await expect(page.locator("body")).not.toContainText(FIXTURE_NAME);
@@ -82,11 +86,26 @@ test.describe("A01 student identity", () => {
     await expect(page.locator(".userchip")).toContainText(A.nickname);
 
     // Logout = drop the session cookie, then drive the REAL login form.
+    // Fresh load with no cookie: the restore attempt 401s, which the browser
+    // logs. That is the designed anonymous path, not a defect — the waiter is
+    // registered before navigation so the early refresh cannot slip past it;
+    // drop it so only post-login noise can fail us below.
     await context.clearCookies();
-    await page.goto("/login");
+    await Promise.all([
+      page.waitForResponse((r) => r.url().includes("/auth/refresh")),
+      page.goto("/login"),
+    ]);
+    errors.length = 0;
     await page.locator("#email").fill(B.email);
     await page.locator("#password").fill(B.password);
-    await page.locator(".auth-submit").click();
+    // The goto below would abort an in-flight login POST (navigation cancels
+    // it), so wait for the login round-trip to finish first.
+    await Promise.all([
+      page.waitForResponse(
+        (r) => r.url().includes("/auth/login") && r.request().method() === "POST",
+      ),
+      page.locator(".auth-submit").click(),
+    ]);
     await page.goto("/student");
     await expect(page.getByRole("heading", { name: /Tran Test/ })).toBeVisible();
     await expect(page.locator(".userchip")).toContainText(B.nickname);
@@ -99,23 +118,26 @@ test.describe("A01 student identity", () => {
     expect(errors, "console/page errors").toEqual([]);
   });
 
-  test("3. hard reload while restoring shows a placeholder, never the fixture", async ({
+  test("3. hard reload while restoring shows no name at all, never the fixture", async ({
     page,
   }) => {
     const errors = collectPageErrors(page);
     await apiLogin(page, A.email, A.password);
 
     // Hold the restore request so `unknown` lasts long enough to observe.
+    // While unknown, RequireAuth owns the screen (full-page notice) and the
+    // shell is not mounted yet — so the observable requirement is: no person
+    // name anywhere, then the real name once restore lands.
     await page.route("**/auth/refresh", async (route) => {
       await new Promise((r) => setTimeout(r, 1500));
       await route.continue();
     });
     await page.goto("/student");
 
-    await expect(page.getByText("Đang tải thông tin tài khoản…").first()).toBeVisible();
+    await expect(page.getByText("Đang kiểm tra phiên đăng nhập…")).toBeVisible();
     await expect(page.locator("body")).not.toContainText(FIXTURE_NAME);
 
-    // Restore completes afterwards with the real name, not a stuck skeleton.
+    // Restore completes afterwards with the real name, not a stuck notice.
     await expect(page.getByRole("heading", { name: /Chăm Chỉ/ })).toBeVisible({ timeout: 15000 });
     expect(errors, "console/page errors").toEqual([]);
   });
@@ -148,13 +170,8 @@ test.describe("A01 student identity", () => {
     expect(errors, "console/page errors").toEqual([]);
   });
 
-  test("5. missing display name falls back to neutral", async ({ page }) => {
-    test.skip(!NULL_MODE, "needs B.nickname = NULL in DB (API rejects null)");
-    const errors = collectPageErrors(page);
-    await apiLogin(page, B.email, B.password);
-    await page.goto("/student");
-    await expect(page.locator(".userchip")).toContainText("Học viên");
-    await expect(page.locator("body")).not.toContainText(FIXTURE_NAME);
-    expect(errors, "console/page errors").toEqual([]);
-  });
+  // NOTE: the missing-display-name case lives in student-identity-null.spec.ts
+  // (separate file) because it needs a NULL fixture in the DB that the API
+  // cannot produce, and running it inside this file would break tests 2 and 4
+  // which assert B's real nickname.
 });

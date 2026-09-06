@@ -597,3 +597,6 @@ _(specs written 2026-08-19, `docs/api/modules/`. **Updated 2026-09-01**: `apps/a
   remain untouched until real endpoints arrive.
   Verification: 40/40 tests in `node --test apps/web/scripts/*.test.mjs`, `node scripts/check-docs.mjs`
   all 8 passed, `pnpm --filter web build` exit 0 (42/42 pages).
+  Playwright follow-up: `tests/student-identity.spec.ts` 8/8 + `tests/student-identity-null.spec.ts`
+  2/2 (two real accounts incl. real-form login, delayed-restore, long-name 375px, NULL fallback),
+  production build, desktop + mobile, screenshots read, zero console errors. Test fixtures cleaned.

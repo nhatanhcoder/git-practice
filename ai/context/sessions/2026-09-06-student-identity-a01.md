@@ -38,3 +38,7 @@ The name was hardcoded mock data in `src/lib/student/mock-user.ts` / `store.ts`.
 **Impact on DB / Auth / RBAC / Money**:
 - None. No schema migrations, backend Auth controller changes, RBAC policy changes, or financial logic modifications.
 - Reads client-side `AuthUser.nickname` returned by existing `GET /api/v1/auth/me`.
+
+## Addendum — Playwright regression (codex, same day, follow-up commit)
+- `apps/web/tests/student-identity.spec.ts` fixed (first version had 3 test bugs: navigation aborting the form-login POST, asserting visibility on sr-only text, clicking the desktop-only userchip on mobile) + split NULL case into `student-identity-null.spec.ts` (NULL fixture breaks the other tests nickname assertions). Final: **8/8 + 2/2 green** on production build, desktop + 375px, screenshots read, zero console/page errors. Test accounts: A = student@hsk.local (untouched), B = a01.student@hsk.local (registered, approved, nickname round-tripped, then **deleted**); B-null tested via direct DB edit.
+- Env findings (not app bugs, recorded for DX): (1) `CORS_ORIGIN` allows only `:3000` - a dev server on `:3100` fails refresh preflight and bounces to login; run browser tests on `:3000`. (2) `.next` gets clobbered when `next dev` runs after `next build` (missing chunks, blank screens); rebuild clean before any production test. (3) Cookie `Path=/api/v1/auth` verified correct - sent to refresh, never to pages.
