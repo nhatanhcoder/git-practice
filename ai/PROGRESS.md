@@ -608,3 +608,10 @@ _(specs written 2026-08-19, `docs/api/modules/`. **Updated 2026-09-01**: `apps/a
   Playwright follow-up: `tests/student-identity.spec.ts` 8/8 + `tests/student-identity-null.spec.ts`
   2/2 (two real accounts incl. real-form login, delayed-restore, long-name 375px, NULL fallback),
   production build, desktop + mobile, screenshots read, zero console errors. Test fixtures cleaned.
+- 🔶 (codex · 2026-09-06) **A02 — Tách demo khỏi dữ liệu Student production**
+  (branch `codex/a02-isolate-demo`, base `b3c5c02`).
+  Isolate demo/local progress from real accounts per A00 matrix: gate DemoStateSwitcher
+  strictly behind dev (`process.env.NODE_ENV !== 'production'`, resolving `WEB-016`), separate
+  UI preferences from demo progress, prevent ?demo=1 or storage flags from enabling demo in
+  production, ensure unbacked routes present honest unavailable states instead of fake local
+  success, preserve existing localStorage without silent mass wipes. No DB schema/Auth/RBAC/money change.
