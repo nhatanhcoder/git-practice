@@ -335,6 +335,29 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
 
 ## Off-sprint / spike
 
+- ✅ (claude · 2026-09-06) **A03 — SRS screen restyled in the Hán Lộ design.** `/student/mistakes`
+  was the last learner screen written in the old visual language; it kept `ui.tsx` because it is
+  the one screen backed by a real endpoint. Presentation now uses `PageHead`, `Tabs`, `Metric`,
+  `LevelSelector`, `Panel`, `EmptyState`, `ErrorState`, `SkeletonPanel` + a new
+  `styles/hanlu/srs.css`.
+  The substance was the palette: the four rating buttons carried literal Tailwind values
+  (`border-red-200`, `text-amber-700`, `bg-white`) — a third colour system that ignored the
+  light/dark switch and was near-unreadable on the dark ground. Each rating now passes a semantic
+  token in as `--srs-rating`.
+  Class names were verified against their definitions (**17 used, 17 defined**) rather than
+  assumed — `grid-3`/`grid-4`/`panel--warn` do not exist in the Hán Lộ sheets and would have
+  rendered silently unstyled.
+  **Unchanged and verified, not asserted**: SM-2, ratings 0/3/4/5, browse/due, HSK 1–9, payloads,
+  schema. Self-test against the live API: `?hskLevel=1` then `?hskLevel=9`, due tab hits
+  `/flashcards/due`, 0 rating buttons before flip and exactly 4 after, `POST .../review` → 201
+  with stats reloading, a card without an example renders nothing rather than inventing one,
+  light + dark both above AA (17.39 / 5.12), 375px no overflow, `:focus-visible` and
+  `prefers-reduced-motion` present in the served CSS. check-docs 8/8 · web tests 40/40.
+  ⚠️ `ui.tsx` is now unused by any real screen but **deleting it is A12**, and `coming-soon.tsx`
+  still imports it. Production vocabulary catalog still absent (A10/A11); tested on seeded
+  fixtures that were deleted afterwards.
+
+
 - ✅ (claude · 2026-09-06) **The learner area is now the Hán Lộ UI.** After every PR merged,
   signing in still landed on the old "Hành trình HSK" mock layout — PR #38 had only repainted it
   dark, which was a misreading of the owner's intent. Ported the real design from `16be0b1`:
