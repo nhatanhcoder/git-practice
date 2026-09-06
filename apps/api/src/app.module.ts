@@ -15,6 +15,7 @@ import { SessionsModule } from './sessions/sessions.module';
 import { PayrollModule } from './payroll/payroll.module';
 import { BillingModule } from './billing/billing.module';
 import { DashboardModule } from './dashboard/dashboard.module';
+import { FlashcardsModule } from './flashcards/flashcards.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
 
@@ -33,6 +34,7 @@ import { RolesGuard } from './common/guards/roles.guard';
     PayrollModule,
     BillingModule,
     DashboardModule,
+    FlashcardsModule,
 
     // Global so any guard can verify an access token without each feature module
     // re-registering it. Only verification lives here — nothing issues tokens yet:

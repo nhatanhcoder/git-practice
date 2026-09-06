@@ -18,6 +18,10 @@
   intervalDays: number,    // Days until next review; default 1
   nextReviewDate: Date,    // Scheduled next review date
   lastReviewedAt?: Date,   // Last time student reviewed this card
+
+  // Aggregate counters required by S-SRS-5 retention stats
+  totalReviews: number,    // All submitted ratings; default 0
+  correctReviews: number,  // Ratings >= 3; default 0
   
   // Personal save flag
   isSavedByUser: boolean,  // true if student manually added to personal list (S-SRS-7)
@@ -42,5 +46,10 @@
 - Successful intervals are 1 day, then 6 days, then `round(previousInterval × easeFactor)`
 - Due cards = `nextReviewDate <= now` for the user
 - `isSavedByUser = true` marks cards added via S-SRS-7 (personal study list)
+- `correctReviews <= totalReviews`; retention is `correctReviews / totalReviews`
+
+> **Conflict recorded 2026-09-05:** `FLOW_SRS_REVIEW.md` uses the older field names
+> `repetitions` / `interval`. This entity is authoritative, so production code uses
+> `repetitionsCount` / `intervalDays`. The flow must be corrected in a dedicated docs pass.
 
 > 📄 Full SM-2 formula: `docs/flows/FLOW_SRS_REVIEW.md`

@@ -67,9 +67,13 @@ Analytics (T-ANL-1…4): _not yet mapped._ Every other Teacher area has a contra
 > [`docs/api/modules/_INDEX.md` § 11](../../api/modules/_INDEX.md).
 
 ## Student
-_Not yet mapped._ (the built `/student/**` screens were produced from
-`docs/prompts/student-product/` as mockups, outside this contract pipeline — see
-`ai/context/HANDOFF.md` 2026-09-01.)
+**▶ [Student SRS Flow + API Map](./student-pages/student-flow.md)**
+
+| Route | Feature | Contract | Status | Design | Blocked on |
+|---|---|---|---|---|---|
+| `/student/mistakes` | S-SRS-1..5 | [student-srs](./student-pages/student-srs.md) | built | v1 | vocabulary seed; streak timezone |
+
+The other built `/student/**` screens remain mockups produced outside this contract pipeline.
 
 ---
 
