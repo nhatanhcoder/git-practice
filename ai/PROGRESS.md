@@ -587,8 +587,13 @@ _(specs written 2026-08-19, `docs/api/modules/`. **Updated 2026-09-01**: `apps/a
 
 ## Active work — student identity slice
 
-- 🔶 (codex · 2026-09-06) **A01 — Student shell/dashboard shows the correct account**
-  (branch `codex/a01-student-shell-identity`, base `cada414`). Dependency A00
-  ("đã duyệt" per task text) is NOT recorded in PROGRESS/HANDOFF — open question,
-  TBC in plan before implement. No DB/Auth/RBAC/money change: reads
-  `AuthUser.nickname` only; login/refresh/guard/backend untouched.
+- ✅ (codex · 2026-09-06) **A01 — Student shell/dashboard shows the correct account**
+  (commit `cea59de`, branch `codex/a01-student-shell-identity`, base `cada414`).
+  Resolved `WEB-015`: replaces hardcoded mock fixture ("Mai Anh") with authenticated
+  `AuthUser.nickname` via `useDisplayIdentity()` across `/student` dashboard greeting,
+  sidebar userchip, and student profile dialog/sheet.
+  Enforces neutral fallback ("Học viên" / "HV") and skeleton loading state during session
+  restore (`status !== 'authenticated'`). Mock progress figures (XP, streak, rank, level)
+  remain untouched until real endpoints arrive.
+  Verification: 40/40 tests in `node --test apps/web/scripts/*.test.mjs`, `node scripts/check-docs.mjs`
+  all 8 passed, `pnpm --filter web build` exit 0 (42/42 pages).
