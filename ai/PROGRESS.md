@@ -582,3 +582,18 @@ _(specs written 2026-08-19, `docs/api/modules/`. **Updated 2026-09-01**: `apps/a
 - ⬜ Phase 1 infra: envelope interceptor · exception filter · error enum ·
   Prisma + migration `User` · Swagger `/api` · `/health` + `/ready` · CI + migration rehearsal
 - ⬜ Phase 2: Auth module
+
+---
+
+## Active work — student identity slice
+
+- ✅ (codex · 2026-09-06) **A01 — Student shell/dashboard shows the correct account**
+  (commit `cea59de`, branch `codex/a01-student-shell-identity`, base `cada414`).
+  Resolved `WEB-015`: replaces hardcoded mock fixture ("Mai Anh") with authenticated
+  `AuthUser.nickname` via `useDisplayIdentity()` across `/student` dashboard greeting,
+  sidebar userchip, and student profile dialog/sheet.
+  Enforces neutral fallback ("Học viên" / "HV") and skeleton loading state during session
+  restore (`status !== 'authenticated'`). Mock progress figures (XP, streak, rank, level)
+  remain untouched until real endpoints arrive.
+  Verification: 40/40 tests in `node --test apps/web/scripts/*.test.mjs`, `node scripts/check-docs.mjs`
+  all 8 passed, `pnpm --filter web build` exit 0 (42/42 pages).

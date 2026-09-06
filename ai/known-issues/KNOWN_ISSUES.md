@@ -1025,7 +1025,7 @@ Do not let git auto-merge this file.
 ### [WEB-015] The student shell shows a hardcoded name instead of the signed-in user
 
 **Severity**: High
-**Status**: Open
+**Status**: Resolved in `cea59de` (codex, 2026-09-06)
 
 **Description**: with `/student` now behind a login (2026-09-05), the area was opened as a real
 signed-in account for the first time — `demo.student2@hsk.local`, display name *Học Viên Demo 2*.
@@ -1042,6 +1042,14 @@ state, because nothing signals that it is fake.
 **Fix Plan**: read the display name from the auth store (the session already carries it — the
 admin and teacher shells do this), and leave the numbers absent until the progress endpoints
 exist rather than substituting fixtures. Do not paper over it by renaming the fixture.
+
+**Resolution**: implemented `useDisplayIdentity()` hook in `src/lib/student/identity.ts` and pure
+derivation in `src/lib/student/identity-rules.ts`. Reads `AuthUser.nickname` from `useAuthStore`.
+Replaced hardcoded "Mai Anh" in `/student` dashboard greeting, sidebar userchip, and student
+profile sheet. While session is restoring (`status !== 'authenticated'`), renders skeleton
+placeholder. If nickname is null/empty, falls back neutrally to "Học viên" (initials "HV").
+Verified via unit tests `apps/web/scripts/student-identity.test.mjs`, Playwright spec
+`apps/web/tests/student-identity.spec.ts`, and clean production build `pnpm --filter web build`.
 
 ---
 

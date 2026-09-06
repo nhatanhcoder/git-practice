@@ -45,6 +45,7 @@ import {
 import { ToastProvider } from "./toast";
 import { Sheet } from "./overlay";
 import { useStudentProfile, useStudentStore } from "@/lib/student/store";
+import { useDisplayIdentity } from "@/lib/student/identity";
 
 interface NavItem {
   to: string;
@@ -129,6 +130,10 @@ export function StudentShell({ children }: { children: ReactNode }) {
   const pathname = usePathname() || "/student";
   const router = useRouter();
   const profile = useStudentProfile();
+  // A01: identity (name/initials) comes from the live session, never from the
+  // mock progress store above. `profile` below is now progress-only in the
+  // spots this shell renders (rank/level/xp/streak stay mock until their API).
+  const identity = useDisplayIdentity();
   const theme = useStudentStore((s) => s.theme);
   const showPinyin = useStudentStore((s) => s.showPinyin);
   const showMeaning = useStudentStore((s) => s.showMeaning);
@@ -329,21 +334,43 @@ export function StudentShell({ children }: { children: ReactNode }) {
               <button
                 type="button"
                 className="userchip"
-                aria-label={`Hồ sơ của ${profile.name}`}
+                aria-label={identity.ready ? `Hồ sơ của ${identity.name}` : "Hồ sơ học viên"}
                 aria-haspopup="dialog"
                 onClick={() => setProfileOpen(true)}
               >
-                <span className="avatar han" aria-hidden="true">
-                  {profile.initials}
-                </span>
-                <span className="stack userchip__text grow" style={{ textAlign: "left" }}>
-                  <span style={{ fontWeight: 600, fontSize: "var(--step--1)" }} className="truncate">
-                    {profile.name}
-                  </span>
-                  <span style={{ color: "var(--text-3)", fontSize: "var(--step--2)" }}>
-                    {profile.rank} · HSK {profile.currentLevel}
-                  </span>
-                </span>
+                {identity.ready ? (
+                  <>
+                    <span className="avatar han" aria-hidden="true">
+                      {identity.initials}
+                    </span>
+                    <span className="stack userchip__text grow" style={{ textAlign: "left" }}>
+                      <span style={{ fontWeight: 600, fontSize: "var(--step--1)" }} className="truncate">
+                        {identity.name}
+                      </span>
+                      <span style={{ color: "var(--text-3)", fontSize: "var(--step--2)" }}>
+                        {profile.rank} · HSK {profile.currentLevel}
+                      </span>
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <span className="avatar han" aria-hidden="true" />
+                    <span className="stack userchip__text grow" style={{ textAlign: "left" }}>
+                      <span
+                        aria-hidden="true"
+                        style={{
+                          display: "block",
+                          width: 96,
+                          height: 12,
+                          borderRadius: 6,
+                          backgroundColor: "var(--text-3)",
+                          opacity: 0.25,
+                        }}
+                      />
+                      <span className="sr-only">Đang tải thông tin tài khoản…</span>
+                    </span>
+                  </>
+                )}
               </button>
             </div>
           </nav>
@@ -454,15 +481,37 @@ export function StudentShell({ children }: { children: ReactNode }) {
           <Sheet open={profileOpen} onClose={() => setProfileOpen(false)} title="Hồ sơ học viên">
             <div className="stack gap-5" style={{ paddingTop: "var(--sp-4)" }}>
               <div className="row gap-3">
-                <span className="avatar avatar--lg han" aria-hidden="true">
-                  {profile.initials}
-                </span>
-                <div className="stack gap-1 grow">
-                  <span style={{ fontWeight: 600 }}>{profile.name}</span>
-                  <span style={{ color: "var(--text-3)", fontSize: "var(--step--1)" }}>
-                    {profile.rank} · HSK {profile.currentLevel} · {profile.joinedLabel}
-                  </span>
-                </div>
+                {identity.ready ? (
+                  <>
+                    <span className="avatar avatar--lg han" aria-hidden="true">
+                      {identity.initials}
+                    </span>
+                    <div className="stack gap-1 grow">
+                      <span style={{ fontWeight: 600 }}>{identity.name}</span>
+                      <span style={{ color: "var(--text-3)", fontSize: "var(--step--1)" }}>
+                        {profile.rank} · HSK {profile.currentLevel} · {profile.joinedLabel}
+                      </span>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <span className="avatar avatar--lg han" aria-hidden="true" />
+                    <div className="stack gap-1 grow">
+                      <span
+                        aria-hidden="true"
+                        style={{
+                          display: "block",
+                          width: 120,
+                          height: 14,
+                          borderRadius: 7,
+                          backgroundColor: "var(--text-3)",
+                          opacity: 0.25,
+                        }}
+                      />
+                      <span className="sr-only">Đang tải thông tin tài khoản…</span>
+                    </div>
+                  </>
+                )}
               </div>
               <p style={{ color: "var(--text-3)", fontSize: "var(--step--1)" }}>
                 Bản mockup: mọi tiến độ được lưu trong trình duyệt này, chưa có tài khoản thật.
