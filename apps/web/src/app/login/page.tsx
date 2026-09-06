@@ -1,10 +1,13 @@
 "use client";
 
 import { Suspense, useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ApiError, login } from "@/lib/api-client";
 import { useAuthStore, type UserRole } from "@/lib/auth/auth-store";
-import styles from "./login.module.css";
+import { AuthShell } from "@/components/auth/auth-shell";
+import "@/styles/hanlu/tokens.css";
+import "@/styles/hanlu/auth.css";
 
 const HOME_FOR_ROLE: Record<UserRole, string> = {
   admin: "/admin",
@@ -41,6 +44,9 @@ function LoginForm() {
   const [submitting, setSubmitting] = useState(false);
 
   const nextParam = searchParams.get("next");
+  // Set by /register after a successful signup, so the person lands here already
+  // told what happened instead of guessing why they cannot sign in yet.
+  const registered = searchParams.get("registered") === "1";
 
   // Already signed in (e.g. the restore succeeded while this page was open, or
   // the user navigated here by hand) — send them where they were going.
@@ -71,69 +77,76 @@ function LoginForm() {
   }
 
   return (
-    <main className={styles.page}>
-      <div className={styles.card}>
-        <div className={styles.brand}>
-          <span className={styles.brandMark} aria-hidden="true">
-            汉
-          </span>
-          <span className={styles.brandName}>HSK Platform</span>
+    <AuthShell
+      title="Một con đường, từ HSK 1 đến HSK 9."
+      lead="Lộ trình, ngữ pháp, phát âm, luyện viết và phòng thi — tiếp tục ở đúng chỗ bạn đang dở."
+    >
+      <h1 className="auth-title">Đăng nhập</h1>
+      <p className="auth-sub">Dùng tài khoản đã được quản trị viên duyệt.</p>
+
+      {registered && !error && (
+        <div className="auth-banner auth-banner--ok" role="status">
+          Đã tạo tài khoản. Quản trị viên cần duyệt trước khi bạn đăng nhập được.
+        </div>
+      )}
+
+      {error && (
+        <div className="auth-banner auth-banner--error" role="alert">
+          {error}
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit} noValidate>
+        <div className="auth-field" style={{ "--i": 0 } as React.CSSProperties}>
+          <label className="auth-label" htmlFor="email">
+            Email
+          </label>
+          <input
+            id="email"
+            className="auth-input"
+            type="email"
+            name="email"
+            autoComplete="email"
+            placeholder="ban@vidu.com"
+            required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            aria-invalid={error ? "true" : undefined}
+          />
         </div>
 
-        <h1 className={styles.title}>Đăng nhập</h1>
-        <p className={styles.subtitle}>Dùng tài khoản đã được quản trị viên duyệt.</p>
+        <div className="auth-field" style={{ "--i": 1 } as React.CSSProperties}>
+          <label className="auth-label" htmlFor="password">
+            Mật khẩu
+          </label>
+          <input
+            id="password"
+            className="auth-input"
+            type="password"
+            name="password"
+            autoComplete="current-password"
+            placeholder="••••••••"
+            required
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            aria-invalid={error ? "true" : undefined}
+          />
+        </div>
 
-        {error && (
-          <div className={styles.banner} role="alert">
-            <span>{error}</span>
-          </div>
-        )}
+        <button className="auth-submit" type="submit" disabled={submitting}>
+          {submitting && <span className="auth-spinner" aria-hidden="true" />}
+          {submitting ? "Đang đăng nhập…" : "Đăng nhập"}
+        </button>
+      </form>
 
-        <form onSubmit={handleSubmit} noValidate>
-          <div className={styles.field}>
-            <label className={styles.label} htmlFor="email">
-              Email
-            </label>
-            <input
-              id="email"
-              className={styles.input}
-              type="email"
-              name="email"
-              autoComplete="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              aria-invalid={error ? "true" : undefined}
-            />
-          </div>
+      <p className="auth-foot">
+        Chưa có tài khoản? <Link href="/register">Đăng ký</Link>
+      </p>
 
-          <div className={styles.field}>
-            <label className={styles.label} htmlFor="password">
-              Mật khẩu
-            </label>
-            <input
-              id="password"
-              className={styles.input}
-              type="password"
-              name="password"
-              autoComplete="current-password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              aria-invalid={error ? "true" : undefined}
-            />
-          </div>
-
-          <button className={styles.submit} type="submit" disabled={submitting}>
-            {submitting ? "Đang đăng nhập…" : "Đăng nhập"}
-          </button>
-        </form>
-
-        <p className={styles.hint}>
-          Tài khoản seed để thử: <code>admin@hsk.local</code> / <code>Password123!</code>
-        </p>
-      </div>
-    </main>
+      <p className="auth-hint" style={{ textAlign: "center", marginTop: 18 }}>
+        Tài khoản seed để thử: <code>admin@hsk.local</code> / <code>Password123!</code>
+      </p>
+    </AuthShell>
   );
 }
 
@@ -141,7 +154,7 @@ export default function LoginPage() {
   // useSearchParams needs a Suspense boundary or the whole route opts out of
   // static rendering and Next fails the build.
   return (
-    <Suspense fallback={<main className={styles.page} />}>
+    <Suspense fallback={<div className="auth-root student-root" data-theme="dark" />}>
       <LoginForm />
     </Suspense>
   );

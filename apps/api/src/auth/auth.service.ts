@@ -11,6 +11,8 @@ import type { RegisterDto } from './dto/register.dto';
 import type { LoginDto } from './dto/login.dto';
 import type { ChangePasswordDto } from './dto/change-password.dto';
 import type { UpdateProfileDto } from './dto/update-profile.dto';
+import { UpdateMarketingProfileDto } from './dto/marketing-profile.dto';
+import { resolveConsent, type MarketingChannelName } from './marketing-rules';
 import {
   toAuthUser,
   type AuthUser,
@@ -113,14 +115,50 @@ export class AuthService {
     const passwordHash = await bcrypt.hash(dto.password, BCRYPT_COST);
 
     try {
-      const user = await this.prisma.user.create({
-        data: {
-          email: dto.email,
-          passwordHash,
-          nickname: dto.fullName,
-          role: dto.role ?? 'student',
-          status: 'pending',
-        },
+      // One transaction: an account created without the marketing row it was submitted with
+      // would leave the person having answered questions nobody stored, with no way to notice.
+      const user = await this.prisma.$transaction(async (tx) => {
+        const created = await tx.user.create({
+          data: {
+            email: dto.email,
+            passwordHash,
+            nickname: dto.fullName,
+            role: dto.role ?? 'student',
+            status: 'pending',
+          },
+        });
+
+        if (dto.marketing) {
+          const m = dto.marketing;
+          const consent = resolveConsent(
+            {
+              marketingConsent: m.marketingConsent,
+              consentChannels: m.consentChannels as MarketingChannelName[] | undefined,
+              birthYear: m.birthYear ?? null,
+            },
+            null,
+          );
+
+          await tx.userMarketingProfile.create({
+            data: {
+              userId: created.id,
+              birthYear: m.birthYear ?? null,
+              gender: m.gender ?? null,
+              province: m.province ?? null,
+              phone: m.phone ?? null,
+              occupation: m.occupation ?? null,
+              learningGoal: m.learningGoal ?? null,
+              currentLevel: m.currentLevel ?? null,
+              referralSource: m.referralSource ?? null,
+              utmSource: m.utmSource ?? null,
+              utmMedium: m.utmMedium ?? null,
+              utmCampaign: m.utmCampaign ?? null,
+              ...consent,
+            },
+          });
+        }
+
+        return created;
       });
 
       return {
@@ -469,6 +507,117 @@ export class AuthService {
         data: { revokedAt: new Date(), revokedReason: 'password_change' },
       }),
     ]);
+  }
+
+  /**
+   * Read the caller's own marketing profile.
+   *
+   * Always answers with an object, never a bare null. EnvelopeInterceptor passes null straight
+   * through so that 204s stay bodiless, which means returning null here would put an *empty
+   * body* on a 200 — a client cannot tell that apart from a truncated response. `exists` is the
+   * field that carries the "nothing saved yet" answer instead.
+   *
+   * No row is still not created on read: a GET must not write, and an empty row would make
+   * "never filled this in" indistinguishable from "filled it in and cleared it".
+   */
+  async getMarketingProfile(userId: string) {
+    const row = await this.prisma.userMarketingProfile.findUnique({ where: { userId } });
+    if (row) return { exists: true, ...row };
+    return {
+      exists: false,
+      userId,
+      birthYear: null,
+      gender: null,
+      province: null,
+      phone: null,
+      occupation: null,
+      learningGoal: null,
+      currentLevel: null,
+      referralSource: null,
+      utmSource: null,
+      utmMedium: null,
+      utmCampaign: null,
+      marketingConsent: false,
+      consentChannels: [] as string[],
+      consentVersion: null,
+      consentedAt: null,
+      withdrawnAt: null,
+      guardianConsentRequired: false,
+    };
+  }
+
+  /**
+   * Create or update the caller's own marketing profile.
+   *
+   * Consent is never stored as the client sent it. `resolveConsent` decides the four consent
+   * columns from the request plus what is already on the row, so granting stamps a version and
+   * timestamp, withdrawing clears the channels, an edit that says nothing about consent leaves
+   * it alone, and a minor cannot consent for themselves.
+   */
+  async upsertMarketingProfile(userId: string, dto: UpdateMarketingProfileDto) {
+    const existing = await this.prisma.userMarketingProfile.findUnique({ where: { userId } });
+
+    // birthYear may arrive in this request or already be stored; consent depends on whichever
+    // is current, not only on what this request happened to mention.
+    const birthYear = dto.birthYear !== undefined ? dto.birthYear : (existing?.birthYear ?? null);
+
+    const consent = resolveConsent(
+      {
+        marketingConsent: dto.marketingConsent,
+        consentChannels: dto.consentChannels as MarketingChannelName[] | undefined,
+        birthYear,
+      },
+      existing
+        ? {
+            marketingConsent: existing.marketingConsent,
+            consentChannels: existing.consentChannels as MarketingChannelName[],
+            consentVersion: existing.consentVersion,
+            consentedAt: existing.consentedAt,
+            withdrawnAt: existing.withdrawnAt,
+          }
+        : null,
+    );
+
+    // Only the fields the request actually mentioned are written. Spreading the whole DTO would
+    // turn every omitted field into a null, so saving one answer would erase the others.
+    const data: Record<string, unknown> = {};
+    for (const key of [
+      'birthYear',
+      'gender',
+      'province',
+      'phone',
+      'occupation',
+      'learningGoal',
+      'currentLevel',
+      'referralSource',
+      'utmSource',
+      'utmMedium',
+      'utmCampaign',
+    ] as const) {
+      if (dto[key] !== undefined) data[key] = dto[key];
+    }
+
+    const row = await this.prisma.userMarketingProfile.upsert({
+      where: { userId },
+      create: { userId, ...data, ...consent },
+      update: { ...data, ...consent },
+    });
+    // Same shape as the GET, so a client can use one type for both.
+    return { exists: true, ...row };
+  }
+
+  /**
+   * Withdraw consent and delete the collected data.
+   *
+   * A withdrawal that only flipped a boolean would leave the phone number, birth year and
+   * everything else sitting in the table. Deleting the row is what makes the withdrawal real;
+   * the account itself is untouched, which is why this data lives in its own table.
+   */
+  async deleteMarketingProfile(userId: string): Promise<{ deleted: boolean }> {
+    const existing = await this.prisma.userMarketingProfile.findUnique({ where: { userId } });
+    if (!existing) return { deleted: false };
+    await this.prisma.userMarketingProfile.delete({ where: { userId } });
+    return { deleted: true };
   }
 
   private mintAccessToken(userId: string, email: string, role: string): Promise<string> {
