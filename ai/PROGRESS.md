@@ -327,6 +327,29 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
 
 ## Off-sprint / spike
 
+- ✅ (claude · 2026-09-06) **The learner area is now the Hán Lộ UI.** After every PR merged,
+  signing in still landed on the old "Hành trình HSK" mock layout — PR #38 had only repainted it
+  dark, which was a misreading of the owner's intent. Ported the real design from `16be0b1`:
+  38 route files, 6 components, 12 data modules, the six-stylesheet stack, and **17 routes main
+  did not have** (`classes`, `assignments`, `attempts`, `exams`, `badges`, `flashcards`, `lego`,
+  `placement`, `progress` + detail routes).
+  Three things were deliberately **not** taken from the source branch, each of which would have
+  been a regression: the login guard is kept (that branch predates PR #32, so routes went inside
+  `(app)` rather than flat), `/student/landing` keeps main's public copy, and `/student/mistakes`
+  keeps main's SRS file — the source branch's is 271 lines with zero API calls, main's is wired
+  and has 6 e2e tests.
+  `check-docs.mjs` fixed in the same commit: its status-drift check did not know route groups
+  exist and reported every moved route as missing. Proven to still fire against a deliberately
+  removed page.
+  **Verified in a browser**: sign-in lands on Hán Lộ ("Hành trình HSK" gone from the page);
+  anonymous `/student` **and** the new `/student/classes` both redirect to `/login?next=<path>`;
+  landing still public. Web build clean · API **170/170 across 27 suites** · web tests 36/36 ·
+  check-docs 8/8.
+  ⚠️ **17 new routes, most with no backend.** `classes` has a real API; `assignments`, `attempts`,
+  `exams`, `placement`, `progress` do not — those screens run on the source branch's mock data and
+  need auditing against `WEB-011` before anyone trusts them.
+
+
 - ✅ (claude · 2026-09-05) **`/student/landing` restored and made public.** The route 404'd: it
   existed only on `feat/student-hanlu-ui`, whose PR #24 was closed without merging. Ported the
   page plus `SiteShell`, `landing-data`, the three.js teacher stage and the student `Modal`,
