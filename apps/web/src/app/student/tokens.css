@@ -1,0 +1,196 @@
+@import url("https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500&family=Sora:wght@500;600;700&family=Inter:wght@400;500;600;700&family=Noto+Serif+SC:wght@500;700&display=swap");
+
+/* ============================================================
+   Hán Lộ — Student Design System
+   Direction: "Mực & Chu Sa" (Ink & Cinnabar)
+
+   Distilled from the prototype at `Chinese UI test/ui-claude`
+   (frontend/src/styles/tokens.css) — see
+   docs/front-end-design-docs/HANLU_PROTOTYPE_DISTILLED.md §1.
+
+   MOCK(student): mockup mode per docs/prompts/student-product/.
+   These tokens are NOT promoted into root-design-fe.md — that only
+   happens when the human runs /design-promote.
+
+   Scoped to `.student-root` so Admin and Teacher keep their own
+   tokens from globals.css. `data-theme` lives on the same element,
+   NOT on <html>, for the same reason: <html> is shared with the
+   other two actors and Admin is a light-only design.
+   ============================================================ */
+
+.student-root {
+  /* ---- Brand ramps (stable across themes) ---- */
+  --cinnabar-300: #ff9c86;
+  --cinnabar-400: #ff7454;
+  --cinnabar-500: #f0532f;
+  --cinnabar-600: #d63d1c;
+  --cinnabar-700: #ad2f14;
+
+  --jade-300: #6fe0bb;
+  --jade-400: #35c795;
+  --jade-500: #16a97a;
+  --jade-600: #0d8763;
+
+  --gold-300: #ffd76e;
+  --gold-400: #f5b942;
+  --gold-500: #dc9a1c;
+
+  --violet-300: #b3a6ff;
+  --violet-400: #8e7cff;
+  --violet-500: #6f59f0;
+
+  --sky-300: #8ccbff;
+  --sky-400: #48a9f8;
+  --sky-500: #1f88de;
+
+  --rose-400: #ff6b81;
+  --rose-500: #e63b56;
+
+  /* ---- Typography ---- */
+  --font-serif: "Playfair Display", "Iowan Old Style", Georgia, "Times New Roman", serif;
+  --font-display: "Sora", "Segoe UI", system-ui, sans-serif;
+  --font-ui: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --font-han: "Noto Serif SC", "Songti SC", "SimSun", "Microsoft YaHei", serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+
+  --step--2: 0.6875rem; /* 11 */
+  --step--1: 0.8125rem; /* 13 */
+  --step-0: 0.9375rem; /* 15 */
+  --step-1: 1.0625rem; /* 17 */
+  --step-2: 1.3125rem; /* 21 */
+  --step-3: 1.625rem; /* 26 */
+  --step-4: 2.125rem; /* 34 */
+  --step-5: 2.75rem; /* 44 */
+
+  /* ---- Space ---- */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 20px;
+  --sp-6: 24px;
+  --sp-7: 32px;
+  --sp-8: 40px;
+  --sp-9: 56px;
+  --sp-10: 72px;
+  --sp-11: 96px;
+  --sp-12: 128px;
+
+  /* ---- Radius ---- */
+  --r-xs: 6px;
+  --r-sm: 10px;
+  --r-md: 14px;
+  --r-lg: 20px;
+  --r-xl: 28px;
+  --r-pill: 999px;
+
+  /* ---- Motion ---- */
+  --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --dur-1: 120ms;
+  --dur-2: 200ms;
+  --dur-3: 320ms;
+  --dur-4: 480ms;
+
+  /* ---- Layout ---- */
+  --rail-w: 248px;
+  --rail-w-compact: 76px;
+  --topbar-h: 68px;
+  --tabbar-h: 64px;
+  --content-max: 1320px;
+}
+
+/* ---------- Dark (default) ---------- */
+.student-root,
+.student-root[data-theme="dark"] {
+  --bg: #0a0d13;
+  --bg-veil: #070910;
+  --surface: #121722;
+  --surface-2: #19202d;
+  --surface-3: #212a3a;
+  --surface-inset: #0e131c;
+
+  --line: #253044;
+  --line-soft: #1b2432;
+  --line-strong: #35435c;
+
+  --text: #eef2f8;
+  --text-1: #eef2f8;
+  --text-2: #a9b4c6;
+  --text-3: #77839a;
+  --text-inverse: #0a0d13;
+
+  --accent: var(--cinnabar-400);
+  --accent-strong: var(--cinnabar-500);
+  --accent-soft: rgba(240, 83, 47, 0.14);
+  --accent-line: rgba(240, 83, 47, 0.36);
+  --on-accent: #fff5f1;
+
+  --success: var(--jade-400);
+  --success-soft: rgba(53, 199, 149, 0.14);
+  --warn: var(--gold-400);
+  --warn-soft: rgba(245, 185, 66, 0.14);
+  --danger: var(--rose-400);
+  --danger-soft: rgba(255, 107, 129, 0.14);
+  --info: var(--sky-400);
+  --info-soft: rgba(72, 169, 248, 0.14);
+  --epic: var(--violet-400);
+  --epic-soft: rgba(142, 124, 255, 0.16);
+
+  --focus: #7fd2ff;
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.5);
+  --shadow-2: 0 10px 30px -12px rgba(0, 0, 0, 0.75);
+  --shadow-3: 0 28px 60px -20px rgba(0, 0, 0, 0.8);
+  --scrim: rgba(4, 6, 11, 0.72);
+
+  --paper-grid: rgba(255, 255, 255, 0.032);
+
+  color-scheme: dark;
+}
+
+/* ---------- Light ("paper") ---------- */
+.student-root[data-theme="light"] {
+  --bg: #f6f2ea;
+  --bg-veil: #efe9df;
+  --surface: #ffffff;
+  --surface-2: #faf6ef;
+  --surface-3: #f2ece1;
+  --surface-inset: #f4efe6;
+
+  --line: #e3dacb;
+  --line-soft: #eee7db;
+  --line-strong: #d0c4b0;
+
+  --text: #1b1a18;
+  --text-1: #1b1a18;
+  --text-2: #58524a;
+  --text-3: #857d72;
+  --text-inverse: #ffffff;
+
+  --accent: var(--cinnabar-600);
+  --accent-strong: var(--cinnabar-700);
+  --accent-soft: rgba(214, 61, 28, 0.1);
+  --accent-line: rgba(214, 61, 28, 0.3);
+  --on-accent: #fff6f3;
+
+  --success: var(--jade-600);
+  --success-soft: rgba(13, 135, 99, 0.12);
+  --warn: var(--gold-500);
+  --warn-soft: rgba(220, 154, 28, 0.14);
+  --danger: var(--rose-500);
+  --danger-soft: rgba(230, 59, 86, 0.1);
+  --info: var(--sky-500);
+  --info-soft: rgba(31, 136, 222, 0.12);
+  --epic: var(--violet-500);
+  --epic-soft: rgba(111, 89, 240, 0.12);
+
+  --focus: #1f6feb;
+  --shadow-1: 0 1px 2px rgba(60, 45, 25, 0.08);
+  --shadow-2: 0 10px 28px -14px rgba(60, 45, 25, 0.28);
+  --shadow-3: 0 26px 56px -22px rgba(60, 45, 25, 0.32);
+  --scrim: rgba(30, 22, 12, 0.42);
+
+  --paper-grid: rgba(90, 70, 40, 0.045);
+
+  color-scheme: light;
+}

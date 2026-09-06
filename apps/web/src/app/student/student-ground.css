@@ -1,0 +1,17 @@
+/* The page ground for the learner area.
+ *
+ * globals.css paints html and body #f8fafc for the whole app, and Admin and Teacher still
+ * want that, so this cannot simply be changed there. None of the six Hán Lộ stylesheets set
+ * html or body either — they all scope to .student-root — which leaves a light strip wherever
+ * the root does not reach the viewport edge.
+ *
+ * Scoping with :has means only a page that actually renders a .student-root turns dark.
+ * AuthShell carries .student-root too, so /login and /register are covered by the same rule.
+ *
+ * Kept as its own file rather than added to base.css so the six ported sheets stay byte-equal
+ * to their source, and a later diff against that branch shows only what we meant to change.
+ */
+html:has(.student-root),
+body:has(.student-root) {
+  background: #0a0d13;
+}
