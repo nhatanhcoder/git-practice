@@ -1125,7 +1125,55 @@ also taken `WEB-014`, renumber this on merge rather than dropping either entry.
 
 ---
 
+### [WEB-017] `/student/landing` is live prototype content, and the branch it came from is still abandoned
+
+**Severity**: Medium
+**Status**: Open
+
+**Description**: `/student/landing` was restored to `main` on 2026-09-05 because it 404'd. The
+page itself says what it is — *"Bản prototype giao diện · dữ liệu mô phỏng · không cần đăng
+ký"* — and every figure on it is a fixture in `apps/web/src/components/site/landing-data.ts`:
+named teachers with invented credentials (*Thạc sĩ SISU*, *Tiến sĩ Ngôn ngữ học PKU*), a
+*"Bảng vàng thành tích"* of students, and counts (9 levels, 76 grammar points, 214 radicals, 57
+pinyin sounds). It is now publicly reachable with no login.
+
+**Impact**: this is the only page on the platform a stranger can read, and it presents invented
+teachers and invented student results as fact. The prototype disclaimer is one small line. That
+is a different risk class from the mock data on the guarded screens, which only a signed-in user
+sees.
+
+**Fix Plan**: before this is pointed at real users, either replace `landing-data.ts` with real
+staff and real outcomes, or cut the sections that assert facts about people. Do not simply
+enlarge the disclaimer.
+
+**Related**: the rest of `feat/student-hanlu-ui` is still unmerged — 24 commits, and `main` has
+moved 64 past it. Its PR #24 was closed 2026-09-05 04:06 UTC with `mergedAt: null` and **no
+comment recording why**. Only the landing route was ported here; the branch also rewrites the
+student area by 52 files (+15.9k/−3.3k) and holds `WEB-007`–`WEB-010` and `DOC-013` in its own
+copy of this file (see `DOC-014`). Someone has to decide whether that branch is revived or
+dropped — leaving it half-ported is the worst of the three states.
+
+---
+
 ## Technical Debt
+
+### [DEBT-005] The landing page ships ~8.5 MB of uncompressed teacher photos
+
+**Severity**: Low
+**Status**: Open
+
+**Description**: `apps/web/public/teachers/*.png` are four PNGs of 1.9–2.3 MB each, committed
+as-is from `feat/student-hanlu-ui`. They are texture sources for the three.js carousel on
+`/student/landing`, which is now the only page reachable without logging in.
+
+**Impact**: the first paint of the only public page pulls ~8.5 MB. On a phone connection that is
+the whole first impression.
+
+**Fix Plan**: compress and resize to the size the cylinder faces actually sample, or convert to
+WebP with a PNG fallback. Do this before the page is linked anywhere public — see `WEB-017`,
+which has to be settled first anyway.
+
+---
 
 ### [DEBT-001] No cross-DB transactions
 
