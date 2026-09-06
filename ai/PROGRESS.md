@@ -582,3 +582,13 @@ _(specs written 2026-08-19, `docs/api/modules/`. **Updated 2026-09-01**: `apps/a
 - ⬜ Phase 1 infra: envelope interceptor · exception filter · error enum ·
   Prisma + migration `User` · Swagger `/api` · `/health` + `/ready` · CI + migration rehearsal
 - ⬜ Phase 2: Auth module
+
+---
+
+## Active work — student identity slice
+
+- 🔶 (codex · 2026-09-06) **A01 — Student shell/dashboard shows the correct account**
+  (branch `codex/a01-student-shell-identity`, base `cada414`). Dependency A00
+  ("đã duyệt" per task text) is NOT recorded in PROGRESS/HANDOFF — open question,
+  TBC in plan before implement. No DB/Auth/RBAC/money change: reads
+  `AuthUser.nickname` only; login/refresh/guard/backend untouched.
