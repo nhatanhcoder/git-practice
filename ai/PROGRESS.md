@@ -636,6 +636,8 @@ _(specs written 2026-08-19, `docs/api/modules/`. **Updated 2026-09-01**: `apps/a
 
 ## Active work — student identity slice
 
+- 🔶 (codex · 2026-09-07) **A06 — Danh sách lớp Student từ API thật**
+
 - ✅ (codex · 2026-09-06) **A01 — Student shell/dashboard shows the correct account**
   (commit `cea59de`, branch `codex/a01-student-shell-identity`, base `cada414`).
   Resolved `WEB-015`: replaces hardcoded mock fixture ("Mai Anh") with authenticated
