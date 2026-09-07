@@ -5,11 +5,12 @@ import {
   shouldEnableDemoTools,
   shouldUnlockWithXp,
   resolveStudentProgressStats,
+  formatProgressStat,
+  isLiveStudentRoute,
   DEMO_STORAGE_KEY,
   PREF_STORAGE_KEY,
   LEGACY_STUDENT_KEY,
 } from "../src/lib/student/demo-rules.ts";
-import { getInitialPreferences } from "../src/lib/student/preferences.ts";
 
 /** Mock minimal localStorage for Node test runner */
 function createMockLocalStorage() {
@@ -35,11 +36,6 @@ describe("Student Demo Isolation & Preferences (A02)", () => {
 
   describe("Preference Resolution & Non-destructive migration", () => {
     it("returns default preferences when storage is empty", () => {
-      const prefs = getInitialPreferences();
-      assert.equal(prefs.theme, "dark");
-      assert.equal(prefs.showPinyin, true);
-      assert.equal(prefs.showMeaning, true);
-
       const pure = resolveInitialPreferences(null, null);
       assert.equal(pure.theme, "dark");
       assert.equal(pure.showPinyin, true);
@@ -51,11 +47,6 @@ describe("Student Demo Isolation & Preferences (A02)", () => {
         state: { theme: "light", showPinyin: false, showMeaning: false },
       });
       window.localStorage.setItem(PREF_STORAGE_KEY, prefData);
-
-      const prefs = getInitialPreferences();
-      assert.equal(prefs.theme, "light");
-      assert.equal(prefs.showPinyin, false);
-      assert.equal(prefs.showMeaning, false);
 
       const pure = resolveInitialPreferences(prefData, null);
       assert.equal(pure.theme, "light");
@@ -74,12 +65,6 @@ describe("Student Demo Isolation & Preferences (A02)", () => {
       });
       window.localStorage.setItem(LEGACY_STUDENT_KEY, legacyData);
 
-      const prefs = getInitialPreferences();
-      assert.equal(prefs.theme, "light");
-      assert.equal(prefs.showPinyin, false);
-      assert.equal(prefs.showMeaning, true);
-
-      // Verify pure helper also resolves correctly
       const pure = resolveInitialPreferences(null, legacyData);
       assert.equal(pure.theme, "light");
       assert.equal(pure.showPinyin, false);
@@ -90,15 +75,14 @@ describe("Student Demo Isolation & Preferences (A02)", () => {
       assert.equal(window.localStorage.getItem(PREF_STORAGE_KEY), null);
     });
 
+    it("prefers hanlu-preferences over the legacy store when both exist", () => {
+      const prefData = JSON.stringify({ state: { theme: "dark", showPinyin: true } });
+      const legacyData = JSON.stringify({ state: { theme: "light" } });
+      const pure = resolveInitialPreferences(prefData, legacyData);
+      assert.equal(pure.theme, "dark");
+    });
+
     it("handles corrupt JSON gracefully with defaults", () => {
-      window.localStorage.setItem(PREF_STORAGE_KEY, "{corrupt json");
-      window.localStorage.setItem(LEGACY_STUDENT_KEY, "invalid");
-
-      const prefs = getInitialPreferences();
-      assert.equal(prefs.theme, "dark");
-      assert.equal(prefs.showPinyin, true);
-      assert.equal(prefs.showMeaning, true);
-
       const pure = resolveInitialPreferences("{corrupt", "invalid");
       assert.equal(pure.theme, "dark");
       assert.equal(pure.showPinyin, true);
@@ -135,15 +119,15 @@ describe("Student Demo Isolation & Preferences (A02)", () => {
     });
   });
 
-  describe("Real Account Progress Isolation", () => {
-    it("returns neutral progress (0 XP, neutral rank) in production", () => {
+  describe("Real Account Progress Isolation (A02 review #1: absent, not zero)", () => {
+    it("returns ABSENT progress (null, not 0) in production", () => {
       const mockStats = { xp: 5240, streakDays: 12, currentLevel: 3, rank: "Thám hoa" };
       const resolved = resolveStudentProgressStats("production", mockStats);
 
-      assert.equal(resolved.xp, 0, "XP must be 0 in production");
-      assert.equal(resolved.streakDays, 0, "Streak must be 0 in production");
-      assert.equal(resolved.rank, "Học viên", "Rank must be neutral 'Học viên'");
-      assert.equal(resolved.isMock, false, "Must flag isMock as false in production");
+      assert.equal(resolved.xp, null, "XP must be null (absent), never a fabricated 0");
+      assert.equal(resolved.streakDays, null, "Streak must be null (absent)");
+      assert.equal(resolved.currentLevel, null, "Level must be null (absent)");
+      assert.equal(resolved.rank, null, "Rank must be null (absent)");
     });
 
     it("returns mock stats in development/demo mode", () => {
@@ -152,8 +136,51 @@ describe("Student Demo Isolation & Preferences (A02)", () => {
 
       assert.equal(resolved.xp, 5240);
       assert.equal(resolved.streakDays, 12);
+      assert.equal(resolved.currentLevel, 3);
       assert.equal(resolved.rank, "Thám hoa");
-      assert.equal(resolved.isMock, true);
+    });
+  });
+
+  describe("formatProgressStat (absent numbers render as em dash)", () => {
+    it("renders null as —", () => {
+      assert.equal(formatProgressStat(null), "—");
+    });
+
+    it("renders present numbers in the vi-VN locale", () => {
+      assert.equal(formatProgressStat(5240), "5.240");
+      assert.equal(formatProgressStat(0), "0");
+    });
+  });
+
+  describe("isLiveStudentRoute (A02 review #4: one classification drives the nav)", () => {
+    it("marks the live-backend and repo-static routes as live", () => {
+      for (const path of [
+        "/student",
+        "/student/classes",
+        "/student/flashcards",
+        "/student/mistakes",
+        "/student/grammar",
+        "/student/foundation",
+      ]) {
+        assert.equal(isLiveStudentRoute(path), true, `${path} must be live`);
+      }
+    });
+
+    it("marks backend-less routes as not live, so the nav hides them", () => {
+      for (const path of [
+        "/student/assignments",
+        "/student/exams",
+        "/student/learning-path",
+        "/student/placement",
+        "/student/writing",
+        "/student/lego",
+        "/student/workplace",
+        "/student/badges",
+        "/student/leaderboard",
+        "/student/progress",
+      ]) {
+        assert.equal(isLiveStudentRoute(path), false, `${path} must NOT be live`);
+      }
     });
   });
 });

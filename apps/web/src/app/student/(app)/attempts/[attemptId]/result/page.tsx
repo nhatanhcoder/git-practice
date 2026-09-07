@@ -45,6 +45,9 @@ function formatMoment(iso: string): string {
 }
 
 export default function AttemptResultPage() {
+  // A02 review #6: the gate lives in this hookless wrapper so a
+  // production render runs zero hooks and zero effects of the demo
+  // screen below (several of them start timers that record attempts).
   if (process.env.NODE_ENV === "production") {
     return (
       <UnavailableState
@@ -53,6 +56,10 @@ export default function AttemptResultPage() {
       />
     );
   }
+  return <AttemptResultPageInner />;
+}
+
+function AttemptResultPageInner() {
   const params = useParams<{ attemptId: string }>();
   const attemptId = decodeURIComponent(params?.attemptId ?? "");
   const [demo, setDemo] = useState<DemoState>("ready");

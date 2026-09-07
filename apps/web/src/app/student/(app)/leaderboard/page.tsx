@@ -35,6 +35,9 @@ const SCOPE_LABEL: Record<LeaderScope, string> = {
 };
 
 export default function LeaderboardPage() {
+  // A02 review #6: the gate lives in this hookless wrapper so a
+  // production render runs zero hooks and zero effects of the demo
+  // screen below (several of them start timers that record attempts).
   if (process.env.NODE_ENV === "production") {
     return (
       <UnavailableState
@@ -43,6 +46,10 @@ export default function LeaderboardPage() {
       />
     );
   }
+  return <LeaderboardPageInner />;
+}
+
+function LeaderboardPageInner() {
   const [demo, setDemo] = useState<DemoState>("ready");
   const [scope, setScope] = useState<LeaderScope>("week");
   const profile = useStudentProfile();

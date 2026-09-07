@@ -34,6 +34,9 @@ import { placementQuestions } from "@/lib/student/content";
 import { placementLevel } from "@/lib/student/student-rules";
 
 export default function PlacementPage() {
+  // A02 review #6: the gate lives in this hookless wrapper so a
+  // production render runs zero hooks and zero effects of the demo
+  // screen below (several of them start timers that record attempts).
   if (process.env.NODE_ENV === "production") {
     return (
       <UnavailableState
@@ -42,6 +45,10 @@ export default function PlacementPage() {
       />
     );
   }
+  return <PlacementPageInner />;
+}
+
+function PlacementPageInner() {
   const [idx, setIdx] = useState(0);
   const [picked, setPicked] = useState<number | null>(null);
   const [answers, setAnswers] = useState<Record<string, boolean>>({});

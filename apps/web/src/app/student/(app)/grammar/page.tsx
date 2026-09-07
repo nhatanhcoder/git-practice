@@ -34,7 +34,6 @@ import { useToast } from "@/components/student/toast";
 import { useStudentStore } from "@/lib/student/store";
 import { grammarCategories, grammarPoints, type GrammarPoint } from "@/lib/student/grammar-data";
 import { shuffleBlocks } from "@/lib/student/student-rules";
-import { UnavailableState } from "@/components/student/unavailable-state";
 
 const LEVELS = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 
@@ -60,14 +59,11 @@ function optionsFor(point: GrammarPoint, all: GrammarPoint[]) {
 }
 
 export default function GrammarPage() {
-  if (process.env.NODE_ENV === "production") {
-    return (
-      <UnavailableState
-        title="Thư viện ngữ pháp"
-        description="Thư viện ngữ pháp chưa được kết nối máy chủ dữ liệu trong phiên bản hiện tại. Vui lòng quay lại sau."
-      />
-    );
-  }
+  // A02 review #3: the grammar library is repo-static content — it needs no
+  // backend, so production renders it. What production hides is everything
+  // that would present local progress as the account's own: the mastery
+  // summary, the per-point mastery bars, and the XP award on drills.
+  const prod = process.env.NODE_ENV === "production";
   const [demo, setDemo] = useState<DemoState>("ready");
   const [level, setLevel] = useState<number | "all">("all");
   const [category, setCategory] = useState<string>("all");
@@ -83,14 +79,18 @@ export default function GrammarPage() {
   const awardXp = useStudentStore((s) => s.awardXp);
   const toast = useToast();
 
-  /** Content mastery is a fixture; the store's value wins once the learner drills. */
+  /**
+   * Content mastery is a fixture; the store's value wins once the learner drills.
+   * Production shows neither — both would present an unmeasured percentage as
+   * the signed-in learner's own mastery.
+   */
   const points = useMemo(
     () =>
       grammarPoints.map((p) => ({
         ...p,
-        mastery: mastery[p.id] ? mastery[p.id].level : p.mastery,
+        mastery: prod ? 0 : mastery[p.id] ? mastery[p.id].level : p.mastery,
       })),
-    [mastery],
+    [mastery, prod],
   );
 
   const results = useMemo(() => {
@@ -125,6 +125,12 @@ export default function GrammarPage() {
 
   function answerDrill(correct: boolean) {
     if (!open) return;
+    if (prod) {
+      // No progress endpoints: the drill is practice only — nothing recorded,
+      // no XP claimed (A02 review #3).
+      toast(correct ? "Chính xác!" : "Chưa đúng, thử lại nhé", correct ? "success" : "warn");
+      return;
+    }
     practiseGrammar(open.id, correct);
     if (correct) {
       awardXp(20, 1);
@@ -155,7 +161,8 @@ export default function GrammarPage() {
         </Panel>
       ) : (
         <>
-          {/* ---------- Mastery summary ---------- */}
+          {/* ---------- Mastery summary (dev/demo only — no measured mastery in production) ---------- */}
+          {!prod && (
           <Panel className="panel--pad mastery" aria-label="Tổng quan mức thành thạo">
             <div className="row gap-5">
               <Ring value={summary.pct} size={104} stroke={10} label="Mức thành thạo tổng thể">
@@ -190,6 +197,7 @@ export default function GrammarPage() {
               </div>
             </div>
           </Panel>
+          )}
 
           {/* ---------- Filters ---------- */}
           <Panel className="panel--pad stack gap-5" aria-label="Bộ lọc ngữ pháp">
@@ -298,6 +306,7 @@ export default function GrammarPage() {
                       <span className="gcard__pinyin pinyin">{p.pinyin}</span>
                       <span className="gcard__vi vi-meaning">{p.vi}</span>
                     </div>
+                    {!prod && (
                     <div className="stack gap-1">
                       <Bar
                         value={p.mastery}
@@ -309,6 +318,7 @@ export default function GrammarPage() {
                         Thành thạo <span className="num">{p.mastery}%</span>
                       </span>
                     </div>
+                    )}
                   </button>
                 ))}
               </div>
@@ -377,10 +387,12 @@ export default function GrammarPage() {
               )}
             </div>
 
+            {!prod && (
             <div className="stack gap-2">
               <span className="eyebrow">Mức thành thạo</span>
               <Bar value={open.mastery} tone={open.mastery >= 80 ? "success" : "accent"} />
             </div>
+            )}
           </div>
         ) : null}
       </Drawer>

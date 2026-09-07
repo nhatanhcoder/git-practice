@@ -35,6 +35,9 @@ import type { Exam } from "@/lib/student/types";
 const LEVELS = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 
 export default function ExamsPage() {
+  // A02 review #6: the gate lives in this hookless wrapper so a
+  // production render runs zero hooks and zero effects of the demo
+  // screen below (several of them start timers that record attempts).
   if (process.env.NODE_ENV === "production") {
     return (
       <UnavailableState
@@ -43,6 +46,10 @@ export default function ExamsPage() {
       />
     );
   }
+  return <ExamsPageInner />;
+}
+
+function ExamsPageInner() {
   const [demo, setDemo] = useState<DemoState>("ready");
   const [level, setLevel] = useState<number | "all">("all");
   const [kind, setKind] = useState<"all" | "full" | "drill">("all");

@@ -41,6 +41,9 @@ interface Exchange {
 }
 
 export default function ScenarioPage() {
+  // A02 review #6: the gate lives in this hookless wrapper so a
+  // production render runs zero hooks and zero effects of the demo
+  // screen below (several of them start timers that record attempts).
   if (process.env.NODE_ENV === "production") {
     return (
       <UnavailableState
@@ -49,6 +52,10 @@ export default function ScenarioPage() {
       />
     );
   }
+  return <ScenarioPageInner />;
+}
+
+function ScenarioPageInner() {
   const params = useParams<{ scenarioId: string }>();
   const scenarioId = decodeURIComponent(params?.scenarioId ?? "");
   const scenario = scenarios.find((s) => s.id === scenarioId) ?? null;

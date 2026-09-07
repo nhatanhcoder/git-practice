@@ -44,9 +44,10 @@ import {
 } from "lucide-react";
 import { ToastProvider } from "./toast";
 import { Sheet } from "./overlay";
-import { useStudentProfile, useStudentStore } from "@/lib/student/store";
+import { useStudentProfile, useStudentStore, useHudProgressStats } from "@/lib/student/store";
 import { useDisplayIdentity } from "@/lib/student/identity";
 import { useStudentPreferences } from "@/lib/student/preferences";
+import { formatProgressStat, isLiveStudentRoute } from "@/lib/student/demo-rules";
 import { useAuthStore } from "@/lib/auth/auth-store";
 
 interface NavItem {
@@ -80,7 +81,22 @@ export const ACHIEVEMENT_NAV: NavItem[] = [
   { to: "/student/badges", label: "Kho huy hiệu", short: "Huy hiệu", icon: <Medal size={18} /> },
 ];
 
-const ALL_NAV_ITEMS = [...PRIMARY_NAV, ...SECONDARY_NAV, ...ACHIEVEMENT_NAV];
+/**
+ * A02 review #4: the navigation must never invite the learner into a screen the
+ * production build cannot serve. The three groups and the "more" sheet are all
+ * filtered through the same tested classification (`isLiveStudentRoute`), so a
+ * dead-end link and the honest unavailable state can only appear together in
+ * development.
+ */
+function navForEnv(items: NavItem[]): NavItem[] {
+  if (process.env.NODE_ENV !== "production") return items;
+  return items.filter((item) => isLiveStudentRoute(item.to));
+}
+
+const RAIL_PRIMARY = navForEnv(PRIMARY_NAV);
+const RAIL_SECONDARY = navForEnv(SECONDARY_NAV);
+const RAIL_ACHIEVEMENT = navForEnv(ACHIEVEMENT_NAV);
+const SHEET_NAV = [...RAIL_PRIMARY, ...RAIL_SECONDARY, ...RAIL_ACHIEVEMENT];
 
 /**
  * The bottom bar shows four destinations plus "Thêm", not the whole primary group.
@@ -90,7 +106,7 @@ const ALL_NAV_ITEMS = [...PRIMARY_NAV, ...SECONDARY_NAV, ...ACHIEVEMENT_NAV];
  * rail squeezed every tab to 47px and broke "Ngữ pháp" across the icon next to it.
  * Nothing is lost — the sheet below lists every group in full.
  */
-const TABBAR_NAV = PRIMARY_NAV.slice(0, 4);
+const TABBAR_NAV = RAIL_PRIMARY.slice(0, 4);
 
 /**
  * Longer prefixes first, so `/student/exams/e-h3-1` matches "Phòng thi HSK"
@@ -144,7 +160,13 @@ export function StudentShell({ children }: { children: ReactNode }) {
   const togglePinyin = useStudentPreferences((s) => s.togglePinyin);
   const toggleMeaning = useStudentPreferences((s) => s.toggleMeaning);
   const resetProgress = useStudentStore((s) => s.resetProgress);
-  const hydrated = useStudentStore((s) => s.hydrated);
+  // The only progress numbers this shell renders. In production they are absent
+  // (null → "—"), never a fabricated figure — A02 review #1.
+  const hudStats = useHudProgressStats();
+  // A02 review #7: the render gate tracks the preferences store's OWN hydration
+  // lifecycle — the demo progress store rehydrates on a separate schedule and
+  // must not decide when the theme/pinyin/meaning values are safe to show.
+  const prefsHydrated = useStudentPreferences((s) => s.hydrated);
 
   const [sheetOpen, setSheetOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
@@ -155,6 +177,11 @@ export function StudentShell({ children }: { children: ReactNode }) {
   useEffect(() => {
     void useStudentStore.persist.rehydrate();
     useStudentStore.getState().setHydrated(true);
+    // A02 review #7: the preferences store gets the same treatment — its
+    // rehydration (and therefore when theme/pinyin/meaning are safe to render)
+    // is tracked here, not borrowed from the demo progress store's flag.
+    void useStudentPreferences.persist.rehydrate();
+    useStudentPreferences.getState().markHydrated();
   }, []);
 
   useEffect(() => {
@@ -177,7 +204,7 @@ export function StudentShell({ children }: { children: ReactNode }) {
   useEffect(() => {
     let timer = 0;
     let index = 0;
-    const routes = [...ALL_NAV_ITEMS.map((item) => item.to), "/student/placement"];
+    const routes = [...SHEET_NAV.map((item) => item.to)];
 
     const warmNext = () => {
       const route = routes[index];
@@ -234,9 +261,9 @@ export function StudentShell({ children }: { children: ReactNode }) {
   }, [theme]);
 
   // Until rehydration lands, render the server's defaults so the markup matches.
-  const themeAttr = hydrated ? theme : "dark";
-  const pinyinAttr = hydrated ? String(showPinyin) : "true";
-  const meaningAttr = hydrated ? String(showMeaning) : "true";
+  const themeAttr = prefsHydrated ? theme : "dark";
+  const pinyinAttr = prefsHydrated ? String(showPinyin) : "true";
+  const meaningAttr = prefsHydrated ? String(showMeaning) : "true";
 
   const themeBtn = (
     <button
@@ -282,7 +309,9 @@ export function StudentShell({ children }: { children: ReactNode }) {
     </div>
   );
 
-  const navGroup = (heading: string, items: NavItem[]) => (
+  const navGroup = (heading: string, items: NavItem[]) => {
+    if (!items.length) return null;
+    return (
     <>
       <p className="rail__group">{heading}</p>
       {items.map((item) => (
@@ -299,7 +328,8 @@ export function StudentShell({ children }: { children: ReactNode }) {
         </Link>
       ))}
     </>
-  );
+    );
+  };
 
   return (
     <div
@@ -328,9 +358,9 @@ export function StudentShell({ children }: { children: ReactNode }) {
             </Link>
 
             <div className="rail__nav">
-              {navGroup("Học tập", PRIMARY_NAV)}
-              {navGroup("Luyện tập", SECONDARY_NAV)}
-              {navGroup("Thành tích", ACHIEVEMENT_NAV)}
+              {navGroup("Học tập", RAIL_PRIMARY)}
+              {navGroup("Luyện tập", RAIL_SECONDARY)}
+              {navGroup("Thành tích", RAIL_ACHIEVEMENT)}
             </div>
 
             <div className="rail__foot">
@@ -399,12 +429,12 @@ export function StudentShell({ children }: { children: ReactNode }) {
                 {displayToggles()}
                 <span className="hud__stat hud__stat--streak" title="Chuỗi ngày học liên tiếp">
                   <Flame size={15} />
-                  <span className="num">{profile.streakDays}</span>
+                  <span className="num">{formatProgressStat(hudStats.streakDays)}</span>
                   <span className="sr-only">ngày chuỗi liên tiếp</span>
                 </span>
                 <span className="hud__stat hud__stat--xp" title="Tổng điểm kinh nghiệm">
                   <Zap size={15} />
-                  <span className="num">{profile.xp.toLocaleString("vi-VN")}</span>
+                  <span className="num">{formatProgressStat(hudStats.xp)}</span>
                   <span className="sr-only">điểm kinh nghiệm</span>
                 </span>
                 {themeBtn}
@@ -426,7 +456,7 @@ export function StudentShell({ children }: { children: ReactNode }) {
               {displayToggles(true)}
               <span className="hud__stat hud__stat--streak" style={{ height: 30 }}>
                 <Flame size={14} />
-                <span className="num">{profile.streakDays}</span>
+                <span className="num">{formatProgressStat(hudStats.streakDays)}</span>
               </span>
               {themeBtn}
             </header>
@@ -467,7 +497,7 @@ export function StudentShell({ children }: { children: ReactNode }) {
 
           <Sheet open={sheetOpen} onClose={() => setSheetOpen(false)} title="Tất cả khu vực học">
             <div className="sheet__grid">
-              {[...PRIMARY_NAV, ...SECONDARY_NAV, ...ACHIEVEMENT_NAV].map((item) => (
+              {[...SHEET_NAV].map((item) => (
                 <Link
                   key={item.to}
                   href={item.to}

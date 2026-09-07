@@ -40,6 +40,9 @@ function heatLevel(minutes: number) {
 }
 
 export default function ProgressPage() {
+  // A02 review #6: the gate lives in this hookless wrapper so a
+  // production render runs zero hooks and zero effects of the demo
+  // screen below (several of them start timers that record attempts).
   if (process.env.NODE_ENV === "production") {
     return (
       <UnavailableState
@@ -48,6 +51,10 @@ export default function ProgressPage() {
       />
     );
   }
+  return <ProgressPageInner />;
+}
+
+function ProgressPageInner() {
   const [demo, setDemo] = useState<DemoState>("ready");
   const profile = useStudentProfile();
 

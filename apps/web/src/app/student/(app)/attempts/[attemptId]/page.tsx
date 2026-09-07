@@ -33,6 +33,9 @@ function formatClock(totalSeconds: number): string {
 }
 
 export default function AttemptPage() {
+  // A02 review #6: the gate lives in this hookless wrapper so a
+  // production render runs zero hooks and zero effects of the demo
+  // screen below (several of them start timers that record attempts).
   if (process.env.NODE_ENV === "production") {
     return (
       <UnavailableState
@@ -41,6 +44,10 @@ export default function AttemptPage() {
       />
     );
   }
+  return <AttemptPageInner />;
+}
+
+function AttemptPageInner() {
   const params = useParams<{ attemptId: string }>();
   const attemptId = decodeURIComponent(params?.attemptId ?? "");
   const router = useRouter();

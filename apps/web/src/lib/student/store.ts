@@ -34,6 +34,10 @@ import {
   rankFromXp,
   todayISO,
 } from "./student-rules";
+import {
+  resolveStudentProgressStats,
+  shouldUnlockWithXp,
+} from "./demo-rules";
 import type { ActivityItem, ExamAttempt, MistakeItem, WeekDay } from "./types";
 
 export interface StudentState {
@@ -183,11 +187,10 @@ export const useStudentStore = create<StudentState>()(
 
       /** Spends XP. Returns false (and changes nothing) when the learner cannot afford it. Demo only. */
       unlockNode: (nodeId) => {
-        if (process.env.NODE_ENV === "production") {
+        const s = get();
+        if (!shouldUnlockWithXp(process.env.NODE_ENV, s.student.xp, FORCE_UNLOCK_COST)) {
           return false;
         }
-        const s = get();
-        if (s.student.xp < FORCE_UNLOCK_COST) return false;
         if (s.unlockedNodes.includes(nodeId)) return true;
         set({
           unlockedNodes: [...s.unlockedNodes, nodeId],
@@ -291,27 +294,19 @@ export const useStudentStore = create<StudentState>()(
   ),
 );
 
-/** Profile with the derived rank attached — the shape the UI actually renders. */
+/**
+ * Profile with the derived rank attached — the shape the dev/demo UI renders.
+ *
+ * A02 review #1: there is deliberately NO production branch here any more.
+ * Fabricating a neutral profile (even zeros) presented invented numbers as the
+ * account's real data — the exact WEB-011/WEB-015 class this task exists to
+ * remove. Every component that renders in production either reads
+ * `useHudProgressStats` (absent numbers render as "—") or shows nothing.
+ * The pages that still consume this hook are UnavailableState-gated in a
+ * production build.
+ */
 export function useStudentProfile() {
-  const isProd = process.env.NODE_ENV === "production";
   const student = useStudentStore((s) => s.student);
-
-  if (isProd) {
-    return {
-      ...student,
-      xp: 0,
-      streakDays: 0,
-      bestStreak: 0,
-      currentLevel: 1,
-      rank: "Học viên",
-      rankHanzi: "学",
-      rankBlurb: "Tiến độ học tập sẽ được ghi nhận khi hoàn thành bài học",
-      nextRank: ranks[1] ?? null,
-      xpIntoRank: 0,
-      xpForNextRank: 1000,
-    };
-  }
-
   const { current, next, into, forNext } = rankFromXp(ranks, student.xp);
   return {
     ...student,
@@ -322,6 +317,17 @@ export function useStudentProfile() {
     xpIntoRank: into,
     xpForNextRank: forNext,
   };
+}
+
+/**
+ * The only progress numbers a production screen may render. Backed by the
+ * tested `resolveStudentProgressStats` rule: in production there is no
+ * measurement, so the values are null and `formatProgressStat` shows "—".
+ */
+export function useHudProgressStats(): { xp: number | null; streakDays: number | null } {
+  const student = useStudentStore((s) => s.student);
+  const stats = resolveStudentProgressStats(process.env.NODE_ENV, student);
+  return { xp: stats.xp, streakDays: stats.streakDays };
 }
 
 export { FORCE_UNLOCK_COST, WRITING_PASS_SCORE };

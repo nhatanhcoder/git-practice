@@ -48,6 +48,9 @@ const CURRICULUM_HANZI: Record<Curriculum, string> = {
 };
 
 export default function LearningPathPage() {
+  // A02 review #6: the gate lives in this hookless wrapper so a
+  // production render runs zero hooks and zero effects of the demo
+  // screen below (several of them start timers that record attempts).
   if (process.env.NODE_ENV === "production") {
     return (
       <UnavailableState
@@ -56,6 +59,10 @@ export default function LearningPathPage() {
       />
     );
   }
+  return <LearningPathPageInner />;
+}
+
+function LearningPathPageInner() {
   const [demo, setDemo] = useState<DemoState>("ready");
   const profile = useStudentProfile();
   const [curriculum, setCurriculum] = useState<Curriculum>("hsk_standard_course");

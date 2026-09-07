@@ -54,6 +54,9 @@ function levelFromNodeId(nodeId: string): { curriculum: Curriculum; level: numbe
 }
 
 export default function LessonPage() {
+  // A02 review #6: the gate lives in this hookless wrapper so a
+  // production render runs zero hooks and zero effects of the demo
+  // screen below (several of them start timers that record attempts).
   if (process.env.NODE_ENV === "production") {
     return (
       <UnavailableState
@@ -62,6 +65,10 @@ export default function LessonPage() {
       />
     );
   }
+  return <LessonPageInner />;
+}
+
+function LessonPageInner() {
   const params = useParams<{ nodeId: string }>();
   const nodeId = decodeURIComponent(params?.nodeId ?? "");
   const router = useRouter();

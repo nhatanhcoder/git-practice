@@ -87,22 +87,27 @@ function greeting() {
  * classes are live API) and says so, instead of fabricating progress.
  */
 function ProductionWelcome() {
+  // A02 review #3/#4: this list and the sidebar share one classification
+  // (`isLiveStudentRoute`) — grammar and foundation are repo-static content,
+  // the other three talk to the live API.
   const liveShortcuts = [
     { href: "/student/flashcards", icon: Sparkles, tone: "info", title: "Flashcard SRS", text: "Ôn từ vựng theo lịch SM-2, lưu theo tài khoản." },
     { href: "/student/mistakes", icon: NotebookPen, tone: "accent", title: "Sổ tay lỗi sai", text: "Ôn lại những thẻ bạn trả lời sai." },
     { href: "/student/classes", icon: School, tone: "success", title: "Lớp của tôi", text: "Tham gia lớp bằng mã do giáo viên cấp." },
+    { href: "/student/grammar", icon: BookOpen, tone: "success", title: "Ngữ pháp", text: "Tra cứu điểm ngữ pháp và luyện ngay trong trang." },
+    { href: "/student/foundation", icon: Blocks, tone: "epic", title: "Nền tảng", text: "Bảng pinyin, thanh điệu, trọn 214 bộ thủ." },
   ];
   return (
     <>
       <Panel className="panel--pad stack gap-3">
         <h2 style={{ fontSize: "var(--step-2)", margin: 0 }}>Chào mừng đến Hán Lộ</h2>
         <p style={{ color: "var(--text-2)", margin: 0, maxWidth: "60ch" }}>
-          Các khu vực học tập đang được kết nối từng bước với máy chủ. Hiện tại bạn có thể bắt đầu
-          với các tính năng dưới đây — tiến độ được ghi nhận theo tài khoản của bạn.
+          Các khu vực dưới đây đã chạy được — tiến độ của flashcard và lớp học được ghi nhận theo
+          tài khoản của bạn. Phần còn lại của chương trình học đang được kết nối từng bước.
         </p>
       </Panel>
       <section>
-        <SectionHeader title="Khả dụng ngay" sub="Ba khu vực đã kết nối máy chủ dữ liệu thật." />
+        <SectionHeader title="Khả dụng ngay" sub="Năm khu vực đang hoạt động ở phiên bản này." />
         <div className="shortcuts">
           {liveShortcuts.map((s) => (
             <Link key={s.href} href={s.href} className="panel shortcut">

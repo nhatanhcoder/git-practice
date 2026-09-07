@@ -18,6 +18,7 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Inbox, Lock, LoaderCircle, CircleCheck, TriangleAlert, Volume2 } from "lucide-react";
+import { shouldEnableDemoTools } from "@/lib/student/demo-rules";
 
 /* ---------------- Tabs ---------------- */
 
@@ -227,9 +228,9 @@ const DEMO_KEY = "hanlu-demo";
 
 /**
  * WEB-004 & WEB-016 fix: review scaffolding is dev-only, NEVER in production.
- * In production (`process.env.NODE_ENV === "production"`), returns false unconditionally.
- * In development, open any student page with `?demo=1` to reveal the switcher (`?demo=0` hides
- * it again); the choice is remembered in localStorage.
+ * The decision is the tested `shouldEnableDemoTools` rule — production returns
+ * false unconditionally; development opens any student page with `?demo=1` to
+ * reveal the switcher (`?demo=0` hides it again), remembered in localStorage.
  *
  * Read after mount, never during render — reading `window.location` while
  * rendering would desynchronise the server and client HTML.
@@ -238,22 +239,23 @@ export function useDemoToolsEnabled(): boolean {
   const [on, setOn] = useState(false);
 
   useEffect(() => {
-    if (process.env.NODE_ENV === "production") {
-      setOn(false);
-      return;
-    }
     try {
-      const flag = new URLSearchParams(window.location.search).get("demo");
-      if (flag !== null) window.localStorage.setItem(DEMO_KEY, flag === "0" ? "0" : "1");
-      setOn(window.localStorage.getItem(DEMO_KEY) === "1");
+      const queryFlag = new URLSearchParams(window.location.search).get("demo");
+      if (process.env.NODE_ENV !== "production" && queryFlag !== null) {
+        window.localStorage.setItem(DEMO_KEY, queryFlag === "0" ? "0" : "1");
+      }
+      setOn(
+        shouldEnableDemoTools(
+          process.env.NODE_ENV,
+          queryFlag,
+          window.localStorage.getItem(DEMO_KEY),
+        ),
+      );
     } catch {
       setOn(false); // private mode / storage blocked — stay hidden
     }
   }, []);
 
-  if (process.env.NODE_ENV === "production") {
-    return false;
-  }
   return on;
 }
 

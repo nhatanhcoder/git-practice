@@ -72,6 +72,9 @@ function gradeInk(inkPixels: number, totalPixels: number, strokeCount: number): 
 }
 
 export default function WritingDetailPage() {
+  // A02 review #6: the gate lives in this hookless wrapper so a
+  // production render runs zero hooks and zero effects of the demo
+  // screen below (several of them start timers that record attempts).
   if (process.env.NODE_ENV === "production") {
     return (
       <UnavailableState
@@ -80,6 +83,10 @@ export default function WritingDetailPage() {
       />
     );
   }
+  return <WritingDetailPageInner />;
+}
+
+function WritingDetailPageInner() {
   const params = useParams<{ charId: string }>();
   const charId = decodeURIComponent(params?.charId ?? "");
   const char = writingChars.find((c) => c.id === charId) ?? null;

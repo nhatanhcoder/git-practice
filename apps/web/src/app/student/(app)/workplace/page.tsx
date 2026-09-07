@@ -32,6 +32,9 @@ import { withScenarioProgress } from "@/lib/student/student-rules";
 import { UnavailableState } from "@/components/student/unavailable-state";
 
 export default function WorkplacePage() {
+  // A02 review #6: the gate lives in this hookless wrapper so a
+  // production render runs zero hooks and zero effects of the demo
+  // screen below (several of them start timers that record attempts).
   if (process.env.NODE_ENV === "production") {
     return (
       <UnavailableState
@@ -40,6 +43,10 @@ export default function WorkplacePage() {
       />
     );
   }
+  return <WorkplacePageInner />;
+}
+
+function WorkplacePageInner() {
   const [demo, setDemo] = useState<DemoState>("ready");
   const [kind, setKind] = useState<string>("all");
 

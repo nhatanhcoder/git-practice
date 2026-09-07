@@ -34,6 +34,9 @@ import { SECTION_LABEL, exams, getPaper } from "@/lib/student/content";
 const SECTION_PASS_RATE = 0.6;
 
 export default function ExamResultPage() {
+  // A02 review #6: the gate lives in this hookless wrapper so a
+  // production render runs zero hooks and zero effects of the demo
+  // screen below (several of them start timers that record attempts).
   if (process.env.NODE_ENV === "production") {
     return (
       <UnavailableState
@@ -42,6 +45,10 @@ export default function ExamResultPage() {
       />
     );
   }
+  return <ExamResultPageInner />;
+}
+
+function ExamResultPageInner() {
   const params = useParams<{ examId: string }>();
   const examId = decodeURIComponent(params?.examId ?? "");
   const attempts = useStudentStore((s) => s.attempts);

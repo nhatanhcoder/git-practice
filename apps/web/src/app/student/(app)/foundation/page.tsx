@@ -48,7 +48,6 @@ import {
   tones,
 } from "@/lib/student/foundation-data";
 import { radicals, type Radical } from "@/lib/student/radicals-data";
-import { UnavailableState } from "@/components/student/unavailable-state";
 
 type TabId = "pinyin" | "tones" | "radicals" | "listening" | "speaking";
 
@@ -63,6 +62,11 @@ const TABS = [
 const RADICALS_PER_PAGE = 60;
 
 function FoundationInner() {
+  // A02 review #3: foundation content (pinyin, tones, the 214 radicals, PDFs)
+  // is repo-static — production renders it. What production hides or empties
+  // is everything that would present local progress as the account's own:
+  // the mastery overview, the mastered/learned marks, and the XP awards.
+  const prod = process.env.NODE_ENV === "production";
   const router = useRouter();
   const params = useSearchParams();
   const paramTab = params?.get("tab") as TabId | null;
@@ -71,12 +75,16 @@ function FoundationInner() {
   );
   const [demo, setDemo] = useState<DemoState>("ready");
 
-  const masteredSounds = useStudentStore((s) => s.masteredSounds);
-  const learnedRadicals = useStudentStore((s) => s.learnedRadicals);
+  const masteredSoundsRaw = useStudentStore((s) => s.masteredSounds);
+  const learnedRadicalsRaw = useStudentStore((s) => s.learnedRadicals);
   const toggleSound = useStudentStore((s) => s.toggleSound);
   const toggleRadical = useStudentStore((s) => s.toggleRadical);
   const awardXp = useStudentStore((s) => s.awardXp);
   const toast = useToast();
+  // In production no progress has been measured, so nothing ever shows as
+  // mastered/learned and the toggle handlers refuse to record.
+  const masteredSounds = prod ? ([] as string[]) : masteredSoundsRaw;
+  const learnedRadicals = prod ? ([] as number[]) : learnedRadicalsRaw;
 
   const [radicalQuery, setRadicalQuery] = useState("");
   const [strokeFilter, setStrokeFilter] = useState<number | "all">("all");
@@ -128,6 +136,10 @@ function FoundationInner() {
   );
 
   function markSound(id: string) {
+    if (prod) {
+      toast("Tiến độ sẽ được ghi nhận khi tính năng ra mắt", "info");
+      return;
+    }
     const wasMastered = masteredSounds.includes(id);
     toggleSound(id);
     if (!wasMastered) {
@@ -157,7 +169,8 @@ function FoundationInner() {
         </Panel>
       ) : (
         <>
-          {/* ---------- Mastery overview ---------- */}
+          {/* ---------- Mastery overview (dev/demo only — no measured progress in production) ---------- */}
+          {!prod && (
           <Panel className="panel--pad" aria-label="Tiến độ nền tảng">
             <div className="row gap-6 wrap">
               <Ring value={overall} size={104} stroke={10} label="Mức thành thạo nền tảng">
@@ -181,6 +194,7 @@ function FoundationInner() {
               <Metric label="Bộ thủ đã thuộc" value={learnedRadicals.length} unit="/214" />
             </div>
           </Panel>
+          )}
 
           {/* ---------- Tabs ---------- */}
           <div className="tabs-shell">
@@ -422,8 +436,8 @@ function FoundationInner() {
                         </div>
                         <div className="row gap-3" style={{ marginTop: "var(--sp-3)" }}>
                           <span style={{ color: "var(--text-3)", fontSize: "var(--step--2)" }}>
-                            {c.minutes} phút ·{" "}
-                            {c.bestScore === null ? "chưa làm" : `tốt nhất ${c.bestScore}%`}
+                            {c.minutes} phút
+                            {!prod && c.bestScore !== null ? ` · tốt nhất ${c.bestScore}%` : ""}
                           </span>
                           <div className="grow" />
                           <button
@@ -434,7 +448,7 @@ function FoundationInner() {
                             Bắt đầu
                           </button>
                         </div>
-                        {c.bestScore !== null ? (
+                        {!prod && c.bestScore !== null ? (
                           <Bar value={c.bestScore} size="sm" label="Điểm tốt nhất" />
                         ) : null}
                       </Panel>
@@ -467,8 +481,8 @@ function FoundationInner() {
                         </div>
                         <div className="row gap-3" style={{ marginTop: "var(--sp-3)" }}>
                           <span style={{ color: "var(--text-3)", fontSize: "var(--step--2)" }}>
-                            {c.minutes} phút ·{" "}
-                            {c.bestScore === null ? "chưa làm" : `tốt nhất ${c.bestScore}%`}
+                            {c.minutes} phút
+                            {!prod && c.bestScore !== null ? ` · tốt nhất ${c.bestScore}%` : ""}
                           </span>
                           <div className="grow" />
                           <button
@@ -530,7 +544,7 @@ function FoundationInner() {
         title={openRadical?.hanviet ?? ""}
         subtitle={openRadical ? `${openRadical.strokes} nét` : ""}
         footer={
-          openRadical ? (
+          openRadical && !prod ? (
             <button
               type="button"
               className="btn btn--primary btn--block"
@@ -591,14 +605,6 @@ function FoundationInner() {
 }
 
 export default function FoundationPage() {
-  if (process.env.NODE_ENV === "production") {
-    return (
-      <UnavailableState
-        title="Nền tảng phát âm"
-        description="Nội dung nền tảng (pinyin, thanh điệu, bộ thủ) chưa được kết nối máy chủ dữ liệu trong phiên bản hiện tại. Vui lòng quay lại sau."
-      />
-    );
-  }
   return (
     <Suspense fallback={<SkeletonPanel rows={5} height={200} />}>
       <FoundationInner />

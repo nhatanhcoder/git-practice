@@ -63,8 +63,9 @@ test.describe("A02 demo isolation & production gating", () => {
     if (desktop) {
       await expect(page.locator(".userchip__text > span:last-child")).toHaveText("Học viên");
       // Mock XP/streak must not surface as the account's own progress.
-      await expect(page.locator(".hud__stat--xp .num")).toHaveText("0");
-      await expect(page.locator(".hud__stat--streak .num").first()).toHaveText("0");
+      // Absent progress measurements render as an em dash ("—") in production.
+      await expect(page.locator(".hud__stat--xp .num")).toHaveText("—");
+      await expect(page.locator(".hud__stat--streak .num").first()).toHaveText("—");
     }
 
     await shot(page, "demo-switch-hidden", testInfo.project.name);
@@ -101,8 +102,6 @@ test.describe("A02 demo isolation & production gating", () => {
       { path: "/student/exams", title: "Thi thử HSK" },
       { path: "/student/placement", title: "Kiểm tra xếp cấp" },
       { path: "/student/learning-path", title: "Lộ trình HSK" },
-      { path: "/student/grammar", title: "Thư viện ngữ pháp" },
-      { path: "/student/foundation", title: "Nền tảng phát âm" },
       { path: "/student/writing", title: "Luyện viết chữ Hán" },
       { path: "/student/lego", title: "Ghép câu Lego" },
       { path: "/student/workplace", title: "Mô phỏng công sở" },
@@ -128,6 +127,15 @@ test.describe("A02 demo isolation & production gating", () => {
         unavail.getByRole("link", { name: /Về trang chủ học viên/i }),
       ).toHaveAttribute("href", "/student");
     }
+
+    // Repo-static routes (grammar and foundation) are live, not unavailable.
+    await page.goto("/student/grammar");
+    await expect(page.locator(".unavailable-state")).toHaveCount(0);
+    await expect(page.getByRole("heading", { name: "Thư viện ngữ pháp" })).toBeVisible();
+
+    await page.goto("/student/foundation");
+    await expect(page.locator(".unavailable-state")).toHaveCount(0);
+    await expect(page.getByRole("heading", { name: "Nền tảng phát âm" })).toBeVisible();
 
     await page.goto("/student/assignments");
     await expect(page.locator(".unavailable-state")).toBeVisible();
@@ -182,11 +190,13 @@ test.describe("A02 demo isolation & production gating", () => {
     await apiLogin(page);
     await page.goto("/student");
 
-    // The three genuinely wired features are reachable.
+    // The genuinely wired or repo-static features are reachable.
     await expect(page.getByRole("heading", { name: "Chào mừng đến Hán Lộ" })).toBeVisible();
     await expect(page.locator('a.shortcut[href="/student/flashcards"]')).toBeVisible();
     await expect(page.locator('a.shortcut[href="/student/mistakes"]')).toBeVisible();
     await expect(page.locator('a.shortcut[href="/student/classes"]')).toBeVisible();
+    await expect(page.locator('a.shortcut[href="/student/grammar"]')).toBeVisible();
+    await expect(page.locator('a.shortcut[href="/student/foundation"]')).toBeVisible();
 
     // Mock widgets must not present local progress as the learner's own.
     await expect(page.getByText("Tiếp tục học")).toHaveCount(0);

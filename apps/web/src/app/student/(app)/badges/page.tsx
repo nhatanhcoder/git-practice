@@ -48,6 +48,9 @@ const RARITY_TONE: Record<BadgeRarity, "neutral" | "info" | "epic" | "warn"> = {
 };
 
 export default function BadgesPage() {
+  // A02 review #6: the gate lives in this hookless wrapper so a
+  // production render runs zero hooks and zero effects of the demo
+  // screen below (several of them start timers that record attempts).
   if (process.env.NODE_ENV === "production") {
     return (
       <UnavailableState
@@ -56,6 +59,10 @@ export default function BadgesPage() {
       />
     );
   }
+  return <BadgesPageInner />;
+}
+
+function BadgesPageInner() {
   const [demo, setDemo] = useState<DemoState>("ready");
   const [category, setCategory] = useState<BadgeCategory | "all">("all");
   const [onlyLocked, setOnlyLocked] = useState(false);

@@ -1,6 +1,9 @@
 /**
  * Pure rules for student demo isolation and preference resolution.
  * Zero external imports so both Next.js and node --test can run it natively.
+ *
+ * The app must CALL these functions rather than re-deriving the same decisions
+ * inline — a rule that is tested but not wired protects nothing (A02 review #5).
  */
 
 export const DEMO_STORAGE_KEY = "hanlu-demo";
@@ -73,22 +76,58 @@ export function shouldUnlockWithXp(nodeEnv: string | undefined, xp: number, cost
   return xp >= cost;
 }
 
-/** Rules for student progress display: never substitute local mock progress for real accounts. */
+/**
+ * A02 review #1: production has no progress endpoints, so there is NO measured
+ * XP, streak or level for a signed-in account. The rule is "leave the numbers
+ * absent" (the WEB-015 fix plan) — null, never a fabricated 0.
+ */
+export interface ProgressStats {
+  xp: number | null;
+  streakDays: number | null;
+  currentLevel: number | null;
+  rank: string | null;
+}
+
 export function resolveStudentProgressStats(
   nodeEnv: string | undefined,
-  mockStats: { xp: number; streakDays: number; currentLevel: number; rank: string },
-): { xp: number; streakDays: number; currentLevel: number; rank: string; isMock: boolean } {
+  mockStats: { xp: number; streakDays: number; currentLevel: number; rank?: string },
+): ProgressStats {
   if (nodeEnv === "production") {
-    return {
-      xp: 0,
-      streakDays: 0,
-      currentLevel: 1,
-      rank: "Học viên",
-      isMock: false,
-    };
+    return { xp: null, streakDays: null, currentLevel: null, rank: null };
   }
   return {
-    ...mockStats,
-    isMock: true,
+    xp: mockStats.xp,
+    streakDays: mockStats.streakDays,
+    currentLevel: mockStats.currentLevel,
+    rank: mockStats.rank ?? null,
   };
+}
+
+/** Renders an absent measurement as "—", a present one in the UI locale. */
+export function formatProgressStat(value: number | null): string {
+  if (value === null) return "—";
+  return value.toLocaleString("vi-VN");
+}
+
+/**
+ * A02 review #4: the one classification of what actually works against a real
+ * backend (or is repo-static content) in a production build. The sidebar, the
+ * mobile tab bar and the "more" sheet are filtered by this same list, so the
+ * navigation can never invite the learner into a screen that cannot serve them.
+ *
+ * Live backend: dashboard, classes, flashcards SRS, mistake notebook.
+ * Repo-static content (no server needed): grammar library, pinyin/radicals.
+ * Everything else needs Sprint 4/5 backends and is hidden in production.
+ */
+export const LIVE_PROD_STUDENT_ROUTES: readonly string[] = [
+  "/student",
+  "/student/classes",
+  "/student/flashcards",
+  "/student/mistakes",
+  "/student/grammar",
+  "/student/foundation",
+];
+
+export function isLiveStudentRoute(path: string): boolean {
+  return LIVE_PROD_STUDENT_ROUTES.includes(path);
 }

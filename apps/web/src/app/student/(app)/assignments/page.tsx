@@ -55,6 +55,9 @@ function formatDue(iso: string): string {
 }
 
 export default function AssignmentsPage() {
+  // A02 review #6: the gate lives in this hookless wrapper so a
+  // production render runs zero hooks and zero effects of the demo
+  // screen below (several of them start timers that record attempts).
   if (process.env.NODE_ENV === "production") {
     return (
       <UnavailableState
@@ -63,6 +66,10 @@ export default function AssignmentsPage() {
       />
     );
   }
+  return <AssignmentsPageInner />;
+}
+
+function AssignmentsPageInner() {
 
   const [demo, setDemo] = useState<DemoState>("ready");
   const [classFilter, setClassFilter] = useState<string>("all");
