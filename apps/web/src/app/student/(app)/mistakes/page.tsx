@@ -2,7 +2,16 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { BookOpen, Brain, CheckCircle2, Layers3, RotateCcw } from "lucide-react";
-import { Card, EmptyState, ErrorState, GhostButton, LoadingState, PrimaryButton } from "@/components/student/ui";
+import {
+  EmptyState,
+  ErrorState,
+  Metric,
+  PageHead,
+  Panel,
+  SkeletonPanel,
+} from "@/components/student/primitives";
+import { LevelSelector, Tabs } from "@/components/student/controls";
+import "@/styles/hanlu/srs.css";
 import {
   fetchDueFlashcards,
   fetchFlashcards,
@@ -13,14 +22,42 @@ import {
   type SrsStats,
 } from "@/lib/student/flashcards-service";
 
+/**
+ * SRS review, in the Hán Lộ visual language.
+ *
+ * A03 is a presentation change only. Every call into flashcards-service is byte-identical to
+ * before — same functions, same arguments, same order — because this screen is the one part of
+ * the learner area talking to a real endpoint, and the point of the task was to stop it being
+ * the only screen written in the old design.
+ *
+ * What changed: the old `ui.tsx` primitives are gone, and with them the hardcoded Tailwind
+ * light colours the four rating buttons carried (`border-red-200`, `text-amber-700` …). Those
+ * were a third palette on top of the two the product already had, and they were unreadable
+ * against the dark ground. Ratings now use the semantic Hán Lộ tokens, which follow the
+ * light/dark switch like everything else.
+ *
+ * What did NOT change: SM-2, the four public ratings 0/3/4/5, the browse/due split, the HSK
+ * 1–9 range, the payloads, or the schema.
+ */
+
 type Mode = "browse" | "due";
 
-const RATINGS: Array<{ value: SrsRating; label: string; hint: string; tone: string }> = [
-  { value: 0, label: "Quên", hint: "Ôn lại ngày mai", tone: "border-red-200 text-red-700 hover:bg-red-50" },
-  { value: 3, label: "Khó", hint: "Nhớ có cố gắng", tone: "border-amber-200 text-amber-700 hover:bg-amber-50" },
-  { value: 4, label: "Tốt", hint: "Nhớ chính xác", tone: "border-blue-200 text-blue-700 hover:bg-blue-50" },
-  { value: 5, label: "Dễ", hint: "Nhớ ngay lập tức", tone: "border-green-200 text-green-700 hover:bg-green-50" },
+/**
+ * The four ratings the API accepts. Kept as 0/3/4/5 — the SM-2 values — and NOT collapsed to a
+ * three-button Leitner scale like the mock Flashcards screen uses; the backend rejects
+ * anything outside this set.
+ *
+ * `token` names a semantic colour from tokens.css rather than a literal, so a rating reads the
+ * same way in light and dark and never introduces a colour the design system does not own.
+ */
+const RATINGS: Array<{ value: SrsRating; label: string; hint: string; token: string }> = [
+  { value: 0, label: "Quên", hint: "Ôn lại ngày mai", token: "var(--danger)" },
+  { value: 3, label: "Khó", hint: "Nhớ có cố gắng", token: "var(--warn)" },
+  { value: 4, label: "Tốt", hint: "Nhớ chính xác", token: "var(--info)" },
+  { value: 5, label: "Dễ", hint: "Nhớ ngay lập tức", token: "var(--success)" },
 ];
+
+const LEVELS = Array.from({ length: 9 }, (_, index) => ({ id: index + 1 }));
 
 export default function MistakesPage() {
   const [level, setLevel] = useState(1);
@@ -65,13 +102,14 @@ export default function MistakesPage() {
     void loadCards();
   }, [loadCards]);
 
-  const activeCard = activeIndex === null ? null : cards[activeIndex] ?? null;
+  const activeCard = activeIndex === null ? null : (cards[activeIndex] ?? null);
+
   const statTiles = useMemo(
     () => [
-      { label: "Đến hạn", value: stats?.dueToday ?? "—", icon: RotateCcw },
-      { label: "Đã học", value: stats?.totalCards ?? "—", icon: Layers3 },
-      { label: "Ghi nhớ", value: stats ? `${stats.retentionRate}%` : "—", icon: Brain },
-      { label: "Lượt ôn", value: stats?.totalReviews ?? "—", icon: CheckCircle2 },
+      { label: "Đến hạn", value: stats?.dueToday ?? "—", icon: <RotateCcw size={18} /> },
+      { label: "Đã học", value: stats?.totalCards ?? "—", icon: <Layers3 size={18} /> },
+      { label: "Ghi nhớ", value: stats ? `${stats.retentionRate}%` : "—", icon: <Brain size={18} /> },
+      { label: "Lượt ôn", value: stats?.totalReviews ?? "—", icon: <CheckCircle2 size={18} /> },
     ],
     [stats],
   );
@@ -98,81 +136,139 @@ export default function MistakesPage() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6">
-      <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <p className="text-sm font-bold uppercase tracking-[0.16em] text-sp-primary">SM-2 · HSK 1–9</p>
-          <h1 className="sp-font-head mt-1 text-3xl font-black text-sp-ink">Ôn tập SRS</h1>
-          <p className="mt-2 max-w-2xl text-sm text-sp-ink2">Ôn đúng lúc theo lịch cá nhân. Kết quả này không phải điểm chính thức của lớp.</p>
-        </div>
-        <div className="flex gap-2" role="tablist" aria-label="Chế độ ôn tập">
-          <GhostButton active={mode === "browse"} onClick={() => setMode("browse")}>Duyệt từ vựng</GhostButton>
-          <GhostButton active={mode === "due"} onClick={() => setMode("due")}>Thẻ đến hạn</GhostButton>
-        </div>
-      </header>
+    <div className="stack gap-6">
+      <PageHead
+        eyebrow="SM-2 · HSK 1–9"
+        title="Ôn tập SRS"
+        sub="Ôn đúng lúc theo lịch cá nhân. Kết quả này không phải điểm chính thức của lớp."
+        action={
+          <Tabs
+            label="Chế độ ôn tập"
+            active={mode}
+            onChange={(id) => setMode(id as Mode)}
+            tabs={[
+              { id: "browse", label: "Duyệt từ vựng" },
+              { id: "due", label: "Thẻ đến hạn" },
+            ]}
+          />
+        }
+      />
 
+      {/* Stats failing must not take the card list down with it — they are two independent
+          requests, and the list is the part someone came here to use. */}
       {statsError ? (
-        <div role="status" className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">Không tải được thống kê; danh sách thẻ vẫn có thể sử dụng.</div>
+        <div role="status" className="panel srs-note">
+          Không tải được thống kê; danh sách thẻ vẫn có thể sử dụng.
+        </div>
       ) : (
-        <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4" aria-label="Thống kê SRS">
-          {statTiles.map(({ label, value, icon: Icon }) => (
-            <Card key={label} className="p-4">
-              <div className="flex items-center justify-between text-sp-ink2"><span className="text-xs font-bold uppercase tracking-wide">{label}</span><Icon size={20} aria-hidden="true" /></div>
-              <strong className="sp-font-head mt-2 block text-3xl font-black text-sp-ink">{value}</strong>
-            </Card>
+        <section className="srs-grid-4" aria-label="Thống kê SRS">
+          {statTiles.map((tile) => (
+            <Metric key={tile.label} label={tile.label} value={tile.value} icon={tile.icon} />
           ))}
         </section>
       )}
 
       {mode === "browse" && activeIndex === null ? (
-        <div className="flex flex-wrap gap-2" aria-label="Chọn cấp HSK">
-          {Array.from({ length: 9 }, (_, index) => index + 1).map((item) => (
-            <GhostButton key={item} active={level === item} onClick={() => setLevel(item)}>HSK {item}</GhostButton>
-          ))}
-        </div>
+        <LevelSelector levels={LEVELS} value={level} onChange={setLevel} label="Chọn cấp HSK" />
       ) : null}
 
-      {loading ? <LoadingState rows={4} /> : null}
-      {!loading && mainError ? <ErrorState onRetry={() => { void loadCards(); void loadStats(); }} /> : null}
+      {loading ? <SkeletonPanel rows={4} /> : null}
+
+      {!loading && mainError ? (
+        <ErrorState
+          onRetry={() => {
+            void loadCards();
+            void loadStats();
+          }}
+        />
+      ) : null}
 
       {!loading && !mainError && activeCard ? (
-        <Card className="mx-auto max-w-2xl p-6 text-center sm:p-10">
-          <p className="text-sm font-bold text-sp-ink3">Thẻ {Number(activeIndex) + 1} / {cards.length}</p>
-          <p lang="zh" className="sp-font-head mt-6 text-5xl font-black text-sp-ink">{activeCard.hanzi}</p>
-          <p className="mt-3 text-xl font-bold text-sp-primary">{activeCard.pinyin}</p>
+        <Panel className="srs-card">
+          <p className="srs-card__counter">
+            Thẻ {Number(activeIndex) + 1} / {cards.length}
+          </p>
+
+          <p lang="zh" className="srs-card__hanzi han">
+            {activeCard.hanzi}
+          </p>
+          <p className="srs-card__pinyin">{activeCard.pinyin}</p>
+
           {!revealed ? (
-            <PrimaryButton className="mt-8" icon={RotateCcw} onClick={() => setRevealed(true)}>Lật thẻ</PrimaryButton>
+            <button type="button" className="btn btn--primary btn--lg" onClick={() => setRevealed(true)}>
+              <RotateCcw size={16} /> Lật thẻ
+            </button>
           ) : (
-            <div className="mt-8 space-y-6" aria-live="polite">
-              <div className="rounded-2xl bg-sp-primary-soft p-5">
-                <p className="text-xl font-bold text-sp-ink">{activeCard.meaning}</p>
-                {activeCard.exampleSentence ? <p lang="zh" className="mt-3 text-lg text-sp-ink">{activeCard.exampleSentence}</p> : null}
-                {activeCard.exampleMeaning ? <p className="mt-1 text-sm text-sp-ink2">{activeCard.exampleMeaning}</p> : null}
+            <div className="stack gap-5" aria-live="polite">
+              <div className="srs-card__back">
+                <p className="srs-card__meaning">{activeCard.meaning}</p>
+                {/* Example and audio are shown only when the record actually carries them.
+                    A plausible-looking sentence invented here would be indistinguishable from
+                    real content to the learner. */}
+                {activeCard.exampleSentence ? (
+                  <p lang="zh" className="srs-card__example han">
+                    {activeCard.exampleSentence}
+                  </p>
+                ) : null}
+                {activeCard.exampleMeaning ? (
+                  <p className="srs-card__exampleVi">{activeCard.exampleMeaning}</p>
+                ) : null}
               </div>
-              <div className="grid gap-2 sm:grid-cols-4" aria-label="Đánh giá mức độ nhớ">
+
+              <div className="srs-ratings" aria-label="Đánh giá mức độ nhớ">
                 {RATINGS.map((rating) => (
-                  <button key={rating.value} type="button" disabled={submitting} onClick={() => void rate(rating.value)} className={`rounded-xl border bg-white px-3 py-3 text-sm font-extrabold transition-colors disabled:opacity-50 ${rating.tone}`}>
-                    {rating.label}<span className="mt-1 block text-[11px] font-medium opacity-80">{rating.hint}</span>
+                  <button
+                    key={rating.value}
+                    type="button"
+                    className="srs-rating"
+                    style={{ "--srs-rating": rating.token } as React.CSSProperties}
+                    disabled={submitting}
+                    onClick={() => void rate(rating.value)}
+                  >
+                    <strong>{rating.label}</strong>
+                    <span>{rating.hint}</span>
                   </button>
                 ))}
               </div>
             </div>
           )}
-        </Card>
+        </Panel>
       ) : null}
 
       {!loading && !mainError && !activeCard && cards.length === 0 ? (
-        <EmptyState icon={BookOpen} title={mode === "due" ? "Không có thẻ đến hạn" : `Chưa có từ vựng HSK ${level}`} desc={mode === "due" ? "Bạn đã hoàn thành hàng đợi hiện tại." : "Nguồn từ vựng production chưa được nhập; hệ thống không hiển thị dữ liệu giả."} />
+        <EmptyState
+          icon={<BookOpen size={22} />}
+          title={mode === "due" ? "Không có thẻ đến hạn" : `Chưa có từ vựng HSK ${level}`}
+          text={
+            mode === "due"
+              ? "Bạn đã hoàn thành hàng đợi hiện tại."
+              : "Nguồn từ vựng production chưa được nhập; hệ thống không hiển thị dữ liệu giả."
+          }
+        />
       ) : null}
 
       {!loading && !mainError && !activeCard && cards.length > 0 ? (
-        <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3" aria-label="Danh sách từ vựng">
+        <section className="srs-grid-3" aria-label="Danh sách từ vựng">
           {cards.map((card, index) => (
-            <Card key={card.id} className="flex flex-col p-5">
-              <div className="flex items-start justify-between gap-3"><div><p lang="zh" className="sp-font-head text-2xl font-black text-sp-ink">{card.hanzi}</p><p className="mt-1 font-bold text-sp-primary">{card.pinyin}</p></div><span className="rounded-full bg-sp-primary-soft px-2.5 py-1 text-xs font-bold text-sp-primary">HSK {card.hskLevel}</span></div>
-              <p className="mt-3 line-clamp-2 text-sm text-sp-ink2">{card.meaning}</p>
-              <PrimaryButton className="mt-5" full onClick={() => setActiveIndex(index)}>Ôn thẻ này</PrimaryButton>
-            </Card>
+            <Panel key={card.id} className="srs-tile">
+              <div className="row gap-3">
+                <div className="stack gap-1 grow">
+                  <p lang="zh" className="srs-tile__hanzi han">
+                    {card.hanzi}
+                  </p>
+                  <p className="srs-tile__pinyin">{card.pinyin}</p>
+                </div>
+                <span className="pill">HSK {card.hskLevel}</span>
+              </div>
+              <p className="srs-tile__meaning">{card.meaning}</p>
+              <button
+                type="button"
+                className="btn btn--primary btn--block"
+                onClick={() => setActiveIndex(index)}
+              >
+                Ôn thẻ này
+              </button>
+            </Panel>
           ))}
         </section>
       ) : null}
