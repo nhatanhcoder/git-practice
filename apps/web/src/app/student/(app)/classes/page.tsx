@@ -14,12 +14,27 @@
  * - Renders only real server fields: name, hskLevel, teacher nickname/email,
  *   studentCount, lessonCount, joinedAt. No invented assignment counts or attendance.
  * - Link uses real class ID.
- * - Join/leave not yet connected -> unavailable notice (A07), no fake local success.
+ *
+ * Task A07:
+ * - Join modal wired to POST /student/classes/join. Client-side shape check mirrors
+ *   JoinClassDto (trim + uppercase + 8 chars A-Z0-9); everything else is the server's
+ *   registry code, never a guessed HTTP status.
+ * - Success only after the server confirms: toast, close, refetch. Failure keeps the
+ *   input and shows the mapped message inline. Rejoin is a server concern — success
+ *   is success, whether it was a first join or a reactivation.
  */
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { BookOpen, CalendarDays, Plus, Ticket, User, Users } from "lucide-react";
+import {
+  BookOpen,
+  CalendarDays,
+  Plus,
+  Ticket,
+  TriangleAlert,
+  User,
+  Users,
+} from "lucide-react";
 import {
   Chip,
   EmptyState,
@@ -29,9 +44,14 @@ import {
   SkeletonPanel,
 } from "@/components/student/primitives";
 import { Modal } from "@/components/student/overlay";
+import { useToast } from "@/components/student/toast";
 import {
+  describeJoinFailure,
   fetchMyEnrolledClasses,
+  joinClassByCode,
+  JOIN_CODE_MESSAGES,
   resolveTeacherName,
+  validateJoinCode,
   type EnrolledClass,
 } from "@/lib/student/classes-service";
 
@@ -40,6 +60,15 @@ export default function StudentClassesPage() {
   const [classes, setClasses] = useState<EnrolledClass[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [joinOpen, setJoinOpen] = useState(false);
+
+  // A07 join-form state. `joinLock` is a ref for the same reason A04's submit lock is:
+  // React state updates asynchronously, so two clicks (or Enter + click) in one tick
+  // both read joinSubmitting === false and both fire a POST.
+  const [joinCode, setJoinCode] = useState("");
+  const [joinError, setJoinError] = useState<string | null>(null);
+  const [joinSubmitting, setJoinSubmitting] = useState(false);
+  const joinLock = useRef(false);
+  const toast = useToast();
 
   const loadClasses = useCallback(async () => {
     setLoading(true);
@@ -58,6 +87,46 @@ export default function StudentClassesPage() {
     loadClasses();
   }, [loadClasses]);
 
+  function closeJoin() {
+    setJoinOpen(false);
+    // The typed code stays for a reopen-and-retry; only the stale error clears.
+    setJoinError(null);
+  }
+
+  async function submitJoin(event: React.FormEvent) {
+    event.preventDefault();
+    if (joinLock.current) return;
+
+    // Wrong shape is answered locally with the DTO's own messages — it never
+    // becomes a POST. CLASS_ENROLL_CODE_INVALID ("this code names no class")
+    // is a different, server-only fact and must not be faked here.
+    const issue = validateJoinCode(joinCode);
+    if (issue) {
+      setJoinError(JOIN_CODE_MESSAGES[issue]);
+      return;
+    }
+
+    joinLock.current = true;
+    setJoinSubmitting(true);
+    setJoinError(null);
+    try {
+      // Only past this line has the server accepted the enrollment. Nothing
+      // below is an optimistic guess.
+      const result = await joinClassByCode(joinCode);
+      toast(`Đã tham gia lớp ${result.name}.`, "success");
+      setJoinOpen(false);
+      setJoinCode("");
+      await loadClasses();
+    } catch (err) {
+      // The input is kept exactly as typed; the message comes from the
+      // registry code (or the network). No fake class is prepended locally.
+      setJoinError(describeJoinFailure(err));
+    } finally {
+      joinLock.current = false;
+      setJoinSubmitting(false);
+    }
+  }
+
   return (
     <div className="stack gap-6">
       <PageHead
@@ -66,9 +135,11 @@ export default function StudentClassesPage() {
         sub={
           loading
             ? "Đang tải danh sách lớp học..."
-            : classes.length > 0
-              ? `${classes.length} lớp đang học`
-              : "Nhập mã lớp giáo viên cung cấp để bắt đầu."
+            : error
+              ? "Không tải được danh sách lớp."
+              : classes.length > 0
+                ? `${classes.length} lớp đang học`
+                : "Nhập mã lớp giáo viên cung cấp để bắt đầu."
         }
         action={
           <button
@@ -143,61 +214,57 @@ export default function StudentClassesPage() {
 
       <Modal
         open={joinOpen}
-        onClose={() => setJoinOpen(false)}
+        onClose={closeJoin}
         title="Tham gia lớp học"
+        subtitle="Nhập mã gồm 8 ký tự (chữ in hoa và chữ số) do giáo viên cung cấp."
       >
-        <div className="stack gap-4">
-          <div
-            className="notice"
-            style={{
-              background: "var(--surface-muted, #f1f5f9)",
-              border: "1px solid var(--line, #e2e8f0)",
-              borderRadius: "var(--r-md, 8px)",
-              padding: "var(--sp-3, 12px)",
-            }}
-          >
-            <p style={{ margin: 0, fontWeight: 600, fontSize: "var(--step-0)" }}>
-              Tính năng tham gia lớp đang được kết nối (TASK A07)
-            </p>
-            <p
-              style={{
-                margin: "var(--sp-1) 0 0",
-                fontSize: "var(--step--1)",
-                color: "var(--fg-muted, #64748b)",
-              }}
-            >
-              Hệ thống sẽ kết nối với API <code>POST /student/classes/join</code> trong nhiệm vụ kế tiếp (A07) để xác thực mã lớp 8 ký tự trên máy chủ thật. Màn hình này không tạo dữ liệu giả lập.
-            </p>
-          </div>
-
-          <label className="stack gap-2">
-            <span className="section-sub">Mã lớp (8 ký tự)</span>
+        <form className="stack gap-4" onSubmit={submitJoin} noValidate>
+          <label className="field">
+            <span className="sr-only">Mã lớp</span>
             <input
-              className="field"
-              disabled
+              value={joinCode}
+              onChange={(e) => setJoinCode(e.target.value)}
               placeholder="VD: H3TT2645"
-              style={{ opacity: 0.7, cursor: "not-allowed" }}
+              maxLength={12}
+              autoCapitalize="characters"
+              autoCorrect="off"
+              spellCheck={false}
+              disabled={joinSubmitting}
+              aria-label="Mã lớp (8 ký tự)"
+              aria-invalid={joinError ? true : undefined}
+              style={{ textTransform: "uppercase", letterSpacing: "0.08em" }}
             />
           </label>
+
+          {joinError ? (
+            <div
+              className="notice"
+              role="alert"
+              style={{ background: "var(--danger-soft)", color: "var(--text-1)" }}
+            >
+              <TriangleAlert size={16} style={{ color: "var(--danger)", flex: "none" }} />
+              <span>{joinError}</span>
+            </div>
+          ) : null}
 
           <div className="row gap-3 wrap">
             <button
               type="button"
               className="btn btn--outline"
-              onClick={() => setJoinOpen(false)}
+              onClick={closeJoin}
+              disabled={joinSubmitting}
             >
               Đóng
             </button>
             <button
-              type="button"
+              type="submit"
               className="btn btn--primary grow"
-              disabled
-              title="Đang chờ kết nối API ở TASK A07"
+              disabled={joinSubmitting}
             >
-              Tham gia (Đang kết nối A07)
+              {joinSubmitting ? "Đang tham gia..." : "Tham gia"}
             </button>
           </div>
-        </div>
+        </form>
       </Modal>
     </div>
   );

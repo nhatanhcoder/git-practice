@@ -120,11 +120,14 @@ describe("A06 · Classes Page Real Endpoint Integration", () => {
     );
   });
 
-  it("marks join class action as unavailable pending A07 without fake-success", () => {
+  it("join is wired to the real API (A07) without fake-success", () => {
+    // A07 replaced the "đang kết nối ở TASK A07" placeholder with the real
+    // form: the page must call the join service, and must not mutate the
+    // local class list to simulate a successful enrollment.
     assert.match(
       classesPage,
-      /A07/,
-      "join modal must inform learner that join API is connecting in A07",
+      /joinClassByCode/,
+      "the join modal must go through the real POST /student/classes/join",
     );
     assert.doesNotMatch(
       classesPage,
