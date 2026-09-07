@@ -636,6 +636,10 @@ _(specs written 2026-08-19, `docs/api/modules/`. **Updated 2026-09-01**: `apps/a
 
 ## Active work — student identity slice
 
+- 🔶 (opencode · 2026-09-07) **A07 — Form tham gia lớp thật** — claim, plan chờ duyệt.
+      Branch `codex/a07-student-join-class`, base `codex/a06-student-classes-list` @ `2f12310`
+      (A06 chưa có PR/merge — stack có báo, theo tiền lệ A05).
+
 - ✅ (antigravity · 2026-09-07) **A06 — Danh sách lớp Student từ API thật**
   Nối màn hình /student/classes vào endpoint thật GET /student/classes qua service
   classes-service.ts và rules classes-rules.ts.
