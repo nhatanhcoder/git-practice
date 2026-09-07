@@ -678,8 +678,8 @@ _(specs written 2026-08-19, `docs/api/modules/`. **Updated 2026-09-01**: `apps/a
   Xử lý đủ 7 trạng thái UI theo contract: loading (SkeletonPanel), invalid_id (UUID validation), not_found (404), forbidden (403), error (ErrorState kèm thử lại), empty (0 lessons), ready (chi tiết lớp và danh sách bài học thật).
   Bảo mật & RBAC: không để lộ enrollmentCode (INV-CLASS-07), không lộ danh sách học viên cùng lớp, không tự chế số bài tập.
   Hiển thị thông báo "Chưa khả dụng" cho chi tiết bài học / bài tập chưa có endpoint approved theo API_STUDENT.md.
-       Verification: 26/26 tests trong student-class-detail.test.mjs, 110/110 toàn bộ unit test suites (node --test apps/web/scripts/*.test.mjs),
-       check-docs 8/8 passed, production build web 42/42 pages passed sạch sẽ.
+  Verification: 28/28 tests trong student-class-detail.test.mjs, 112/112 toàn bộ unit test suites (node --test apps/web/scripts/*.test.mjs),
+  check-docs 8/8 passed, production build web 42/42 pages passed sạch sẽ.
 
 - ✅ (antigravity · 2026-09-07) **A06 — Danh sách lớp Student từ API thật**
   Nối màn hình /student/classes vào endpoint thật GET /student/classes qua service

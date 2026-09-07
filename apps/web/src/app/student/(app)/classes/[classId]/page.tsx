@@ -214,7 +214,7 @@ export default function ClassDetailPage() {
         </Panel>
       ) : null}
 
-      {!hasLessons ? (
+      {outcome === "empty" ? (
         <Panel className="panel--pad">
           <EmptyState
             title="Chưa có bài học nào"
@@ -260,20 +260,14 @@ export default function ClassDetailPage() {
           <p className="section-sub">
             Bạn sẽ không còn thấy bài học của <strong>{detail.name}</strong>. Điểm các bài đã nộp vẫn được lưu giữ.
           </p>
-          <p className="caption" style={{ color: "var(--color-text-muted)" }}>
+          <p style={{ color: "var(--text-3)", fontSize: "var(--step--1)", margin: 0 }}>
             Lưu ý: Tính năng rời lớp đang được kết nối với hệ thống máy chủ ở nhiệm vụ tiếp theo (A09).
           </p>
           <div className="row gap-3 wrap">
-            <button type="button" className="btn btn--outline grow" onClick={() => setLeaveOpen(false)}>
-              Ở lại lớp
-            </button>
             <button
               type="button"
-              className="btn btn--primary"
-              onClick={() => {
-                setLeaveOpen(false);
-                pushToast("Tính năng rời lớp đang được triển khai", "info");
-              }}
+              className="btn btn--outline grow"
+              onClick={() => setLeaveOpen(false)}
             >
               Đóng
             </button>

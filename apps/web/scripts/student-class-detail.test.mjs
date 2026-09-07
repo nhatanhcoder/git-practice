@@ -190,4 +190,22 @@ describe("A08 · Static Security & Integration Invariants", () => {
     assert.match(detailPage, /href="\/student\/classes"/);
     assert.match(lessonPage, /href=\{`\/student\/classes\/\$\{detail\.id\}`\}/);
   });
+
+  it("neither page uses dead CSS token var(--color-text-muted)", () => {
+    assert.doesNotMatch(detailPage, /--color-text-muted/);
+    assert.doesNotMatch(lessonPage, /--color-text-muted/);
+  });
+
+  it("lessons/[lessonId]/page.tsx renders unavailable notice for assignments rather than fake-empty copy", () => {
+    assert.doesNotMatch(
+      lessonPage,
+      /Chưa có bài tập nào được giao/,
+      "must not render fake-empty copy pretending to know assignment count",
+    );
+    assert.match(
+      lessonPage,
+      /S-LESSON-3/,
+      "must render clear unavailable notice referencing the upcoming assignment feature",
+    );
+  });
 });

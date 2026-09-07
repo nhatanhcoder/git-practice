@@ -23,14 +23,20 @@ The student class detail screen `/student/classes/[classId]` and lesson detail s
   - Explicitly rendered "Chưa khả dụng" notice for lesson body content and assignments lacking approved endpoints in `API_STUDENT.md` rather than fabricating mock data or actions.
   - Backlink cleanly navigates to `/student/classes/${detail.id}`.
   - Removed `DemoStateSwitcher`.
-- Created `apps/web/scripts/student-class-detail.test.mjs` with 26 automated tests covering UUID validation, class detail outcomes, lesson detail outcomes, date formatting, removal of `lms-data` fixtures and `DemoStateSwitcher`, and security invariants.
+- Created `apps/web/scripts/student-class-detail.test.mjs` with 28 automated tests covering UUID validation, class detail outcomes, lesson detail outcomes, date formatting, removal of `lms-data` fixtures and `DemoStateSwitcher`, and security invariants.
 - Updated `docs/front-end-design-docs/pages/student-pages/student-class-detail.md` last_updated date.
+- **QC Review Follow-up**:
+  - Fixed minor defect 1: Replaced fake-empty copy on lesson assignments panel with explicit notice: "Bài tập gắn với bài học sẽ khả dụng khi API bài tập (S-LESSON-3) hoàn tất", adhering strictly to criterion 5.
+  - Fixed minor defect 2: Replaced nonexistent CSS token `var(--color-text-muted)` with `var(--text-3)` and removed nonexistent `.caption` class across both detail pages.
+  - Addressed observation 1: Linked empty lesson list rendering explicitly to `outcome === "empty"`.
+  - Added test assertions guarding against `var(--color-text-muted)` and fake-empty assignment copy.
 
 **Verification**:
 - `node scripts/check-docs.mjs`: all 8 checks passed.
-- `node --test apps/web/scripts/student-class-detail.test.mjs`: 26/26 tests passed.
-- `node --test apps/web/scripts/*.test.mjs`: 25 suites, 110/110 tests passed (0 failures).
+- `node --test apps/web/scripts/student-class-detail.test.mjs`: 28/28 tests passed.
+- `node --test apps/web/scripts/*.test.mjs`: 25 suites, 112/112 tests passed (0 failures).
 - `pnpm --filter web build`: clean production build, exit code 0, 42/42 pages compiled (`ƒ /student/classes/[classId] 7.46 kB`, `ƒ /student/classes/[classId]/lessons/[lessonId] 4.41 kB`).
 
 **Next task**:
 TASK A09 — Implement real class leave action `DELETE /student/classes/:id/leave`.
+

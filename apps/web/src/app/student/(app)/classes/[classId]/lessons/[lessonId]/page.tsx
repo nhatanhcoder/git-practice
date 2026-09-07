@@ -198,7 +198,7 @@ export default function LessonDetailPage() {
               <Chip>Đang cập nhật</Chip>
             </div>
           ) : null}
-          <p className="caption" style={{ color: "var(--color-text-muted)" }}>
+          <p style={{ color: "var(--text-3)", fontSize: "var(--step--1)", margin: 0 }}>
             Giao diện bài học chi tiết cho học viên sẽ khả dụng khi API nội dung bài học hoàn tất (S-LESSON-2).
           </p>
         </div>
@@ -207,8 +207,8 @@ export default function LessonDetailPage() {
       <Panel className="panel--pad">
         <div className="stack gap-2">
           <h2 className="section-title">Bài tập của buổi này</h2>
-          <p className="section-sub">
-            Chưa có bài tập nào được giao cho bài học này.
+          <p className="section-sub" style={{ color: "var(--text-2)" }}>
+            Bài tập gắn với bài học sẽ khả dụng khi API bài tập (S-LESSON-3) hoàn tất.
           </p>
         </div>
       </Panel>
