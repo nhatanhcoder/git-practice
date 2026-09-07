@@ -636,7 +636,16 @@ _(specs written 2026-08-19, `docs/api/modules/`. **Updated 2026-09-01**: `apps/a
 
 ## Active work — student identity slice
 
-- 🔶 (codex · 2026-09-07) **A06 — Danh sách lớp Student từ API thật**
+- ✅ (antigravity · 2026-09-07) **A06 — Danh sách lớp Student từ API thật**
+  Nối màn hình /student/classes vào endpoint thật GET /student/classes qua service
+  classes-service.ts và rules classes-rules.ts.
+  Loại bỏ hoàn toàn mock fixture studentClasses và DemoStateSwitcher.
+  Xử lý đủ 7 trạng thái: loading (SkeletonPanel), empty (chưa tham gia lớp nào),
+  error (ErrorState kèm nút thử lại), ready (thẻ lớp học với ID và tên giáo viên thật).
+  Bảo mật dữ liệu: không để lộ enrollmentCode, không tự chế số bài tập chưa làm (openCount).
+  Nút/Modal tham gia lớp (Join) được đánh dấu đang kết nối ở TASK A07, không giữ fake-success cục bộ.
+  Verification: 84/84 tests `node` --test apps/web/scripts/*.test.mjs (14 test mới thuộc student-classes.test.mjs),
+  check-docs 8/8, production web build 42/42 static/dynamic pages sạch.
 
 - ✅ (codex · 2026-09-06) **A01 — Student shell/dashboard shows the correct account**
   (commit `cea59de`, branch `codex/a01-student-shell-identity`, base `cada414`).
