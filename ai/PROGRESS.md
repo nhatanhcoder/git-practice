@@ -608,20 +608,26 @@ _(specs written 2026-08-19, `docs/api/modules/`. **Updated 2026-09-01**: `apps/a
   Playwright follow-up: `tests/student-identity.spec.ts` 8/8 + `tests/student-identity-null.spec.ts`
   2/2 (two real accounts incl. real-form login, delayed-restore, long-name 375px, NULL fallback),
   production build, desktop + mobile, screenshots read, zero console errors. Test fixtures cleaned.
-- ✅ (codex · 2026-09-06) **A02 — Tách demo khỏi dữ liệu Student production**
-  (branch `codex/a02-isolate-demo`, base `b3c5c02`, impl commit `a4f440f`).
+- ✅ (codex · 2026-09-06, follow-up 2026-09-07) **A02 — Tách demo khỏi dữ liệu Student production**
+  (branch `codex/a02-isolate-demo`, base `b3c5c02`, impl commit `a4f440f`, follow-up commit pending).
   Isolate demo/local progress from real accounts per A00 matrix: gate DemoStateSwitcher
   strictly behind dev (`process.env.NODE_ENV !== 'production'`, resolving `WEB-016`), separate
   UI preferences from demo progress (`hanlu-preferences`, legacy `hanlu-student` read
   non-destructively, never wiped), prevent ?demo=1 or storage flags from enabling demo in
-  production, XP unlock + progress writes demo-only, and all 20 backend-less routes render
-  `UnavailableState` in production (dev/demo keeps the full mock experience). The production
-  dashboard shows only the three live features (flashcards, mistakes, classes) instead of
-  mock progress widgets. No DB schema/Auth/RBAC/money change.
-  Verified: 50/50 `node --test apps/web/scripts/*.test.mjs` (10 new), `pnpm --filter web build`
-  green, A02 Playwright spec 9/9 pass + 1 deliberate skip (desktop + 375px, production build,
-  real login `student@hsk.local`, console clean), generic student screen check 36/36 after
-  adding the missing student account to `screens.spec.ts`.
+  production, XP unlock + progress writes demo-only, and backend-less routes render
+  `UnavailableState` in production (dev/demo keeps the full mock experience).
+  QC follow-up completed:
+  1. Absent vs zero progress stats: production returns `null` for unmeasured XP/streak/level/rank,
+     rendered honestly as em dash ("—") via `formatProgressStat()`, never fabricated zeros.
+  2. Actually wired preference migration and hydration: `useStudentPreferences` sets `skipHydration: true`
+     with safe storage fallback; store-level migration from `hanlu-student` and explicit hydration
+     are verified by executable regression tests (`student-preferences-store.test.mjs`).
+  3. Consistent live-route/navigation classification: `isLiveStudentRoute` shares a single definition
+     across shell rail nav, bottom tabs, sheet grid, and dashboard shortcuts. Repo-static routes
+     (`/student/grammar`, `/student/foundation`) remain live while gating mock mastery and XP awards.
+  4. Hookless outer wrapper pattern on all unbacked routes to guarantee zero hook execution in production.
+  Verified: 59/59 `node --test apps/web/scripts/*.test.mjs` (14 new/updated), `pnpm --filter web build`
+  green (42/42 pages), `node scripts/check-docs.mjs` 8/8 passed. No DB schema/Auth/RBAC/money changes.
   ⚠️ **Remaining demo-isolation gaps, owned by A03/A05, not counted here**: `/student/flashcards`
   still rates through the Leitner local store and `/student/mistakes/review` still reviews the
   local mistakes store in production — both are the recorded A00/DOC-016 presentation-rewire
