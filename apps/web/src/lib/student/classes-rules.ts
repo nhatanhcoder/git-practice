@@ -1,4 +1,4 @@
-﻿export interface EnrolledClassTeacher {
+export interface EnrolledClassTeacher {
   id: string;
   nickname: string | null;
   email: string;
@@ -95,4 +95,130 @@ export const JOIN_FAILURE_MESSAGES: Record<string, string> = {
 
 export function joinFailureMessage(code: string): string {
   return JOIN_FAILURE_MESSAGES[code] ?? "Không tham gia được lớp lúc này. Thử lại sau ít phút.";
+}
+
+export interface EnrolledLesson {
+  id: string;
+  title: string;
+  description: string | null;
+  contentType: string;
+  contentUrl: string | null;
+  orderIndex: number;
+  createdAt: string;
+}
+
+export interface EnrolledClassDetail {
+  id: string;
+  name: string;
+  hskLevel: number;
+  status: string;
+  description: string | null;
+  createdAt: string;
+  teacher: EnrolledClassTeacher;
+  lessons: EnrolledLesson[];
+  studentCount: number;
+  joinedAt: string;
+  rejoinedAt: string | null;
+}
+
+export const UUID_REGEX =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+export function isValidUuid(id: string): boolean {
+  return UUID_REGEX.test(id);
+}
+
+export type ClassDetailOutcome =
+  | "loading"
+  | "invalid_id"
+  | "not_found"
+  | "forbidden"
+  | "error"
+  | "empty"
+  | "ready";
+
+export interface ApiErrorLike {
+  statusCode?: number;
+  code?: string;
+  message?: string;
+}
+
+export function extractApiError(error: unknown): ApiErrorLike | null {
+  if (typeof error === "object" && error !== null) {
+    const err = error as ApiErrorLike;
+    return {
+      statusCode: typeof err.statusCode === "number" ? err.statusCode : undefined,
+      code: typeof err.code === "string" ? err.code : undefined,
+      message: typeof err.message === "string" ? err.message : undefined,
+    };
+  }
+  return null;
+}
+
+export function resolveClassDetailOutcome(
+  loading: boolean,
+  error: unknown,
+  detail: EnrolledClassDetail | null,
+  validId = true,
+): ClassDetailOutcome {
+  if (!validId) return "invalid_id";
+  if (loading) return "loading";
+  if (error) {
+    const err = extractApiError(error);
+    if (err) {
+      if (err.statusCode === 400 || err.code === "VALIDATION_ERROR") return "invalid_id";
+      if (err.statusCode === 404 || err.code === "CLASS_NOT_FOUND") return "not_found";
+      if (err.statusCode === 403 || err.code === "CLASS_ACCESS_DENIED") return "forbidden";
+    }
+    return "error";
+  }
+  if (!detail) return "error";
+  if (!detail.lessons || detail.lessons.length === 0) return "empty";
+  return "ready";
+}
+
+export type LessonDetailOutcome =
+  | "loading"
+  | "invalid_id"
+  | "not_found"
+  | "forbidden"
+  | "error"
+  | "ready";
+
+export function resolveLessonDetailOutcome(
+  loading: boolean,
+  error: unknown,
+  detail: EnrolledClassDetail | null,
+  lessonId: string,
+  validIds = true,
+): LessonDetailOutcome {
+  if (!validIds) return "invalid_id";
+  if (loading) return "loading";
+  if (error) {
+    const err = extractApiError(error);
+    if (err) {
+      if (err.statusCode === 400 || err.code === "VALIDATION_ERROR") return "invalid_id";
+      if (err.statusCode === 404 || err.code === "CLASS_NOT_FOUND") return "not_found";
+      if (err.statusCode === 403 || err.code === "CLASS_ACCESS_DENIED") return "forbidden";
+    }
+    return "error";
+  }
+  if (!detail) return "error";
+  const lesson = detail.lessons?.find((l) => l.id === lessonId);
+  if (!lesson) return "not_found";
+  return "ready";
+}
+
+export function formatClassJoinedDate(isoString: string): string {
+  try {
+    const d = new Date(isoString);
+    if (isNaN(d.getTime())) return isoString;
+    return d.toLocaleDateString("vi-VN", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    });
+  } catch {
+    return isoString;
+  }
 }

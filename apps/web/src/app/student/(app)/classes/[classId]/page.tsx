@@ -5,17 +5,21 @@
  *
  * Contract: docs/front-end-design-docs/pages/student-pages/student-class-detail.md
  * Features: S-CLS-3 (class info), S-CLS-4 (leave), S-LESSON-1 (ordered lesson list).
- *
- * MOCK(S-CLS-3, S-LESSON-1): `GET /api/v1/student/classes/:id` exists in API_STUDENT.md
- * but is not implemented. The lesson list has **no endpoint at all** — API_STUDENT.md has
- * no Lessons section, the Student-side twin of API-007. Leaving a class mutates local
- * state only.
  */
 
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, CalendarDays, FileText, LogOut, PlayCircle, User } from "lucide-react";
+import { useParams } from "next/navigation";
+import {
+  ArrowLeft,
+  CalendarDays,
+  FileText,
+  LogOut,
+  PlayCircle,
+  BookOpen,
+  User,
+  Users,
+} from "lucide-react";
 import {
   Chip,
   EmptyState,
@@ -24,32 +28,97 @@ import {
   Panel,
   SkeletonPanel,
 } from "@/components/student/primitives";
-import { DemoStateSwitcher, type DemoState } from "@/components/student/controls";
 import { Modal } from "@/components/student/overlay";
 import { useToast } from "@/components/student/toast";
 import {
-  assignmentById,
-  classById,
-  lessonsForClass,
-} from "@/lib/student/lms-data";
+  fetchEnrolledClassDetail,
+  formatClassJoinedDate,
+  isValidUuid,
+  resolveClassDetailOutcome,
+  resolveTeacherName,
+  type EnrolledClassDetail,
+} from "@/lib/student/classes-service";
 
 export default function ClassDetailPage() {
   const params = useParams<{ classId: string }>();
   const classId = decodeURIComponent(params?.classId ?? "");
-  const router = useRouter();
   const pushToast = useToast();
 
-  const [demo, setDemo] = useState<DemoState>("ready");
+  const validId = isValidUuid(classId);
+  const [detail, setDetail] = useState<EnrolledClassDetail | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<unknown | null>(null);
   const [leaveOpen, setLeaveOpen] = useState(false);
-  const [left, setLeft] = useState(false);
 
-  const klass = useMemo(() => classById(classId), [classId]);
-  const lessons = useMemo(() => lessonsForClass(classId), [classId]);
+  const loadDetail = useCallback(async () => {
+    if (!validId) {
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetchEnrolledClassDetail(classId);
+      setDetail(res);
+    } catch (err) {
+      setError(err);
+    } finally {
+      setLoading(false);
+    }
+  }, [classId, validId]);
 
-  if (!klass) {
+  useEffect(() => {
+    loadDetail();
+  }, [loadDetail]);
+
+  const outcome = resolveClassDetailOutcome(loading, error, detail, validId);
+
+  if (outcome === "loading") {
     return (
       <div className="stack gap-6">
-        <PageHead title="Không tìm thấy lớp" sub="Lớp này không tồn tại hoặc bạn chưa tham gia." />
+        <Link href="/student/classes" className="backlink">
+          <ArrowLeft size={15} /> Lớp của tôi
+        </Link>
+        <PageHead title="Đang tải lớp học..." sub="Vui lòng chờ giây lát" />
+        <Panel className="panel--pad">
+          <div className="row gap-4 wrap">
+            <span className="lms-fact">Đang tải thông tin...</span>
+          </div>
+        </Panel>
+        <SkeletonPanel rows={3} height={72} />
+      </div>
+    );
+  }
+
+  if (outcome === "invalid_id") {
+    return (
+      <div className="stack gap-6">
+        <Link href="/student/classes" className="backlink">
+          <ArrowLeft size={15} /> Lớp của tôi
+        </Link>
+        <PageHead title="Mã lớp không hợp lệ" sub="Định dạng mã lớp không đúng chuẩn." />
+        <Panel className="panel--pad">
+          <EmptyState
+            title="Không mở được lớp"
+            text="Mã lớp học trên đường dẫn không hợp lệ. Vui lòng kiểm tra lại hoặc quay về danh sách lớp."
+            action={
+              <Link href="/student/classes" className="btn btn--primary">
+                <ArrowLeft size={16} /> Về danh sách lớp
+              </Link>
+            }
+          />
+        </Panel>
+      </div>
+    );
+  }
+
+  if (outcome === "not_found") {
+    return (
+      <div className="stack gap-6">
+        <Link href="/student/classes" className="backlink">
+          <ArrowLeft size={15} /> Lớp của tôi
+        </Link>
+        <PageHead title="Không tìm thấy lớp" sub="Lớp này không tồn tại hoặc đã bị gỡ." />
         <Panel className="panel--pad">
           <EmptyState
             title="Không mở được lớp"
@@ -65,7 +134,48 @@ export default function ClassDetailPage() {
     );
   }
 
-  const visibleLessons = demo === "empty" ? [] : lessons;
+  if (outcome === "forbidden") {
+    return (
+      <div className="stack gap-6">
+        <Link href="/student/classes" className="backlink">
+          <ArrowLeft size={15} /> Lớp của tôi
+        </Link>
+        <PageHead title="Không có quyền truy cập" sub="Bạn chưa tham gia lớp học này hoặc đã rời lớp." />
+        <Panel className="panel--pad">
+          <EmptyState
+            title="Quyền truy cập bị từ chối"
+            text="Chỉ học viên đang ghi danh chính thức mới có thể xem nội dung và bài học của lớp này."
+            action={
+              <Link href="/student/classes" className="btn btn--primary">
+                <ArrowLeft size={16} /> Về danh sách lớp
+              </Link>
+            }
+          />
+        </Panel>
+      </div>
+    );
+  }
+
+  if (outcome === "error" || !detail) {
+    return (
+      <div className="stack gap-6">
+        <Link href="/student/classes" className="backlink">
+          <ArrowLeft size={15} /> Lớp của tôi
+        </Link>
+        <PageHead title="Lỗi kết nối" sub="Không thể tải dữ liệu lớp học." />
+        <Panel className="panel--pad">
+          <ErrorState
+            title="Không tải được thông tin lớp học"
+            text="Đã xảy ra lỗi khi kết nối tới máy chủ. Vui lòng kiểm tra lại đường truyền."
+            onRetry={loadDetail}
+          />
+        </Panel>
+      </div>
+    );
+  }
+
+  const teacherName = resolveTeacherName(detail.teacher);
+  const hasLessons = detail.lessons && detail.lessons.length > 0;
 
   return (
     <div className="stack gap-6">
@@ -74,9 +184,9 @@ export default function ClassDetailPage() {
       </Link>
 
       <PageHead
-        eyebrow={`HSK ${klass.hskLevel}`}
-        title={klass.name}
-        sub={`${klass.teacherName} · ${klass.schedule}`}
+        eyebrow={`HSK ${detail.hskLevel}`}
+        title={detail.name}
+        sub={`${teacherName} · ${detail.studentCount} học viên`}
         action={
           <button type="button" className="btn btn--outline" onClick={() => setLeaveOpen(true)}>
             <LogOut size={16} /> Rời lớp
@@ -87,99 +197,90 @@ export default function ClassDetailPage() {
       <Panel className="panel--pad">
         <div className="row gap-4 wrap">
           <span className="lms-fact">
-            <User size={15} aria-hidden="true" /> {klass.teacherName}
+            <User size={15} aria-hidden="true" /> {teacherName}
           </span>
           <span className="lms-fact">
-            <CalendarDays size={15} aria-hidden="true" /> {klass.schedule}
+            <CalendarDays size={15} aria-hidden="true" /> Tham gia ngày {formatClassJoinedDate(detail.joinedAt)}
           </span>
-          <span className="lms-fact">Mã lớp {klass.enrollmentCode}</span>
+          <span className="lms-fact">
+            <Users size={15} aria-hidden="true" /> {detail.studentCount} học viên
+          </span>
         </div>
       </Panel>
 
-      {/* Partial is genuine here — the class facts and the lesson list are separate
-          reads — but the shared DemoState switcher has only four values, so it cannot be
-          demonstrated. In the real fetch the header renders while this skeleton shows. */}
-      {demo === "loading" ? <SkeletonPanel rows={3} height={72} /> : null}
-
-      {demo === "error" ? (
+      {detail.description ? (
         <Panel className="panel--pad">
-          <ErrorState title="Không tải được danh sách bài học" onRetry={() => setDemo("ready")} />
+          <p className="lms-prose">{detail.description}</p>
         </Panel>
       ) : null}
 
-      {(demo === "ready" || demo === "empty") && visibleLessons.length === 0 ? (
+      {!hasLessons ? (
         <Panel className="panel--pad">
           <EmptyState
             title="Chưa có bài học nào"
-            text="Giáo viên chưa đăng bài học cho lớp này. Khi có bài mới, nó sẽ xuất hiện ở đây."
+            text="Giáo viên chưa đăng bài học cho lớp này. Khi có bài mới, bài học sẽ xuất hiện ở đây."
           />
         </Panel>
-      ) : null}
-
-      {demo === "ready" && visibleLessons.length > 0 ? (
+      ) : (
         <div className="stack gap-3">
-          {visibleLessons.map((l) => {
-            const attached = l.assignmentIds.map(assignmentById).filter(Boolean);
-            return (
-              <Link
-                key={l.id}
-                href={`/student/classes/${klass.id}/lessons/${l.id}`}
-                className="lms-lesson"
-              >
-                <span className="lms-lesson__order">{l.order}</span>
-                <span className="grow">
-                  <span className="lms-lesson__title">
-                    {l.title}
-                    {l.titleHanzi ? <em className="lms-lesson__hanzi">{l.titleHanzi}</em> : null}
-                  </span>
-                  <span className="lms-lesson__summary">{l.summary}</span>
-                  <span className="row gap-2 wrap">
-                    {l.videoUrl ? (
-                      <Chip icon={<PlayCircle size={13} />}>Video</Chip>
-                    ) : null}
-                    {l.documentName ? (
-                      <Chip icon={<FileText size={13} />}>Tài liệu</Chip>
-                    ) : null}
-                    {attached.length ? (
-                      <Chip tone="info">{attached.length} bài tập</Chip>
-                    ) : null}
-                  </span>
+          {detail.lessons.map((l) => (
+            <Link
+              key={l.id}
+              href={`/student/classes/${detail.id}/lessons/${l.id}`}
+              className="lms-lesson"
+            >
+              <span className="lms-lesson__order">{l.orderIndex + 1}</span>
+              <span className="grow">
+                <span className="lms-lesson__title">{l.title}</span>
+                {l.description ? (
+                  <span className="lms-lesson__summary">{l.description}</span>
+                ) : null}
+                <span className="row gap-2 wrap">
+                  {l.contentType === "video" ? (
+                    <Chip icon={<PlayCircle size={13} />}>Video</Chip>
+                  ) : null}
+                  {l.contentType === "document" ? (
+                    <Chip icon={<FileText size={13} />}>Tài liệu</Chip>
+                  ) : null}
+                  {l.contentType === "text" ? (
+                    <Chip icon={<BookOpen size={13} />}>Văn bản</Chip>
+                  ) : null}
+                  {l.contentType === "mixed" ? (
+                    <Chip>Hỗn hợp</Chip>
+                  ) : null}
                 </span>
-              </Link>
-            );
-          })}
+              </span>
+            </Link>
+          ))}
         </div>
-      ) : null}
+      )}
 
       <Modal open={leaveOpen} onClose={() => setLeaveOpen(false)} title="Rời khỏi lớp?">
         <div className="stack gap-4">
           <p className="section-sub">
-            Bạn sẽ không còn thấy bài học và bài tập của <strong>{klass.name}</strong>. Điểm các
-            bài đã nộp vẫn được giữ. Muốn quay lại, bạn cần mã lớp.
+            Bạn sẽ không còn thấy bài học của <strong>{detail.name}</strong>. Điểm các bài đã nộp vẫn được lưu giữ.
+          </p>
+          <p className="caption" style={{ color: "var(--color-text-muted)" }}>
+            Lưu ý: Tính năng rời lớp đang được kết nối với hệ thống máy chủ ở nhiệm vụ tiếp theo (A09).
           </p>
           <div className="row gap-3 wrap">
-            <button type="button" className="btn btn--outline" onClick={() => setLeaveOpen(false)}>
+            <button type="button" className="btn btn--outline grow" onClick={() => setLeaveOpen(false)}>
               Ở lại lớp
             </button>
             <button
               type="button"
-              className="btn btn--primary grow"
+              className="btn btn--primary"
               onClick={() => {
-                setLeft(true);
                 setLeaveOpen(false);
-                pushToast(`Đã rời ${klass.name}`, "warn");
-                router.push("/student/classes");
+                pushToast("Tính năng rời lớp đang được triển khai", "info");
               }}
             >
-              Rời lớp
+              Đóng
             </button>
           </div>
         </div>
       </Modal>
-
-      {left ? <span className="sr-only">Đã rời lớp</span> : null}
-
-      <DemoStateSwitcher value={demo} onChange={setDemo} />
     </div>
   );
 }
+

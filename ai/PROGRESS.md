@@ -655,9 +655,7 @@ _(specs written 2026-08-19, `docs/api/modules/`. **Updated 2026-09-01**: `apps/a
 
 ## Active work — student identity slice
 
-- 🔶 (opencode · 2026-09-07) **A07 — Form tham gia lớp thật** (commit `abf6def`, branch
-      `codex/a07-student-join-class`, base `codex/a06-student-classes-list` @ `2f12310`
-      — A06 chưa có PR/merge, stack có báo theo tiền lệ A05).
+- ✅ (opencode · 2026-09-07) **A07 — Form tham gia lớp thật** (PR #48, commit `abf6def`).
       Join modal trên `/student/classes` nối `POST /student/classes/join`, payload đúng
       `{ enrollmentCode }` qua `apiRequest`. Shape check client mirror JoinClassDto
       (trim+uppercase+8 ký tự, message tiếng Việt của DTO); tồn tại mã là việc server —
@@ -670,9 +668,18 @@ _(specs written 2026-08-19, `docs/api/modules/`. **Updated 2026-09-01**: `apps/a
       empty-state.
       Verification: 101/101 `node --test apps/web/scripts/*.test.mjs` (17 test mới
       `student-join.test.mjs`), `check-docs` 8/8, `pnpm --filter web build` sạch.
-      ⚠️ **Live self-test BLOCKED** (Docker engine down → không Postgres → không API):
-      enrollment-tồn-tại-sau-reload và teacher-roster thấy fixture student CHƯA chạy —
-      không tính PASS; cần chạy lại khi có API.
+       ⚠️ **Live self-test was BLOCKED** (Docker engine unavailable → no Postgres/API):
+       enrollment-tồn-tại-sau-reload và teacher-roster thấy fixture student CHƯA chạy —
+       không tính PASS; cần chạy lại khi có API.
+
+- ✅ (antigravity · 2026-09-07) **A08 — Chi tiết lớp Student từ API thật**
+  Nối /student/classes/[classId] và /student/classes/[classId]/lessons/[lessonId] vào endpoint thật GET /student/classes/:id qua classes-service.ts và rules classes-rules.ts.
+  Loại bỏ hoàn toàn fixtures lms-data.ts và DemoStateSwitcher.
+  Xử lý đủ 7 trạng thái UI theo contract: loading (SkeletonPanel), invalid_id (UUID validation), not_found (404), forbidden (403), error (ErrorState kèm thử lại), empty (0 lessons), ready (chi tiết lớp và danh sách bài học thật).
+  Bảo mật & RBAC: không để lộ enrollmentCode (INV-CLASS-07), không lộ danh sách học viên cùng lớp, không tự chế số bài tập.
+  Hiển thị thông báo "Chưa khả dụng" cho chi tiết bài học / bài tập chưa có endpoint approved theo API_STUDENT.md.
+       Verification: 26/26 tests trong student-class-detail.test.mjs, 110/110 toàn bộ unit test suites (node --test apps/web/scripts/*.test.mjs),
+       check-docs 8/8 passed, production build web 42/42 pages passed sạch sẽ.
 
 - ✅ (antigravity · 2026-09-07) **A06 — Danh sách lớp Student từ API thật**
   Nối màn hình /student/classes vào endpoint thật GET /student/classes qua service

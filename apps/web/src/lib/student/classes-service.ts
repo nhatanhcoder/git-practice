@@ -1,9 +1,10 @@
-﻿import { ApiError, apiRequest } from "../api-client";
+import { ApiError, apiRequest } from "../api-client";
 import {
   joinFailureMessage,
   normalizeJoinCode,
   type EnrolledClass,
 } from "./classes-rules";
+import type { EnrolledClassDetail } from "./classes-rules";
 
 export * from "./classes-rules";
 
@@ -51,4 +52,13 @@ export async function joinClassByCode(rawCode: string): Promise<JoinResult> {
 export function describeJoinFailure(err: unknown): string {
   if (err instanceof ApiError) return joinFailureMessage(err.code);
   return "Không kết nối được máy chủ. Kiểm tra kết nối rồi thử lại.";
+}
+
+/**
+ * Fetches detail of an enrolled class, including its ordered lessons (F2.6).
+ * Endpoint: GET /student/classes/:id
+ */
+export async function fetchEnrolledClassDetail(classId: string): Promise<EnrolledClassDetail> {
+  const response = await apiRequest<EnrolledClassDetail>(`/student/classes/${encodeURIComponent(classId)}`);
+  return response.data;
 }
