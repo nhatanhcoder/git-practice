@@ -1056,7 +1056,7 @@ Verified via unit tests `apps/web/scripts/student-identity.test.mjs`, Playwright
 ### [WEB-016] The DEMO state switcher ships in the production student build
 
 **Severity**: Medium
-**Status**: Open
+**Status**: ✅ Resolved 2026-09-06 — commit `a4f440f` (`codex/a02-isolate-demo`, TASK A02).
 
 **Description**: `WEB-004` recorded the dev-only REVIEW-STATE widget, and `WEB-011`'s fix made it
 dev-only "because over live data it let a failed load be repainted as ready". That fix reached the
@@ -1070,6 +1070,14 @@ healthy — exactly the failure `WEB-011` was filed for.
 
 **Fix Plan**: apply the same `process.env.NODE_ENV !== 'production'` gate the admin and teacher
 screens now use. Do it before wiring any student screen to a real endpoint, not after.
+
+**Resolution**: `useDemoToolsEnabled()` now returns `false` unconditionally in production
+(query flag and `hanlu-demo` storage flag are both ignored there), so the switcher never mounts.
+Resolved as part of the wider A02 isolation: preferences split into `hanlu-preferences`
+(non-destructive read of the legacy `hanlu-student`), XP unlock and progress writes demo-only,
+all 20 backend-less student routes render `UnavailableState` in production, and the production
+dashboard shows only the live features. Verified on a production build with a real login:
+Playwright 9/9 (desktop + 375px), student screen check 36/36, console clean.
 
 **Numbering note**: `WEB-014` is taken by the unmerged branch `feat/s2-student-enrollment`, so
 these start at `WEB-015`. Per `DOC-014`, reconcile by hand on merge.

@@ -181,8 +181,11 @@ export const useStudentStore = create<StudentState>()(
         logActivity({ kind: "lesson", text: `Hoàn thành chặng ${nodeId}`, xp });
       },
 
-      /** Spends XP. Returns false (and changes nothing) when the learner cannot afford it. */
+      /** Spends XP. Returns false (and changes nothing) when the learner cannot afford it. Demo only. */
       unlockNode: (nodeId) => {
+        if (process.env.NODE_ENV === "production") {
+          return false;
+        }
         const s = get();
         if (s.student.xp < FORCE_UNLOCK_COST) return false;
         if (s.unlockedNodes.includes(nodeId)) return true;
@@ -290,7 +293,25 @@ export const useStudentStore = create<StudentState>()(
 
 /** Profile with the derived rank attached — the shape the UI actually renders. */
 export function useStudentProfile() {
+  const isProd = process.env.NODE_ENV === "production";
   const student = useStudentStore((s) => s.student);
+
+  if (isProd) {
+    return {
+      ...student,
+      xp: 0,
+      streakDays: 0,
+      bestStreak: 0,
+      currentLevel: 1,
+      rank: "Học viên",
+      rankHanzi: "学",
+      rankBlurb: "Tiến độ học tập sẽ được ghi nhận khi hoàn thành bài học",
+      nextRank: ranks[1] ?? null,
+      xpIntoRank: 0,
+      xpForNextRank: 1000,
+    };
+  }
+
   const { current, next, into, forNext } = rankFromXp(ranks, student.xp);
   return {
     ...student,

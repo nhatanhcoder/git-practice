@@ -226,8 +226,9 @@ const DEMO_OPTIONS: { value: DemoState; label: string; icon: ReactNode }[] = [
 const DEMO_KEY = "hanlu-demo";
 
 /**
- * WEB-004 fix: review scaffolding is opt-in, not shipped visible.
- * Open any student page with `?demo=1` to reveal the switcher (`?demo=0` hides
+ * WEB-004 & WEB-016 fix: review scaffolding is dev-only, NEVER in production.
+ * In production (`process.env.NODE_ENV === "production"`), returns false unconditionally.
+ * In development, open any student page with `?demo=1` to reveal the switcher (`?demo=0` hides
  * it again); the choice is remembered in localStorage.
  *
  * Read after mount, never during render — reading `window.location` while
@@ -237,6 +238,10 @@ export function useDemoToolsEnabled(): boolean {
   const [on, setOn] = useState(false);
 
   useEffect(() => {
+    if (process.env.NODE_ENV === "production") {
+      setOn(false);
+      return;
+    }
     try {
       const flag = new URLSearchParams(window.location.search).get("demo");
       if (flag !== null) window.localStorage.setItem(DEMO_KEY, flag === "0" ? "0" : "1");
@@ -246,6 +251,9 @@ export function useDemoToolsEnabled(): boolean {
     }
   }, []);
 
+  if (process.env.NODE_ENV === "production") {
+    return false;
+  }
   return on;
 }
 

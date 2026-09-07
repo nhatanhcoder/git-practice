@@ -17,6 +17,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, ArrowRight, Check, Flag, Loader2, Send, Timer } from "lucide-react";
 import { EmptyState, PageHead, Panel } from "@/components/student/primitives";
+import { UnavailableState } from "@/components/student/unavailable-state";
 import { Modal } from "@/components/student/overlay";
 import { useToast } from "@/components/student/toast";
 import { assignmentById, attemptById } from "@/lib/student/lms-data";
@@ -32,6 +33,14 @@ function formatClock(totalSeconds: number): string {
 }
 
 export default function AttemptPage() {
+  if (process.env.NODE_ENV === "production") {
+    return (
+      <UnavailableState
+        title="Làm bài tập"
+        description="Chức năng làm bài tập chưa được kết nối máy chủ dữ liệu trong phiên bản hiện tại (Sprint 4). Vui lòng quay lại sau."
+      />
+    );
+  }
   const params = useParams<{ attemptId: string }>();
   const attemptId = decodeURIComponent(params?.attemptId ?? "");
   const router = useRouter();

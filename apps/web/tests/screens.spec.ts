@@ -24,10 +24,13 @@ const screens = selectScreens();
  */
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/api/v1";
 
-/** Seeded accounts (apps/api/prisma/seed.ts). Both are `active`. */
+/** Seeded accounts (apps/api/prisma/seed.ts). All are `active`. */
 const ACCOUNT: Partial<Record<string, { email: string; password: string }>> = {
   admin: { email: "admin@hsk.local", password: "Password123!" },
   teacher: { email: "teacher@hsk.local", password: "Password123!" },
+  // A02: without a student account the whole student area is checked anonymous,
+  // every page bounces through /login and the restore 401 fails the run.
+  student: { email: "student@hsk.local", password: "Password123!" },
 };
 
 /**

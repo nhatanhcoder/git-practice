@@ -20,6 +20,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, ArrowRight, Check, Clock, Flag, Send } from "lucide-react";
 import { EmptyState, PageHead, Panel, SectionHeader } from "@/components/student/primitives";
+import { UnavailableState } from "@/components/student/unavailable-state";
 import { AudioButton } from "@/components/student/controls";
 import { Modal } from "@/components/student/overlay";
 import { useStudentStore } from "@/lib/student/store";
@@ -33,6 +34,15 @@ function mmss(total: number) {
 }
 
 export default function ExamRoomPage() {
+  if (process.env.NODE_ENV === "production") {
+    return (
+      <UnavailableState
+        title="Làm bài thi thử"
+        description="Chức năng làm bài thi thử chưa được kết nối máy chủ dữ liệu trong phiên bản hiện tại (Sprint 5). Vui lòng quay lại sau."
+      />
+    );
+  }
+
   const params = useParams<{ examId: string }>();
   const examId = decodeURIComponent(params?.examId ?? "");
   const router = useRouter();

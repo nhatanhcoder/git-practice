@@ -22,6 +22,7 @@ import {
   Panel,
   SectionHeader,
 } from "@/components/student/primitives";
+import { UnavailableState } from "@/components/student/unavailable-state";
 import { AudioButton } from "@/components/student/controls";
 import { useToast } from "@/components/student/toast";
 import { useStudentStore } from "@/lib/student/store";
@@ -53,6 +54,14 @@ function levelFromNodeId(nodeId: string): { curriculum: Curriculum; level: numbe
 }
 
 export default function LessonPage() {
+  if (process.env.NODE_ENV === "production") {
+    return (
+      <UnavailableState
+        title="Nội dung bài học"
+        description="Nội dung bài học theo chặng chưa được kết nối máy chủ dữ liệu trong phiên bản hiện tại. Vui lòng quay lại sau."
+      />
+    );
+  }
   const params = useParams<{ nodeId: string }>();
   const nodeId = decodeURIComponent(params?.nodeId ?? "");
   const router = useRouter();

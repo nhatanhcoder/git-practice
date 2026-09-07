@@ -25,6 +25,7 @@ import {
   Panel,
   SkeletonPanel,
 } from "@/components/student/primitives";
+import { UnavailableState } from "@/components/student/unavailable-state";
 import { DemoStateSwitcher, type DemoState } from "@/components/student/controls";
 import {
   assignmentById,
@@ -44,6 +45,14 @@ function formatMoment(iso: string): string {
 }
 
 export default function AttemptResultPage() {
+  if (process.env.NODE_ENV === "production") {
+    return (
+      <UnavailableState
+        title="Kết quả bài tập"
+        description="Kết quả bài tập chưa được kết nối máy chủ dữ liệu trong phiên bản hiện tại (Sprint 4). Vui lòng quay lại sau."
+      />
+    );
+  }
   const params = useParams<{ attemptId: string }>();
   const attemptId = decodeURIComponent(params?.attemptId ?? "");
   const [demo, setDemo] = useState<DemoState>("ready");

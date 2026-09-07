@@ -27,10 +27,19 @@ import { DemoStateSwitcher, LevelSelector, type DemoState } from "@/components/s
 import { useStudentStore } from "@/lib/student/store";
 import { writingChars } from "@/lib/student/content";
 import { WRITING_PASS_SCORE, withWritingProgress, writingRadicals } from "@/lib/student/student-rules";
+import { UnavailableState } from "@/components/student/unavailable-state";
 
 const LEVELS = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 
 export default function WritingPage() {
+  if (process.env.NODE_ENV === "production") {
+    return (
+      <UnavailableState
+        title="Luyện viết chữ Hán"
+        description="Luyện viết chữ Hán chưa được kết nối máy chủ dữ liệu trong phiên bản hiện tại. Vui lòng quay lại sau."
+      />
+    );
+  }
   const [demo, setDemo] = useState<DemoState>("ready");
   const [level, setLevel] = useState<number | "all">("all");
   const [radical, setRadical] = useState<string>("all");

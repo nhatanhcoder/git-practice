@@ -29,8 +29,17 @@ import { DemoStateSwitcher, type DemoState } from "@/components/student/controls
 import { useStudentStore } from "@/lib/student/store";
 import { SCENARIO_KIND_LABEL, scenarios } from "@/lib/student/content";
 import { withScenarioProgress } from "@/lib/student/student-rules";
+import { UnavailableState } from "@/components/student/unavailable-state";
 
 export default function WorkplacePage() {
+  if (process.env.NODE_ENV === "production") {
+    return (
+      <UnavailableState
+        title="Mô phỏng công sở"
+        description="Tình huống giao tiếp công sở chưa được kết nối máy chủ dữ liệu trong phiên bản hiện tại. Vui lòng quay lại sau."
+      />
+    );
+  }
   const [demo, setDemo] = useState<DemoState>("ready");
   const [kind, setKind] = useState<string>("all");
 

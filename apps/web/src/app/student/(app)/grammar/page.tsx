@@ -34,6 +34,7 @@ import { useToast } from "@/components/student/toast";
 import { useStudentStore } from "@/lib/student/store";
 import { grammarCategories, grammarPoints, type GrammarPoint } from "@/lib/student/grammar-data";
 import { shuffleBlocks } from "@/lib/student/student-rules";
+import { UnavailableState } from "@/components/student/unavailable-state";
 
 const LEVELS = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 
@@ -59,6 +60,14 @@ function optionsFor(point: GrammarPoint, all: GrammarPoint[]) {
 }
 
 export default function GrammarPage() {
+  if (process.env.NODE_ENV === "production") {
+    return (
+      <UnavailableState
+        title="Thư viện ngữ pháp"
+        description="Thư viện ngữ pháp chưa được kết nối máy chủ dữ liệu trong phiên bản hiện tại. Vui lòng quay lại sau."
+      />
+    );
+  }
   const [demo, setDemo] = useState<DemoState>("ready");
   const [level, setLevel] = useState<number | "all">("all");
   const [category, setCategory] = useState<string>("all");

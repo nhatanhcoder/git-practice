@@ -24,6 +24,7 @@ import {
   SectionHeader,
   SkeletonPanel,
 } from "@/components/student/primitives";
+import { UnavailableState } from "@/components/student/unavailable-state";
 import { DemoStateSwitcher, LevelSelector, type DemoState } from "@/components/student/controls";
 import { Modal } from "@/components/student/overlay";
 import { useStudentProfile, useStudentStore } from "@/lib/student/store";
@@ -34,6 +35,14 @@ import type { Exam } from "@/lib/student/types";
 const LEVELS = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 
 export default function ExamsPage() {
+  if (process.env.NODE_ENV === "production") {
+    return (
+      <UnavailableState
+        title="Thi thử HSK"
+        description="Chức năng phòng thi thử HSK chưa được kết nối máy chủ dữ liệu trong phiên bản hiện tại (Sprint 5). Vui lòng quay lại sau."
+      />
+    );
+  }
   const [demo, setDemo] = useState<DemoState>("ready");
   const [level, setLevel] = useState<number | "all">("all");
   const [kind, setKind] = useState<"all" | "full" | "drill">("all");

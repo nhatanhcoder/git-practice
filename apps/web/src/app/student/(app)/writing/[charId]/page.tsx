@@ -25,6 +25,7 @@ import {
   Panel,
   SectionHeader,
 } from "@/components/student/primitives";
+import { UnavailableState } from "@/components/student/unavailable-state";
 import { AudioButton } from "@/components/student/controls";
 import { useToast } from "@/components/student/toast";
 import { useStudentStore } from "@/lib/student/store";
@@ -71,6 +72,14 @@ function gradeInk(inkPixels: number, totalPixels: number, strokeCount: number): 
 }
 
 export default function WritingDetailPage() {
+  if (process.env.NODE_ENV === "production") {
+    return (
+      <UnavailableState
+        title="Luyện viết chữ Hán"
+        description="Chức năng luyện viết chữ Hán chưa được kết nối máy chủ dữ liệu trong phiên bản hiện tại. Vui lòng quay lại sau."
+      />
+    );
+  }
   const params = useParams<{ charId: string }>();
   const charId = decodeURIComponent(params?.charId ?? "");
   const char = writingChars.find((c) => c.id === charId) ?? null;

@@ -28,6 +28,7 @@ import { useStudentProfile, useStudentStore } from "@/lib/student/store";
 import { skills, streakHistory, streakMilestones, xpMonths } from "@/lib/student/content";
 import { progressSummary, rankProgress } from "@/lib/student/student-rules";
 import { levelProgress } from "@/lib/student/mock-user";
+import { UnavailableState } from "@/components/student/unavailable-state";
 
 /** Four bands for the heat grid, in minutes. */
 function heatLevel(minutes: number) {
@@ -39,6 +40,14 @@ function heatLevel(minutes: number) {
 }
 
 export default function ProgressPage() {
+  if (process.env.NODE_ENV === "production") {
+    return (
+      <UnavailableState
+        title="Tiến độ học tập"
+        description="Thống kê tiến độ chưa được kết nối máy chủ dữ liệu trong phiên bản hiện tại. Vui lòng quay lại sau."
+      />
+    );
+  }
   const [demo, setDemo] = useState<DemoState>("ready");
   const profile = useStudentProfile();
 
