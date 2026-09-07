@@ -335,6 +335,24 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
 
 ## Off-sprint / spike
 
+- ✅ (claude · 2026-09-06) **A04 — Cứng hoá tải/chấm SRS.** Backend không đổi; đây là phía client
+  từ chối hiển thị thứ server chưa xác nhận. **Bốn lỗi thật, mỗi lỗi đều tái hiện được trước khi
+  sửa**: (1) response về sai thứ tự repaint danh sách — ép trễ `hskLevel=9` 2.5s, thứ tự thật là
+  `start:9, start:1, done:1, done:9` và màn hiện 斟酌 (HSK 9) trong khi bộ chọn là HSK 1; giờ mỗi
+  request mang số thứ tự và response cũ bị bỏ. (2) double-click gửi 2 POST — `submitting` không
+  đóng được khe đó vì state React bất đồng bộ; ref lock thì được, ba click cùng tick giờ ra đúng
+  1 POST. (3) chấm lỗi làm **mất luôn thẻ** vì rơi vào màn lỗi toàn trang; giờ thẻ giữ nguyên,
+  4 nút chấm còn sống, báo lỗi tại chỗ và không nói đã lưu. (4) hết phiên lại báo "nguồn từ vựng
+  production chưa được nhập" — giờ tách thành 3 trạng thái riêng.
+  Thống kê đi qua `formatStat` nên giá trị thiếu là "—" chứ không phải 0 (`streak` API cố tình
+  trả null tới khi chốt quy tắc lịch).
+  **Không tự replay** review lỗi: endpoint chưa có idempotency key trong contract đã duyệt, replay
+  có thể đẩy SM-2 hai lần cho một câu trả lời — ghi nhận là giới hạn backend, không lách.
+  Logic nằm ở `lib/student/srs-session.ts` thuần + **20 regression test**.
+  Verify: web tests **60/60** · check-docs 8/8 · build sạch · 4 kịch bản runtime chạy thật trên
+  production build; fixture đã xoá sạch.
+
+
 - ✅ (claude · 2026-09-06) **A03 — SRS screen restyled in the Hán Lộ design.** `/student/mistakes`
   was the last learner screen written in the old visual language; it kept `ui.tsx` because it is
   the one screen backed by a real endpoint. Presentation now uses `PageHead`, `Tabs`, `Metric`,

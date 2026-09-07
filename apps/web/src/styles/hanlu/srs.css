@@ -201,3 +201,17 @@
     transform: none;
   }
 }
+
+/* A review that failed to save. Sits with the card, not in place of it: the answer the person
+   just gave is still on screen and still ratable, because replacing the card with a page-level
+   error throws that answer away. */
+.srs-reviewError {
+  margin: 0;
+  padding: var(--sp-3);
+  border-radius: 10px;
+  border: 1px solid color-mix(in oklab, var(--danger) 45%, transparent);
+  background: var(--danger-soft);
+  color: var(--text-1);
+  font-size: var(--step--1);
+  text-align: left;
+}
