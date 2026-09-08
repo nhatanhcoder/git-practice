@@ -655,6 +655,9 @@ _(specs written 2026-08-19, `docs/api/modules/`. **Updated 2026-09-01**: `apps/a
 
 ## Active work — student identity slice
 
+- 🔶 (opencode · 2026-09-08) **A10 — Kiểm kê nguồn từ vựng** (branch `docs/a10-vocab-audit`).
+      READ-ONLY audit + DOCS sau duyệt; không import, không ghi DB, không đổi schema.
+
 - 🔶 (opencode · 2026-09-07) **A07 — Form tham gia lớp thật** (commit `abf6def`, branch
       `codex/a07-student-join-class`, base `codex/a06-student-classes-list` @ `2f12310`
       — A06 chưa có PR/merge, stack có báo theo tiền lệ A05).
