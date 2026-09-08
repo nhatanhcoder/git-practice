@@ -335,6 +335,14 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
 
 ## Off-sprint / spike
 
+- 🔶 (claude · 2026-09-08) **Docs batch — validate configuration centrally; align API prefix and
+  cookie path · shared transport types · stale status + conflicting Auth docs · global throttling
+  contracts + multi-instance storage.** Four external review findings, all verified against code
+  before editing. This batch lands the **docs** corrections; the auth-code half (central env
+  validation, `COOKIE_PATH` derived from `API_PREFIX`) is recorded ready-to-execute in the session
+  file but **held for explicit owner approval** (refresh-token path). Branch
+  `docs/config-auth-findings`.
+
 - ✅ (claude · 2026-09-06) **A05 — SRS về đúng route chính.** Màn SRS nối API thật đang nằm ở
   `/student/mistakes`, còn `/student/flashcards` phục vụ một bản Leitner mock — nên mục sidebar
   tên "Flashcard" mở đúng bản giả, và màn duy nhất gọi endpoint thật thì không ai tìm ra. A00 đã
