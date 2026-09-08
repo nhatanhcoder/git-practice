@@ -655,8 +655,19 @@ _(specs written 2026-08-19, `docs/api/modules/`. **Updated 2026-09-01**: `apps/a
 
 ## Active work — student identity slice
 
-- 🔶 (opencode · 2026-09-08) **A10 — Kiểm kê nguồn từ vựng** (branch `docs/a10-vocab-audit`).
-      READ-ONLY audit + DOCS sau duyệt; không import, không ghi DB, không đổi schema.
+- ✅ (opencode · 2026-09-08) **A10 — Kiểm kê nguồn từ vựng** (branch `docs/a10-vocab-audit`).
+      READ-ONLY audit xong, docs đã duyệt. **Kết quả chính: corpus ngoài KHÔNG có file
+      vocabulary riêng** (11 file, không file nào là danh sách từ HSK). `writing.json` là bộ
+      dữ liệu CHỮ (587 entries: 500/27/17/12/10/6/5/5/5 theo level 1–9); ứng viên từ vựng tốt
+      nhất là 1.228 `words[]` nhúng (không có level/id riêng). `levels.json` khai báo 10.110
+      `newWords` chỉ là con số trang trí — không có word list tương ứng. 3 lỗi dữ liệu:
+      `喜欢` (2 chữ) lẫn trong list chữ, `strokes.json` phủ 59/586 chữ, level-1=500 chữ trùng
+      số TỪ HSK 3.0 (file dựng từ word list). Mapping vào `Flashcard` đủ 4 field bắt buộc
+      (level→hskLevel, char/word→hanzi, pinyin, vi→meaning) nhưng map thẳng sẽ mất 8 field
+      chữ-specific. **Import BLOCKED**: provenance/license không rõ + owner chưa quyết
+      words-vs-characters + nguồn chưa repo-owned. Audit + unlock conditions +
+      review-state protection: `docs/content/VOCAB_SOURCE_AUDIT.md`. Không copy data, không
+      ghi DB, không đổi schema. A11 chỉ bắt đầu khi 3 điều kiện mở khóa được duyệt.
 
 - 🔶 (opencode · 2026-09-07) **A07 — Form tham gia lớp thật** (commit `abf6def`, branch
       `codex/a07-student-join-class`, base `codex/a06-student-classes-list` @ `2f12310`

@@ -533,6 +533,20 @@ has exactly two apps, `apps/api` and `apps/web`.
 then bring it into a location available to CI/deploy. Do not make production depend on the
 developer-machine absolute path.
 
+**A10 audit update (2026-09-08, READ-ONLY — `docs/content/VOCAB_SOURCE_AUDIT.md`)**:
+- The external corpus has **no standalone vocabulary file at all** (11 files, none named
+  vocabulary/flashcards). The `Flashcard` feature has no ready-made seed source.
+- `writing.json` is a **character** dataset (587 entries, 586 single-char), not vocabulary:
+  per-level 500/27/17/12/10/6/5/5/5. Best vocabulary candidate is the 1,228 embedded
+  `words[]` entries, which lack per-word level and id.
+- `levels.json` `newWords` (10,110 total) is decorative: no word list corresponds to it.
+- Three data defects: `喜欢` (2 chars) misfiled in the character list; `strokes.json` covers
+  only 59/586 characters; level-1 = 500 characters matches the HSK 3.0 **word** count — the
+  file was likely built from a word list, not a character list.
+- Import stays **BLOCKED** on: corpus provenance/license unknown + owner's words-vs-characters
+  decision + source not repository-owned. Importer safety rules for review state are recorded
+  in the audit §5. No data copied, no DB written, no schema changed.
+
 ---
 
 ### [DOC-008] `DECISIONS.md` is referenced but does not exist
