@@ -313,6 +313,10 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
 
 ## Tooling / guardrails
 
+- 🔶 (codex · 2026-09-08) **CI quality gates** — claimed: lint, type checks, web/API builds,
+  frontend regression tests and API tests against disposable CI PostgreSQL/MongoDB services.
+  No application behavior or schema changes; hosted CI verification pending.
+
 - ✅ `.gitattributes` + `scripts/check-docs.mjs` + `.github/workflows/docs-check.yml`
       (2026-08-14) — 8 doc invariants enforced in CI, each verified to fire against a
       deliberately broken fixture and to clear afterwards. `pnpm check:docs` runs it locally.
