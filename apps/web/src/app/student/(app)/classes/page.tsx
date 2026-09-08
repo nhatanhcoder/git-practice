@@ -1,20 +1,40 @@
-"use client";
+﻿"use client";
 
 /**
- * /student/classes — the classes the learner has joined, and the join-by-code dialog.
+ * /student/classes — the classes the learner has joined.
  *
  * Contract: docs/front-end-design-docs/pages/student-pages/student-classes-list.md
- * Features: S-CLS-1 (join by 8-character code), S-CLS-2 (list).
+ * Features: S-CLS-2 (list), S-CLS-1 (join by code in A07).
  *
- * MOCK(S-CLS-1, S-CLS-2): fixtures from `lib/student/lms-data.ts`. `API_STUDENT.md`
- * defines `GET /api/v1/student/classes` and `POST /api/v1/student/classes/join`, but
- * `apps/api` implements neither yet, so joining mutates local state and is lost on
- * reload. This does not satisfy Sprint 2 F2.3.
+ * Task A06:
+ * - Real API integration via `GET /api/v1/student/classes` (fetchMyEnrolledClasses).
+ * - Removed mock fixtures and demo state controls.
+ * - 7 states: loading (SkeletonPanel), ready (real cards), empty (no classes),
+ *   error (ErrorState with retry).
+ * - Renders only real server fields: name, hskLevel, teacher nickname/email,
+ *   studentCount, lessonCount, joinedAt. No invented assignment counts or attendance.
+ * - Link uses real class ID.
+ *
+ * Task A07:
+ * - Join modal wired to POST /student/classes/join. Client-side shape check mirrors
+ *   JoinClassDto (trim + uppercase + 8 chars A-Z0-9); everything else is the server's
+ *   registry code, never a guessed HTTP status.
+ * - Success only after the server confirms: toast, close, refetch. Failure keeps the
+ *   input and shows the mapped message inline. Rejoin is a server concern — success
+ *   is success, whether it was a first join or a reactivation.
  */
 
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { CalendarDays, GraduationCap, Plus, Ticket, User } from "lucide-react";
+import {
+  BookOpen,
+  CalendarDays,
+  Plus,
+  Ticket,
+  TriangleAlert,
+  User,
+  Users,
+} from "lucide-react";
 import {
   Chip,
   EmptyState,
@@ -23,57 +43,88 @@ import {
   Panel,
   SkeletonPanel,
 } from "@/components/student/primitives";
-import { DemoStateSwitcher, type DemoState } from "@/components/student/controls";
 import { Modal } from "@/components/student/overlay";
 import { useToast } from "@/components/student/toast";
-import { assignmentsForClass, studentClasses, type StudentClass } from "@/lib/student/lms-data";
-
-/** The enrollment code is 8 characters — ENTITY_CLASS, and S-CLS-1. */
-const CODE_LENGTH = 8;
-
-function openCount(classId: string): number {
-  return assignmentsForClass(classId).filter(
-    (a) => a.status === "not_started" || a.status === "in_progress",
-  ).length;
-}
+import {
+  describeJoinFailure,
+  fetchMyEnrolledClasses,
+  joinClassByCode,
+  JOIN_CODE_MESSAGES,
+  resolveTeacherName,
+  validateJoinCode,
+  type EnrolledClass,
+} from "@/lib/student/classes-service";
 
 export default function StudentClassesPage() {
-  const [demo, setDemo] = useState<DemoState>("ready");
-  const [joined, setJoined] = useState<StudentClass[]>(studentClasses);
+  const [loading, setLoading] = useState(true);
+  const [classes, setClasses] = useState<EnrolledClass[]>([]);
+  const [error, setError] = useState<string | null>(null);
   const [joinOpen, setJoinOpen] = useState(false);
-  const [code, setCode] = useState("");
-  const [codeError, setCodeError] = useState<string | null>(null);
-  const pushToast = useToast();
 
-  const list = demo === "empty" ? [] : joined;
-  const totalOpen = useMemo(
-    () => list.reduce((sum, c) => sum + openCount(c.id), 0),
-    [list],
-  );
+  // A07 join-form state. `joinLock` is a ref for the same reason A04's submit lock is:
+  // React state updates asynchronously, so two clicks (or Enter + click) in one tick
+  // both read joinSubmitting === false and both fire a POST.
+  const [joinCode, setJoinCode] = useState("");
+  const [joinError, setJoinError] = useState<string | null>(null);
+  const [joinSubmitting, setJoinSubmitting] = useState(false);
+  const joinLock = useRef(false);
+  const toast = useToast();
 
-  function submitJoin() {
-    const trimmed = code.trim().toUpperCase();
-    if (trimmed.length !== CODE_LENGTH) {
-      setCodeError(`Mã lớp gồm đúng ${CODE_LENGTH} ký tự.`);
-      return;
+  const loadClasses = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await fetchMyEnrolledClasses();
+      setClasses(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Không thể tải danh sách lớp");
+    } finally {
+      setLoading(false);
     }
-    const match = studentClasses.find((c) => c.enrollmentCode === trimmed);
-    if (!match) {
-      // The real branch has no registered error code — DOC-007 lists CLASS_CODE_INVALID
-      // among the codes that do not exist. When the API lands, show its envelope
-      // `message` here instead of this string.
-      setCodeError("Không tìm thấy lớp với mã này.");
-      return;
-    }
-    if (joined.some((c) => c.id === match.id)) {
-      setCodeError("Bạn đã ở trong lớp này rồi.");
-      return;
-    }
-    setJoined((prev) => [match, ...prev]);
+  }, []);
+
+  useEffect(() => {
+    loadClasses();
+  }, [loadClasses]);
+
+  function closeJoin() {
     setJoinOpen(false);
-    setCode("");
-    setCodeError(null);
-    pushToast(`Đã tham gia ${match.name}`, "success");
+    // The typed code stays for a reopen-and-retry; only the stale error clears.
+    setJoinError(null);
+  }
+
+  async function submitJoin(event: React.FormEvent) {
+    event.preventDefault();
+    if (joinLock.current) return;
+
+    // Wrong shape is answered locally with the DTO's own messages — it never
+    // becomes a POST. CLASS_ENROLL_CODE_INVALID ("this code names no class")
+    // is a different, server-only fact and must not be faked here.
+    const issue = validateJoinCode(joinCode);
+    if (issue) {
+      setJoinError(JOIN_CODE_MESSAGES[issue]);
+      return;
+    }
+
+    joinLock.current = true;
+    setJoinSubmitting(true);
+    setJoinError(null);
+    try {
+      // Only past this line has the server accepted the enrollment. Nothing
+      // below is an optimistic guess.
+      const result = await joinClassByCode(joinCode);
+      toast(`Đã tham gia lớp ${result.name}.`, "success");
+      setJoinOpen(false);
+      setJoinCode("");
+      await loadClasses();
+    } catch (err) {
+      // The input is kept exactly as typed; the message comes from the
+      // registry code (or the network). No fake class is prepended locally.
+      setJoinError(describeJoinFailure(err));
+    } finally {
+      joinLock.current = false;
+      setJoinSubmitting(false);
+    }
   }
 
   return (
@@ -82,35 +133,47 @@ export default function StudentClassesPage() {
         eyebrow="Học cùng giáo viên"
         title="Lớp của tôi"
         sub={
-          list.length
-            ? `${list.length} lớp đang học · ${totalOpen} bài tập chưa hoàn thành`
-            : "Nhập mã lớp giáo viên cung cấp để bắt đầu."
+          loading
+            ? "Đang tải danh sách lớp học..."
+            : error
+              ? "Không tải được danh sách lớp."
+              : classes.length > 0
+                ? `${classes.length} lớp đang học`
+                : "Nhập mã lớp giáo viên cung cấp để bắt đầu."
         }
         action={
-          <button type="button" className="btn btn--primary" onClick={() => setJoinOpen(true)}>
+          <button
+            type="button"
+            className="btn btn--primary"
+            onClick={() => setJoinOpen(true)}
+          >
             <Plus size={16} /> Tham gia lớp
           </button>
         }
       />
 
-      {demo === "loading" ? <SkeletonPanel rows={3} height={104} /> : null}
+      {loading ? <SkeletonPanel rows={3} height={104} /> : null}
 
-      {demo === "error" ? (
+      {!loading && error ? (
         <Panel className="panel--pad">
           <ErrorState
-            title="Không tải được danh sách lớp"
-            onRetry={() => setDemo("ready")}
+            title="Không thể tải danh sách lớp"
+            onRetry={loadClasses}
           />
         </Panel>
       ) : null}
 
-      {demo === "empty" || (demo === "ready" && list.length === 0) ? (
+      {!loading && !error && classes.length === 0 ? (
         <Panel className="panel--pad">
           <EmptyState
             title="Bạn chưa tham gia lớp nào"
-            text="Giáo viên sẽ cho bạn một mã gồm 8 ký tự. Nhập mã đó để vào lớp và thấy bài học, bài tập của lớp."
+            text="Giáo viên sẽ cho bạn một mã gồm 8 ký tự. Nhập mã đó để vào lớp và thấy bài học của lớp."
             action={
-              <button type="button" className="btn btn--primary" onClick={() => setJoinOpen(true)}>
+              <button
+                type="button"
+                className="btn btn--primary"
+                onClick={() => setJoinOpen(true)}
+              >
                 <Ticket size={16} /> Nhập mã lớp
               </button>
             }
@@ -118,90 +181,91 @@ export default function StudentClassesPage() {
         </Panel>
       ) : null}
 
-      {demo === "ready" && list.length > 0 ? (
+      {!loading && !error && classes.length > 0 ? (
         <div className="lms-cards">
-          {list.map((c) => {
-            const open = openCount(c.id);
-            return (
-              <Link key={c.id} href={`/student/classes/${c.id}`} className="lms-card">
-                <div className="row gap-2 wrap">
-                  <Chip tone="info">HSK {c.hskLevel}</Chip>
-                  {open > 0 ? <Chip tone="warn">{open} bài cần làm</Chip> : null}
-                </div>
-                <h2 className="lms-card__title">{c.name}</h2>
-                <p className="lms-card__meta">
-                  <User size={14} aria-hidden="true" /> {c.teacherName}
-                </p>
-                <p className="lms-card__meta">
-                  <CalendarDays size={14} aria-hidden="true" /> {c.schedule}
-                </p>
-                <p className="lms-card__code">
-                  <GraduationCap size={14} aria-hidden="true" /> Mã lớp {c.enrollmentCode}
-                </p>
-              </Link>
-            );
-          })}
+          {classes.map((c) => (
+            <Link key={c.id} href={`/student/classes/${c.id}`} className="lms-card">
+              <div className="row gap-2 wrap">
+                <Chip tone="info">HSK {c.hskLevel}</Chip>
+                <Chip tone={c.status === "active" ? "success" : "neutral"}>
+                  {c.status === "active" ? "Đang học" : c.status}
+                </Chip>
+              </div>
+              <h2 className="lms-card__title">{c.name}</h2>
+              <p className="lms-card__meta">
+                <User size={14} aria-hidden="true" /> {resolveTeacherName(c.teacher)}
+              </p>
+              <div className="row gap-3 wrap lms-card__meta">
+                <span className="row gap-1 items-center">
+                  <BookOpen size={14} aria-hidden="true" /> {c.lessonCount} bài học
+                </span>
+                <span className="row gap-1 items-center">
+                  <Users size={14} aria-hidden="true" /> {c.studentCount} học viên
+                </span>
+              </div>
+              <p className="lms-card__code">
+                <CalendarDays size={14} aria-hidden="true" /> Tham gia{" "}
+                {new Date(c.joinedAt).toLocaleDateString("vi-VN")}
+              </p>
+            </Link>
+          ))}
         </div>
       ) : null}
 
       <Modal
         open={joinOpen}
-        onClose={() => {
-          setJoinOpen(false);
-          setCodeError(null);
-        }}
-        title="Tham gia lớp"
+        onClose={closeJoin}
+        title="Tham gia lớp học"
+        subtitle="Nhập mã gồm 8 ký tự (chữ in hoa và chữ số) do giáo viên cung cấp."
       >
-        <div className="stack gap-4">
-          <label className="stack gap-2">
-            <span className="section-sub">Mã lớp ({CODE_LENGTH} ký tự)</span>
+        <form className="stack gap-4" onSubmit={submitJoin} noValidate>
+          <label className="field">
+            <span className="sr-only">Mã lớp</span>
             <input
-              className="field"
-              value={code}
-              maxLength={CODE_LENGTH}
-              autoFocus
+              value={joinCode}
+              onChange={(e) => setJoinCode(e.target.value)}
               placeholder="VD: H3TT2645"
-              // Uppercased on the way in so the learner cannot fail on case alone.
-              onChange={(e) => {
-                setCode(e.target.value.toUpperCase());
-                setCodeError(null);
-              }}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") submitJoin();
-              }}
-              aria-invalid={codeError ? true : undefined}
-              aria-describedby={codeError ? "join-code-error" : undefined}
+              maxLength={12}
+              autoCapitalize="characters"
+              autoCorrect="off"
+              spellCheck={false}
+              disabled={joinSubmitting}
+              aria-label="Mã lớp (8 ký tự)"
+              aria-invalid={joinError ? true : undefined}
+              style={{ textTransform: "uppercase", letterSpacing: "0.08em" }}
             />
           </label>
-          {codeError ? (
-            <p id="join-code-error" className="notice" role="alert">
-              {codeError}
-            </p>
+
+          {joinError ? (
+            <div
+              className="notice"
+              role="alert"
+              style={{ background: "var(--danger-soft)", color: "var(--text-1)" }}
+            >
+              <TriangleAlert size={16} style={{ color: "var(--danger)", flex: "none" }} />
+              <span>{joinError}</span>
+            </div>
           ) : null}
+
           <div className="row gap-3 wrap">
             <button
               type="button"
               className="btn btn--outline"
-              onClick={() => {
-                setJoinOpen(false);
-                setCodeError(null);
-              }}
+              onClick={closeJoin}
+              disabled={joinSubmitting}
             >
-              Huỷ
+              Đóng
             </button>
             <button
-              type="button"
+              type="submit"
               className="btn btn--primary grow"
-              onClick={submitJoin}
-              disabled={code.trim().length === 0}
+              disabled={joinSubmitting}
             >
-              Tham gia
+              {joinSubmitting ? "Đang tham gia..." : "Tham gia"}
             </button>
           </div>
-        </div>
+        </form>
       </Modal>
-
-      <DemoStateSwitcher value={demo} onChange={setDemo} />
     </div>
   );
 }

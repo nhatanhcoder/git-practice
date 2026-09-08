@@ -655,6 +655,36 @@ _(specs written 2026-08-19, `docs/api/modules/`. **Updated 2026-09-01**: `apps/a
 
 ## Active work — student identity slice
 
+- 🔶 (opencode · 2026-09-07) **A07 — Form tham gia lớp thật** (commit `abf6def`, branch
+      `codex/a07-student-join-class`, base `codex/a06-student-classes-list` @ `2f12310`
+      — A06 chưa có PR/merge, stack có báo theo tiền lệ A05).
+      Join modal trên `/student/classes` nối `POST /student/classes/join`, payload đúng
+      `{ enrollmentCode }` qua `apiRequest`. Shape check client mirror JoinClassDto
+      (trim+uppercase+8 ký tự, message tiếng Việt của DTO); tồn tại mã là việc server —
+      lỗi map theo **registry code** (`CLASS_ENROLL_CODE_INVALID`/`CLASS_ALREADY_ARCHIVED`/
+      `CLASS_ALREADY_ENROLLED`/`VALIDATION_ERROR`), không đoán HTTP. Success chỉ sau khi
+      server xác nhận (toast + đóng + refetch); fail giữ input + lỗi inline; double-submit
+      chặn bằng ref-lock (pattern A04). Rejoin = việc server (§8.1) — FE coi là success
+      thường. Kèm fix 2 finding của TEST A06 trên đúng trang: bỏ CSS literal token
+      không tồn tại (`--surface-muted`/`--fg-muted`) và sub-line error không còn copy
+      empty-state.
+      Verification: 101/101 `node --test apps/web/scripts/*.test.mjs` (17 test mới
+      `student-join.test.mjs`), `check-docs` 8/8, `pnpm --filter web build` sạch.
+      ⚠️ **Live self-test BLOCKED** (Docker engine down → không Postgres → không API):
+      enrollment-tồn-tại-sau-reload và teacher-roster thấy fixture student CHƯA chạy —
+      không tính PASS; cần chạy lại khi có API.
+
+- ✅ (antigravity · 2026-09-07) **A06 — Danh sách lớp Student từ API thật**
+  Nối màn hình /student/classes vào endpoint thật GET /student/classes qua service
+  classes-service.ts và rules classes-rules.ts.
+  Loại bỏ hoàn toàn mock fixture studentClasses và DemoStateSwitcher.
+  Xử lý đủ 7 trạng thái: loading (SkeletonPanel), empty (chưa tham gia lớp nào),
+  error (ErrorState kèm nút thử lại), ready (thẻ lớp học với ID và tên giáo viên thật).
+  Bảo mật dữ liệu: không để lộ enrollmentCode, không tự chế số bài tập chưa làm (openCount).
+  Nút/Modal tham gia lớp (Join) được đánh dấu đang kết nối ở TASK A07, không giữ fake-success cục bộ.
+  Verification: 84/84 tests `node` --test apps/web/scripts/*.test.mjs (14 test mới thuộc student-classes.test.mjs),
+  check-docs 8/8, production web build 42/42 static/dynamic pages sạch.
+
 - ✅ (codex · 2026-09-06) **A01 — Student shell/dashboard shows the correct account**
   (commit `cea59de`, branch `codex/a01-student-shell-identity`, base `cada414`).
   Resolved `WEB-015`: replaces hardcoded mock fixture ("Mai Anh") with authenticated
