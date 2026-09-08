@@ -6,6 +6,7 @@ import {
   isValidUuid,
   resolveClassDetailOutcome,
   resolveLessonDetailOutcome,
+  describeLeaveFailure,
 } from "../src/lib/student/classes-rules.ts";
 
 const read = (p) => readFileSync(new URL(p, import.meta.url), "utf8");
@@ -225,5 +226,39 @@ describe("A08 · Static Security & Integration Invariants", () => {
       /S-LESSON-3/,
       "must render clear unavailable notice referencing the upcoming assignment feature",
     );
+  });
+});
+
+describe("A09 · Leave and rejoin invariants", () => {
+  const detailPage = read("../src/app/student/(app)/classes/[classId]/page.tsx");
+  const serviceFile = read("../src/lib/student/classes-service.ts");
+  const classesPage = read("../src/app/student/(app)/classes/page.tsx");
+
+  it("maps documented leave failures without inventing a cause", () => {
+    assert.match(describeLeaveFailure("CLASS_NOT_ENROLLED"), /không còn ở trong lớp/i);
+    assert.match(describeLeaveFailure("CLASS_ACCESS_DENIED"), /quyền truy cập/i);
+    assert.match(describeLeaveFailure("CLASS_NOT_FOUND"), /không tìm thấy lớp/i);
+    assert.match(describeLeaveFailure("VALIDATION_ERROR"), /không hợp lệ/i);
+    assert.match(describeLeaveFailure("UNKNOWN_CODE"), /Không thể rời lớp/i);
+  });
+
+  it("uses the documented leave endpoint and never deletes enrollment locally", () => {
+    assert.match(serviceFile, /DELETE/);
+    assert.match(serviceFile, /\/student\/classes\/\$\{encodeURIComponent\(classId\)\}\/leave/);
+    assert.doesNotMatch(detailPage, /setDetail\(null\)/);
+    assert.doesNotMatch(detailPage, /filter\([^\n]*classId/);
+  });
+
+  it("keeps cancel separate from the DELETE confirmation path", () => {
+    assert.match(detailPage, /onClose=\{\(\) => \{/);
+    assert.match(detailPage, /onClick=\{confirmLeave\}/);
+    assert.match(detailPage, /await leaveEnrolledClass\(classId\)/);
+    assert.match(detailPage, /router\.push\("\/student\/classes"\)/);
+    assert.match(detailPage, /leaveSubmitting/);
+  });
+
+  it("does not leave the old unavailable A07 placeholder on the classes list", () => {
+    assert.doesNotMatch(classesPage, /TASK A07/);
+    assert.doesNotMatch(classesPage, /Đang kết nối A07/);
   });
 });

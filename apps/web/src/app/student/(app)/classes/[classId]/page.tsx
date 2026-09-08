@@ -35,6 +35,7 @@ import {
   formatClassJoinedDate,
   isValidUuid,
   leaveEnrolledClass,
+  describeLeaveError,
   resolveClassDetailOutcome,
   resolveTeacherName,
   type EnrolledClassDetail,
@@ -90,7 +91,7 @@ export default function ClassDetailPage() {
       setLeaveOpen(false);
       router.push("/student/classes");
     } catch (err) {
-      setLeaveError(err instanceof Error ? err.message : "Không thể rời lớp. Vui lòng thử lại.");
+      setLeaveError(describeLeaveError(err));
     } finally {
       leaveLock.current = false;
       setLeaveSubmitting(false);

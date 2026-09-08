@@ -1,5 +1,6 @@
 import { ApiError, apiRequest } from "../api-client";
 import {
+  describeLeaveFailure,
   joinFailureMessage,
   normalizeJoinCode,
   type EnrolledClass,
@@ -80,4 +81,9 @@ export async function leaveEnrolledClass(classId: string): Promise<LeaveClassRes
     { method: "DELETE" },
   );
   return response.data;
+}
+
+export function describeLeaveError(err: unknown): string {
+  if (err instanceof ApiError) return describeLeaveFailure(err.code);
+  return "Không thể kết nối máy chủ. Kiểm tra kết nối rồi thử lại.";
 }

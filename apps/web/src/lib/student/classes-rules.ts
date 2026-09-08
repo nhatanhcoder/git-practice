@@ -97,6 +97,17 @@ export function joinFailureMessage(code: string): string {
   return JOIN_FAILURE_MESSAGES[code] ?? "Không tham gia được lớp lúc này. Thử lại sau ít phút.";
 }
 
+const LEAVE_FAILURE_MESSAGES: Record<string, string> = {
+  CLASS_NOT_ENROLLED: "Bạn không còn ở trong lớp này.",
+  CLASS_ACCESS_DENIED: "Bạn không có quyền truy cập lớp này.",
+  CLASS_NOT_FOUND: "Không tìm thấy lớp học.",
+  VALIDATION_ERROR: "Mã lớp không hợp lệ.",
+};
+
+export function describeLeaveFailure(code: string): string {
+  return LEAVE_FAILURE_MESSAGES[code] ?? "Không thể rời lớp lúc này. Thử lại sau ít phút.";
+}
+
 export interface EnrolledLesson {
   id: string;
   title: string;

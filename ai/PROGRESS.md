@@ -655,6 +655,20 @@ _(specs written 2026-08-19, `docs/api/modules/`. **Updated 2026-09-01**: `apps/a
 
 ## Active work — student identity slice
 
+- ✅ (opencode · 2026-09-08) **A09 — Rời lớp Student theo server thật**
+  Reused the existing A08 `DELETE /student/classes/:id/leave` wiring and completed the A09
+  acceptance surface: cancel sends zero DELETE requests, confirm is ref-locked and disabled while
+  pending, server failures stay inline without removing the class or redirecting, and success
+  redirects only after the server confirms `status=dropped`. Leave errors map the documented
+  registry codes (`CLASS_NOT_ENROLLED`, `CLASS_ACCESS_DENIED`, `CLASS_NOT_FOUND`,
+  `VALIDATION_ERROR`) without guessing causes. The class list no longer contains the stale A07
+  unavailable placeholder. Rejoin remains server-owned and uses the accepted existing-row
+  reactivation rule; no backend/schema/RBAC change was made.
+  Verification: 35/35 A08/A09 detail tests · full web script suite **145/145** (serial) ·
+  `pnpm --filter web build` clean 42/42 routes, zero warnings · `check-docs` 8/8. Live leave →
+  reload → deep-link denial → rejoin was **NOT RUN** because Docker's Postgres/API engine was
+  unavailable.
+
 - ✅ (opencode · 2026-09-07) **A07 — Form tham gia lớp thật** (PR #48, commit `abf6def`).
       Join modal trên `/student/classes` nối `POST /student/classes/join`, payload đúng
       `{ enrollmentCode }` qua `apiRequest`. Shape check client mirror JoinClassDto
