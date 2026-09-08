@@ -7,9 +7,9 @@
  * Features: S-CLS-3 (class info), S-CLS-4 (leave), S-LESSON-1 (ordered lesson list).
  */
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import {
   ArrowLeft,
   CalendarDays,
@@ -34,6 +34,7 @@ import {
   fetchEnrolledClassDetail,
   formatClassJoinedDate,
   isValidUuid,
+  leaveEnrolledClass,
   resolveClassDetailOutcome,
   resolveTeacherName,
   type EnrolledClassDetail,
@@ -42,6 +43,7 @@ import {
 export default function ClassDetailPage() {
   const params = useParams<{ classId: string }>();
   const classId = decodeURIComponent(params?.classId ?? "");
+  const router = useRouter();
   const pushToast = useToast();
 
   const validId = isValidUuid(classId);
@@ -49,6 +51,9 @@ export default function ClassDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<unknown | null>(null);
   const [leaveOpen, setLeaveOpen] = useState(false);
+  const [leaveSubmitting, setLeaveSubmitting] = useState(false);
+  const [leaveError, setLeaveError] = useState<string | null>(null);
+  const leaveLock = useRef(false);
 
   const loadDetail = useCallback(async () => {
     if (!validId) {
@@ -72,6 +77,25 @@ export default function ClassDetailPage() {
   }, [loadDetail]);
 
   const outcome = resolveClassDetailOutcome(loading, error, detail, validId);
+
+  async function confirmLeave() {
+    if (leaveLock.current) return;
+
+    leaveLock.current = true;
+    setLeaveSubmitting(true);
+    setLeaveError(null);
+    try {
+      await leaveEnrolledClass(classId);
+      pushToast(`Đã rời ${detail?.name ?? "lớp học"}`, "warn");
+      setLeaveOpen(false);
+      router.push("/student/classes");
+    } catch (err) {
+      setLeaveError(err instanceof Error ? err.message : "Không thể rời lớp. Vui lòng thử lại.");
+    } finally {
+      leaveLock.current = false;
+      setLeaveSubmitting(false);
+    }
+  }
 
   if (outcome === "loading") {
     return (
@@ -255,21 +279,44 @@ export default function ClassDetailPage() {
         </div>
       )}
 
-      <Modal open={leaveOpen} onClose={() => setLeaveOpen(false)} title="Rời khỏi lớp?">
+      <Modal
+        open={leaveOpen}
+        onClose={() => {
+          if (!leaveSubmitting) {
+            setLeaveError(null);
+            setLeaveOpen(false);
+          }
+        }}
+        title="Rời khỏi lớp?"
+      >
         <div className="stack gap-4">
           <p className="section-sub">
             Bạn sẽ không còn thấy bài học của <strong>{detail.name}</strong>. Điểm các bài đã nộp vẫn được lưu giữ.
           </p>
-          <p style={{ color: "var(--text-3)", fontSize: "var(--step--1)", margin: 0 }}>
-            Lưu ý: Tính năng rời lớp đang được kết nối với hệ thống máy chủ ở nhiệm vụ tiếp theo (A09).
-          </p>
+          {leaveError ? (
+            <p role="alert" style={{ color: "var(--danger)", fontSize: "var(--step--1)", margin: 0 }}>
+              {leaveError}
+            </p>
+          ) : null}
           <div className="row gap-3 wrap">
             <button
               type="button"
               className="btn btn--outline grow"
-              onClick={() => setLeaveOpen(false)}
+              onClick={() => {
+                setLeaveError(null);
+                setLeaveOpen(false);
+              }}
+              disabled={leaveSubmitting}
             >
               Đóng
+            </button>
+            <button
+              type="button"
+              className="btn btn--primary grow"
+              onClick={confirmLeave}
+              disabled={leaveSubmitting}
+            >
+              {leaveSubmitting ? "Đang rời lớp..." : "Rời lớp"}
             </button>
           </div>
         </div>
@@ -277,4 +324,3 @@ export default function ClassDetailPage() {
     </div>
   );
 }
-

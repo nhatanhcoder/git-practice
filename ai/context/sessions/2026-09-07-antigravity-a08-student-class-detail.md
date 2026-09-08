@@ -40,3 +40,16 @@ The student class detail screen `/student/classes/[classId]` and lesson detail s
 **Next task**:
 TASK A09 — Implement real class leave action `DELETE /student/classes/:id/leave`.
 
+**A08 completion addendum (follow-up on approval)**:
+- Added `leaveEnrolledClass(classId)` in `classes-service.ts`, calling the documented
+  `DELETE /student/classes/:id/leave` endpoint and returning the server's dropped-enrollment
+  result.
+- Replaced the A09 placeholder in the class-detail modal with a real confirmation action. A ref
+  lock prevents duplicate requests; the modal buttons are disabled while pending; API failures
+  remain inline and do not navigate or claim success; redirect to `/student/classes` happens only
+  after the server confirms success.
+- Added 3 regression assertions to `student-class-detail.test.mjs`. Red phase observed: 28 pass,
+  3 fail for the missing leave service/wiring. Green phase: 31/31 pass.
+- Serial verification: `node --test apps/web/scripts/*.test.mjs` passed, `pnpm --filter web build`
+  passed with 42 routes, and `node scripts/check-docs.mjs` passed 8/8. Docker Desktop's Linux engine
+  was unavailable, so live Postgres/API/browser leave verification is **NOT RUN**, not counted as pass.

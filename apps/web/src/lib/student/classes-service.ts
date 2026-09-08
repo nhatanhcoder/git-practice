@@ -62,3 +62,22 @@ export async function fetchEnrolledClassDetail(classId: string): Promise<Enrolle
   const response = await apiRequest<EnrolledClassDetail>(`/student/classes/${encodeURIComponent(classId)}`);
   return response.data;
 }
+
+export interface LeaveClassResult {
+  classId: string;
+  status: "dropped";
+  joinedAt: string | null;
+  rejoinedAt: string | null;
+}
+
+/**
+ * Leaves an enrolled class. The API keeps the enrollment row and changes its status to dropped.
+ * Endpoint: DELETE /student/classes/:id/leave
+ */
+export async function leaveEnrolledClass(classId: string): Promise<LeaveClassResult> {
+  const response = await apiRequest<LeaveClassResult>(
+    `/student/classes/${encodeURIComponent(classId)}/leave`,
+    { method: "DELETE" },
+  );
+  return response.data;
+}

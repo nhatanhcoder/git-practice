@@ -157,6 +157,12 @@ describe("A08 · Static Security & Integration Invariants", () => {
   const lessonPage = read("../src/app/student/(app)/classes/[classId]/lessons/[lessonId]/page.tsx");
   const serviceFile = read("../src/lib/student/classes-service.ts");
 
+  it("service defines leaveEnrolledClass using the documented DELETE endpoint", () => {
+    assert.match(serviceFile, /leaveEnrolledClass/);
+    assert.match(serviceFile, /method:\s*[\"']DELETE[\"']/);
+    assert.match(serviceFile, /\/student\/classes\/\$\{encodeURIComponent\(classId\)\}\/leave/);
+  });
+
   it("service defines fetchEnrolledClassDetail calling /student/classes/:id", () => {
     assert.match(serviceFile, /fetchEnrolledClassDetail/);
     assert.match(serviceFile, /\/student\/classes\//);
@@ -172,6 +178,18 @@ describe("A08 · Static Security & Integration Invariants", () => {
 
   it("classes/[classId]/page.tsx does not include DemoStateSwitcher", () => {
     assert.doesNotMatch(detailPage, /DemoStateSwitcher/);
+  });
+
+  it("classes/[classId]/page.tsx uses the leave service and does not claim success locally", () => {
+    assert.match(detailPage, /leaveEnrolledClass/);
+    assert.match(detailPage, /await leaveEnrolledClass/);
+    assert.doesNotMatch(detailPage, /setLeft\(/);
+    assert.doesNotMatch(detailPage, /pending A09/);
+  });
+
+  it("classes/[classId]/page.tsx keeps the leave action disabled while the request is pending", () => {
+    assert.match(detailPage, /leaveSubmitting/);
+    assert.match(detailPage, /disabled=\{leaveSubmitting\}/);
   });
 
   it("classes/[classId]/page.tsx does not leak enrollmentCode", () => {
