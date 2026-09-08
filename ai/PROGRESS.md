@@ -335,13 +335,25 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
 
 ## Off-sprint / spike
 
-- 🔶 (claude · 2026-09-08) **Docs batch — validate configuration centrally; align API prefix and
+- ✅ (claude · 2026-09-08) **Docs batch — validate configuration centrally; align API prefix and
   cookie path · shared transport types · stale status + conflicting Auth docs · global throttling
   contracts + multi-instance storage.** Four external review findings, all verified against code
-  before editing. This batch lands the **docs** corrections; the auth-code half (central env
-  validation, `COOKIE_PATH` derived from `API_PREFIX`) is recorded ready-to-execute in the session
-  file but **held for explicit owner approval** (refresh-token path). Branch
-  `docs/config-auth-findings`.
+  before editing. Landed the **docs** half: `API_CONVENTIONS.md` gained a Rate Limiting section
+  (login limiter locked as implemented; register/refresh/change-password limits and generic
+  `TOO_MANY_REQUESTS` explicitly still proposed; multi-instance limitation written out);
+  `01-auth.md` §9/§13/§16 no longer claim "no code for 429" (`AUTH_TOO_MANY_REQUESTS` is in
+  registry + code) and now record the instance-local storage caveat + grace window G=15s as-coded;
+  `.env.example` auth/API/Gemini/web blocks restored from **actual code reads** (closes
+  `API-005`; six old vars deliberately absent because nothing reads them — `JWT_REFRESH_SECRET`,
+  `JWT_REFRESH_TTL`, `BCRYPT_ROUNDS`, `COOKIE_DOMAIN`, `COOKIE_SECURE`); `project-brain.md`
+  Current Status rewritten to reality (7/8 specs accepted, 11 implemented modules, 170/170 tests);
+  `KNOWN_ISSUES` gained `API-015` (central env validation + hardcoded `COOKIE_PATH`) and `API-016`
+  (instance-local limiter/rotation-cache), `DOC-006` narrowed (ADR-015 settled the column;
+  register wire key is the only open question).
+  **Held for owner approval (auth code)**: `API-015`'s fix plan — central fail-fast env
+  validation + `COOKIE_PATH` derived from `API_PREFIX` — is specced and ready but touches the
+  refresh-token path, so it was not coded without sign-off. `packages/types` (finding 9) left for
+  its own branch per plan. Branch `docs/config-auth-findings`.
 
 - ✅ (claude · 2026-09-06) **A05 — SRS về đúng route chính.** Màn SRS nối API thật đang nằm ở
   `/student/mistakes`, còn `/student/flashcards` phục vụ một bản Leitner mock — nên mục sidebar
