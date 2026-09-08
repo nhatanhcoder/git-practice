@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdtempSync, mkdirSync, writeFileSync, cpSync, rmSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, cpSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
@@ -20,6 +20,8 @@ test('ignored local skills do not make clean CI and local checks disagree', () =
   try {
     mkdirSync(join(fixture, 'scripts'), { recursive: true });
     cpSync(checkDocsScript, join(fixture, 'scripts', 'check-docs.mjs'));
+    const quality = readFileSync(join(repoRoot, '.github/workflows/quality.yml'), 'utf8');
+    write(fixture, '.github/workflows/quality.yml', quality);
 
     const sharedBody = 'Project context lives in `ai/context/project-brain.md`.\n';
     write(
@@ -50,7 +52,14 @@ test('ignored local skills do not make clean CI and local checks disagree', () =
     });
 
     assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`);
-    assert.match(result.stdout, /all 8 checks passed/);
+    assert.match(result.stdout, /all 9 checks passed/);
+
+    write(fixture, '.github/workflows/quality.yml', quality.replace('run: pnpm lint', 'run: echo skipped'));
+    const missingGate = spawnSync(process.execPath, ['scripts/check-docs.mjs'], {
+      cwd: fixture, encoding: 'utf8',
+    });
+    assert.notEqual(missingGate.status, 0);
+    assert.match(missingGate.stderr, /Missing gate: pnpm lint/);
   } finally {
     rmSync(fixture, { recursive: true, force: true });
   }

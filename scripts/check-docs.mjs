@@ -186,9 +186,25 @@ const bodyOf = (f) => {
 }
 
 /* report ----------------------------------------------------------------- */
+// Tooling rules need executable enforcement too: keep all named quality gates.
+const qualityPath = join(ROOT, '.github/workflows/quality.yml');
+if (!existsSync(qualityPath)) {
+  fail('ci-quality', 'Missing .github/workflows/quality.yml');
+} else {
+  const quality = readFileSync(qualityPath, 'utf8');
+  for (const command of ['pnpm lint', 'pnpm --filter web build', 'pnpm --filter web type-check',
+    'pnpm --filter api build', 'pnpm --filter api type-check', 'pnpm --filter api test:ci',
+    'node scripts/assert-ci-databases.mjs', 'node --test apps/web/scripts/*.test.mjs scripts/*.test.mjs']) {
+    if (!quality.includes(`run: ${command}`)) fail('ci-quality', `Missing gate: ${command}`);
+  }
+  if (quality.includes('continue-on-error: true') || quality.includes('--suppress-all')) {
+    fail('ci-quality', 'Quality gates must not ignore failures or regenerate the lint baseline.');
+  }
+}
 const byCheck = {};
 for (const { check, msg } of failures) (byCheck[check] ??= []).push(msg);
 const NAMES = {
+  'ci-quality': 'Required CI quality gates',
   'broken-link': 'Broken internal markdown links',
   'rule-points-nowhere': 'A rule references a file that does not exist',
   'endpoint-undefined': 'FE contract uses an endpoint absent from docs/api',
@@ -199,7 +215,7 @@ const NAMES = {
   'agents-claude-drift': 'AGENTS.md and CLAUDE.md have drifted apart',
 };
 if (!failures.length) {
-  console.log('check-docs: all 8 checks passed.');
+  console.log('check-docs: all 9 checks passed.');
   process.exit(0);
 }
 for (const [check, msgs] of Object.entries(byCheck)) {
