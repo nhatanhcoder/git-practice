@@ -48,6 +48,7 @@ import { useToast } from "@/components/student/toast";
 import { useStudentProfile, useStudentStore } from "@/lib/student/store";
 import { useDisplayIdentity } from "@/lib/student/identity";
 import { boxInterval, rankProgress, reviewQueueFromMistakes } from "@/lib/student/student-rules";
+import { SRS_ROUTE } from "@/lib/student/srs-routes";
 import { levelProgress } from "@/lib/student/mock-user";
 import { continueLesson } from "@/lib/student/dashboard-data";
 import type { ReviewItem } from "@/lib/student/types";
@@ -372,8 +373,14 @@ export default function StudentDashboard() {
                   <h2 className="section-title" style={{ fontSize: "var(--step-2)" }}>
                     Ôn tập hôm nay
                   </h2>
+                  {/* A05: this queue is the mock mistake notebook, not the SRS. The two were
+                      being read as one thing; the sub-line now says which is which and the link
+                      goes to the review that actually persists. */}
                   <p className="section-sub">
-                    <span className="num">{queue.length}</span> thẻ đến hạn, lấy từ sổ tay lỗi sai
+                    <span className="num">{queue.length}</span> thẻ demo từ sổ tay lỗi sai ·{" "}
+                    <Link href={SRS_ROUTE} style={{ textDecoration: "underline" }}>
+                      ôn từ vựng thật
+                    </Link>
                   </p>
                 </div>
                 {queue.length > 0 ? (
