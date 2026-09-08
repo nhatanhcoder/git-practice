@@ -1363,3 +1363,11 @@ changed during CI setup.
 
 - **`GIT-002`** `.idea/` tracked in git — resolved, verified 2026-08-25 and 2026-09-01.
   (Entries stay in place above with a resolved status; this list is the index.)
+
+### 2026-09-08 verification note — BUILD-003
+
+**Status**: Resolved — implementation verified in PR #50; merge remains pending.
+GitHub Actions run 34252312577 passed web-quality and api-quality, including migrations,
+seed and the API suite against disposable PostgreSQL/MongoDB services. Run 34252312622
+passed check-docs. Branch protection still requires owner configuration. DEBT-006 remains
+open: a passing baseline-aware lint gate does not mean the existing findings are fixed.
