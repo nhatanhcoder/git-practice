@@ -720,7 +720,11 @@ _(specs written 2026-08-19, `docs/api/modules/`. **Updated 2026-09-01**: `apps/a
 
 ## Foundation / Grammar design work — 2026-09-10
 
-- 🔶 (codex) DOCS only, `codex/foundation-grammar-contracts`: source audit and proposed
-  Foundation/Grammar contracts under preparation after explicit approval of step 1.
+- ✅ (codex) DOCS deliverables only, `codex/foundation-grammar-contracts`: source audit and proposed
+  Foundation/Grammar contracts prepared after explicit approval of step 1.
   No application, schema, Auth, RBAC, money or production-content changes are authorized.
   Production remains NOT IMPLEMENTED; source rights/media and transport approval are blockers.
+
+- ⛔ Foundation/Grammar production: content/progress/assessment/media operation contracts remain
+  missing; see docs/api/modules/student/02-foundation-grammar.md decisions D1–D5. The proposal
+  adds no endpoint, physical schema, permission or runtime behavior.

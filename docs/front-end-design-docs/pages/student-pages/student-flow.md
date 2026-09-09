@@ -1,3 +1,8 @@
+---
+status: active
+last_updated: 2026-09-10
+---
+
 # Student Flow Map — SRS & Classes
 
 ## Entry
@@ -65,3 +70,84 @@
 - ⛔ Manage/review the saved-word bank (S-SRS-7).
 - ⛔ Assignment/Attempt mistake collection (S-MSTK, Sprint 4).
 
+
+## Foundation and Grammar proposal — 2026-09-10
+
+**Status: proposed / blocked; NOT IMPLEMENTED.** Operation labels below refer to
+[the module proposal](../../../api/modules/student/02-foundation-grammar.md), not endpoints.
+All F/G/M operations are ⛔ until exact path/method/DTO/error contracts are approved.
+Existing SRS/Classes branches above are unchanged.
+
+### Foundation traversal
+
+```text
+/student  Dashboard
+└── Navigation: Foundation
+    ▼
+    /student/foundation?tab=pinyin           ⛔ F-read + F-progress
+    ├── Tab/search/strokes/page → same hub  local selection; ⛔ F-read if needed
+    ├── Item → same-screen detail           local / ⛔ F-read if needed
+    ├── Mark/unmark studied → same item     ⛔ F-save → confirmed state
+    ├── Play/download → same screen         ⛔ M-read / verified resource only
+    ├── Record → permission → playback      local session only, after D4 approval
+    ├── Retry failed read → same screen     ⛔ F-read / F-progress / M-read
+    └── Back to Dashboard
+        ▼
+        /student                           navigation only
+```
+
+### Grammar traversal
+
+```text
+/student  Dashboard
+└── Navigation: Grammar
+    ▼
+    /student/grammar                       ⛔ G-read + G-progress
+    ├── HSK/category/search/reset → hub     local selection; ⛔ G-read if needed
+    ├── Point → inline study, same route    ⛔ G-read if needed; URL selection proposed
+    │   ├── Mark/unmark studied             ⛔ G-save → confirmed state
+    │   ├── Practise → answer → submit      ⛔ G-practice → confirmed result
+    │   │   └── Continue study → point/list local selection; no mutation
+    │   └── Close point → filtered list     local navigation; preserve filters
+    ├── Retry failed read → same screen     ⛔ G-read / G-progress
+    └── Back to Dashboard
+        ▼
+        /student                           navigation only
+```
+
+A permission dialog is not a new route. Grammar learning is inline rather than gated behind
+an obligatory preview modal. URL query names for Grammar point/filter selection are a UI
+proposal, not accepted API query parameters. Back/forward must restore the chosen view.
+
+### Full additional transition table
+
+| # | From | Action | To | API | Errors |
+|---|---|---|---|---|---|
+| FG1 | Dashboard | Open Foundation | Foundation hub | ⛔ F-read + F-progress | TODO(error-code) |
+| FG2 | Foundation | Tab/search/strokes/page | same hub | local / ⛔ F-read | TODO(error-code) |
+| FG3 | Foundation | Inspect item | same-screen detail | local / ⛔ F-read | TODO(error-code) |
+| FG4 | Foundation item | Mark/unmark studied | same item, confirmed | ⛔ F-save | TODO(error-code) |
+| FG5 | Foundation | Play/download | same screen/resource | ⛔ M-read | TODO(error-code) |
+| FG6 | Foundation speaking | Record/playback | permission then local playback | none; D4 blocked | denial/unavailable UI |
+| FG7 | Foundation | Retry failed read | same screen | ⛔ F-read / F-progress / M-read | TODO(error-code) |
+| FG8 | Foundation | Return | Dashboard | none | — |
+| FG9 | Dashboard | Open Grammar | Grammar hub | ⛔ G-read + G-progress | TODO(error-code) |
+| FG10 | Grammar | Filter/search/reset | same hub | local / ⛔ G-read | TODO(error-code) |
+| FG11 | Grammar | Open point | inline study | local / ⛔ G-read | TODO(error-code) |
+| FG12 | Grammar point | Close point | filtered list | none | — |
+| FG13 | Grammar point | Mark/unmark studied | same point, confirmed | ⛔ G-save | TODO(error-code) |
+| FG14 | Grammar point | Practise/submit | answer then confirmed result | ⛔ G-practice | TODO(error-code) |
+| FG15 | Grammar result | Continue study | point/list | none | — |
+| FG16 | Grammar | Retry failed read | same screen | ⛔ G-read / G-progress | TODO(error-code) |
+| FG17 | Grammar | Return | Dashboard | none | — |
+
+### Additional state transitions and absent paths
+
+Proposed study state: not studied ⇄ explicitly studied, with set semantics rather than a
+blind toggle. Proposed practice state: ready → answering → submitting → confirmed result;
+failed/uncertain submit preserves the draft and does not auto-replay. Neither means mastery/XP.
+
+Missing contracts: F-read, F-progress, F-save, G-read, G-progress, G-save, G-practice and M-read.
+There is no Student create/delete/publish catalog path because existing permissions forbid it.
+No microphone-upload path, cloud scorer, Teacher progress surface, gamification event or
+Assignment-grade transition is introduced. No persisted-write edge is executable yet.

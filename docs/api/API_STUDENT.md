@@ -1,3 +1,8 @@
+---
+status: active
+last_updated: 2026-09-10
+---
+
 # 🔌 API Student
 
 > Endpoints reserved for the Student role.  
@@ -90,3 +95,10 @@ mistaken for API contracts:
 
 ⛔ Define these in Student/Teacher module specs before adding endpoints. Do not copy the
 prototype's `/api/progress` routes into production by default.
+
+### Foundation / Grammar review package
+
+[Module proposal](modules/student/02-foundation-grammar.md) and
+[source audit](modules/student/foundation-grammar-source-audit.md), 2026-09-10:
+proposed only. All eight required operation groups remain ⛔ with no approved path, DTO or
+error mapping. The endpoint tables above do not gain any executable Foundation/Grammar route.

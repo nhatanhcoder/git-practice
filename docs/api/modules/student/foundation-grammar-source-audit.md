@@ -120,5 +120,5 @@ Do not ship a play/download success state without an available resource.
 ## Exit and remaining gates
 
 Audit complete; source adoption, editorial deduplication, media sourcing and content rights
-remain blocked. The module design in this task will collect the decision checklist.
+remain blocked. Read the [module design](02-foundation-grammar.md) for the decision checklist.
 Existing Foundation/Grammar production capabilities remain **NOT IMPLEMENTED**.

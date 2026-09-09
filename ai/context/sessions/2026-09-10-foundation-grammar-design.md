@@ -1,5 +1,5 @@
 ---
-status: in-progress
+status: completed
 ---
 
 # 2026-09-10 — Foundation and Grammar design — Codex
@@ -16,16 +16,36 @@ Skills: flow-mapper and hsk-learning-ia, read in the preceding analysis turn and
 
 ## Done
 
-Source JSON read-only audit, independent Node/PowerShell counts, hashes, repeated fields,
-media/license filename inventory, source-to-FE mapping gaps. Findings appended under existing
-DOC-011/DEBT-003; no new issue id allocated. Detailed design and page contracts are in progress.
+- Source audit: 76 Grammar records across HSK 1–9 (9/9/10/9/7/9/8/8/7), 297 Foundation
+  records/descriptors, seven repeated-name groups and four repeated-example groups.
+- Recorded SHA-256 hashes, source/FE mapping gaps, stale-doc conflicts and absence of media
+  in searched formats/license files. This establishes neither redistribution rights nor
+  pedagogical approval. Original external content is unchanged and was not copied.
+- Proposed module design with sections 0–16: aggregate/storage choices, eight blocked API
+  operation groups, source-derived fields, private-state boundaries, completion alternatives,
+  idempotency/concurrency requirements, import/rollback plan and 12-rule acceptance matrix.
+- Two Page Contracts, each under 60 lines, with seven states and explicit proposed approval
+  status. Added matching flow trees, 17 transition rows, state transitions and missing operations.
+- Updated Student API/module index, entity index and Page Contract index; none claim an
+  executable Foundation/Grammar endpoint, DTO or physical schema. No new error codes invented.
+- Appended notes under existing DOC-011/DEBT-003; no new issue id allocated or old entry edited.
+- Audit committed separately as 7d23909; design is the next logical documentation commit.
 
 ## Verification
 
-No application tests/build or browser feature acceptance claimed: documents only.
-check-docs and internal consistency review will run before commits.
+- Node JSON.parse and independent PowerShell ConvertFrom-Json produced identical source counts.
+- Source hashes rechecked after documentation work and unchanged.
+- Grammar: unique ids, HSK integer range, no empty existing fields or replacement characters,
+  NFC-stable strings; token/example comparison matched all 76 after punctuation/space removal.
+- Foundation: unique per-group keys, radical numbers contiguous 1–214, tones 1–4.
+- check-docs: all 8 checks passed; git diff --check clean; seven states per new contract and
+  transition/action coverage reviewed. Final check-docs is rerun before commit.
+- No application tests/build or feature acceptance claimed: documents only. Runtime remains
+  NOT IMPLEMENTED, and the proposed acceptance matrix is NOT RUN.
 
-## Remaining
+## Handoff / decisions
 
-Finish proposed module design, both blocked Page Contracts, flow and indexes; check-docs;
-commit and open PR. Schema/transport/content and media decisions need separate approval.
+Review docs/api/modules/student/02-foundation-grammar.md D1–D5: source adoption and editorial
+review, storage/physical schema, completion/mastery, media/recording policy, exact transport and
+error contracts. These block backend work, not completion of the approved documentation task.
+Open a documentation PR for review; no merge, deployment, database access or production import.

@@ -1351,3 +1351,11 @@ automatic deletion. Foundation has 21 initials, 36 finals, 4 tones, 6 sandhi rul
 in the searched formats or redistribution evidence were established. See
 `docs/api/modules/student/foundation-grammar-source-audit.md` for hashes, scope and limitations.
 No original issue entry, source corpus, private learner data or database was modified.
+
+### 2026-09-10 design note — DOC-011
+
+**Status**: Open — Foundation/Grammar review package written; implementation blocked.
+The proposed module, two Page Contracts and flow now document missing catalog/progress/assessment
+contracts, source-to-FE mapping conflicts, private-state boundaries, media choices and acceptance
+tests. Exact transport/schema and completion rules remain decisions D1–D5; no runtime capability
+is counted as implemented. Original issue entries and the existing RBAC matrix are unchanged.

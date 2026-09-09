@@ -1,3 +1,8 @@
+---
+status: active
+last_updated: 2026-09-10
+---
+
 # 🗃️ Entities Index
 
 > Quick lookup table: entity → DB → spec file → related actors → related flows
@@ -86,3 +91,9 @@ The proposed SQL tables in `PROJECT_KNOWLEDGE.md` §8.9 are inputs, not accepted
 | ✅ | Complete spec |
 | 🚧 | Stub, needs filling in |
 | ⚠️ | Gap, or moved elsewhere |
+
+## Foundation / Grammar design input
+
+The [module proposal](../api/modules/student/02-foundation-grammar.md) maps audited source fields
+and proposes catalog/progress aggregate boundaries. It is **not an accepted entity specification**;
+the blocked rows above remain blocked. Physical schema, columns, indexes and transport need approval.
