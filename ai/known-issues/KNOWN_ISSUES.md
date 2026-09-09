@@ -1340,3 +1340,14 @@ S-SRS-6/7 and Student analytics still have no approved transport contracts; they
 
 - **`GIT-002`** `.idea/` tracked in git — resolved, verified 2026-08-25 and 2026-09-01.
   (Entries stay in place above with a resolved status; this list is the index.)
+
+### 2026-09-10 source-audit note — DOC-011 and DEBT-003
+
+**Status**: Open — audit completed, production adoption remains blocked.
+The Foundation/Grammar source audit verifies 76 Grammar records (HSK 1–9: 9/9/10/9/7/9/8/8/7),
+not the historical 60/51 report. Seven repeated-name groups require editorial review, not
+automatic deletion. Foundation has 21 initials, 36 finals, 4 tones, 6 sandhi rules, 214 radicals,
+6 listening descriptors, 6 speaking prompts and 4 PDF descriptors. No accompanying media files
+in the searched formats or redistribution evidence were established. See
+`docs/api/modules/student/foundation-grammar-source-audit.md` for hashes, scope and limitations.
+No original issue entry, source corpus, private learner data or database was modified.

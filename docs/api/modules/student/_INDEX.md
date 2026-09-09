@@ -1,7 +1,7 @@
 ---
 title: Backend Module Specs — Student
 status: active
-last_updated: 2026-09-05
+last_updated: 2026-09-10
 ---
 
 # Backend Module Specs — Student
@@ -13,3 +13,7 @@ last_updated: 2026-09-05
 The remaining self-study, drill, gamification and analytics capabilities are accepted product
 scope under ADR-016 but do not yet have transport contracts. Add modules here before coding them.
 
+
+## Source audits
+
+- [Foundation and Grammar source audit](foundation-grammar-source-audit.md) — audited 2026-09-10; content adoption and media remain blocked.

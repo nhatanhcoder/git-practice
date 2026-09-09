@@ -717,3 +717,10 @@ _(specs written 2026-08-19, `docs/api/modules/`. **Updated 2026-09-01**: `apps/a
   local mistakes store in production — both are the recorded A00/DOC-016 presentation-rewire
   scope (Sprint 4 backend for mistake collection does not exist yet); gating them would remove
   the only live learning feature, rewiring them is A03/A05's task.
+
+## Foundation / Grammar design work — 2026-09-10
+
+- 🔶 (codex) DOCS only, `codex/foundation-grammar-contracts`: source audit and proposed
+  Foundation/Grammar contracts under preparation after explicit approval of step 1.
+  No application, schema, Auth, RBAC, money or production-content changes are authorized.
+  Production remains NOT IMPLEMENTED; source rights/media and transport approval are blockers.
