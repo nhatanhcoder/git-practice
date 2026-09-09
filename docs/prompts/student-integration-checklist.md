@@ -85,20 +85,25 @@ Nguồn trạng thái thực tế vẫn là PROGRESS + commit/PR + kiểm thử 
 
 | Xong | Mã | Việc | Phụ thuộc | Điều kiện hoàn thành |
 |---|---|---|---|---|
-| ⬜ | A00 | Chốt contract, route, demo | — | Route/API/states và quyết định được ghi rõ |
-| ⬜ | A01 | Đúng danh tính | A00 | Không tên mẫu ở khu vực tài khoản |
-| ⬜ | A02 | Cô lập demo | A00, A01 | Không dùng progress local làm dữ liệu thật |
-| ⬜ | A03 | SRS theo Hán Lộ | A00 | Đổi presentation, giữ API thật |
-| ⬜ | A04 | Cứng hóa SRS | A03 | Không race, gửi trùng, fake-success |
-| ⬜ | A05 | Route SRS chính | A04 | Điều hướng tới SRS thật, route cũ xử lý rõ |
-| ⬜ | A06 | List lớp | A00 | Lớp đúng tài khoản từ API |
-| ⬜ | A07 | Join lớp | A06 | Enrollment tồn tại sau reload |
-| ⬜ | A08 | Detail lớp | A06 | Dữ liệu thật; không bịa lesson/bài tập |
-| ⬜ | A09 | Leave lớp | A07, A08 | Trạng thái server phản ánh đúng sau reload |
+| ✅ | A00 | Chốt contract, route, demo | — | Route/API/states và quyết định được ghi rõ — PR #42 |
+| ✅ | A01 | Đúng danh tính | A00 | Không tên mẫu ở khu vực tài khoản — PR #41 (+races: #43), giải WEB-015 |
+| ✅ | A02 | Cô lập demo | A00, A01 | Không dùng progress local làm dữ liệu thật — PR #46, giải WEB-016 |
+| ✅ | A03 | SRS theo Hán Lộ | A00 | Đổi presentation, giữ API thật — PR #44 |
+| ✅ | A04 | Cứng hóa SRS | A03 | Không race, gửi trùng, fake-success — PR #45 |
+| ✅ | A05 | Route SRS chính | A04 | Điều hướng tới SRS thật, route cũ xử lý rõ — PR #47 |
+| ✅ | A06 | List lớp | A00 | Lớp đúng tài khoản từ API — cùng PR #48 |
+| ✅ | A07 | Join lớp | A06 | Enrollment tồn tại sau reload — PR #48 |
+| 🔶 | A08 | Detail lớp | A06 | Dữ liệu thật; không bịa lesson/bài tập — PR #52 (mở, kèm QC) |
+| 🔶 | A09 | Leave lớp | A07, A08 | Trạng thái server phản ánh đúng sau reload — PR #52; **QC độc lập 2026-09-09: 7/7 pass** (cancel 0 DELETE · dropped không xóa row · API-down giữ lớp + lỗi thật · deep-link forbidden · rejoin reactivate giữ joinedAt · double-click 1 DELETE); thấy DEBT-006 về suite structural |
 | ⬜ | A10 | Audit nguồn vocabulary | — | Nguồn, mapping, quyền sử dụng và import plan được duyệt |
 | ⬜ | A11 | Importer | A10 | Dry-run, chạy lặp an toàn, giữ SRS state |
 | ⬜ | A12 | Cleanup UI cũ | A02, A05–A09 | Chỉ bỏ phần không còn consumer |
 | ⬜ | T13 | Nghiệm thu | A00–A12 hoặc ghi rõ phần bị chặn | Bằng chứng UI → API → persisted data → reload |
+
+> Trạng thái cập nhật 2026-09-09 đối chiếu GitHub: PR #41–#48 đã merge vào `main`; A00–A07
+> flip ✅ theo PR thật (trước đó cả bảng còn `⬜` dù đã merge — lỗi record mà `working-rules.md`
+> § Definition of Done tồn tại để ngăn). A08/A09 🔶 vì PR #52 chưa merge. Không ô nào được ✅
+> khi màn hình vẫn chạy mock — A02/QC từng phát hiện lớp lỗi "trông hoạt động".
 
 Thứ tự khuyên dùng: **A00 → A01 → A02 → A03 → A04 → A05 → A06 → A07 → A08 → A09
 → A10 → A11 → A12 → T13.** Có thể làm A10 sớm; không cần đợi UI.
