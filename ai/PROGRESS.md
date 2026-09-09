@@ -655,10 +655,29 @@ _(specs written 2026-08-19, `docs/api/modules/`. **Updated 2026-09-01**: `apps/a
 
 ## Active work — student identity slice
 
-- 🔶 (opencode · 2026-09-08) **A11 — Importer từ vựng** (branch `feat/a11-vocab-importer`,
-      stack trên `docs/a10-vocab-audit`). Owner đã duyệt 3 điều kiện mở khóa A10: corpus của
-      owner + import 1.228 `words[]` + copy nguồn vào repo. Code importer theo prompt A11:
-      dry-run mặc định, apply tường minh, idempotent, không reset review state.
+- ✅ (opencode · 2026-09-08) **A11 — Importer từ vựng** (branch `feat/a11-vocab-importer`,
+      stack trên `docs/a10-vocab-audit`; 3 commits: claim → source copy + decisions → importer).
+      Owner đã duyệt 3 điều kiện mở khóa A10 (provenance, `words[]`, copy nguồn vào repo) —
+      nguồn giờ ở `apps/api/content/writing.json`, quyết định import trong
+      `docs/content/VOCAB_SOURCE_AUDIT.md` §6.
+      Importer theo đủ 8 rule của prompt A11: **dry-run mặc định** (CLI không có `--apply`
+      thì không ghi gì), báo cáo valid/invalid/duplicate/conflict từng record (29 conflict
+      hiện ra đầy đủ, winner = level thấp nhất + source order, loser được liệt kê không bỏ
+      âm thầm), apply tường minh in rõ DB+collection đích, **idempotent** — upsert theo
+      `hanzi` (bất kể level) giữ nguyên `_id` nên rerun không trùng lặp và level-change không
+      tạo row thứ hai, **không đụng `user_flashcard_states`** (test riêng chứng minh state
+      sống sót qua import), không drop collection/reset DB, failure giữa chừng → 1 retry/op
+      + rerun là recovery (đã gặp thật: 1 monitor-timeout Atlas, retry chữa, exit 0).
+      Không đổi schema/index.
+      Verification: pure tests **11/11** (counts khớp audit độc lập: 1.228 → 1.119, per-level
+      922/50/40/32/25/16/12/11/11) · e2e sandbox trên Atlas thật **7/7** (dry-run không ghi,
+      apply-idempotent, `_id` ổn định, state-guard, partial-failure recovery) · CLI dry-run
+      thật trên `hsk_dev.flashcards`: **errors 0, would create 1.118 + update 1** ·
+      `nest build` + `tsc --noEmit` sạch · `check-docs` 8/8.
+      ⚠️ Full API suite NOT RUN (Docker tắt, không Postgres) — chỉ 2 file test mới chạy
+      standalone. **Chưa `--apply` vào DB thật** — đó là lệnh của owner: `pnpm --filter api
+      vocab:import` (sau khi review dry-run: 1 fixture sót trong dev DB sẽ bị update — hợp
+      lệ theo semantics upsert).
 
 - ✅ (opencode · 2026-09-08) **A10 — Kiểm kê nguồn từ vựng** (branch `docs/a10-vocab-audit`).
       READ-ONLY audit xong, docs đã duyệt. **Kết quả chính: corpus ngoài KHÔNG có file
