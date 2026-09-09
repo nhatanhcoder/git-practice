@@ -335,6 +335,14 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
 
 ## Off-sprint / spike
 
+- 🔶 (claude · 2026-09-09) **Docs batch — sync module-status records with the implemented
+  backend + record two QC findings.** After verifying an external Modules 01→08 audit: fix the
+  stale "Only Auth is ready to code" line and status drift in `docs/api/modules/_INDEX.md`
+  (02-users accepted-in-table vs proposed-in-spec recorded as a conflict, not silently
+  resolved); sync the stale module table in this file; append two KNOWN_ISSUES from today's
+  A09 QC — monitoring telemetry stubs (Redis/Gemini hardcoded) and the structural-only A09
+  test suite. Open PR for the QC-passed A08+A09 branch. Branch `docs/module-status-sync`.
+
 - ✅ (claude · 2026-09-06) **A05 — SRS về đúng route chính.** Màn SRS nối API thật đang nằm ở
   `/student/mistakes`, còn `/student/flashcards` phục vụ một bản Leitner mock — nên mục sidebar
   tên "Flashcard" mở đúng bản giả, và màn duy nhất gọi endpoint thật thì không ai tìm ra. A00 đã
