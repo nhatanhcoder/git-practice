@@ -49,3 +49,14 @@ Review docs/api/modules/student/02-foundation-grammar.md D1–D5: source adoptio
 review, storage/physical schema, completion/mastery, media/recording policy, exact transport and
 error contracts. These block backend work, not completion of the approved documentation task.
 Open a documentation PR for review; no merge, deployment, database access or production import.
+
+## Publication blocked by automatic approval review
+
+The documentation is committed locally (7d23909 and fc09f63). Push/PR creation was rejected
+by automatic approval review. Read-only checks confirmed origin is the public repository
+https://github.com/nhatanhcoder/git-practice, viewer permission ADMIN, and the source path is
+already present on origin/main. A retry with that evidence was also rejected because explicit
+approval to publicly publish this exact audit/design payload was not established.
+No push or PR was created. Ask the owner to authorize publication of this documentation to
+that public repository; do not bypass the rejection. Application implementation remains
+separately blocked on D1–D5 and is not authorized by a publication approval.

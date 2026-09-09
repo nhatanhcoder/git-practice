@@ -728,3 +728,7 @@ _(specs written 2026-08-19, `docs/api/modules/`. **Updated 2026-09-01**: `apps/a
 - ⛔ Foundation/Grammar production: content/progress/assessment/media operation contracts remain
   missing; see docs/api/modules/student/02-foundation-grammar.md decisions D1–D5. The proposal
   adds no endpoint, physical schema, permission or runtime behavior.
+
+- Foundation/Grammar docs publication: **BLOCKED by automatic approval review**. Local audit/design
+  commits are ready, but publishing this payload to public `nhatanhcoder/git-practice` requires
+  explicit owner confirmation. No push/PR/merge/deploy occurred for this documentation task.
