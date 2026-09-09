@@ -675,9 +675,18 @@ _(specs written 2026-08-19, `docs/api/modules/`. **Updated 2026-09-01**: `apps/a
       thật trên `hsk_dev.flashcards`: **errors 0, would create 1.118 + update 1** ·
       `nest build` + `tsc --noEmit` sạch · `check-docs` 8/8.
       ⚠️ Full API suite NOT RUN (Docker tắt, không Postgres) — chỉ 2 file test mới chạy
-      standalone. **Chưa `--apply` vào DB thật** — đó là lệnh của owner: `pnpm --filter api
-      vocab:import` (sau khi review dry-run: 1 fixture sót trong dev DB sẽ bị update — hợp
-      lệ theo semantics upsert).
+      standalone.
+      **APPLY THẬT đã chạy (owner "làm luôn", 2026-09-08) vào `hsk_dev.flashcards`:**
+      lần 1 created 1.118 + updated 1 · lần 2 (chứng minh idempotent) created 0, updated
+      1.119 · **errors 0 cả hai lần**. Verify DB trực tiếp sau import: tổng 1.120 thẻ
+      (1.119 `hanlo` + 1 thẻ `学习` HSK3 fixture seed cũ `hsk3-core` đã có sẵn trong dev) ·
+      per-level 922/50/41/32/25/16/12/11/11 (level-3 có 41 vì fixture cũ đếm thêm) · thẻ
+      `学习` tồn tại 2 row (HSK1 hanlo + HSK3 fixture) — importer đã báo đúng "1
+      pre-existing same-hanzi duplicate", theo thiết kế không tự gộp ·
+      `user_flashcard_states` = 0 docs trong dev, không state nào bị ảnh hưởng. **Lưu ý
+      deploy:** seed `prisma/seed.ts` hiện có thể vẫn chèn fixture `学习` — cần rà trước khi
+      đưa lên môi trường khác để tránh trùng lặp tương tự; DB production chưa được import
+      (việc này thuộc deploy pipeline, chạy `vocab:import` tường minh).
 
 - ✅ (opencode · 2026-09-08) **A10 — Kiểm kê nguồn từ vựng** (branch `docs/a10-vocab-audit`).
       READ-ONLY audit xong, docs đã duyệt. **Kết quả chính: corpus ngoài KHÔNG có file

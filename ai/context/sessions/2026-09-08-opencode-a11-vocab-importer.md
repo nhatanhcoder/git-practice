@@ -58,9 +58,24 @@ importer + tests + CLI (+ one records commit).
 **DB/Auth/RBAC/money**: nothing changed. No schema, no index, no API route touched;
 `user_flashcard_states` never accessed by the importer.
 
-**Not done on purpose**: the real `--apply` into `hsk_dev.flashcards` is left to the owner
-after reviewing the dry-run (`pnpm --filter api vocab:import`). A10's rules require apply
-to be explicit and target-confirmed — running it uncommanded would violate exactly that.
+**Not done on purpose → done on owner command**: the real `--apply` into `hsk_dev.flashcards`
+was originally left to the owner; the owner then said "làm luôn" in the same session, so it
+ran. Results:
+- Run 1: **created 1,118 + updated 1, errors 0, exit 0**.
+- Run 2 (idempotency proof): **created 0 + updated 1,119, errors 0, exit 0**.
+- Direct DB verification after apply (throwaway script, deleted after): 1,120 total docs =
+  1,119 `hanlo` + 1 pre-existing seed fixture `学习` (HSK3, tags `verb,hsk3-core`) from the
+  old SRS e2e seed. Per-level 922/50/**41**/32/25/16/12/11/11 — the 41 at level 3 includes
+  that fixture; extraction itself is 40. `学习` now exists as two rows (HSK1 hanlo, HSK3
+  fixture) and the importer reported exactly "1 pre-existing same-hanzi duplicate" —
+  reported-not-merged is the designed behavior; deciding whether to clean the fixture is
+  the owner's data decision, not the importer's.
+- `user_flashcard_states`: 0 docs in dev, so no review state existed to lose — the guard
+  held trivially.
+
+**Deploy note**: `prisma/seed.ts` may still insert flashcard fixtures — check before
+importing into any other environment, and import to production only via the explicit
+`vocab:import` in the deploy pipeline.
 
 **Next**: push `docs/a10-vocab-audit` then `feat/a11-vocab-importer` (stacked); owner runs
 `vocab:import`; after that `/student/flashcards` should serve the real 1,119-card catalog
