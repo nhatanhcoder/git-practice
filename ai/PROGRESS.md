@@ -335,13 +335,18 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
 
 ## Off-sprint / spike
 
-- 🔶 (claude · 2026-09-09) **Docs batch — sync module-status records with the implemented
-  backend + record two QC findings.** After verifying an external Modules 01→08 audit: fix the
-  stale "Only Auth is ready to code" line and status drift in `docs/api/modules/_INDEX.md`
-  (02-users accepted-in-table vs proposed-in-spec recorded as a conflict, not silently
-  resolved); sync the stale module table in this file; append two KNOWN_ISSUES from today's
-  A09 QC — monitoring telemetry stubs (Redis/Gemini hardcoded) and the structural-only A09
-  test suite. Open PR for the QC-passed A08+A09 branch. Branch `docs/module-status-sync`.
+- ✅ (claude · 2026-09-09) **Docs batch — sync module-status records with the implemented
+  backend + record two QC findings.** Verified an external Modules 01→08 audit first, then:
+  `_INDEX.md` — removed the obsolete "Only Auth is ready to code" line (7/8 implemented);
+  **recorded the 02-users status conflict** (table says `accepted` since `41f3ff1`, spec
+  frontmatter says `proposed` — marked ⚠️, no side chosen, owner decides); added an
+  implementation-status paragraph (module 07 is the only uncoded module). This file's own
+  § Backend table synced to the same reality (02 implemented + conflict, 03 accepted, 07 not
+  coded). KNOWN_ISSUES gained **API-017** (`/admin/monitoring` shows fiction: Redis probe is
+  a hardcoded literal, Gemini latency/quota are constants — only the SQL probe is real) and
+  **DEBT-006** (A09 test suite asserts file strings, not behavior — live QC covered it this
+  time; not repeatable). A08+A09 branch pushed with PR opened (QC 7/7 pass, report in session
+  file). Branch `docs/module-status-sync`.
 
 - ✅ (claude · 2026-09-06) **A05 — SRS về đúng route chính.** Màn SRS nối API thật đang nằm ở
   `/student/mistakes`, còn `/student/flashcards` phục vụ một bản Leitner mock — nên mục sidebar
@@ -601,8 +606,10 @@ _(discovered while mapping the Admin UI — 2026-08-13)_
 
 ## Backend — module spec
 
-_(specs written 2026-08-19, `docs/api/modules/`. **Updated 2026-09-01**: `apps/api` now exists
-(PR #12 scaffold + `User` migration) but implements no module; `packages/` does not exist at all.)_
+_(specs written 2026-08-19, `docs/api/modules/`. **Re-verified 2026-09-09**: `apps/api` now
+implements modules 01–06 + 08 plus Teacher lessons/questions/sessions and Student
+flashcards/SRS — 13 e2e suites against live databases, last recorded full run 170/170.
+`packages/` still does not exist at all.)_
 
 > ⚠️ **These 8 modules are the Admin area only.** The Teacher backend has **no module spec at
 > all** — the FE is 9 built (mocked) screens with every endpoint listed in `API_TEACHER.md`, but
@@ -611,16 +618,18 @@ _(specs written 2026-08-19, `docs/api/modules/`. **Updated 2026-09-01**: `apps/a
 
 | # | Module | Spec | Status | INV | Blocked by |
 |---|---|---|---|---|---|
-| 1 | Auth | `01-auth.md` | ✅ accepted | 24 | — |
-| 2 | Users | `02-users.md` | 🔶 proposed | 18 | C1 · C3 (needs `rejected` migration) |
-| 3 | Classes+Enrollment | `03-classes-enrollment.md` | ⛔ deferred | 8 | **SCOPE-01** |
-| 4 | Sessions+Attendance | `04-sessions-attendance.md` | ✅ accepted | 16 | — |
-| 5 | Payroll+PayRates | `05-payroll.md` | ✅ accepted | 33 | — |
-| 6 | Billing | `06-billing.md` | ✅ accepted | 34 | — |
-| 7 | Notifications | `07-notifications.md` | 🔶 proposed | 21 | no endpoint defined yet |
-| 8 | Dashboard | `08-dashboard.md` | ✅ accepted | 14 | — |
+| 1 | Auth | `01-auth.md` | ✅ accepted · implemented | 24 | — |
+| 2 | Users | `02-users.md` | ⚠️ conflict: `_INDEX` table says accepted (since `41f3ff1`), spec frontmatter says `proposed` — owner decides · implemented | 18 | DOC-005 (`rejected` state, ADR-011 Proposed) |
+| 3 | Classes+Enrollment | `03-classes-enrollment.md` | ✅ accepted · implemented | 8 | — |
+| 4 | Sessions+Attendance | `04-sessions-attendance.md` | ✅ accepted · implemented | 16 | — |
+| 5 | Payroll+PayRates | `05-payroll.md` | ✅ accepted · implemented | 33 | — |
+| 6 | Billing | `06-billing.md` | ✅ accepted · implemented | 34 | — |
+| 7 | Notifications | `07-notifications.md` | 🔶 proposed · **not implemented** | 21 | no endpoint defined yet (Sprint 6 scope, `DEBT-002`) |
+| 8 | Dashboard | `08-dashboard.md` | ✅ accepted · implemented (⚠️ monitoring probes are stubs — see KNOWN_ISSUES) | 14 | — |
 
-**168 invariants**, each with a matching test line in module section 15. Modules 01, 04, 05, 06, 08 are accepted and implemented.
+**168 invariants**, each with a matching test line in module section 15. Modules 01, 03–06, 08
+are accepted and implemented; 02 is implemented but its spec status is in conflict (see
+`_INDEX.md` §1 note); 07 is the only module with no code.
 
 ### Backend — Teacher module specs
 
