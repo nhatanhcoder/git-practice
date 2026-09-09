@@ -655,6 +655,11 @@ _(specs written 2026-08-19, `docs/api/modules/`. **Updated 2026-09-01**: `apps/a
 
 ## Active work — student identity slice
 
+- 🔶 (opencode · 2026-09-08) **A11 — Importer từ vựng** (branch `feat/a11-vocab-importer`,
+      stack trên `docs/a10-vocab-audit`). Owner đã duyệt 3 điều kiện mở khóa A10: corpus của
+      owner + import 1.228 `words[]` + copy nguồn vào repo. Code importer theo prompt A11:
+      dry-run mặc định, apply tường minh, idempotent, không reset review state.
+
 - ✅ (opencode · 2026-09-08) **A10 — Kiểm kê nguồn từ vựng** (branch `docs/a10-vocab-audit`).
       READ-ONLY audit xong, docs đã duyệt. **Kết quả chính: corpus ngoài KHÔNG có file
       vocabulary riêng** (11 file, không file nào là danh sách từ HSK). `writing.json` là bộ
