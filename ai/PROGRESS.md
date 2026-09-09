@@ -335,6 +335,16 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
 
 ## Off-sprint / spike
 
+- 🔶 (claude · 2026-09-09) **FE batch — fix the prod early-return-before-hooks pattern across
+  the student area + honest exams copy.** While planning `/student/mistakes` + `/student/exams`
+  work, measured the whole area: **18/20 student routes early-return the production
+  `UnavailableState` before their hooks** — the exact Rules-of-Hooks violation A05 fixed for
+  `/mistakes/review` (with a comment explaining the fix) but nobody applied elsewhere.
+  Exams' prod copy also cites the wrong sprint ("Sprint 5"; Exam Engine is **Sprint 4** per
+  SPRINT_PLAN.md). Plan: move the prod branch after all hooks in the 18 files (no logic
+  changes), fix the 3 exams messages, add a scan-based regression test, update contract docs.
+  No backend, no invented endpoints, no schema/auth/RBAC. Branch `feat/student-prod-return-hooks`.
+
 - ✅ (claude · 2026-09-06) **A05 — SRS về đúng route chính.** Màn SRS nối API thật đang nằm ở
   `/student/mistakes`, còn `/student/flashcards` phục vụ một bản Leitner mock — nên mục sidebar
   tên "Flashcard" mở đúng bản giả, và màn duy nhất gọi endpoint thật thì không ai tìm ra. A00 đã
