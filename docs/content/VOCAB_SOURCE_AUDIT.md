@@ -95,19 +95,33 @@ dataset serves the character-writing feature (F11) and should not be forced into
   existing document → update fields in place (stable `_id`); missing → insert.
 - Re-running the same input must be a no-op change set (idempotent).
 
-## 6. Import unlock conditions (all required)
+## 6. Import unlock conditions — ✅ ALL RESOLVED (owner, 2026-09-08)
 
-1. **Provenance/license** — the corpus carries no license, attribution, or origin record.
-   Owner must confirm the right to use it in this product. Until then: **BLOCKED**.
-2. **Owner decision: words vs characters** — `words[]` (1,228, matches Flashcard semantics)
-   vs `writing.json` entries (587, matches character-writing F11) vs both. Pedagogical call,
-   not an engineering one.
-3. **Source must become repository-owned** — a copy under CI/deploy reach with this audit as
-   its provenance record; deployment must not depend on `D:\` on a developer machine
-   (TEST A10 #6, `DOC-011`).
-4. Importer runs dry-run-first, reports valid/invalid/duplicate per record, applies explicitly,
-   and preserves `_id` + review state per §5 — that is TASK A11, only startable after this
-   list is approved.
+1. **Provenance/license** — ✅ owner confirmed the Hán Lộ corpus is theirs and permitted for
+   this product (session 2026-09-08, recorded in
+   `ai/context/sessions/2026-09-08-opencode-a11-vocab-importer.md`).
+2. **Owner decision: words vs characters** — ✅ **words**: the 1,228 embedded `words[]`
+   entries are the Flashcard seed. Characters stay with the character-writing feature (F11).
+3. **Source is now repository-owned** — ✅ `writing.json` copied verbatim (byte-identical,
+   388,024 bytes) to `apps/api/content/writing.json`. This copy is the import source of
+   record; deployment no longer depends on `D:\` on a developer machine for the vocabulary
+   slice. The other 10 corpus files remain external (`DOC-011`, A12+ scope).
+
+### Import decisions carried into A11
+
+- **Dedup key**: `hanzi`. 1,228 candidates → **1,119 unique cards**. 80 extra exact
+  duplicates (15 cross-level), 29 hanzi with conflicting pinyin/meaning — mostly the same
+  word listed under each constituent character with formatting variance (e.g. `你好` as
+  `nǐhǎo` under 好 and `nǐ hǎo` under 你).
+- **Conflict policy**: deterministic winner = lowest level, then source order; all losers are
+  reported, never silently dropped. Winner level = the lowest level the hanzi appears at
+  (per-level outcome: 922/50/40/32/25/16/12/11/11).
+- **Field mapping**: `words[].hanzi → hanzi`, `pinyin → pinyin`, `vi → meaning`, level
+  inherited from the parent character entry; `tags: ["hanlo"]` provenance tag; no example/
+  audio fields (no source). Upsert by `hanzi` alone (any level) so a later level change
+  updates the existing card instead of creating a cross-level duplicate.
+- **Review state**: importer never reads or writes `user_flashcard_states`; upsert preserves
+  `_id`. TASK A11 enforces dry-run default + explicit `--apply`.
 
 ## 7. Audit trail
 

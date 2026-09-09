@@ -547,6 +547,13 @@ developer-machine absolute path.
   decision + source not repository-owned. Importer safety rules for review state are recorded
   in the audit §5. No data copied, no DB written, no schema changed.
 
+**A11 unlock update (2026-09-08)**: owner approved all three conditions — provenance confirmed,
+`words[]` chosen as the Flashcard seed, and `writing.json` copied verbatim into the repo at
+`apps/api/content/writing.json`. The **vocabulary slice** of DOC-011 is therefore resolved
+for dev/import purposes; the other 10 corpus files (grammar, exams, lego, strokes, …) remain
+external and unavailable to CI/deploy, so DOC-011 stays **Open** for F9–F16 generally. See
+`docs/content/VOCAB_SOURCE_AUDIT.md` §6 for the import decisions carried into TASK A11.
+
 ---
 
 ### [DOC-008] `DECISIONS.md` is referenced but does not exist
