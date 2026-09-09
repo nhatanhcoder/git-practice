@@ -726,6 +726,10 @@ are accepted and implemented; 02 is implemented but its spec status is in confli
 - 🔶 (opencode · 2026-09-07) **A07 — Form tham gia lớp thật** (commit `abf6def`, branch
       `codex/a07-student-join-class`, base `codex/a06-student-classes-list` @ `2f12310`
       — A06 chưa có PR/merge, stack có báo theo tiền lệ A05).
+- 🔶 (opencode · 2026-09-08) **A12 — Dọn UI cũ sau tích hợp** (branch `chore/a12-dead-code`,
+      base `f656d71` = A09). Chỉ xóa dead code đã chứng minh hết consumer (audit grep toàn
+      cây): `vocabBox`/`rateVocab` trong store, `vocabTopics` trong content; kèm persist
+      migration v1→v2 strip key cũ. Không đụng baseline/Admin/Teacher/mock corpus.
 - ✅ (opencode · 2026-09-08) **A09 — Rời lớp Student theo server thật**
   Reused the existing A08 `DELETE /student/classes/:id/leave` wiring and completed the A09
   acceptance surface: cancel sends zero DELETE requests, confirm is ref-locked and disabled while
