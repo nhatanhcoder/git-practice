@@ -15,7 +15,9 @@
     "db:reset": "dotenv -e ../../.env -- prisma migrate reset",
     "db:studio": "dotenv -e ../../.env -- prisma studio",
     "db:seed": "dotenv -e ../../.env -- tsx prisma/seed.ts",
-    "db:check": "tsx scripts/check-db.ts"
+    "db:check": "tsx scripts/check-db.ts",
+    "vocab:dry-run": "nest build && dotenv -e ../../.env -- node dist/scripts/vocab-import.js",
+    "vocab:import": "nest build && dotenv -e ../../.env -- node dist/scripts/vocab-import.js --apply"
   },
   "prisma": {
     "seed": "dotenv -e ../../.env -- tsx prisma/seed.ts"
