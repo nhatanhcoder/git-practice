@@ -32,6 +32,19 @@ const MESSAGE_FOR_CODE: Record<string, string> = {
   VALIDATION_ERROR: "Dữ liệu chưa hợp lệ. Kiểm tra lại email và mật khẩu.",
 };
 
+function getSafeRedirectUrl(targetRole: UserRole, nextUrl: string | null): string {
+  if (!nextUrl) return HOME_FOR_ROLE[targetRole];
+
+  // If nextUrl is incompatible with the targetRole, safely send them to their dashboard
+  // rather than bouncing into a 403 / "Không đủ quyền" gate.
+  const isRoleMismatch =
+    (targetRole !== "student" && nextUrl.startsWith("/student")) ||
+    (targetRole !== "admin" && nextUrl.startsWith("/admin")) ||
+    (targetRole !== "teacher" && nextUrl.startsWith("/teacher"));
+
+  return isRoleMismatch ? HOME_FOR_ROLE[targetRole] : nextUrl;
+}
+
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -52,7 +65,7 @@ function LoginForm() {
   // the user navigated here by hand) — send them where they were going.
   useEffect(() => {
     if (status === "authenticated" && user) {
-      router.replace(nextParam || HOME_FOR_ROLE[user.role]);
+      router.replace(getSafeRedirectUrl(user.role, nextParam));
     }
   }, [status, user, nextParam, router]);
 
@@ -63,7 +76,7 @@ function LoginForm() {
 
     try {
       const signedIn = await login(email.trim(), password);
-      router.replace(nextParam || HOME_FOR_ROLE[signedIn.role]);
+      router.replace(getSafeRedirectUrl(signedIn.role, nextParam));
     } catch (err) {
       if (err instanceof ApiError) {
         setError(MESSAGE_FOR_CODE[err.code] ?? err.message);
@@ -144,7 +157,20 @@ function LoginForm() {
       </p>
 
       <p className="auth-hint" style={{ textAlign: "center", marginTop: 18 }}>
-        Tài khoản seed để thử: <code>admin@hsk.local</code> / <code>Password123!</code>
+        Tài khoản seed để thử:{" "}
+        {nextParam?.startsWith("/student") ? (
+          <>
+            <code>student@hsk.local</code> / <code>Password123!</code>
+            <br />
+            <span style={{ fontSize: 11, opacity: 0.8 }}>
+              (Quản trị viên: <code>admin@hsk.local</code>)
+            </span>
+          </>
+        ) : (
+          <>
+            <code>admin@hsk.local</code> / <code>Password123!</code>
+          </>
+        )}
       </p>
     </AuthShell>
   );
@@ -154,7 +180,7 @@ export default function LoginPage() {
   // useSearchParams needs a Suspense boundary or the whole route opts out of
   // static rendering and Next fails the build.
   return (
-    <Suspense fallback={<div className="auth-root student-root" data-theme="dark" />}>
+    <Suspense fallback={<div className="auth-root student-root" />}>
       <LoginForm />
     </Suspense>
   );

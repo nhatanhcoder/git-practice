@@ -20,16 +20,20 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
+import { useAuthStore } from "@/lib/auth/auth-store";
+import { logout } from "@/lib/api-client";
 import {
   ArrowRight,
   BookOpen,
   ChevronDown,
   Layers,
+  LogOut,
   Map,
   Menu,
   Moon,
   Sparkles,
   Sun,
+  User,
   X,
 } from "lucide-react";
 
@@ -120,6 +124,9 @@ export function SiteShell({
   const [isScrolled, setIsScrolled] = useState(false);
   const exploreRef = useRef<HTMLDivElement>(null);
 
+  const status = useAuthStore((s) => s.status);
+  const user = useAuthStore((s) => s.user);
+
   // Scroll listener: transparent sitebar over the hero, blurred once scrolled.
   useEffect(() => {
     const handleScroll = () => {
@@ -146,6 +153,9 @@ export function SiteShell({
     setExploreOpen(false);
     if (id) scrollToSection(id);
   }
+
+  const authenticatedTarget =
+    user?.role === "student" ? "/student" : user?.role === "admin" ? "/admin" : "/teacher";
 
   return (
     <div className="site">
@@ -232,10 +242,40 @@ export function SiteShell({
               {theme === "dark" ? <Sun size={17} /> : <Moon size={17} />}
             </button>
 
-            <Link href="/student" className="sitebar__cta-premium">
-              <span>Học thử miễn phí</span>
-              <ArrowRight size={14} />
-            </Link>
+            {status === "authenticated" && user ? (
+              <>
+                <span className="sitebar__user-chip" title={user.email}>
+                  <User size={13} />
+                  <span>{user.nickname || user.email.split("@")[0]}</span>
+                </span>
+
+                <Link href={authenticatedTarget} className="sitebar__cta-premium">
+                  <span>Vào học</span>
+                  <ArrowRight size={14} />
+                </Link>
+
+                <button
+                  type="button"
+                  className="sitebar__logout-btn"
+                  onClick={() => void logout()}
+                  aria-label="Đăng xuất"
+                  title="Đăng xuất"
+                >
+                  <LogOut size={16} />
+                </button>
+              </>
+            ) : (
+              <>
+                <Link href="/login?next=%2Fstudent" className="sitebar__login-btn">
+                  Đăng nhập
+                </Link>
+
+                <Link href="/student" className="sitebar__cta-premium">
+                  <span>Học thử miễn phí</span>
+                  <ArrowRight size={14} />
+                </Link>
+              </>
+            )}
 
             <button
               type="button"
@@ -287,15 +327,75 @@ export function SiteShell({
               </Link>
             ))}
 
-            <Link
-              href="/student"
-              className="btn btn--primary sitebar__cta-premium"
-              style={{ width: "100%", justifyContent: "center", marginTop: "var(--sp-2)" }}
-              onClick={() => setMenuOpen(false)}
-            >
-              <span>Học thử miễn phí</span>
-              <ArrowRight size={15} />
-            </Link>
+            {status === "authenticated" && user ? (
+              <>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    padding: "8px 12px",
+                    borderRadius: 10,
+                    background: "var(--surface-2)",
+                    fontSize: 13,
+                    color: "var(--text-1)",
+                  }}
+                >
+                  <User size={15} style={{ color: "var(--accent)" }} />
+                  <strong>{user.nickname || user.email}</strong>
+                </div>
+
+                <Link
+                  href={authenticatedTarget}
+                  className="btn btn--primary sitebar__cta-premium"
+                  style={{ width: "100%", justifyContent: "center", marginTop: "var(--sp-2)" }}
+                  onClick={() => setMenuOpen(false)}
+                >
+                  <span>Vào học</span>
+                  <ArrowRight size={15} />
+                </Link>
+
+                <button
+                  type="button"
+                  className="btn btn--ghost"
+                  style={{
+                    width: "100%",
+                    justifyContent: "center",
+                    gap: 8,
+                    marginTop: "var(--sp-1)",
+                    color: "var(--danger)",
+                  }}
+                  onClick={() => {
+                    setMenuOpen(false);
+                    void logout();
+                  }}
+                >
+                  <LogOut size={15} />
+                  <span>Đăng xuất</span>
+                </button>
+              </>
+            ) : (
+              <>
+                <Link
+                  href="/login?next=%2Fstudent"
+                  className="btn btn--ghost"
+                  style={{ width: "100%", justifyContent: "center", marginTop: "var(--sp-2)" }}
+                  onClick={() => setMenuOpen(false)}
+                >
+                  Đăng nhập
+                </Link>
+
+                <Link
+                  href="/student"
+                  className="btn btn--primary sitebar__cta-premium"
+                  style={{ width: "100%", justifyContent: "center", marginTop: "var(--sp-1)" }}
+                  onClick={() => setMenuOpen(false)}
+                >
+                  <span>Học thử miễn phí</span>
+                  <ArrowRight size={15} />
+                </Link>
+              </>
+            )}
           </nav>
         )}
       </header>

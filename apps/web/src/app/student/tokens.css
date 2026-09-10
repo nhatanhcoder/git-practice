@@ -119,6 +119,8 @@
   --text-2: #a9b4c6;
   --text-3: #77839a;
   --text-inverse: #0a0d13;
+  --fg: var(--text);
+  --fg-muted: var(--text-2);
 
   --accent: var(--cinnabar-400);
   --accent-strong: var(--cinnabar-500);
@@ -166,6 +168,8 @@
   --text-2: #58524a;
   --text-3: #857d72;
   --text-inverse: #ffffff;
+  --fg: var(--text);
+  --fg-muted: var(--text-2);
 
   --accent: var(--cinnabar-600);
   --accent-strong: var(--cinnabar-700);

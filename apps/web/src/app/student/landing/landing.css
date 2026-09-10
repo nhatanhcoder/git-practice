@@ -262,6 +262,52 @@
   color: #fff;
 }
 
+.student-root .sitebar__login-btn {
+  display: inline-flex;
+  align-items: center;
+  font-size: 13.5px;
+  font-weight: 550;
+  color: var(--text-2);
+  text-decoration: none;
+  padding: 6px 12px;
+  border-radius: var(--r-sm);
+  transition: color var(--dur-2) var(--ease), background var(--dur-2) var(--ease);
+}
+
+.student-root .sitebar__login-btn:hover {
+  color: var(--text);
+  background: color-mix(in srgb, var(--surface) 60%, transparent);
+}
+
+.student-root .sitebar__user-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--surface-2) 80%, transparent);
+  border: 1px solid var(--line);
+  font-size: 12.5px;
+  font-weight: 550;
+  color: var(--text-1);
+}
+
+.student-root .sitebar__logout-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  color: var(--text-3);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: color var(--dur-2) var(--ease), background var(--dur-2) var(--ease);
+}
+
+.student-root .sitebar__logout-btn:hover {
+  color: var(--danger);
+  background: var(--danger-soft);
+}
+
 .student-root .sitebar__burger { display: none; }
 
 /* Mobile menu */

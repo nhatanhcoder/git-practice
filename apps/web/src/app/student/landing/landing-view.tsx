@@ -23,6 +23,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
+import { useAuthStore } from "@/lib/auth/auth-store";
 import {
   ArrowRight,
   Award,
@@ -274,6 +275,10 @@ export function LandingView() {
   const [rotationStep, setRotationStep] = useState(0);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
 
+  const status = useAuthStore((s) => s.status);
+  const user = useAuthStore((s) => s.user);
+  const isAuthenticated = status === "authenticated" && !!user;
+
   // Theme is scoped to this wrapper, like StudentShell. Applied after mount so
   // the server and the first client render agree; dark is the default.
   const [theme, setTheme] = useState<"dark" | "light">("dark");
@@ -382,7 +387,7 @@ export function LandingView() {
 
               <div className="row gap-3 wrap lp-hero__ctas">
                 <Link href="/student" className="btn btn--primary btn--lg">
-                  Bắt đầu học <ArrowRight size={18} />
+                  {isAuthenticated ? "Tiếp tục học" : "Bắt đầu học"} <ArrowRight size={18} />
                 </Link>
                 <Link href="/student/learning-path" className="btn btn--outline btn--lg">
                   Xem lộ trình HSK
@@ -390,7 +395,9 @@ export function LandingView() {
               </div>
 
               <p className="lp-note">
-                Bản prototype giao diện · dữ liệu mô phỏng · không cần đăng ký
+                {isAuthenticated
+                  ? `Xin chào ${user?.nickname || user?.email}! Tiếp tục lộ trình học của bạn.`
+                  : "Bản prototype giao diện · dữ liệu mô phỏng · không cần đăng ký"}
               </p>
             </div>
 
@@ -638,7 +645,7 @@ export function LandingView() {
                 </p>
                 <div className="row gap-3 wrap">
                   <Link href="/student" className="btn btn--primary btn--lg">
-                    Vào học viện ngay <ArrowRight size={18} />
+                    {isAuthenticated ? "Vào khu học tập" : "Vào học viện ngay"} <ArrowRight size={18} />
                   </Link>
                   <Link href="/student/progress" className="btn btn--ghost">
                     <TrendingUp size={16} /> Xem cách theo dõi tiến độ
