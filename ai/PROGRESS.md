@@ -339,6 +339,9 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
 
 ## Off-sprint / spike
 
+- 🔶 (codex · 2026-09-10) **Grammar production gate G** — wrapper outside hooks, component-scoped regression tests; user-approved review/fix of checklist G. Isolated from the uncommitted broad student hooks worktree.
+
+
 - ✅ (claude · 2026-09-09) **Docs batch — sync module-status records with the implemented
   backend + record two QC findings.** Verified an external Modules 01→08 audit first, then:
   `_INDEX.md` — removed the obsolete "Only Auth is ready to code" line (7/8 implemented);
