@@ -1302,6 +1302,38 @@ limits in full.
 **Numbering note**: assigned against both `main` and the unmerged `codex/a02-isolate-demo`, whose
 highest web id is also `WEB-017`. Per `DOC-014`, reconcile by hand if another branch takes it.
 
+---
+
+### [API-017] Monitoring telemetry is hardcoded — `/admin/monitoring` shows fiction for Redis and Gemini
+
+**Severity**: High — the screen presents invented health data as live platform status
+**Status**: Open — found 2026-09-09 while verifying an external Modules 01→08 audit
+
+**Description**: `apps/api/src/dashboard/monitoring.service.ts` reports health that no probe
+measured:
+
+- **Redis**: `const redisStatus = 'healthy'; const redisLatency = '1ms';` (line ~43) — there is
+  no Redis client anywhere in the codebase; the value is a literal. `/admin/monitoring` renders
+  "Redis Cache — healthy 1ms" for a service that does not exist.
+- **Gemini** (`getGeminiStatus`, line ~13): the only real signal is whether `GEMINI_API_KEY` is
+  configured and non-placeholder. The `latency: '45ms'`, `quota: { used: 142000, limit:
+  1000000 }` and `keyType: 'Shared Org Key'` are **hardcoded constants** (ADR-014 names a shared
+  key, but the quota numbers are invented). DB latency is the only genuinely measured probe.
+
+**Impact**: same defect class as `WEB-011` — an admin screen presenting invented data, here as
+*platform monitoring*, which is the screen an operator would trust first during an incident. A
+real Gemini outage or quota exhaustion would show "healthy" as long as the key string exists.
+
+**Also mis-cited by the audit**: the audit's claim that `/admin/monitoring/health` does "live
+ping probes for PostgreSQL, MongoDB Atlas, Redis" is wrong for 2 of 3 services; only the SQL
+`SELECT 1` probe is real.
+
+**Fix Plan**: either implement real probes (Redis client ping; a minimal Gemini API call with
+measured latency, cached to respect quota — ADR-014) or relabel the stubs honestly
+("not configured" / "no probe") so the screen stops asserting what it did not measure. The
+Gemini quota figures should be removed, not faked.
+
+---
 
 ## Technical Debt
 
@@ -1320,6 +1352,35 @@ the whole first impression.
 **Fix Plan**: compress and resize to the size the cylinder faces actually sample, or convert to
 WebP with a PNG fallback. Do this before the page is linked anywhere public — see `WEB-017`,
 which has to be settled first anyway.
+
+---
+
+### [DEBT-006] The A09 leave-class test suite asserts file content, not behavior
+
+**Severity**: Medium
+**Status**: Open — recorded 2026-09-09 by the independent A09 QC (7/7 live criteria passed;
+this debt did not block the pass)
+
+**Description**: `apps/web/scripts/student-class-detail.test.mjs` (28 tests, grew with A09)
+is largely **regex/structural**: it asserts the page source contains `await
+leaveEnrolledClass(classId)`, that the service file contains the string `DELETE`, that cancel
+and confirm are different code paths in the file text. It never executes the flow. A logic
+error that keeps the strings intact (dropping the `await`, swapping a callback, early-return
+before the fetch) would still pass the suite.
+
+**Why it still passed QC**: the A09 verification ran the real flow live — browser + fetch spy +
+DB row assertions + API-down failure path + double-click race — covering exactly what the suite
+does not. That work is not repeatable per-PR, which is the point of having a suite at all.
+
+**Impact**: the suite gives false confidence for future edits to the leave flow (A10+ touches
+nearby student screens). Pattern already flagged once in `WEB-006`: "fix the reported line" —
+structural tests are the same failure mode pointing the other way.
+
+**Fix Plan**: extract the leave-flow state machine into a pure module (the A04 pattern:
+`srs-session.ts` + 20 regression tests) and test it for real: cancel emits nothing, confirm
+emits one DELETE, failure keeps state, success redirects. Keep a couple of structural asserts
+only where wiring (not logic) is what could break. Do this when the next task touches the file,
+not as its own sprint.
 
 ---
 
