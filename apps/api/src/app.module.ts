@@ -18,9 +18,22 @@ import { DashboardModule } from './dashboard/dashboard.module';
 import { FlashcardsModule } from './flashcards/flashcards.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 
 @Module({
   imports: [
+    // anti + h code: ThrottlerModule adoption for rate limiting across API endpoints
+    ThrottlerModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => [
+        {
+          ttl: config.get<number>('THROTTLE_TTL', 60000), // 60s window
+          limit: config.get<number>('THROTTLE_LIMIT', 1000), // generous baseline per IP, specialized endpoints override
+        },
+      ],
+    }),
+
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: join(process.cwd(), '../../.env'),
@@ -82,6 +95,9 @@ import { RolesGuard } from './common/guards/roles.guard';
   ],
   controllers: [HealthController],
   providers: [
+    // anti + h code: Global rate limiter guard
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
+
     // Registered globally, in this order, so authentication is the default and a route
     // that forgets to declare a guard fails closed rather than open. Opting out is
     // explicit and visible at the route: @Public().

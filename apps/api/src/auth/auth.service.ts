@@ -47,6 +47,7 @@ interface LoginRateLimitEntry {
 export class AuthService {
   private readonly jwtAccessSecret: string;
   private readonly jwtAccessTtl: string;
+  // anti + h code: In-memory sliding window failure tracking & cache eviction alongside @nestjs/throttler
   private readonly rotationCache = new Map<string, RotationCacheEntry>();
   private readonly loginAttempts = new Map<string, LoginRateLimitEntry>();
   public static readonly MAX_LOGIN_ATTEMPTS = 5;
@@ -608,12 +609,12 @@ export class AuthService {
       },
       existing
         ? {
-            marketingConsent: existing.marketingConsent,
-            consentChannels: existing.consentChannels as MarketingChannelName[],
-            consentVersion: existing.consentVersion,
-            consentedAt: existing.consentedAt,
-            withdrawnAt: existing.withdrawnAt,
-          }
+          marketingConsent: existing.marketingConsent,
+          consentChannels: existing.consentChannels as MarketingChannelName[],
+          consentVersion: existing.consentVersion,
+          consentedAt: existing.consentedAt,
+          withdrawnAt: existing.withdrawnAt,
+        }
         : null,
     );
 

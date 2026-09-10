@@ -61,6 +61,7 @@ NestJS 10.x
 - **NestJS over Express**: module system, DI, decorators → maintainable by one person
 - **Prisma over TypeORM**: better type inference, easier migrations
 - **Gemini over OpenAI**: free tier of 1M tokens/day → fits a $0 solo-dev budget
+- **Rate Limiting (@nestjs/throttler)**: Adopted globally at API level via `ThrottlerModule` + `ThrottlerGuard`, combined with in-memory sliding-window counter in `AuthService` for 5 fails/15min login lock (anti + h code).
 
 ---
 

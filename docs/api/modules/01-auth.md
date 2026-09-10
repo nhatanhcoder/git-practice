@@ -553,6 +553,7 @@ this spec states them as mandatory technical requirements, and approving the `Re
   behavior itself. This is a subtle variant of the account-enumeration vulnerability.
 - Over threshold → HTTP 429, **no** bcrypt comparison (CPU protection), **no** per-account
   remaining-time disclosure. ⚠️ No `code` for 429 yet → §16.
+- **Throttler adoption (`@nestjs/throttler`)**: Adopted globally at API level via `ThrottlerModule` + `ThrottlerGuard`, working in tandem with the dedicated in-memory sliding-window counter in `AuthService` for failed password lockouts (anti + h code).
 - Proposal to apply broader rate limits (no doc, leaving for §16): `register` (blocks mass
   junk-signup flooding the admin approval queue) and `change-password`/`refresh` (blocks abuse).
 

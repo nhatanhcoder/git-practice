@@ -17,6 +17,11 @@ Addressed technical debt in Auth in-memory state management (`loginAttempts`, `r
   - Configured `app.set('trust proxy', process.env.TRUST_PROXY ?? 1)` in `main.ts` with `NestExpressApplication` typing.
   - Removed manual `x-forwarded-for?.split(',')[0]` splitting from `auth.controller.ts`, relying directly on Express's sanitized `req.ip ?? req.socket?.remoteAddress ?? '127.0.0.1'`.
   - Prevents client-forged `X-Forwarded-For` IP spoofing and properly partitions rate limiting across distinct client IPs behind proxies.
+- **H Throttler Adoption & Documentation (`@nestjs/throttler`, anti + h code)**:
+  - Installed `@nestjs/throttler` v6.5.0 in `apps/api`.
+  - Registered `ThrottlerModule.forRootAsync` and `ThrottlerGuard` as global `APP_GUARD` in `apps/api/src/app.module.ts`.
+  - Added code comment `// anti + h code: ThrottlerModule adoption for rate limiting across API endpoints`.
+  - Updated `docs/shared/TECH_STACK.md` and `docs/api/modules/01-auth.md` §13 explaining the unified rate-limiting strategy (global throttler protection + dedicated in-memory failure tracker).
 - **Tests**:
   - Added `apps/api/test/auth-map-cleanup.test.ts` (6 tests covering sweep, rate-limit window, 429 counter lock, rotation cache read eviction, max entries overflow, and trust proxy multi-hop extraction).
   - Verified:
