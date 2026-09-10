@@ -554,6 +554,14 @@ this spec states them as mandatory technical requirements, and approving the `Re
 - Over threshold → HTTP 429, **no** bcrypt comparison (CPU protection), **no** per-account
   remaining-time disclosure. ⚠️ No `code` for 429 yet → §16.
 - **Throttler adoption (`@nestjs/throttler`)**: Adopted globally at API level via `ThrottlerModule` + `ThrottlerGuard`, working in tandem with the dedicated in-memory sliding-window counter in `AuthService` for failed password lockouts (anti + h code).
+- **In-Memory Store Cleanup & Bounded Limits**:
+  - `loginAttempts`: periodic zero-timer sweep at check/record time; entries past the 15-minute window are deleted in the same pass.
+  - `rotationCache`: expired rotation entries are pruned lazily on read; capped at `MAX_ROTATION_CACHE_ENTRIES = 10,000` with FIFO eviction of the oldest entry when full to prevent unbounded map growth.
+- **Reverse Proxy Strategy**: `app.set('trust proxy', 1)` in `main.ts` ensures `req.ip` accurately reflects the real client IP behind reverse proxies (Docker, Railway, Render) without manual `x-forwarded-for` fallbacks.
+- **Security Headers & Swagger Gating**:
+  - `helmet`: mounted globally for standard security headers (`X-Content-Type-Options: nosniff`, `X-Frame-Options: SAMEORIGIN`, etc.), with CSP disabled in development so Swagger UI assets load without issue.
+  - Swagger UI: mounted at `/api/v1/docs` strictly when `process.env.NODE_ENV !== 'production'`.
+  - Shutdown hooks: `app.enableShutdownHooks()` enabled in `main.ts` for clean SIGTERM handling across Prisma and Mongoose connections.
 - Proposal to apply broader rate limits (no doc, leaving for §16): `register` (blocks mass
   junk-signup flooding the admin approval queue) and `change-password`/`refresh` (blocks abuse).
 

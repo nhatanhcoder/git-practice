@@ -3,8 +3,9 @@ import { Logger, ValidationPipe, type ValidationError } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import type { NestExpressApplication } from '@nestjs/platform-express';
-import { AppModule } from './app.module';
+import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
+import { AppModule } from './app.module';
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
 import { EnvelopeInterceptor } from './common/interceptors/envelope.interceptor';
 import { AppException } from './common/errors/app.exception';
@@ -28,6 +29,17 @@ function toDetails(errors: ValidationError[], prefix = ''): Record<string, strin
 
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
+
+  // Enable graceful shutdown hooks (Prisma and Mongoose onModuleDestroy / onApplicationShutdown)
+  app.enableShutdownHooks();
+
+  // Security HTTP headers via helmet.
+  // In development, CSP is disabled so it doesn't block Swagger UI styles and scripts.
+  app.use(
+    helmet({
+      contentSecurityPolicy: process.env.NODE_ENV === 'production' ? undefined : false,
+    }),
+  );
 
   // Trust upstream reverse proxy (Docker, Railway, Render, Nginx).
   // Default to 1 hop (the immediate reverse proxy).
@@ -59,16 +71,19 @@ async function bootstrap(): Promise<void> {
 
   app.enableCors({ origin: process.env.CORS_ORIGIN ?? 'http://localhost:3000', credentials: true });
 
-  const swagger = new DocumentBuilder()
-    .setTitle('HSK Learning Platform API')
-    .setDescription('Admin surface. Only the modules whose specs are unblocked are implemented.')
-    .setVersion('1')
-    .addBearerAuth()
-    .build();
-  // Mounted at <prefix>/docs, not at <prefix> itself: the prefix root is where the
-  // API lives, and serving an HTML UI from the same path as the resource tree invites
-  // exactly the sort of collision that is painful to debug later.
-  SwaggerModule.setup(`${prefix}/docs`, app, SwaggerModule.createDocument(app, swagger));
+  // Gate Swagger documentation: only mounted when NODE_ENV is not production.
+  if (process.env.NODE_ENV !== 'production') {
+    const swagger = new DocumentBuilder()
+      .setTitle('HSK Learning Platform API')
+      .setDescription('Admin surface. Only the modules whose specs are unblocked are implemented.')
+      .setVersion('1')
+      .addBearerAuth()
+      .build();
+    // Mounted at <prefix>/docs, not at <prefix> itself: the prefix root is where the
+    // API lives, and serving an HTML UI from the same path as the resource tree invites
+    // exactly the sort of collision that is painful to debug later.
+    SwaggerModule.setup(`${prefix}/docs`, app, SwaggerModule.createDocument(app, swagger));
+  }
 
   const port = Number(process.env.API_PORT ?? 3001);
   await app.listen(port);

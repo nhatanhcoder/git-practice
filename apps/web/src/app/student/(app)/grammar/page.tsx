@@ -59,15 +59,7 @@ function optionsFor(point: GrammarPoint, all: GrammarPoint[]) {
   return shuffleBlocks(pool, point.id.length * 17 + point.level) as string[];
 }
 
-export default function GrammarPage() {
-  if (process.env.NODE_ENV === "production") {
-    return (
-      <UnavailableState
-        title="Thư viện ngữ pháp"
-        description="Thư viện ngữ pháp chưa được kết nối máy chủ dữ liệu trong phiên bản hiện tại. Vui lòng quay lại sau."
-      />
-    );
-  }
+function GrammarInner() {
   const [demo, setDemo] = useState<DemoState>("ready");
   const [level, setLevel] = useState<number | "all">("all");
   const [category, setCategory] = useState<string>("all");
@@ -586,4 +578,16 @@ function MatchExercise({
       ) : null}
     </div>
   );
+}
+
+export default function GrammarPage() {
+  if (process.env.NODE_ENV === "production") {
+    return (
+      <UnavailableState
+        title="Thư viện ngữ pháp"
+        description="Thư viện ngữ pháp chưa được kết nối máy chủ dữ liệu trong phiên bản hiện tại. Vui lòng quay lại sau."
+      />
+    );
+  }
+  return <GrammarInner />;
 }

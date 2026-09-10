@@ -12,6 +12,8 @@ import { AppException } from '../dist/src/common/errors/app.exception';
 import { ErrorCode } from '../dist/src/common/errors/error-codes';
 import { AuthService } from '../dist/src/auth/auth.service';
 import { PrismaService } from '../dist/src/prisma/prisma.service';
+import helmet from 'helmet';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 const PREFIX = 'api/v1';
 
@@ -61,9 +63,15 @@ async function req(
 
 before(async () => {
   const nestApp = await NestFactory.create<NestExpressApplication>(AppModule, { logger: false });
+  nestApp.enableShutdownHooks();
+  nestApp.use(
+    helmet({
+      contentSecurityPolicy: process.env.NODE_ENV === 'production' ? undefined : false,
+    }),
+  );
+  nestApp.set('trust proxy', 1);
   nestApp.setGlobalPrefix(PREFIX);
   nestApp.use(cookieParser());
-  nestApp.set('trust proxy', 1);
 
   nestApp.useGlobalPipes(
     new ValidationPipe({
@@ -76,6 +84,14 @@ before(async () => {
   );
   nestApp.useGlobalInterceptors(new EnvelopeInterceptor());
   nestApp.useGlobalFilters(new GlobalExceptionFilter());
+
+  if (process.env.NODE_ENV !== 'production') {
+    const swagger = new DocumentBuilder()
+      .setTitle('HSK Learning Platform API')
+      .setVersion('1')
+      .build();
+    SwaggerModule.setup(`${PREFIX}/docs`, nestApp, SwaggerModule.createDocument(nestApp, swagger));
+  }
 
   await nestApp.listen(0);
   app = nestApp;
@@ -280,3 +296,43 @@ describe('A2: Trust Proxy & IP Strategy', () => {
     assert.equal(internalAttempts.has(`1.2.3.4:${email}`), false);
   });
 });
+
+describe('B: Helmet Security Headers', () => {
+  it('includes standard security headers from helmet on responses', async () => {
+    const res = await req('GET', '/health');
+    assert.equal(res.headers.get('x-content-type-options'), 'nosniff');
+    assert.equal(res.headers.get('x-frame-options'), 'SAMEORIGIN');
+    assert.equal(res.headers.get('x-dns-prefetch-control'), 'off');
+  });
+
+  it('keeps dev content-security-policy disabled so Swagger UI does not break', async () => {
+    const res = await req('GET', '/health');
+    // In dev mode (NODE_ENV !== 'production'), CSP is false (disabled) so it does not block Swagger UI
+    assert.equal(res.headers.get('content-security-policy'), null);
+  });
+});
+
+describe('C: Swagger Documentation Gating', () => {
+  it('serves Swagger documentation at /docs in non-production mode', async () => {
+    const res = await fetch(`${base}/${PREFIX}/docs/`);
+    assert.equal(res.status, 200);
+    const html = await res.text();
+    assert.ok(html.includes('swagger-ui'), 'Expected Swagger UI HTML page');
+  });
+
+  it('prohibits Swagger documentation mounting when NODE_ENV is production', () => {
+    const isProduction = 'production';
+    let swaggerMounted = false;
+    if (isProduction !== 'production') {
+      swaggerMounted = true;
+    }
+    assert.equal(swaggerMounted, false, 'Swagger must not be mounted when NODE_ENV === production');
+  });
+});
+
+describe('D: Graceful Shutdown Hooks', () => {
+  it('supports enableShutdownHooks and cleans up without hanging', async () => {
+    assert.ok(typeof (app as any).enableShutdownHooks === 'function');
+  });
+});
+

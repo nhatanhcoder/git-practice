@@ -48,9 +48,10 @@ NestJS 10.x
 ├── Auth: @nestjs/jwt + @nestjs/passport + passport-jwt
 ├── Validation: class-validator + class-transformer
 ├── Config: @nestjs/config
-├── Swagger: @nestjs/swagger
-├── Rate Limiting: @nestjs/throttler
-├── Security: helmet
+├── Swagger: @nestjs/swagger (dev-only gated)
+├── Rate Limiting: @nestjs/throttler + in-memory sliding-window lockout
+├── Security: helmet (Swagger-compatible CSP in dev)
+├── Reverse Proxy: trust proxy (1 hop default, configurable via TRUST_PROXY)
 ├── File Upload: @cloudinary/url-gen + multer
 ├── Database: prisma + @prisma/client
 ├── MongoDB: mongoose + @nestjs/mongoose
@@ -62,6 +63,9 @@ NestJS 10.x
 - **Prisma over TypeORM**: better type inference, easier migrations
 - **Gemini over OpenAI**: free tier of 1M tokens/day → fits a $0 solo-dev budget
 - **Rate Limiting (@nestjs/throttler)**: Adopted globally at API level via `ThrottlerModule` + `ThrottlerGuard`, combined with in-memory sliding-window counter in `AuthService` for 5 fails/15min login lock (anti + h code).
+- **Security Headers (helmet)**: Global `helmet()` middleware active across all environments, with CSP relaxed in development (`NODE_ENV !== 'production'`) so Swagger UI loads without console script/style blocks.
+- **Reverse Proxy Trust (`app.set('trust proxy', 1)`)**: Properly extracts client IP for rate limiting and logging when deployed behind Docker, Railway, or Render.
+- **Bounded In-Memory Stores**: Zero-timer map cleanup in `AuthService` — `loginAttempts` sweeps expired keys during read/write checks, and `rotationCache` applies lazy eviction on read plus FIFO pruning capped at 10,000 entries.
 
 ---
 
