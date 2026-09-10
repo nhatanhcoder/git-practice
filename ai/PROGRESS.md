@@ -637,6 +637,20 @@ are accepted and implemented; 02 is implemented but its spec status is in confli
 
 ### Backend — Teacher module specs
 
+- 🔶 (claude · 2026-09-10) **CODE S3 — AssignmentsModule** (the biggest unbuilt feature with
+  complete paperwork: teacher spec `03-assignments.md` (17 sections), `ENTITY_ASSIGNMENT.md`,
+  `ENTITY_LESSON_ASSIGNMENT.md`, agreed endpoints in `API_TEACHER.md`, agreed
+  `ASSIGNMENT_*` error codes). Scope: Prisma migration adding `Assignment` +
+  `LessonAssignment` per the entity specs (DB-schema change — covered by the user's 2026-09-09
+  "làm hết đi" instruction for uncoded features, migration reviewed in its own commit),
+  `apps/api` module with 7 endpoints (create/list/detail/update/delete/publish + student
+  `GET /student/assignments` per API_STUDENT S-ASGN-1), Mongo existence check on questionIds
+  (INV-TASG-03), Attempt-gated edit/delete (INV-TASG-04), publish→Notification per
+  INV-TASG-06 **if the Notification table exists** (07-notifications is NOT built — falling
+  back to recording that invariant as blocked, NOT inventing the table), then wiring the two
+  mocked FE screens (teacher `/teacher/assignments`, student `/student/assignments`) and
+  closing WEB-013 (usageCount gate). Branch `feat/s3-assignments`, base `73bdd2c`.
+
 - 🔶 (claude · 2026-09-01) **API surface gaps closed, module specs not started.**
   `API_TEACHER.md` § Lessons written (8 endpoints, `API-007` closed) + `LESSON_*` error family
   (*proposed, not agreed*); `API-006` route convention settled **role-prefixed** by the owner and
