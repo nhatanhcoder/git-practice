@@ -1,9 +1,11 @@
-﻿import { ApiError, apiRequest } from "../api-client";
+import { ApiError, apiRequest } from "../api-client";
 import {
+  describeLeaveFailure,
   joinFailureMessage,
   normalizeJoinCode,
   type EnrolledClass,
 } from "./classes-rules";
+import type { EnrolledClassDetail } from "./classes-rules";
 
 export * from "./classes-rules";
 
@@ -51,4 +53,37 @@ export async function joinClassByCode(rawCode: string): Promise<JoinResult> {
 export function describeJoinFailure(err: unknown): string {
   if (err instanceof ApiError) return joinFailureMessage(err.code);
   return "Không kết nối được máy chủ. Kiểm tra kết nối rồi thử lại.";
+}
+
+/**
+ * Fetches detail of an enrolled class, including its ordered lessons (F2.6).
+ * Endpoint: GET /student/classes/:id
+ */
+export async function fetchEnrolledClassDetail(classId: string): Promise<EnrolledClassDetail> {
+  const response = await apiRequest<EnrolledClassDetail>(`/student/classes/${encodeURIComponent(classId)}`);
+  return response.data;
+}
+
+export interface LeaveClassResult {
+  classId: string;
+  status: "dropped";
+  joinedAt: string | null;
+  rejoinedAt: string | null;
+}
+
+/**
+ * Leaves an enrolled class. The API keeps the enrollment row and changes its status to dropped.
+ * Endpoint: DELETE /student/classes/:id/leave
+ */
+export async function leaveEnrolledClass(classId: string): Promise<LeaveClassResult> {
+  const response = await apiRequest<LeaveClassResult>(
+    `/student/classes/${encodeURIComponent(classId)}/leave`,
+    { method: "DELETE" },
+  );
+  return response.data;
+}
+
+export function describeLeaveError(err: unknown): string {
+  if (err instanceof ApiError) return describeLeaveFailure(err.code);
+  return "Không thể kết nối máy chủ. Kiểm tra kết nối rồi thử lại.";
 }
