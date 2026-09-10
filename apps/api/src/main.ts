@@ -3,6 +3,7 @@ import { Logger, ValidationPipe, type ValidationError } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import type { NestExpressApplication } from '@nestjs/platform-express';
+import { parseTrustProxy } from './bootstrap/trust-proxy';
 import { AppModule } from './app.module';
 import cookieParser from 'cookie-parser';
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
@@ -29,10 +30,7 @@ function toDetails(errors: ValidationError[], prefix = ''): Record<string, strin
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
-  // Trust upstream reverse proxy (Docker, Railway, Render, Nginx).
-  // Default to 1 hop (the immediate reverse proxy).
-  const trustProxy = process.env.TRUST_PROXY ?? '1';
-  app.set('trust proxy', /^\d+$/.test(trustProxy) ? parseInt(trustProxy, 10) : trustProxy);
+  app.set('trust proxy', parseTrustProxy(process.env.TRUST_PROXY));
 
   // `/api/v1`, per API_CONVENTIONS.md § Base URL and § Versioning, and matching every
   // path written in docs/api/**. It used to be hardcoded to 'api' while .env declared

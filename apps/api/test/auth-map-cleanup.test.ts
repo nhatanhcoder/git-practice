@@ -2,10 +2,14 @@ import 'reflect-metadata';
 import { after, before, describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe, type INestApplication, type ValidationError } from '@nestjs/common';
+import { ValidationPipe, type ValidationError } from '@nestjs/common';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import cookieParser from 'cookie-parser';
-import { AppModule } from '../dist/src/app.module';
+import { Module } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { JwtService } from '@nestjs/jwt';
+import { AuthController } from '../dist/src/auth/auth.controller';
+import { parseTrustProxy } from '../dist/src/bootstrap/trust-proxy';
 import { GlobalExceptionFilter } from '../dist/src/common/filters/global-exception.filter';
 import { EnvelopeInterceptor } from '../dist/src/common/interceptors/envelope.interceptor';
 import { AppException } from '../dist/src/common/errors/app.exception';
@@ -15,10 +19,19 @@ import { PrismaService } from '../dist/src/prisma/prisma.service';
 
 const PREFIX = 'api/v1';
 
-let app: INestApplication;
+let app: NestExpressApplication;
 let base: string;
 let authService: AuthService;
-let prisma: PrismaService;
+interface AttemptEntry { attempts: number; firstAttemptAt: number }
+interface CacheEntry { accessToken: string; rawRefreshToken: string; expiresAt: number }
+interface AuthInternals {
+  loginAttempts: Map<string, AttemptEntry>;
+  rotationCache: Map<string, CacheEntry>;
+  getRotationCache(key: string): CacheEntry | undefined;
+  setRotationCache(key: string, entry: CacheEntry): void;
+  recordFailedLogin(ip: string, email: string): void;
+}
+const internals = () => authService as unknown as AuthInternals;
 
 function toDetails(errors: ValidationError[], prefix = ''): Record<string, string[]> {
   const out: Record<string, string[]> = {};
@@ -34,13 +47,13 @@ function toDetails(errors: ValidationError[], prefix = ''): Record<string, strin
 type Res = {
   status: number;
   headers: Headers;
-  body: any;
+  body: { code?: string };
 };
 
 async function req(
   method: 'GET' | 'POST' | 'PATCH',
   path: string,
-  body?: any,
+  body?: Record<string, unknown>,
   headers: Record<string, string> = {},
 ): Promise<Res> {
   const reqHeaders: Record<string, string> = { ...headers };
@@ -60,10 +73,16 @@ async function req(
 }
 
 before(async () => {
-  const nestApp = await NestFactory.create<NestExpressApplication>(AppModule, { logger: false });
+  // Only persistence is stubbed. Real controller, limiter and bcrypt run over HTTP.
+  // Full auth/concurrency suites remain responsible for actual database behavior.
+  const prisma = { user: { findUnique: async () => null } } as unknown as PrismaService;
+  authService = new AuthService(prisma, new JwtService(), new ConfigService({ JWT_ACCESS_SECRET: 'isolated-test-only' }));
+  class FixtureModule {}
+  Module({ controllers: [AuthController], providers: [{ provide: AuthService, useValue: authService }] })(FixtureModule);
+  const nestApp = await NestFactory.create<NestExpressApplication>(FixtureModule, { logger: false });
   nestApp.setGlobalPrefix(PREFIX);
   nestApp.use(cookieParser());
-  nestApp.set('trust proxy', 1);
+  nestApp.set('trust proxy', parseTrustProxy('1'));
 
   nestApp.useGlobalPipes(
     new ValidationPipe({
@@ -81,7 +100,7 @@ before(async () => {
   app = nestApp;
   base = (await app.getUrl()).replace('[::1]', 'localhost');
   authService = app.get(AuthService);
-  prisma = app.get(PrismaService);
+
 });
 
 after(async () => {
@@ -90,7 +109,7 @@ after(async () => {
 
 describe('A1: loginAttempts Map Cleanup & Window Verification', () => {
   it('sweeps expired entries from loginAttempts on check/write without timer', async () => {
-    const internalAttempts = (authService as any).loginAttempts as Map<string, any>;
+    const internalAttempts = internals().loginAttempts;
     const now = Date.now();
     const expiredTimestamp = now - 16 * 60 * 1000; // 16 minutes ago (past 15m window)
 
@@ -118,7 +137,7 @@ describe('A1: loginAttempts Map Cleanup & Window Verification', () => {
   it('enforces 5 fails -> 6th fails with 429; 429 does NOT increment counter; resets after 15m', async () => {
     const email = 'rate-limit-test@test.local';
     const ip = '10.20.30.40';
-    const internalAttempts = (authService as any).loginAttempts as Map<string, any>;
+    const internalAttempts = internals().loginAttempts;
     const key = `${ip}:${email}`;
 
     internalAttempts.delete(key);
@@ -160,7 +179,7 @@ describe('A1: loginAttempts Map Cleanup & Window Verification', () => {
     assert.equal(internalAttempts.get(key)?.attempts, 5);
 
     // Age the entry past 15m window
-    internalAttempts.get(key).firstAttemptAt = Date.now() - 16 * 60 * 1000;
+    internalAttempts.get(key)!.firstAttemptAt = Date.now() - 16 * 60 * 1000;
 
     // Next attempt is permitted (401 credentials error instead of 429), resetting attempts to 1
     const resAfterWindow = await req(
@@ -177,7 +196,7 @@ describe('A1: loginAttempts Map Cleanup & Window Verification', () => {
 
 describe('A1: rotationCache Cleanup & Eviction', () => {
   it('deletes expired entry from rotationCache when read', async () => {
-    const internalCache = (authService as any).rotationCache as Map<string, any>;
+    const internalCache = internals().rotationCache;
     const fakeTokenHash = 'hash-expired-test';
 
     // Insert expired rotation cache entry
@@ -191,7 +210,7 @@ describe('A1: rotationCache Cleanup & Eviction', () => {
     assert.ok(internalCache.has(fakeTokenHash));
 
     // Call getRotationCache to read and verify expired entry is pruned
-    const cached = (authService as any).getRotationCache(fakeTokenHash);
+    const cached = internals().getRotationCache(fakeTokenHash);
     assert.equal(cached, undefined);
 
     // Cache must have evicted fakeTokenHash
@@ -200,8 +219,8 @@ describe('A1: rotationCache Cleanup & Eviction', () => {
   });
 
   it('evicts oldest entry when rotationCache exceeds MAX_ROTATION_CACHE_ENTRIES limit', async () => {
-    const internalCache = (authService as any).rotationCache as Map<string, any>;
-    const maxEntries = (AuthService as any).MAX_ROTATION_CACHE_ENTRIES ?? 10_000;
+    const internalCache = internals().rotationCache;
+    const maxEntries = AuthService.MAX_ROTATION_CACHE_ENTRIES;
 
     internalCache.clear();
 
@@ -219,8 +238,8 @@ describe('A1: rotationCache Cleanup & Eviction', () => {
     assert.ok(internalCache.has('key-0')); // oldest entry
 
     // Add 1 more entry via setRotationCache
-    if (typeof (authService as any).setRotationCache === 'function') {
-      (authService as any).setRotationCache('key-overflow', {
+    if (typeof internals().setRotationCache === 'function') {
+      internals().setRotationCache('key-overflow', {
         accessToken: 'at-overflow',
         rawRefreshToken: 'rt-overflow',
         expiresAt: now + 30_000,
@@ -237,7 +256,7 @@ describe('A1: rotationCache Cleanup & Eviction', () => {
 
 describe('A2: Trust Proxy & IP Strategy', () => {
   it('extracts real client IP from trusted reverse proxy and partitions rate limiting', async () => {
-    const internalAttempts = (authService as any).loginAttempts as Map<string, any>;
+    const internalAttempts = internals().loginAttempts;
     const email = 'trust-proxy-user@test.local';
 
     // Client 1 behind proxy: X-Forwarded-For: 203.0.113.10
@@ -259,12 +278,12 @@ describe('A2: Trust Proxy & IP Strategy', () => {
     // There should be two separate entries for the two IPs
     assert.equal(internalAttempts.has(`203.0.113.10:${email}`), true);
     assert.equal(internalAttempts.has(`198.51.100.20:${email}`), true);
-    assert.equal(internalAttempts.get(`203.0.113.10:${email}`).attempts, 1);
-    assert.equal(internalAttempts.get(`198.51.100.20:${email}`).attempts, 1);
+    assert.equal(internalAttempts.get(`203.0.113.10:${email}`)!.attempts, 1);
+    assert.equal(internalAttempts.get(`198.51.100.20:${email}`)!.attempts, 1);
   });
 
   it('unpacks multi-hop X-Forwarded-For correctly trusting the immediate proxy hop', async () => {
-    const internalAttempts = (authService as any).loginAttempts as Map<string, any>;
+    const internalAttempts = internals().loginAttempts;
     const email = 'multi-hop-user@test.local';
 
     // Client sends spoofed client hop: "spoofed.client.ip, real.client.ip"
@@ -278,5 +297,46 @@ describe('A2: Trust Proxy & IP Strategy', () => {
 
     assert.equal(internalAttempts.has(`5.6.7.8:${email}`), true);
     assert.equal(internalAttempts.has(`1.2.3.4:${email}`), false);
+  });
+});
+
+describe('A2: explicit deployment trust configuration', () => {
+  it('keeps trust off unless configured and rejects unrestricted trust', () => {
+    for (const value of [undefined, '', 'false', '0']) assert.equal(parseTrustProxy(value), false);
+    assert.equal(parseTrustProxy('1'), 1);
+    assert.deepEqual(parseTrustProxy('loopback, 10.0.0.0/8'), ['loopback', '10.0.0.0/8']);
+    for (const value of ['true', '-1', '9007199254740992', 'loopback,']) {
+      assert.throws(() => parseTrustProxy(value));
+    }
+  });
+
+  it('ignores forged XFF from a direct peer when trust is not configured', async () => {
+    app.set('trust proxy', parseTrustProxy(undefined));
+    const email = 'direct-peer@test.local';
+    internals().loginAttempts.clear();
+    try {
+      for (const ip of ['203.0.113.10', '198.51.100.20']) {
+        const response = await req('POST', '/auth/login', { email, password: 'WrongPassword!' }, { 'x-forwarded-for': ip });
+        assert.equal(response.status, 401);
+      }
+      const attempts = internals().loginAttempts;
+      assert.equal(attempts.size, 1);
+      assert.equal([...attempts.values()][0].attempts, 2);
+      assert.equal(attempts.has(`203.0.113.10:${email}`), false);
+      assert.equal(attempts.has(`198.51.100.20:${email}`), false);
+    } finally { app.set('trust proxy', parseTrustProxy('1')); }
+  });
+});
+
+describe('A1: write sweep coverage', () => {
+  it('sweeps expired unrelated entries on write, preserving live attempts', () => {
+    const attempts = internals().loginAttempts;
+    attempts.clear();
+    for (let i = 0; i < 6; i++) attempts.set(`old-${i}`, { attempts: 5, firstAttemptAt: Date.now() - 16 * 60_000 });
+    attempts.set('still-live', { attempts: 4, firstAttemptAt: Date.now() });
+    internals().recordFailedLogin('192.0.2.1', 'new@test.local');
+    assert.equal(attempts.size, 2);
+    assert.equal(attempts.get('still-live')?.attempts, 4);
+    assert.equal(attempts.get('192.0.2.1:new@test.local')?.attempts, 1);
   });
 });

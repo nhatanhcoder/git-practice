@@ -339,7 +339,7 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
 
 ## Off-sprint / spike
 
-- 🔶 (codex · 2026-09-10) **A1+A2 review of PR 55** — user explicitly authorized review and corrections after Antigravity completed. Preserve cleanup behavior; fix unsafe default proxy trust, missing default-off coverage and 19 test lint errors. Backend lane assigned to Codex for this named Auth scope.
+- 🔶 (codex · 2026-09-10) **A1+A2 review of PR 55** — user explicitly authorized review and corrections after Antigravity completed. Cleanup retained; unsafe default proxy trust and 19 test lint errors corrected locally; 9/9 isolated tests pass. API build blocked by A11 importer on main; real DB suites NOT RUN. Backend lane assigned to Codex for this named Auth scope.
 
 
 - ✅ (claude · 2026-09-09) **Docs batch — sync module-status records with the implemented
