@@ -76,6 +76,7 @@ model User {
   enrollments      ClassEnrollment[]
   lessonsCreated   Lesson[]
   assignmentsCreated Assignment[]         @relation("AssignmentsCreated")
+  attemptsMade      Attempt[]             @relation("AttemptsMade")
   sessionsTeaching ClassSession[]        @relation("TeacherSessions")
   attendances      SessionAttendance[]   @relation("StudentAttendances")
   payRates         TeacherPayRate[]      @relation("TeacherPayRates")
@@ -225,6 +226,7 @@ model Assignment {
   class          Class              @relation(fields: [classId], references: [id], onDelete: Cascade)
   teacher        User               @relation("AssignmentsCreated", fields: [teacherId], references: [id], onDelete: Cascade)
   lessonLinks   LessonAssignment[]
+  attempts      Attempt[]
 
   @@index([classId])
   @@index([teacherId])
@@ -245,6 +247,42 @@ model LessonAssignment {
   @@unique([lessonId, assignmentId])
   @@index([assignmentId])
   @@map("lesson_assignments")
+}
+
+// ENTITY_ATTEMPT.md — a student's attempt on an assignment. The S3 assignments
+// module only READS it (edit/delete gate INV-TASG-04, read-time stats INV-TASG-07);
+// writing attempts belongs to the Sprint 4 exam engine. The partial unique index
+// ("one official attempt per assignment") cannot be expressed in Prisma and is
+// added by hand in the migration SQL.
+enum AttemptStatus {
+  in_progress
+  submitted
+  graded
+
+  @@map("attempt_status")
+}
+
+model Attempt {
+  id              String        @id @default(uuid()) @db.Uuid
+  assignmentId    String        @map("assignment_id") @db.Uuid
+  studentId       String        @map("student_id") @db.Uuid
+  status          AttemptStatus
+  startedAt       DateTime      @map("started_at")
+  submittedAt     DateTime?     @map("submitted_at")
+  gradedAt        DateTime?     @map("graded_at")
+  totalScore      Float?        @map("total_score")
+  maxScore        Float?        @map("max_score")
+  isOfficialGrade Boolean       @default(true) @map("is_official_grade")
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
+
+  assignment Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  student    User       @relation("AttemptsMade", fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@index([assignmentId])
+  @@index([studentId])
+  @@index([status])
+  @@map("attempts")
 }
 
 enum SessionStatus {
