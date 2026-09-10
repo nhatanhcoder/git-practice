@@ -13,6 +13,7 @@ import {
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import type { Request, Response } from 'express';
+import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
 import { Public } from '../common/decorators/public.decorator';
 import { CurrentUser, type AuthenticatedUser } from '../common/decorators/current-user.decorator';
@@ -41,6 +42,8 @@ function cookieOptions() {
 export class AuthController {
   constructor(@Inject(AuthService) private readonly authService: AuthService) {}
 
+  // anti + h code: Throttler protection against registration flood
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   @Public()
   @Post('register')
   @HttpCode(HttpStatus.CREATED)
@@ -49,6 +52,8 @@ export class AuthController {
     return this.authService.register(dto);
   }
 
+  // anti + h code: Throttler protection against login flood
+  @Throttle({ default: { limit: 20, ttl: 60000 } })
   @Public()
   @Post('login')
   @HttpCode(HttpStatus.OK)
