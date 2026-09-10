@@ -1,0 +1,72 @@
+name: quality
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: quality-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  web-quality:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - uses: pnpm/action-setup@v4
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+      - run: pnpm --filter web build
+      - run: pnpm --filter web type-check
+      - run: node --test apps/web/scripts/*.test.mjs scripts/*.test.mjs
+
+  api-quality:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: ci
+          POSTGRES_PASSWORD: ci-only-password
+          POSTGRES_DB: hsk_ci
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U ci -d hsk_ci"
+          --health-interval 5s --health-timeout 5s --health-retries 12
+      mongo:
+        image: mongo:7
+        ports: ['27017:27017']
+        options: >-
+          --health-cmd "mongosh --quiet --eval 'db.adminCommand({ ping: 1 }).ok'"
+          --health-interval 5s --health-timeout 5s --health-retries 12
+    env:
+      CI: 'true'
+      NODE_ENV: test
+      DATABASE_URL: postgresql://ci:ci-only-password@127.0.0.1:5432/hsk_ci
+      MONGODB_URI: mongodb://127.0.0.1:27017/hsk_ci
+      JWT_ACCESS_SECRET: ci-only-access-secret-never-used-outside-this-job
+      JWT_ACCESS_TTL: 15m
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - uses: pnpm/action-setup@v4
+      - run: pnpm install --frozen-lockfile
+      - run: node scripts/assert-ci-databases.mjs
+      - run: pnpm --filter api exec prisma generate
+      - run: pnpm --filter api exec prisma migrate deploy
+      - run: pnpm --filter api exec tsx prisma/seed.ts
+      - run: pnpm --filter api type-check
+      - run: pnpm --filter api build
+      - run: pnpm --filter api test:ci

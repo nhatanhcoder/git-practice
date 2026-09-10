@@ -5,7 +5,9 @@
 > `DEBT-###`, `SCOPE-##`. **Never renumber and never reuse an ID** — check the list below before
 > assigning one. (A 2026-08-31 chat session, working from a stale copy, reissued `API-003`,
 > `DOC-006`, `DOC-007` and `SCOPE-01` for unrelated problems; those were renumbered on merge.)
-> Last reviewed: 2026-09-01 against the working tree at HEAD `d277ca1`.
+> Last reviewed: 2026-09-08 against `origin/main` at `99a511c` (API-015/API-016 added, API-005
+> resolved, DOC-006 narrowed against ADR-015; highest ids in use on active branches checked:
+> `API-014`/`DOC-015` on `docs/admin-api-test-plan`, `WEB-018` on `feat/a05-srs-routes`).
 
 ---
 
@@ -401,15 +403,37 @@ values for the `?status=` filter, state machine in `docs/api/modules/02-users.md
 
 **Severity**: Medium
 **Sprint**: Backend Phase 2
-**Status**: Open
+**Status**: Open — **narrowed 2026-09-08**: the DB column is settled (ADR-015, `nickname`);
+only the **wire format** of `POST /auth/register` remains inconsistent. Owner decision still
+required for the register key.
 
 **Description**: `ENTITY_USER.md` defines the field `nickname`. But `API_AUTH.md` uses
 `fullName` in both `POST /auth/register` and `PATCH /auth/me`.
 
-**Impact**: Blocks the DTO response for all 5 user endpoints, and also blocks determining
-which field is searched by the `?search=` query parameter.
+**Update 2026-09-08 (verified in code)**: **ADR-015** (Accepted 2026-08-24) settles the column:
+`User.nickname`, per `ENTITY_USER.md`. ADR-015 required `API_AUTH.md` to switch to `nickname` —
+that doc edit **was never made** (both its register and PATCH bodies still read `fullName`).
+The implementation split the difference in an undocumented way:
 
-**Fix Plan**: Lock one name. Choosing `fullName` requires a migration to rename the column.
+| Surface | Uses |
+|---|---|
+| DB column / `GET /auth/me` / `PATCH /auth/me` (BE `UpdateProfileDto` + FE store) | `nickname` ✅ per ADR-015 |
+| `POST /auth/register` (BE `RegisterDto`, `auth.service.ts:125` maps `dto.fullName → nickname`, FE register form) | `fullName` — contra ADR-015 |
+| `docs/api/API_AUTH.md` (both endpoints) | `fullName` — the doc edit ADR-015 mandated was never done |
+
+So the live contract is: register **sends** `fullName`, everything **returns** `nickname`.
+`PATCH /auth/me` already says `nickname` in the code and is fine; the remaining decision is the
+register key only.
+
+**Impact**: ~~Blocks the DTO response for all 5 user endpoints~~ — no longer; only the
+register **request** key and `API_AUTH.md`'s stale examples. `?search=` still has no defined
+target field.
+
+**Fix Plan**: owner picks the register wire key — either (a) rename `RegisterDto.fullName` →
+`nickname` + update the FE form + fix `API_AUTH.md` (consistent, matches ADR-015's direction),
+or (b) keep `fullName` as the register key and amend ADR-015 to record the exception. Either
+way `API_AUTH.md`'s PATCH body must switch to `nickname`. Do **not** do this silently — it
+changes a live wire contract (`/register` shipped 2026-09-05).
 
 ---
 
@@ -614,7 +638,8 @@ changes item identity across three files and deserves its own reviewed commit.
 
 **Severity**: High
 **Sprint**: Sprint 1
-**Status**: Open — **needs the owner's decision**
+**Status**: ✅ Resolved 2026-09-08 — auth/API/Gemini/web blocks restored in `.env.example`,
+documenting **what the code actually reads**, not the deleted file's old list. See Resolution.
 
 **Description**: The `.env.example` that came in with PR #12 contains none of
 `JWT_ACCESS_SECRET`, `JWT_REFRESH_SECRET`, `JWT_ACCESS_TTL`, `JWT_REFRESH_TTL`, `BCRYPT_ROUNDS`,
@@ -631,7 +656,20 @@ deleted 2026-09-01 (untracked scratch, never committed, not recoverable from git
 and comments are gone. Reconstruct from `docs/api/modules/01-auth.md` (the accepted spec), not
 from memory of the deleted file.
 
-**Fix Plan**: do not touch auth until the block is agreed and restored.
+**Resolution (2026-09-08, branch `docs/config-auth-findings`)**: the block was rebuilt by reading
+every `config.get` / `process.env` consumer in `apps/api/src` + `apps/web/src/lib/api-client.ts`,
+then documented: `JWT_ACCESS_SECRET` (required, fail-fast boot), `JWT_ACCESS_TTL` (default 15m),
+`API_PREFIX` (default api/v1), `CORS_ORIGIN`, `GEMINI_API_KEY` (optional, ADR-014),
+`NEXT_PUBLIC_API_URL`. **Six vars from the old list are deliberately absent because the code
+never reads them** — `JWT_REFRESH_SECRET` (refresh tokens are opaque random strings; only the
+SHA-256 hash is stored), `JWT_REFRESH_TTL` (fixed 7d in code), `BCRYPT_ROUNDS` (fixed cost 12,
+INV-AUTH-01), `COOKIE_DOMAIN`/`COOKIE_SECURE` (`Secure` derives from `NODE_ENV`). The file now
+says so explicitly, so nobody "restores" a var that does nothing. Making any of these
+configurable is a code change first, not an env-file edit.
+
+**Fix Plan**: ~~do not touch auth until the block is agreed and restored~~ — done; the
+"owner decision" framing was resolved by documenting implemented behavior rather than the
+deleted file's guesses.
 
 ---
 
@@ -1191,6 +1229,76 @@ lives at `/student/flashcards`, so the link is also pointing at the wrong screen
 card until the notebook has a backend. Belongs with `WEB-017`, which already covers the landing
 page asserting things that are not true; do not fix it in isolation from that decision.
 
+---
+
+### [API-015] No central env validation; the refresh-cookie path is hardcoded and can drift from `API_PREFIX`
+
+**Severity**: High
+**Status**: Open — docs half landed 2026-09-08 (`API-005` resolved, contract documented); the
+**code fix touches the auth/refresh-token path and is held for explicit owner approval**.
+
+**Description**: two related defects, verified 2026-09-08:
+
+1. **Config is validated ad-hoc in three places with three different behaviours.**
+   `main.ts:35` reads `API_PREFIX ?? 'api/v1'` with no validation or normalization;
+   `app.module.ts:47` throws on missing `JWT_ACCESS_SECRET`; `auth.service.ts:60` reads it again
+   with a `|| ''` fallback that then throws elsewhere. `GEMINI_API_KEY` is read in
+   `monitoring.service.ts` with a `process.env` fallback that bypasses ConfigService. Nothing
+   produces one fail-fast report at boot ("these 3 vars are missing") — each startup failure is
+   discovered one variable at a time.
+2. **The refresh-cookie `Path` is a hardcoded duplicate of the configurable prefix.**
+   `auth.controller.ts:26` sets `const COOKIE_PATH = '/api/v1/auth'` while `main.ts:35` mounts
+   routes at `process.env.API_PREFIX ?? 'api/v1'`. Change `API_PREFIX` (or move the API behind a
+   proxy/gateway that strips it) and the routes move but the cookie `Path` does not — the browser
+   stops sending the refresh cookie, `/auth/refresh` 401s with `AUTH_REFRESH_INVALID`, and
+   **every session dies 15 minutes after login with no visible error explaining why**. The
+   `clearCookie` on logout/refresh-failure shares the same constant, so cleanup breaks too.
+
+**Impact**: today the defaults agree, so nothing visibly breaks; the failure is latent until the
+first deployment that changes the prefix. `01-auth.md` §13 already demands the narrowest cookie
+path — deriving it from the prefix satisfies that invariant **and** keeps it correct.
+
+**Fix Plan** (one PR, all inside `apps/api`):
+- a single fail-fast env validation at bootstrap listing every missing/invalid variable at once;
+- `API_PREFIX` normalized in one place (strip leading/trailing slashes);
+- `COOKIE_PATH` derived from that same constant (`/${prefix}/auth`), replacing the literal in
+  `auth.controller.ts`;
+- full API suite + web build must stay green (auth-adjacent → not fast-lane).
+**Not in scope**: Redis/shared limiter storage (`API-016`), `packages/types`.
+
+---
+
+### [API-016] Login rate limiter and refresh-rotation grace cache are instance-local — wrong behavior under multi-instance deployments
+
+**Severity**: High — **required before scaling past a single API instance**
+**Status**: Open — contract documented 2026-09-08 (`API_CONVENTIONS.md` § Rate Limiting,
+`01-auth.md` §9/§13/§16); storage change not started.
+
+**Description**: both auth-protection mechanisms live in in-process `Map`s in
+`auth.service.ts` (`loginAttempts` line ~51, `rotationCache` line ~50):
+
+1. **Login limiter (INV-AUTH-21)** — 5 failures/15 min per `(ip, normalized email)`. With N
+   instances behind a load balancer each keeps its own counter, so the effective limit is
+   **5 × N**, and a blocked attacker just retries until they land on a fresh instance.
+2. **Refresh-rotation grace cache (Proposal A, G = 15s)** — a dropped `POST /auth/refresh`
+   response can be recovered by re-presenting the parent cookie within G. The raw child cookie
+   lives only in the instance-local cache. A retry that lands on a **different instance** misses
+   the cache, and once the 15s window passes the DB grace path cannot return the raw child
+   token — the same re-presentation looks exactly like a **replayed stolen token**, and the replay
+   defence revokes the whole token family: the real user is **force-logged-out** by their own
+   network retry. The FE's single-flight guard only protects within one tab; nothing protects
+   across tabs or instances.
+
+**Impact**: latent today (single instance); the finding's "required before scaling" priority is
+correct. This is not a code bug in the current topology — it is the boundary of the topology the
+code was written for, now recorded where the next agent will find it.
+
+**Fix Plan**: a shared store (Redis or equivalent) behind a small interface for both maps;
+provider and connection details are an infrastructure decision for the owner. Do **not** add
+Nest's `@nestjs/throttler` with its default in-memory storage as a "fix" — that changes the
+contract while keeping the same limitation. `API_CONVENTIONS.md` § Rate Limiting now states both
+limits in full.
+
 **Numbering note**: assigned against both `main` and the unmerged `codex/a02-isolate-demo`, whose
 highest web id is also `WEB-017`. Per `DOC-014`, reconcile by hand if another branch takes it.
 
@@ -1399,5 +1507,36 @@ S-SRS-6/7 and Student analytics still have no approved transport contracts; they
 
 ## Resolved Issues
 
+### [BUILD-003] Application quality gates missing from CI
+
+**Severity**: High
+**Status**: In Progress — 2026-09-08, codex/ci-quality-gates; implementation ready, hosted verification pending.
+
+Only docs-check ran on pull requests. The new quality workflow runs standalone lint,
+web/API type checks and builds, frontend/tooling regressions, and API integration tests
+against fresh runner-local PostgreSQL/MongoDB services. Branch protection is not modified.
+Local Docker is unavailable; the database suite must be verified on GitHub Actions.
+See docs/testing/CI.md for commands and isolation limits.
+
+### [DEBT-006] Legacy lint findings need incremental remediation
+
+**Severity**: High
+**Status**: Open — 2026-09-08
+
+The initial ESLint baseline has 336 findings across 62 files, including 181 hook-order
+findings. These are not repaired by adding CI. eslint-suppressions.json stores existing
+file/rule/count allowances; new counts fail, but a replacement violation under an existing
+count can remain undetected. Do not increase the baseline to make changes pass. Review and
+fix application findings in named scopes, pruning resolved suppressions. No behavior was
+changed during CI setup.
+
 - **`GIT-002`** `.idea/` tracked in git — resolved, verified 2026-08-25 and 2026-09-01.
   (Entries stay in place above with a resolved status; this list is the index.)
+
+### 2026-09-08 verification note — BUILD-003
+
+**Status**: Resolved — implementation verified in PR #50; merge remains pending.
+GitHub Actions run 34252312577 passed web-quality and api-quality, including migrations,
+seed and the API suite against disposable PostgreSQL/MongoDB services. Run 34252312622
+passed check-docs. Branch protection still requires owner configuration. DEBT-006 remains
+open: a passing baseline-aware lint gate does not mean the existing findings are fixed.
