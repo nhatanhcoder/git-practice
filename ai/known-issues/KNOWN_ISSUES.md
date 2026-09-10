@@ -1564,3 +1564,12 @@ GitHub Actions run 34252312577 passed web-quality and api-quality, including mig
 seed and the API suite against disposable PostgreSQL/MongoDB services. Run 34252312622
 passed check-docs. Branch protection still requires owner configuration. DEBT-006 remains
 open: a passing baseline-aware lint gate does not mean the existing findings are fixed.
+
+### 2026-09-10 — WEB-016 / DEBT-006 Grammar follow-up
+
+**Status**: corrected locally in codex/grammar-production-gate; production backend remains
+NOT IMPLEMENTED. GrammarPage selects UnavailableState before mounting GrammarInner, avoiding
+conditional hooks and production demo execution. Runtime regression: 2/2; full web scripts
+147/147. The uncommitted Real-fe-prod-hooks alternative incorrectly gates MatchExercise, not
+the page. Do not treat its whole-file scan as proof of production isolation. Only Grammar's
+obsolete hook suppression was removed; unrelated lint debt remains.
