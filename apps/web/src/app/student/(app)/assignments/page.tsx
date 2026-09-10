@@ -55,15 +55,6 @@ function formatDue(iso: string): string {
 }
 
 export default function AssignmentsPage() {
-  if (process.env.NODE_ENV === "production") {
-    return (
-      <UnavailableState
-        title="Bài tập về nhà"
-        description="Chức năng bài tập về nhà chưa được kết nối máy chủ dữ liệu trong phiên bản hiện tại (Sprint 4). Vui lòng quay lại sau."
-      />
-    );
-  }
-
   const [demo, setDemo] = useState<DemoState>("ready");
   const [classFilter, setClassFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<AssignmentStatus | "all">("all");
@@ -83,6 +74,18 @@ export default function AssignmentsPage() {
   const openCount = assignments.filter(
     (a) => a.status === "not_started" || a.status === "in_progress",
   ).length;
+
+  // Production renders the unavailable state, but only AFTER every hook has run —
+  // an early return above them would make the component conditionally hooked, which
+  // React forbids (A05 fixed this for /mistakes/review; this file follows the same rule).
+  if (process.env.NODE_ENV === "production") {
+    return (
+      <UnavailableState
+        title="Bài tập về nhà"
+        description="Chức năng bài tập về nhà chưa được kết nối máy chủ dữ liệu trong phiên bản hiện tại (Sprint 4). Vui lòng quay lại sau."
+      />
+    );
+  }
 
   return (
     <div className="stack gap-6">

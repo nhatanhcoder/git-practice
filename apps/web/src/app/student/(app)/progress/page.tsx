@@ -40,14 +40,6 @@ function heatLevel(minutes: number) {
 }
 
 export default function ProgressPage() {
-  if (process.env.NODE_ENV === "production") {
-    return (
-      <UnavailableState
-        title="Tiến độ học tập"
-        description="Thống kê tiến độ chưa được kết nối máy chủ dữ liệu trong phiên bản hiện tại. Vui lòng quay lại sau."
-      />
-    );
-  }
   const [demo, setDemo] = useState<DemoState>("ready");
   const profile = useStudentProfile();
 
@@ -65,6 +57,18 @@ export default function ProgressPage() {
   const studiedDays = streakHistory.filter((d) => d.minutes > 0).length;
   const totalMinutes = streakHistory.reduce((n, d) => n + d.minutes, 0);
   const rankPct = rankProgress(profile.xpIntoRank, profile.xpForNextRank);
+
+  // Production renders the unavailable state, but only AFTER every hook has run —
+  // an early return above them would make the component conditionally hooked, which
+  // React forbids (A05 fixed this for /mistakes/review; this file follows the same rule).
+  if (process.env.NODE_ENV === "production") {
+    return (
+      <UnavailableState
+        title="Tiến độ học tập"
+        description="Thống kê tiến độ chưa được kết nối máy chủ dữ liệu trong phiên bản hiện tại. Vui lòng quay lại sau."
+      />
+    );
+  }
 
   return (
     <>

@@ -60,14 +60,6 @@ function optionsFor(point: GrammarPoint, all: GrammarPoint[]) {
 }
 
 export default function GrammarPage() {
-  if (process.env.NODE_ENV === "production") {
-    return (
-      <UnavailableState
-        title="Thư viện ngữ pháp"
-        description="Thư viện ngữ pháp chưa được kết nối máy chủ dữ liệu trong phiên bản hiện tại. Vui lòng quay lại sau."
-      />
-    );
-  }
   const [demo, setDemo] = useState<DemoState>("ready");
   const [level, setLevel] = useState<number | "all">("all");
   const [category, setCategory] = useState<string>("all");
@@ -544,6 +536,18 @@ function MatchExercise({
       if (next.length === pairs.length) onDone();
     }
     setSelected(null);
+  }
+
+  // Production renders the unavailable state, but only AFTER every hook has run —
+  // an early return above them would make the component conditionally hooked, which
+  // React forbids (A05 fixed this for /mistakes/review; this file follows the same rule).
+  if (process.env.NODE_ENV === "production") {
+    return (
+      <UnavailableState
+        title="Thư viện ngữ pháp"
+        description="Thư viện ngữ pháp chưa được kết nối máy chủ dữ liệu trong phiên bản hiện tại. Vui lòng quay lại sau."
+      />
+    );
   }
 
   return (

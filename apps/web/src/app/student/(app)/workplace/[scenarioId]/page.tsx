@@ -41,14 +41,6 @@ interface Exchange {
 }
 
 export default function ScenarioPage() {
-  if (process.env.NODE_ENV === "production") {
-    return (
-      <UnavailableState
-        title="Tình huống công sở"
-        description="Chức năng tình huống giao tiếp công sở chưa được kết nối máy chủ dữ liệu trong phiên bản hiện tại. Vui lòng quay lại sau."
-      />
-    );
-  }
   const params = useParams<{ scenarioId: string }>();
   const scenarioId = decodeURIComponent(params?.scenarioId ?? "");
   const scenario = scenarios.find((s) => s.id === scenarioId) ?? null;
@@ -172,6 +164,18 @@ export default function ScenarioPage() {
   }
 
   /* ---------- Conversation ---------- */
+  // Production renders the unavailable state, but only AFTER every hook has run —
+  // an early return above them would make the component conditionally hooked, which
+  // React forbids (A05 fixed this for /mistakes/review; this file follows the same rule).
+  if (process.env.NODE_ENV === "production") {
+    return (
+      <UnavailableState
+        title="Tình huống công sở"
+        description="Chức năng tình huống giao tiếp công sở chưa được kết nối máy chủ dữ liệu trong phiên bản hiện tại. Vui lòng quay lại sau."
+      />
+    );
+  }
+
   return (
     <>
       <Link href="/student/workplace" className="backlink">

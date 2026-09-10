@@ -54,14 +54,6 @@ function levelFromNodeId(nodeId: string): { curriculum: Curriculum; level: numbe
 }
 
 export default function LessonPage() {
-  if (process.env.NODE_ENV === "production") {
-    return (
-      <UnavailableState
-        title="Nội dung bài học"
-        description="Nội dung bài học theo chặng chưa được kết nối máy chủ dữ liệu trong phiên bản hiện tại. Vui lòng quay lại sau."
-      />
-    );
-  }
   const params = useParams<{ nodeId: string }>();
   const nodeId = decodeURIComponent(params?.nodeId ?? "");
   const router = useRouter();
@@ -155,6 +147,18 @@ export default function LessonPage() {
     completeLesson(lesson.id, lesson.xp);
     toast(`Hoàn thành «${lesson.title}» — +${lesson.xp} XP`, "success");
     router.push("/student/learning-path");
+  }
+
+  // Production renders the unavailable state, but only AFTER every hook has run —
+  // an early return above them would make the component conditionally hooked, which
+  // React forbids (A05 fixed this for /mistakes/review; this file follows the same rule).
+  if (process.env.NODE_ENV === "production") {
+    return (
+      <UnavailableState
+        title="Nội dung bài học"
+        description="Nội dung bài học theo chặng chưa được kết nối máy chủ dữ liệu trong phiên bản hiện tại. Vui lòng quay lại sau."
+      />
+    );
   }
 
   return (

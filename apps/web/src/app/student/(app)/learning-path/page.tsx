@@ -48,14 +48,6 @@ const CURRICULUM_HANZI: Record<Curriculum, string> = {
 };
 
 export default function LearningPathPage() {
-  if (process.env.NODE_ENV === "production") {
-    return (
-      <UnavailableState
-        title="Lộ trình HSK"
-        description="Lộ trình học tập chưa được kết nối máy chủ dữ liệu trong phiên bản hiện tại. Vui lòng quay lại sau."
-      />
-    );
-  }
   const [demo, setDemo] = useState<DemoState>("ready");
   const profile = useStudentProfile();
   const [curriculum, setCurriculum] = useState<Curriculum>("hsk_standard_course");
@@ -94,6 +86,18 @@ export default function LearningPathPage() {
     } else {
       toast(`Cần ${FORCE_UNLOCK_COST} XP để mở khoá, bạn chưa đủ`, "danger");
     }
+  }
+
+  // Production renders the unavailable state, but only AFTER every hook has run —
+  // an early return above them would make the component conditionally hooked, which
+  // React forbids (A05 fixed this for /mistakes/review; this file follows the same rule).
+  if (process.env.NODE_ENV === "production") {
+    return (
+      <UnavailableState
+        title="Lộ trình HSK"
+        description="Lộ trình học tập chưa được kết nối máy chủ dữ liệu trong phiên bản hiện tại. Vui lòng quay lại sau."
+      />
+    );
   }
 
   return (
