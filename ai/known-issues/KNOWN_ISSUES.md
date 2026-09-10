@@ -1359,3 +1359,9 @@ The proposed module, two Page Contracts and flow now document missing catalog/pr
 contracts, source-to-FE mapping conflicts, private-state boundaries, media choices and acceptance
 tests. Exact transport/schema and completion rules remain decisions D1–D5; no runtime capability
 is counted as implemented. Original issue entries and the existing RBAC matrix are unchanged.
+
+### Publication follow-up — DOC-011 Foundation/Grammar design
+
+**Status**: Open — content/implementation prerequisites unchanged. The owner approved public
+publication of the documentation; PR #54 is open. The automatic-review publication blocker
+was cleared by explicit approval. This does not approve source adoption, schema or API changes.

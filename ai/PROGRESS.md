@@ -732,3 +732,7 @@ _(specs written 2026-08-19, `docs/api/modules/`. **Updated 2026-09-01**: `apps/a
 - Foundation/Grammar docs publication: **BLOCKED by automatic approval review**. Local audit/design
   commits are ready, but publishing this payload to public `nhatanhcoder/git-practice` requires
   explicit owner confirmation. No push/PR/merge/deploy occurred for this documentation task.
+
+- Foundation/Grammar documentation publication approved by the owner; branch pushed and
+  PR #54 opened: https://github.com/nhatanhcoder/git-practice/pull/54. The publication blocker
+  above is cleared. D1–D5 still block implementation; no merge or deployment.

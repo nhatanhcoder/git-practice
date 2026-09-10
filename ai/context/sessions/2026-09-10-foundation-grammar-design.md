@@ -60,3 +60,11 @@ approval to publicly publish this exact audit/design payload was not established
 No push or PR was created. Ask the owner to authorize publication of this documentation to
 that public repository; do not bypass the rejection. Application implementation remains
 separately blocked on D1–D5 and is not authorized by a publication approval.
+
+## Publication approved and completed
+
+The owner explicitly replied "approval" to publishing this exact audit/design package to the
+public nhatanhcoder/git-practice repository. The branch is pushed and PR #54 is open:
+https://github.com/nhatanhcoder/git-practice/pull/54
+This supersedes the publication blocker above. D1–D5 remain implementation decisions; no merge,
+deployment, database change or runtime implementation was authorized or performed.
