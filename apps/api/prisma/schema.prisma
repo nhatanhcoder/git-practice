@@ -75,6 +75,7 @@ model User {
   classesTeaching  Class[]
   enrollments      ClassEnrollment[]
   lessonsCreated   Lesson[]
+  assignmentsCreated Assignment[]         @relation("AssignmentsCreated")
   sessionsTeaching ClassSession[]        @relation("TeacherSessions")
   attendances      SessionAttendance[]   @relation("StudentAttendances")
   payRates         TeacherPayRate[]      @relation("TeacherPayRates")
@@ -140,6 +141,7 @@ model Class {
   enrollments ClassEnrollment[]
   lessons     Lesson[]
   sessions    ClassSession[]
+  assignments Assignment[]
 
   @@index([teacherId])
   @@index([status])
@@ -183,11 +185,66 @@ model Lesson {
 
   class   Class @relation(fields: [classId], references: [id], onDelete: Cascade)
   teacher User  @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  assignmentLinks LessonAssignment[]
 
   @@unique([classId, orderIndex])
   @@index([classId])
   @@index([teacherId])
   @@map("lessons")
+}
+
+// ENTITY_ASSIGNMENT.md — a teacher's bundle of Mongo Question ids, assigned to a class.
+// questionIds order is the display order (INV-TASG-08) and is returned as stored.
+enum AssignmentType {
+  homework
+  mock_test
+
+  @@map("assignment_type")
+}
+
+enum AssignmentStatus {
+  draft
+  published
+
+  @@map("assignment_status")
+}
+
+model Assignment {
+  id               String           @id @default(uuid()) @db.Uuid
+  classId          String           @map("class_id") @db.Uuid
+  teacherId        String           @map("teacher_id") @db.Uuid
+  title            String           @db.VarChar(300)
+  type             AssignmentType
+  dueDate          DateTime?        @map("due_date")
+  timeLimitMinutes Int?             @map("time_limit_minutes")
+  status           AssignmentStatus @default(draft)
+  questionIds      String[]         @map("question_ids")
+  createdAt        DateTime          @default(now()) @map("created_at")
+  updatedAt        DateTime          @updatedAt @map("updated_at")
+
+  class          Class              @relation(fields: [classId], references: [id], onDelete: Cascade)
+  teacher        User               @relation("AssignmentsCreated", fields: [teacherId], references: [id], onDelete: Cascade)
+  lessonLinks   LessonAssignment[]
+
+  @@index([classId])
+  @@index([teacherId])
+  @@index([status])
+  @@map("assignments")
+}
+
+// ENTITY_LESSON_ASSIGNMENT.md — M:N link, unique (lessonId, assignmentId).
+model LessonAssignment {
+  id           String   @id @default(uuid()) @db.Uuid
+  lessonId     String   @map("lesson_id") @db.Uuid
+  assignmentId String   @map("assignment_id") @db.Uuid
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  lesson     Lesson     @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  assignment Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+
+  @@unique([lessonId, assignmentId])
+  @@index([assignmentId])
+  @@map("lesson_assignments")
 }
 
 enum SessionStatus {
