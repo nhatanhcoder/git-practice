@@ -49,8 +49,9 @@ export class AuthService {
   private readonly jwtAccessTtl: string;
   private readonly rotationCache = new Map<string, RotationCacheEntry>();
   private readonly loginAttempts = new Map<string, LoginRateLimitEntry>();
-  private static readonly MAX_LOGIN_ATTEMPTS = 5;
-  private static readonly LOGIN_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
+  public static readonly MAX_LOGIN_ATTEMPTS = 5;
+  public static readonly LOGIN_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
+  public static readonly MAX_ROTATION_CACHE_ENTRIES = 10_000;
 
   constructor(
     @Inject(PrismaService) private readonly prisma: PrismaService,
@@ -64,16 +65,21 @@ export class AuthService {
     this.jwtAccessTtl = this.config.get<string>('JWT_ACCESS_TTL') || '15m';
   }
 
+  private sweepExpiredLoginAttempts(now = Date.now()): void {
+    for (const [key, entry] of this.loginAttempts.entries()) {
+      if (now - entry.firstAttemptAt > AuthService.LOGIN_WINDOW_MS) {
+        this.loginAttempts.delete(key);
+      }
+    }
+  }
+
   private checkLoginRateLimit(ip: string, email: string): void {
-    const key = `${ip}:${email.toLowerCase().trim()}`;
     const now = Date.now();
+    this.sweepExpiredLoginAttempts(now);
+
+    const key = `${ip}:${email.toLowerCase().trim()}`;
     const entry = this.loginAttempts.get(key);
     if (!entry) return;
-
-    if (now - entry.firstAttemptAt > AuthService.LOGIN_WINDOW_MS) {
-      this.loginAttempts.delete(key);
-      return;
-    }
 
     if (entry.attempts >= AuthService.MAX_LOGIN_ATTEMPTS) {
       throw new AppException(
@@ -84,8 +90,10 @@ export class AuthService {
   }
 
   private recordFailedLogin(ip: string, email: string): void {
-    const key = `${ip}:${email.toLowerCase().trim()}`;
     const now = Date.now();
+    this.sweepExpiredLoginAttempts(now);
+
+    const key = `${ip}:${email.toLowerCase().trim()}`;
     const entry = this.loginAttempts.get(key);
 
     if (!entry || now - entry.firstAttemptAt > AuthService.LOGIN_WINDOW_MS) {
@@ -98,6 +106,37 @@ export class AuthService {
   private clearFailedLogins(ip: string, email: string): void {
     const key = `${ip}:${email.toLowerCase().trim()}`;
     this.loginAttempts.delete(key);
+  }
+
+  private sweepExpiredRotationCache(now = Date.now()): void {
+    for (const [key, entry] of this.rotationCache.entries()) {
+      if (entry.expiresAt <= now) {
+        this.rotationCache.delete(key);
+      }
+    }
+  }
+
+  private getRotationCache(tokenHash: string): RotationCacheEntry | undefined {
+    const cached = this.rotationCache.get(tokenHash);
+    if (!cached) return undefined;
+    if (cached.expiresAt <= Date.now()) {
+      this.rotationCache.delete(tokenHash);
+      return undefined;
+    }
+    return cached;
+  }
+
+  private setRotationCache(tokenHash: string, entry: RotationCacheEntry): void {
+    const now = Date.now();
+    if (this.rotationCache.size >= AuthService.MAX_ROTATION_CACHE_ENTRIES) {
+      this.sweepExpiredRotationCache(now);
+    }
+    while (this.rotationCache.size >= AuthService.MAX_ROTATION_CACHE_ENTRIES) {
+      const oldestKey = this.rotationCache.keys().next().value;
+      if (!oldestKey) break;
+      this.rotationCache.delete(oldestKey);
+    }
+    this.rotationCache.set(tokenHash, entry);
   }
 
   /**
@@ -296,8 +335,8 @@ export class AuthService {
         }
 
         // Return cached rotation result (includes new raw refresh token cookie for lost response recovery)
-        const cached = this.rotationCache.get(tokenHash);
-        if (cached && cached.expiresAt > Date.now()) {
+        const cached = this.getRotationCache(tokenHash);
+        if (cached) {
           return {
             result: { accessToken: cached.accessToken },
             newRawRefreshToken: cached.rawRefreshToken,
@@ -410,7 +449,7 @@ export class AuthService {
       });
 
       // Cache rotation result for 15s to serve concurrent races and restore lost cookies (01-auth.md §8 Option A)
-      this.rotationCache.set(tokenHash, {
+      this.setRotationCache(tokenHash, {
         accessToken,
         rawRefreshToken: newRawRefreshToken,
         expiresAt: Date.now() + 15_000,
