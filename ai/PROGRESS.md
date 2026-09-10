@@ -70,6 +70,7 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
       `/api/v1/admin/users` and `/api/v1/auth/me`, with honest loading / empty / forbidden /
       failed-to-load states and no fallback data anywhere
 - ✅ Refresh Token Rotation + Replay Attack detection (PROJECT_KNOWLEDGE.md 4.1)
+- 🔶 (antigravity · 2026-09-10) **Auth Map cleanup & Trust Proxy IP strategy (A1+A2)** — loginAttempts sweep on check/write, rotationCache expired sweep + MAX_ENTRIES eviction, Express trust proxy and req.ip rate-limiting
 - ✅ Custom decorators `@CurrentUser`, `@Roles`, `@Public`
 - ✅ **Login screen + session handling** (claude · 2026-09-04) — `/login` existed nowhere until
       now, so the FE was wired to a protected API with no way to get a token; every guarded call
