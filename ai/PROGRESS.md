@@ -335,15 +335,23 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
 
 ## Off-sprint / spike
 
-- 🔶 (claude · 2026-09-09) **FE batch — fix the prod early-return-before-hooks pattern across
-  the student area + honest exams copy.** While planning `/student/mistakes` + `/student/exams`
-  work, measured the whole area: **18/20 student routes early-return the production
-  `UnavailableState` before their hooks** — the exact Rules-of-Hooks violation A05 fixed for
-  `/mistakes/review` (with a comment explaining the fix) but nobody applied elsewhere.
-  Exams' prod copy also cites the wrong sprint ("Sprint 5"; Exam Engine is **Sprint 4** per
-  SPRINT_PLAN.md). Plan: move the prod branch after all hooks in the 18 files (no logic
-  changes), fix the 3 exams messages, add a scan-based regression test, update contract docs.
-  No backend, no invented endpoints, no schema/auth/RBAC. Branch `feat/student-prod-return-hooks`.
+- ✅ (claude · 2026-09-09) **FE batch — `/student/mistakes` + `/student/exams` honesty pass:
+  prod-return-after-hooks across 17 pages, correct Sprint 4 copy, visible demo banners.**
+  While planning the two routes the user asked for, measured the whole area: **17 student
+  pages early-returned the production `UnavailableState` before their hooks** — the
+  Rules-of-Hooks violation A05 had fixed for `/mistakes/review` only (WEB-019, fixed here).
+  All 17 now use the A05 placement (hooks first, branch after, with the explanatory comment);
+  a scan-based regression test (`student-prod-return.test.mjs`) enforces the invariant and was
+  **proven to fire** (revert one file → red, restore → green). Exams' prod copy no longer cites
+  the wrong sprint ("Sprint 5" → **Sprint 4 Attempts**, per SPRINT_PLAN.md) and now says what
+  the screen is waiting for. New `DemoBanner` component: the 4 demo surfaces that run on
+  browser-local data (exams list, exam room, result sheet, mistakes/review) now show a
+  **visible** "dữ liệu mô phỏng" banner in dev — WEB-017's lesson is that a disclaimer living
+  only in code comments is never read. Production behavior unchanged (banners render nothing
+  there; the 17 routes keep their `UnavailableState` gates). No backend, no invented endpoints,
+  no schema/auth/RBAC. Verified: build clean, **111/111 web tests (28 suites, +1 new)**,
+  check-docs 8/8, browser-checked dev (all 4 banners render) and prod (`next start`: exams
+  shows the new Sprint-4 message), 375px no overflow. Branch `feat/student-prod-return-hooks`.
 
 - ✅ (claude · 2026-09-06) **A05 — SRS về đúng route chính.** Màn SRS nối API thật đang nằm ở
   `/student/mistakes`, còn `/student/flashcards` phục vụ một bản Leitner mock — nên mục sidebar
