@@ -200,7 +200,6 @@ export default function ClassDetailPage() {
   }
 
   const teacherName = resolveTeacherName(detail.teacher);
-  const hasLessons = detail.lessons && detail.lessons.length > 0;
 
   return (
     <div className="stack gap-6">

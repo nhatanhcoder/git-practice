@@ -19,6 +19,9 @@ import { FlashcardSchema } from '../../mongodb/schemas/flashcard.schema';
 import type { ImportCard } from './vocab-extract';
 
 export type { ImportCard };
+type ImportFlashcardDoc = {
+  _id: unknown;
+};
 
 export interface ApplyOptions {
   dryRun: boolean;
@@ -49,7 +52,7 @@ export function getImportModel(
   connection: Connection,
   collection = 'flashcards',
   modelName = 'FlashcardImport',
-): Model<any> {
+): Model<ImportFlashcardDoc> {
   return connection.model(modelName, FlashcardSchema, collection);
 }
 

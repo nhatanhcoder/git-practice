@@ -1,7 +1,6 @@
 import 'reflect-metadata';
 import assert from 'node:assert/strict';
 import { before, after, describe, it } from 'node:test';
-import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import * as dotenv from 'dotenv';
 import mongoose, { type Connection } from 'mongoose';
@@ -27,6 +26,16 @@ const MONGODB_URI = process.env.MONGODB_URI;
 
 const SANDBOX_COLLECTION = 'flashcards_a11_test';
 const STATE_SANDBOX_COLLECTION = 'user_flashcard_states_a11_test';
+type SandboxDoc = {
+  _id: { toString(): string };
+  hskLevel: number;
+  meaning: string;
+  tags: string[];
+};
+type SandboxStateDoc = {
+  flashcardId: { toString(): string };
+  intervalDays: number;
+};
 
 const cards: ImportCard[] = [
   { hskLevel: 1, hanzi: '人们', pinyin: 'rénmen', meaning: 'mọi người', tags: ['hanlo'] },
@@ -35,8 +44,8 @@ const cards: ImportCard[] = [
 
 describe('A11 · applyVocabulary (sandbox e2e)', { skip: !MONGODB_URI && 'MONGODB_URI missing' }, () => {
   let connection: Connection;
-  let sandbox: mongoose.Model<any>;
-  let stateSandbox: mongoose.Model<any>;
+  let sandbox: mongoose.Model<SandboxDoc>;
+  let stateSandbox: mongoose.Model<SandboxStateDoc>;
 
   before(async () => {
     connection = await mongoose.createConnection(MONGODB_URI!).asPromise();
