@@ -1564,3 +1564,24 @@ GitHub Actions run 34252312577 passed web-quality and api-quality, including mig
 seed and the API suite against disposable PostgreSQL/MongoDB services. Run 34252312622
 passed check-docs. Branch protection still requires owner configuration. DEBT-006 remains
 open: a passing baseline-aware lint gate does not mean the existing findings are fixed.
+
+### 2026-09-10 — API bootstrap hardening review (API-016 / BUILD-002 follow-up)
+
+**Status**: API-016 remains open. Helmet and development-only Swagger are implemented in
+codex/api-bootstrap-hardening. HTTP draining precedes database teardown (30-second grace).
+The custom limiter uses a composite IP/email key; 01-auth section 13 still specifies two
+independent counters. This conflict is recorded, not resolved by changing limiter policy.
+PR #49 was documentation only and does not implement shared storage. Request logging / request-id
+(F), shared storage, frontend debounce and token consolidation remain outside this change.
+BUILD-002 reproduced locally: the documented engines/dist/index.js copy workaround restored
+Prisma generation. Real database suite and real Linux SIGTERM verification require isolated CI;
+local handler tests alone do not establish Prisma/Mongoose disconnect behavior.
+
+### 2026-09-10 — Validation follow-up (DEBT-006 / WEB-016)
+
+**Status**: open. Latest main includes three unsuppressed lint errors from A08/A09 (two
+no-useless-escape at student-class-detail.test.mjs:163 and unused hasLessons at the class
+detail page:203), reproduced by the bootstrap branch's full lint. They are outside B+C+D.
+The uncommitted feat/student-prod-return-hooks Grammar diff moves its production gate into
+MatchExercise; GrammarPage would still render demo content. The whole-file hook scan does
+not establish the guard belongs to the page component. G needs a wrapper-specific regression.
