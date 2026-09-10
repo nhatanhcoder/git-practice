@@ -3,7 +3,7 @@ feature: S-CLS-3, S-CLS-4, S-LESSON-1
 role: student
 route: /student/classes/[classId]
 status: built
-last_updated: 2026-09-06
+last_updated: 2026-09-07
 ---
 
 # Page Contract — Student · Class Detail & Lessons

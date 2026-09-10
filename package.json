@@ -7,12 +7,17 @@
   "scripts": {
     "dev": "turbo run dev",
     "build": "turbo run build",
-    "lint": "turbo run lint",
+    "lint": "eslint apps scripts --suppressions-location eslint-suppressions.json --max-warnings 0",
     "type-check": "turbo run type-check",
     "check:docs": "node scripts/check-docs.mjs"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.10.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "globals": "^16.5.0",
     "prettier": "^3.9.6",
-    "turbo": "^2.10.9"
+    "turbo": "^2.10.9",
+    "typescript-eslint": "^8.69.0"
   }
 }
