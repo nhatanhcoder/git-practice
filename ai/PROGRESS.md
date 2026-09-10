@@ -339,6 +339,9 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
 
 ## Off-sprint / spike
 
+- 🔶 (codex · 2026-09-10) **API bootstrap hardening B+C+D** — Helmet, development-only Swagger, drain HTTP before database teardown; isolated tests and H records. User authorized this backend lane for Codex; A1+A2 remain separate pending completed-work location.
+
+
 - ✅ (claude · 2026-09-09) **Docs batch — sync module-status records with the implemented
   backend + record two QC findings.** Verified an external Modules 01→08 audit first, then:
   `_INDEX.md` — removed the obsolete "Only Auth is ready to code" line (7/8 implemented);
