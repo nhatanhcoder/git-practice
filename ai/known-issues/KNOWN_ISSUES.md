@@ -1533,6 +1533,30 @@ changed during CI setup.
 - **`GIT-002`** `.idea/` tracked in git — resolved, verified 2026-08-25 and 2026-09-01.
   (Entries stay in place above with a resolved status; this list is the index.)
 
+### 2026-09-10 source-audit note — DOC-011 and DEBT-003
+
+**Status**: Open — audit completed, production adoption remains blocked.
+The Foundation/Grammar source audit verifies 76 Grammar records (HSK 1–9: 9/9/10/9/7/9/8/8/7),
+not the historical 60/51 report. Seven repeated-name groups require editorial review, not
+automatic deletion. Foundation has 21 initials, 36 finals, 4 tones, 6 sandhi rules, 214 radicals,
+6 listening descriptors, 6 speaking prompts and 4 PDF descriptors. No accompanying media files
+in the searched formats or redistribution evidence were established. See
+`docs/api/modules/student/foundation-grammar-source-audit.md` for hashes, scope and limitations.
+No original issue entry, source corpus, private learner data or database was modified.
+
+### 2026-09-10 design note — DOC-011
+
+**Status**: Open — Foundation/Grammar review package written; implementation blocked.
+The proposed module, two Page Contracts and flow now document missing catalog/progress/assessment
+contracts, source-to-FE mapping conflicts, private-state boundaries, media choices and acceptance
+tests. Exact transport/schema and completion rules remain decisions D1–D5; no runtime capability
+is counted as implemented. Original issue entries and the existing RBAC matrix are unchanged.
+
+### Publication follow-up — DOC-011 Foundation/Grammar design
+
+**Status**: Open — content/implementation prerequisites unchanged. The owner approved public
+publication of the documentation; PR #54 is open. The automatic-review publication blocker
+was cleared by explicit approval. This does not approve source adoption, schema or API changes.
 ### 2026-09-08 verification note — BUILD-003
 
 **Status**: Resolved — implementation verified in PR #50; merge remains pending.

@@ -762,3 +762,22 @@ are accepted and implemented; 02 is implemented but its spec status is in confli
   local mistakes store in production — both are the recorded A00/DOC-016 presentation-rewire
   scope (Sprint 4 backend for mistake collection does not exist yet); gating them would remove
   the only live learning feature, rewiring them is A03/A05's task.
+
+## Foundation / Grammar design work — 2026-09-10
+
+- ✅ (codex) DOCS deliverables only, `codex/foundation-grammar-contracts`: source audit and proposed
+  Foundation/Grammar contracts prepared after explicit approval of step 1.
+  No application, schema, Auth, RBAC, money or production-content changes are authorized.
+  Production remains NOT IMPLEMENTED; source rights/media and transport approval are blockers.
+
+- ⛔ Foundation/Grammar production: content/progress/assessment/media operation contracts remain
+  missing; see docs/api/modules/student/02-foundation-grammar.md decisions D1–D5. The proposal
+  adds no endpoint, physical schema, permission or runtime behavior.
+
+- Foundation/Grammar docs publication: **BLOCKED by automatic approval review**. Local audit/design
+  commits are ready, but publishing this payload to public `nhatanhcoder/git-practice` requires
+  explicit owner confirmation. No push/PR/merge/deploy occurred for this documentation task.
+
+- Foundation/Grammar documentation publication approved by the owner; branch pushed and
+  PR #54 opened: https://github.com/nhatanhcoder/git-practice/pull/54. The publication blocker
+  above is cleared. D1–D5 still block implementation; no merge or deployment.
