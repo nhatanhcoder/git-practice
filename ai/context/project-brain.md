@@ -55,11 +55,22 @@ content corpus remains external to this repo (`DOC-011`), so import/seed work is
 
 ## Current Status
 
-- Docs are **far ahead of code**. 8 backend module specs (168 invariants) exist; only
-  `01-auth.md` is accepted. `apps/api` is scaffolded (PR #12: NestJS, Prisma, migration
-  `20260820000000_init_users`, health module) but implements no feature. `apps/web` has many
-  **fully-mocked** admin and student screens — see `ai/PROGRESS.md` § Off-sprint
-- `turbo.json` now tracked (`BUILD-001` resolved, PR #13, pending merge to `main`); `packages/` does not exist
+> Corrected 2026-09-08 from `docs/api/modules/_INDEX.md`, `apps/api/src/app.module.ts` and the
+> recorded test runs — the previous text (written 2026-08-31) predated most of the backend.
+
+- **Backend is real and broad** (not "scaffolded, no feature"): `apps/api` implements Auth (+refresh
+  rotation & login rate limiting), Users admin-approval, Classes/Enrollment (teacher + student
+  join/leave), Lessons, Sessions+Attendance, Payroll, Billing (invoices+payments), Dashboard/
+  Monitoring, Question Bank (MongoDB), Flashcards/SRS (MongoDB). Teacher module specs
+  (`docs/api/modules/teacher/`, 6 files) exist; Attempts/Grading and Notifications are not coded.
+- **Spec status** (per `docs/api/modules/_INDEX.md`): accepted — 01, 02, 03, 04, 05, 06, 08
+  (7 of 8); proposed — 07 Notifications. Teacher specs all `proposed`. Last recorded suite:
+  170/170 across 27 suites (2026-09-06).
+- `turbo.json` tracked and `main` verified green (PR #13 merged 2026-09-01; `BUILD-001` closed).
+  `packages/` still does not exist — `packages/types` is the open shared-contract gap (`API-015`-adjacent; see PROGRESS § Needs from the other lane)
 - HSK level range: **1–9** (confirmed 2026-08-11, matches the HSK 3.0 standard and every spec in `docs/`: entity specs, `GLOSSARY.md`, `DATABASE_SCHEMA.md`, `CONVENTIONS.md`, `SPRINT_PLAN.md` — do not use HSK 1–6, that came from a mistaken revert in this file on 2026-07-27)
 - **10-sprint plan (S0–S9)** in docs/roadmap/SPRINT_PLAN.md — that is the authority.
   `ai/PROGRESS.md` and `PROJECT_KNOWLEDGE.md` §6 still use an 8-sprint shape (`DOC-012`)
+- FE: admin + teacher areas wired to real endpoints; student area mid-migration (Hán Lộ UI,
+  A01–A08 slice work); several student screens still mocked — trust `ai/PROGRESS.md` per-item notes
+  over any blanket claim

@@ -313,6 +313,10 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
 
 ## Tooling / guardrails
 
+- ✅ (codex · 2026-09-08) **CI quality gates** — implemented: lint, type checks, web/API builds,
+  frontend regression tests and API tests against disposable CI PostgreSQL/MongoDB services.
+  No application behavior or schema changes; PR #50 web-quality, api-quality and check-docs passed.
+
 - ✅ `.gitattributes` + `scripts/check-docs.mjs` + `.github/workflows/docs-check.yml`
       (2026-08-14) — 8 doc invariants enforced in CI, each verified to fire against a
       deliberately broken fixture and to clear afterwards. `pnpm check:docs` runs it locally.
@@ -334,6 +338,19 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
 ---
 
 ## Off-sprint / spike
+
+- ✅ (claude · 2026-09-09) **Docs batch — sync module-status records with the implemented
+  backend + record two QC findings.** Verified an external Modules 01→08 audit first, then:
+  `_INDEX.md` — removed the obsolete "Only Auth is ready to code" line (7/8 implemented);
+  **recorded the 02-users status conflict** (table says `accepted` since `41f3ff1`, spec
+  frontmatter says `proposed` — marked ⚠️, no side chosen, owner decides); added an
+  implementation-status paragraph (module 07 is the only uncoded module). This file's own
+  § Backend table synced to the same reality (02 implemented + conflict, 03 accepted, 07 not
+  coded). KNOWN_ISSUES gained **API-017** (`/admin/monitoring` shows fiction: Redis probe is
+  a hardcoded literal, Gemini latency/quota are constants — only the SQL probe is real) and
+  **DEBT-006** (A09 test suite asserts file strings, not behavior — live QC covered it this
+  time; not repeatable). A08+A09 branch pushed with PR opened (QC 7/7 pass, report in session
+  file). Branch `docs/module-status-sync`.
 
 - ✅ (claude · 2026-09-06) **A05 — SRS về đúng route chính.** Màn SRS nối API thật đang nằm ở
   `/student/mistakes`, còn `/student/flashcards` phục vụ một bản Leitner mock — nên mục sidebar
@@ -593,8 +610,10 @@ _(discovered while mapping the Admin UI — 2026-08-13)_
 
 ## Backend — module spec
 
-_(specs written 2026-08-19, `docs/api/modules/`. **Updated 2026-09-01**: `apps/api` now exists
-(PR #12 scaffold + `User` migration) but implements no module; `packages/` does not exist at all.)_
+_(specs written 2026-08-19, `docs/api/modules/`. **Re-verified 2026-09-09**: `apps/api` now
+implements modules 01–06 + 08 plus Teacher lessons/questions/sessions and Student
+flashcards/SRS — 13 e2e suites against live databases, last recorded full run 170/170.
+`packages/` still does not exist at all.)_
 
 > ⚠️ **These 8 modules are the Admin area only.** The Teacher backend has **no module spec at
 > all** — the FE is 9 built (mocked) screens with every endpoint listed in `API_TEACHER.md`, but
@@ -603,16 +622,18 @@ _(specs written 2026-08-19, `docs/api/modules/`. **Updated 2026-09-01**: `apps/a
 
 | # | Module | Spec | Status | INV | Blocked by |
 |---|---|---|---|---|---|
-| 1 | Auth | `01-auth.md` | ✅ accepted | 24 | — |
-| 2 | Users | `02-users.md` | 🔶 proposed | 18 | C1 · C3 (needs `rejected` migration) |
-| 3 | Classes+Enrollment | `03-classes-enrollment.md` | ⛔ deferred | 8 | **SCOPE-01** |
-| 4 | Sessions+Attendance | `04-sessions-attendance.md` | ✅ accepted | 16 | — |
-| 5 | Payroll+PayRates | `05-payroll.md` | ✅ accepted | 33 | — |
-| 6 | Billing | `06-billing.md` | ✅ accepted | 34 | — |
-| 7 | Notifications | `07-notifications.md` | 🔶 proposed | 21 | no endpoint defined yet |
-| 8 | Dashboard | `08-dashboard.md` | ✅ accepted | 14 | — |
+| 1 | Auth | `01-auth.md` | ✅ accepted · implemented | 24 | — |
+| 2 | Users | `02-users.md` | ⚠️ conflict: `_INDEX` table says accepted (since `41f3ff1`), spec frontmatter says `proposed` — owner decides · implemented | 18 | DOC-005 (`rejected` state, ADR-011 Proposed) |
+| 3 | Classes+Enrollment | `03-classes-enrollment.md` | ✅ accepted · implemented | 8 | — |
+| 4 | Sessions+Attendance | `04-sessions-attendance.md` | ✅ accepted · implemented | 16 | — |
+| 5 | Payroll+PayRates | `05-payroll.md` | ✅ accepted · implemented | 33 | — |
+| 6 | Billing | `06-billing.md` | ✅ accepted · implemented | 34 | — |
+| 7 | Notifications | `07-notifications.md` | 🔶 proposed · **not implemented** | 21 | no endpoint defined yet (Sprint 6 scope, `DEBT-002`) |
+| 8 | Dashboard | `08-dashboard.md` | ✅ accepted · implemented (⚠️ monitoring probes are stubs — see KNOWN_ISSUES) | 14 | — |
 
-**168 invariants**, each with a matching test line in module section 15. Modules 01, 04, 05, 06, 08 are accepted and implemented.
+**168 invariants**, each with a matching test line in module section 15. Modules 01, 03–06, 08
+are accepted and implemented; 02 is implemented but its spec status is in conflict (see
+`_INDEX.md` §1 note); 07 is the only module with no code.
 
 ### Backend — Teacher module specs
 
@@ -655,9 +676,21 @@ _(specs written 2026-08-19, `docs/api/modules/`. **Updated 2026-09-01**: `apps/a
 
 ## Active work — student identity slice
 
-- 🔶 (opencode · 2026-09-07) **A07 — Form tham gia lớp thật** (commit `abf6def`, branch
-      `codex/a07-student-join-class`, base `codex/a06-student-classes-list` @ `2f12310`
-      — A06 chưa có PR/merge, stack có báo theo tiền lệ A05).
+- ✅ (opencode · 2026-09-08) **A09 — Rời lớp Student theo server thật**
+  Reused the existing A08 `DELETE /student/classes/:id/leave` wiring and completed the A09
+  acceptance surface: cancel sends zero DELETE requests, confirm is ref-locked and disabled while
+  pending, server failures stay inline without removing the class or redirecting, and success
+  redirects only after the server confirms `status=dropped`. Leave errors map the documented
+  registry codes (`CLASS_NOT_ENROLLED`, `CLASS_ACCESS_DENIED`, `CLASS_NOT_FOUND`,
+  `VALIDATION_ERROR`) without guessing causes. The class list no longer contains the stale A07
+  unavailable placeholder. Rejoin remains server-owned and uses the accepted existing-row
+  reactivation rule; no backend/schema/RBAC change was made.
+  Verification: 35/35 A08/A09 detail tests · full web script suite **145/145** (serial) ·
+  `pnpm --filter web build` clean 42/42 routes, zero warnings · `check-docs` 8/8. Live leave →
+  reload → deep-link denial → rejoin was **NOT RUN** because Docker's Postgres/API engine was
+  unavailable.
+
+- ✅ (opencode · 2026-09-07) **A07 — Form tham gia lớp thật** (PR #48, commit `abf6def`).
       Join modal trên `/student/classes` nối `POST /student/classes/join`, payload đúng
       `{ enrollmentCode }` qua `apiRequest`. Shape check client mirror JoinClassDto
       (trim+uppercase+8 ký tự, message tiếng Việt của DTO); tồn tại mã là việc server —
@@ -670,9 +703,21 @@ _(specs written 2026-08-19, `docs/api/modules/`. **Updated 2026-09-01**: `apps/a
       empty-state.
       Verification: 101/101 `node --test apps/web/scripts/*.test.mjs` (17 test mới
       `student-join.test.mjs`), `check-docs` 8/8, `pnpm --filter web build` sạch.
-      ⚠️ **Live self-test BLOCKED** (Docker engine down → không Postgres → không API):
-      enrollment-tồn-tại-sau-reload và teacher-roster thấy fixture student CHƯA chạy —
-      không tính PASS; cần chạy lại khi có API.
+       ⚠️ **Live self-test was BLOCKED** (Docker engine unavailable → no Postgres/API):
+       enrollment-tồn-tại-sau-reload và teacher-roster thấy fixture student CHƯA chạy —
+       không tính PASS; cần chạy lại khi có API.
+
+- ✅ (antigravity · 2026-09-07) **A08 — Chi tiết lớp Student từ API thật**
+  Nối /student/classes/[classId] và /student/classes/[classId]/lessons/[lessonId] vào endpoint thật GET /student/classes/:id qua classes-service.ts và rules classes-rules.ts.
+  Loại bỏ hoàn toàn fixtures lms-data.ts và DemoStateSwitcher.
+  Xử lý đủ 7 trạng thái UI theo contract: loading (SkeletonPanel), invalid_id (UUID validation), not_found (404), forbidden (403), error (ErrorState kèm thử lại), empty (0 lessons), ready (chi tiết lớp và danh sách bài học thật).
+  Bảo mật & RBAC: không để lộ enrollmentCode (INV-CLASS-07), không lộ danh sách học viên cùng lớp, không tự chế số bài tập.
+  Hiển thị thông báo "Chưa khả dụng" cho chi tiết bài học / bài tập chưa có endpoint approved theo API_STUDENT.md.
+  Leave class now calls DELETE /student/classes/:id/leave, uses a submit lock, keeps the modal open on
+  server failure, and redirects only after the server confirms status=dropped.
+  Verification: 31/31 tests trong student-class-detail.test.mjs, full web script suite passed serially,
+  check-docs 8/8 passed, production build web 42/42 pages passed sạch sẽ.
+  ⚠️ Live API/browser self-test NOT RUN: Docker Desktop engine unavailable in this environment.
 
 - ✅ (antigravity · 2026-09-07) **A06 — Danh sách lớp Student từ API thật**
   Nối màn hình /student/classes vào endpoint thật GET /student/classes qua service
