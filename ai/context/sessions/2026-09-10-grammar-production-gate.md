@@ -31,3 +31,11 @@ uses the correct GrammarInner wrapper; the earlier warning concerns only the sep
 uncommitted Real-fe-prod-hooks version. No need to apply both source refactors. These runtime
 regressions and suppression cleanup can accompany whichever wrapper is selected for review.
 Browser drill interaction remains NOT RUN; production backend remains NOT IMPLEMENTED.
+
+## Publication completed — 2026-09-11
+
+The user replied "continue" to the explicit request to publish the three named code branches
+and open review PRs. The branch is now pushed and draft PR #60 is open:
+https://github.com/nhatanhcoder/git-practice/pull/60
+This supersedes the publication blocker above. CI results remain separate from local checks.
+No merge or deployment performed. PR bodies identify overlap with PR55 for coordinated review.
