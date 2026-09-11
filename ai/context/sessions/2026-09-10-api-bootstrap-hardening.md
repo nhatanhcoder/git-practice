@@ -1,5 +1,5 @@
 ---
-status: in-progress
+status: completed-locally
 ---
 
 # 2026-09-10 — API bootstrap hardening — Codex
@@ -26,7 +26,7 @@ H documentation records custom composite-key limiter vs the independent-counter 
 
 ## Verification
 
-- API build passed after documented BUILD-002 package repair; type-check pending final result.
+- API build passed after documented BUILD-002 package repair; type-check passed on branch base 8050cba.
 - Isolated HTTP and shutdown tests: 3/3 passed. Windows emits the same signal event in a child;
   Linux CI sends actual SIGTERM. The fixture proves provider lifetime, not actual DB teardown.
 - Added real AppModule health/login/refresh integration test for existing isolated DB CI.
@@ -42,3 +42,15 @@ Run hosted isolated API CI and record actual results. Real Prisma/Mongoose SIGTE
 is not yet asserted by the fixture. Review G separately: the uncommitted Real-fe-prod-hooks
 version moves Grammar's gate into MatchExercise instead of GrammarPage, exposing production
 demo content. Do not merge that change as-is. No merge or deployment authorized.
+
+## Resumed 2026-09-11
+
+Implementation 262c0dd is committed locally. Public push/PR was rejected by automatic approval
+review because publication permission covered the earlier Foundation/Grammar documents only.
+Final record update was subsequently blocked by quota; it is completed on resumption.
+Main 73bdd2c now contains an unrelated importer type error at vocab-apply.ts:56. Build/type-check
+PASS above applies to base 8050cba. Main a28298b fixed the three older lint errors.
+PR55 head 9128ae8 independently adds Helmet/Swagger/hooks and a correct Grammar wrapper.
+Its Swagger production test checks a local boolean; shutdown test only checks method existence.
+Those assertions do not replace this branch's real HTTP/child-process tests. Actual DB teardown
+and real Linux SIGTERM remain NOT RUN locally. F remains deferred.

@@ -339,7 +339,7 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
 
 ## Off-sprint / spike
 
-- 🔶 (codex · 2026-09-10) **API bootstrap hardening B+C+D** — Helmet, development-only Swagger, drain HTTP before database teardown; isolated tests and H records. User authorized this backend lane for Codex; A1+A2 remain separate pending completed-work location.
+- 🔶 (codex · 2026-09-10) **API bootstrap hardening B+C+D** — implemented locally: Helmet, development-only Swagger and HTTP drain; 3/3 tests, API build/type-check passed on base 8050cba. Public publication blocked; DB/Linux signal checks NOT RUN. User authorized this backend lane for Codex; A1+A2 remain separate pending completed-work location.
 
 
 - ✅ (claude · 2026-09-09) **Docs batch — sync module-status records with the implemented
