@@ -38,7 +38,16 @@ export class AssignmentsService {
 
     await this.assertQuestionsExist(dto.questionIds);
 
-    // homework must not carry a time limit (INV-TASG-02).
+    // INV-TASG-02 is a rejection, not a silent strip: homework carrying a time
+    // limit means the client is confused about the type — accepting it and
+    // dropping the field would hide that (the test asserted this and was right).
+    if (dto.type === 'homework' && dto.timeLimitMinutes != null) {
+      throw new AppException(
+        ErrorCode.VALIDATION_ERROR,
+        'timeLimitMinutes chỉ dành cho mock_test — homework không được mang giới hạn thời gian',
+        { timeLimitMinutes: ['Chỉ mock_test mới được có timeLimitMinutes'] },
+      );
+    }
     const timeLimit = dto.type === 'mock_test' ? dto.timeLimitMinutes : null;
 
     const created = await this.prisma.assignment.create({
@@ -61,7 +70,9 @@ export class AssignmentsService {
       await this.notifyActiveStudents(created.id, created.classId);
     }
 
-    return { data: this.toDto(created) };
+    // The EnvelopeInterceptor wraps successes in { data: ... } — returning a bare
+    // DTO here is what keeps the client envelope single-layered.
+    return this.toDto(created);
   }
 
   async list(teacherId: string, query: ListAssignmentsQuery) {
@@ -100,7 +111,7 @@ export class AssignmentsService {
       throw new AppException(ErrorCode.ASSIGNMENT_NOT_FOUND, 'Không tìm thấy bài tập');
     }
     const stats = await this.computeStats(assignment.id, assignment.classId);
-    return { data: { ...this.toDto(assignment), className: assignment.class.name, stats } };
+    return { ...this.toDto(assignment), className: assignment.class.name, stats };
   }
 
   async update(teacherId: string, id: string, dto: UpdateAssignmentDto) {
@@ -130,11 +141,18 @@ export class AssignmentsService {
       );
     }
 
-    // Merge for cross-field revalidation (mock_test must keep a time limit — INV-TASG-02).
+    // Merge for cross-field revalidation (INV-TASG-02 both directions).
     const merged = { ...assignment, ...dto } as {
       type: 'homework' | 'mock_test';
       timeLimitMinutes?: number | null;
     };
+    if (merged.type === 'homework' && merged.timeLimitMinutes != null) {
+      throw new AppException(
+        ErrorCode.VALIDATION_ERROR,
+        'timeLimitMinutes chỉ dành cho mock_test — homework không được mang giới hạn thời gian',
+        { timeLimitMinutes: ['Chỉ mock_test mới được có timeLimitMinutes'] },
+      );
+    }
     if (merged.type === 'mock_test' && !merged.timeLimitMinutes) {
       throw new AppException(
         ErrorCode.VALIDATION_ERROR,
@@ -162,7 +180,7 @@ export class AssignmentsService {
       await this.notifyActiveStudents(updated.id, updated.classId);
     }
 
-    return { data: this.toDto(updated) };
+    return this.toDto(updated);
   }
 
   async remove(teacherId: string, id: string) {
@@ -200,12 +218,10 @@ export class AssignmentsService {
       include: { class: { select: { name: true } } },
     });
 
-    return {
-      data: rows.map((a) => ({
-        ...this.toListDto(a),
-        className: a.class.name,
-      })),
-    };
+    return rows.map((a) => ({
+      ...this.toListDto(a),
+      className: a.class.name,
+    }));
   }
 
   /**
@@ -248,16 +264,18 @@ export class AssignmentsService {
 
   /** INV-TASG-07: stats derived at read time — no count column exists. */
   private async computeStats(assignmentId: string, classId: string) {
-    const [enrolledActive, attempts] = await Promise.all([
+    const [enrolledActive, attemptRows] = await Promise.all([
       this.prisma.classEnrollment.count({ where: { classId, status: 'active' } }),
-      this.prisma.attempt.groupBy({
-        by: ['status'],
+      this.prisma.attempt.findMany({
         where: { assignmentId },
-        _count: { _all: true },
+        select: { status: true },
       }),
     ]);
-    const by = (s: string) =>
-      attempts.find((r) => r.status === s)?._count._all ?? 0;
+    // Counted in JS rather than groupBy: the attempts table is per-assignment
+    // small, and a groupBy with _count here 500'd in the first live run —
+    // simpler is worth more than clever on a read-time derived stat.
+    const by = (s: 'in_progress' | 'submitted' | 'graded') =>
+      attemptRows.filter((r) => r.status === s).length;
     const submitted = by('submitted') + by('graded');
     const inProgress = by('in_progress');
     const graded = by('graded');
