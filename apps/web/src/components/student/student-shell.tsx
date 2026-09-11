@@ -481,7 +481,11 @@ export function StudentShell({ children }: { children: ReactNode }) {
                   onFocus={() => router.prefetch(item.to)}
                 >
                   {item.icon}
-                  {item.label}
+                  {/* WEB-020: both spellings render; the per-tile container query in
+                      components.css shows whichever fits on one line, so a narrow tile
+                      reads the short label instead of wrapping and stretching its row. */}
+                  <span className="sheet__label">{item.label}</span>
+                  <span className="sheet__label--short">{item.short}</span>
                 </Link>
               ))}
             </div>
