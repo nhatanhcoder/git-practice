@@ -45,3 +45,20 @@
 
 **Next steps**:
 - Commit suite + RECORD, push, open PR (request review; no merge).
+
+## [2026-09-11] — Review pass: CI red → typed refactor, re-run 15/15
+
+**Review findings** (PR #61 CI): `web-quality` failed on 11 `no-explicit-any` hits, all in
+the new suite (legacy suite is covered by `eslint-suppressions.json`); `api-quality`
+failed only on the pre-existing BUILD-004 `vocab-apply.ts` error — the new file was
+type-clean. Self-review also found a robustness flaw: `limit=100` + first-page `.find`
+assumed our fixture lands on page 1, unguaranteed with 1,118+ catalog cards.
+
+**Fix** (`1051646`, test file only): zero-`any` typed suite (`CardRow`/`BrowseBody`/
+`StatsBody`/`ReviewBody`/`ErrorBody`/`AuthBody`, `body?: unknown`) + paginated
+`findOwnCard` helper that walks pages until found. Runtime behaviour unchanged.
+
+**Re-verify**: local eslint on the file exit 0; `tsc --noEmit` shows only BUILD-004;
+both suites re-run together **15/15**; tagged fixtures 0 left; check-docs 9/9.
+CI after push: `web-quality` PASS, `check-docs` PASS, `api-quality` still red solely on
+BUILD-004 (out of scope, in-flight elsewhere). No merge.
