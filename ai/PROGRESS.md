@@ -339,10 +339,11 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
 
 ## Off-sprint / spike
 
-- 🔶 (opencode · 2026-09-11) **Student CSS+Tailwind collaboration** — define dead
-  `sp-press`/`sp-font-head` once via Tailwind plugin; dedupe byte-identical
+- ✅ (opencode · 2026-09-11) **Student CSS+Tailwind collaboration** — defined dead
+  `sp-press`/`sp-font-head` once via Tailwind plugin; deduped byte-identical
   `student/{tokens,base,components}.css` forks onto hanlu canonicals
-  (branch `fix/student-css-collab`)
+  (branch `fix/student-css-collab`). Build green, 4 screenshots read, guard intact.
+  Session: `ai/context/sessions/2026-09-11-opencode-css-collab.md`.
 
 - ✅ (claude · 2026-09-09) **Docs batch — sync module-status records with the implemented
   backend + record two QC findings.** Verified an external Modules 01→08 audit first, then:
