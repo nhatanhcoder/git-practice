@@ -339,13 +339,21 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
 
 ## Off-sprint / spike
 
-- 🔶 (zcode · 2026-09-11) **WEB-020 — Mobile "More" sheet: nav labels compact by tile
-  width.** The 2-column sheet grid wraps 3 long labels ("Bài tập được giao", "Từ vựng
+- ✅ (zcode · 2026-09-11) **WEB-020 — Mobile "More" sheet: nav labels compact by tile
+  width.** The 2-column sheet grid wrapped 3 long labels ("Bài tập được giao", "Từ vựng
   Flashcard", "Mô phỏng công sở") to two lines, making those rows ~20px taller than the
-  rest. Fix: each tile renders both `label` and existing `short`, a CSS container query
-  per tile swaps them (narrow tile → short one-line label, wide tile → full label), so
-  every row returns to one uniform height. `student-shell.tsx` + both `components.css`
-  copies. Shared component → FULL LANE verify. Branch `fix/student-sheet-labels`.
+  rest. Fixed: each tile renders both `label` and existing `short`, and a per-tile CSS
+  container query (`container-type: inline-size`) swaps them — narrow tile → short
+  one-line label, wide tile → full label — so every row returns to one uniform height.
+  `student-shell.tsx` + both `components.css` copies (kept identical; PR #62 will delete
+  the `app/student/` fork — trivial resolution). Shared component → FULL LANE: new spec
+  `student-sheet-labels.spec.ts` **6/6** (375/520/640px × 2 projects, real login,
+  production build), screenshot forensics PASS at all three widths (round 1 caught a
+  real specificity bug the first test cut missed: @container adds no specificity, both
+  labels went hidden at 375px; fixed + test asserts both swap directions now), unit
+  156/156, check-docs 9/9, demo-isolation 9/9. 2 pre-existing identity-spec failures
+  (missing DB fixture + 429 rate limit) proven unrelated by stash. Branch
+  `fix/student-sheet-labels`.
 
 - ✅ (claude · 2026-09-09) **Docs batch — sync module-status records with the implemented
   backend + record two QC findings.** Verified an external Modules 01→08 audit first, then:

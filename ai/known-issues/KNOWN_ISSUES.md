@@ -1252,6 +1252,46 @@ page asserting things that are not true; do not fix it in isolation from that de
 
 ---
 
+### [WEB-020] Mobile "More" sheet: three nav labels wrapped to two lines, stretching their rows
+
+**Severity**: Low
+**Status**: ✅ Resolved 2026-09-11 — branch `fix/student-sheet-labels`, per-tile CSS container
+query swaps the label.
+
+**Description**: the "Tất cả khu vực học" bottom sheet (mobile tab bar → "Thêm") renders a
+2-column grid of 15 navigation tiles using each item's **full** `label`. Three of them —
+"Bài tập được giao", "Từ vựng Flashcard", "Mô phỏng công sở" — exceeded the ~100px text box of
+a 375px tile and wrapped to two lines, making their rows ~20px taller than the other five
+(single-line) rows. `navlink`/`tabbar` had already adopted the `short` field for exactly this
+reason; the sheet was the one surface still rendering `label`.
+
+**Resolution**: each tile now renders both spellings (`sheet__label` + `sheet__label--short`),
+and each `.sheet__item` is a CSS container (`container-type: inline-size`) whose
+`@container (max-width: 189px)` query shows whichever spelling fits one line. Narrow tile →
+short label ("Bài tập", "Từ vựng", "Công sở"); wide tile → full label. Every row returns to one
+uniform height. Two lessons from verification, both kept as code comments: **@container adds no
+specificity** — a bare `.sheet__label--short` inside the query (0,1,0) lost to the outer
+`.student-root .sheet__label--short` (0,2,0) and hid BOTH labels at 375px; the query selectors
+must mirror the outer ones. And the first Playwright cut asserted only the hidden half of the
+swap, which let that icon-only regression pass green — the spec now asserts both directions
+(plus flex-item blockification: the computed display of a visible span is `block`, not the
+declared `inline`).
+
+**Verification**: `tests/student-sheet-labels.spec.ts` 6/6 (desktop + mobile-375 ×
+375/520/640px, real login, production build): uniform tile heights everywhere, short labels
+at 375px, full labels single-line at 520/640px. Screenshot forensics re-verified after the
+specificity fix (round 1 caught the icon-only bug). Unit suite 156/156, check-docs 9/9,
+demo-isolation spec 9/9. Pre-existing, unrelated: 2 `student-identity.spec.ts` cases fail with
+or without this change (proven by stashing it) — `a01.student@hsk.local` is not in the dev DB
+(fixture never created by the spec) and the failed attempts then trip the 5-per-15-min login
+rate limit (429); not counted against this fix.
+
+**Numbering note**: `WEB-019` is taken by the unmerged `feat/student-prod-return-hooks`; per
+`DOC-014` reconcile by hand on merge. `WEB-020` was verified free across all live remote
+branches before assignment.
+
+---
+
 ### [API-015] No central env validation; the refresh-cookie path is hardcoded and can drift from `API_PREFIX`
 
 **Severity**: High
