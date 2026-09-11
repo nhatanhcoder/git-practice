@@ -13,6 +13,43 @@
   --border: #e2e8f0;
   --text: #0f172a;
   --muted: #475569;
+  /* Wired from root-design-fe.md §2.1 (status) + verbatim palette stops.
+     Values already shipped in CSS Modules; only the spelling changed. */
+  --success: #16A34A;
+  --warning: #D97706;
+  --danger: #DC2626;
+  --info: #0284C7;
+  --neutral: #64748B;
+  --slate-100: #F1F5F9;
+  --slate-300: #CBD5E1;
+  --slate-400: #94A3B8;
+  --slate-700: #334155;
+  --red-50: #FEF2F2;
+  --red-200: #FECACA;
+  --red-700: #B91C1C;
+  --red-800: #991B1B;
+  --red-900: #7F1D1D;
+  --amber-50: #FFFBEB;
+  --amber-200: #FDE68A;
+  --amber-700: #B45309;
+  --amber-800: #92400E;
+  --green-50: #F0FDF4;
+  --green-700: #15803D;
+  --green-800: #166534;
+  --emerald-100: #D1FAE5;
+  --emerald-800: #065F46;
+  --sky-50: #F0F9FF;
+  --sky-700: #0369A1;
+  --blue-50: #EFF6FF;
+  --blue-100: #DBEAFE;
+  --blue-300: #93C5FD;
+  --indigo-50: #EEF2FF;
+  --indigo-100: #E0E7FF;
+  --indigo-200: #C7D2FE;
+  --indigo-700: #4338CA;
+  --indigo-800: #3730A3;
+  --neutral-50: #FAFAFA;
+  --danger-faint: #FFF7F7;
   color-scheme: light;
 }
 
