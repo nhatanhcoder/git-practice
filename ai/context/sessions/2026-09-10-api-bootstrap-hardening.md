@@ -54,3 +54,11 @@ PR55 head 9128ae8 independently adds Helmet/Swagger/hooks and a correct Grammar 
 Its Swagger production test checks a local boolean; shutdown test only checks method existence.
 Those assertions do not replace this branch's real HTTP/child-process tests. Actual DB teardown
 and real Linux SIGTERM remain NOT RUN locally. F remains deferred.
+
+## Publication completed — 2026-09-11
+
+The user replied "continue" to the explicit request to publish the three named code branches
+and open review PRs. The branch is now pushed and draft PR #59 is open:
+https://github.com/nhatanhcoder/git-practice/pull/59
+This supersedes the publication blocker above. CI results remain separate from local checks.
+No merge or deployment performed. PR bodies identify overlap with PR55 for coordinated review.
