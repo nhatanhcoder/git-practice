@@ -247,9 +247,15 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
       signed-in Student, covered by targeted e2e tests
 - 🔶 F7.4 Review stats — due/learned/retention/review count built; streak intentionally returns
       `null` until the calendar/timezone rule is approved
-- 🔶 (opencode · 2026-09-11) **SRS flow integration tests** — study → feedback → reload-state
+- ✅ (opencode · 2026-09-11) **SRS flow integration tests** — study → feedback → reload-state
       verification as new `apps/api/test/student-flashcards-flow.e2e.test.ts` with isolated
-      fixtures (branch `test/srs-flow-integration`; independent of Assignments)
+      fixtures (branch `test/srs-flow-integration`; independent of Assignments).
+      New suite **9/9**, existing SRS suite regression **6/6** (empty page, concurrent-level
+      consistency, review→reload match, due ordering, SM-2 advance, double-POST documented,
+      A/B isolation, forged-token 401, absent-id 404). Fixtures cleaned (0 left).
+      Pre-existing red `pnpm --filter api build` on `origin/main` → **BUILD-004**
+      (not fixed, out of scope). Session:
+      `ai/context/sessions/2026-09-11-opencode-srs-flow-tests.md`.
 - ⛔ F6.1 Weekly skill heatmap · ⛔ F6.2 Progress chart — names exist in the actor document,
       but request/response contracts are not approved; no payload was invented
       *(if F9–F16 ever land, `SkillScore.skill` widens 3 → 7 values — `PROJECT_KNOWLEDGE.md` §8. Blocked, see Sprint 5b)*
