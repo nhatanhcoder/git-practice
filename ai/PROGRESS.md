@@ -339,9 +339,11 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
 
 ## Off-sprint / spike
 
-- 🔶 (opencode · 2026-09-11) **Student learning-path contract + rebuild (S-SELF-1)** —
-  Page Contracts + spec (all reads ⛔, no backend), rebuild 2 mock-honest routes
-  (branch `feat/student-learning-path`)
+- ✅ (opencode · 2026-09-11) **Student learning-path contract + rebuild (S-SELF-1)** —
+  Page Contracts + Tier-0 specs (all reads ⛔, no backend), rebuilt 2 mock-honest routes
+  with URL-synced filters (branch `feat/student-learning-path`). Build 42/42, 4
+  screenshots read, check-docs 9/9. Session:
+  `ai/context/sessions/2026-09-11-opencode-learning-path.md`.
 
 - ✅ (claude · 2026-09-09) **Docs batch — sync module-status records with the implemented
   backend + record two QC findings.** Verified an external Modules 01→08 audit first, then:
