@@ -1604,3 +1604,14 @@ at apps/api/src/flashcards/import/vocab-apply.ts:56; API build fails there. Its 
 that lane. Also, API_CONVENTIONS calls the limiter a sliding window while AuthService uses a
 first-failure-anchored window; the accepted auth spec describes independent counters while
 implementation uses a composite key. Both mismatches are recorded, not silently changed here.
+
+### 2026-09-11 — API-016 / WEB-016 review continuation
+
+**Status**: local corrections complete; public publication blocked. PR55 is now 9128ae8 and
+its Grammar wrapper is correct. Its production Swagger test only evaluates a local boolean;
+shutdown test only checks method existence. The isolated HTTP and child-process tests in
+codex/api-bootstrap-hardening are stronger but still do not verify real database teardown.
+PR55 still defaults proxy trust to one hop; codex/auth-proxy-review defaults it off.
+New Throttler thresholds and unrelated UI additions in PR55 are not covered by A1+A2 tests.
+See sessions/2026-09-11-security-checklist-review.md for branch commits, validation scope and
+publication blocker. Existing issue IDs retained; no issue was renumbered or closed broadly.
