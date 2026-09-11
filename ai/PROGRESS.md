@@ -339,6 +339,11 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
 
 ## Off-sprint / spike
 
+- 🔶 (opencode · 2026-09-11) **Admin/teacher CSS hex → vars sweep** — wire ~1,700 hardcoded
+  literals in 25 CSS Modules to `globals.css` vars (existing 8 + doc-table status 5 +
+  verbatim palette scales), exact values only, zero-visual-diff
+  (branch `fix/admin-css-tokens`)
+
 - ✅ (claude · 2026-09-09) **Docs batch — sync module-status records with the implemented
   backend + record two QC findings.** Verified an external Modules 01→08 audit first, then:
   `_INDEX.md` — removed the obsolete "Only Auth is ready to code" line (7/8 implemented);
