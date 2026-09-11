@@ -7,6 +7,7 @@ import crypto from 'node:crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { AppException } from '../common/errors/app.exception';
 import { ErrorCode } from '../common/errors/error-codes';
+import { NotificationsService, type NotificationWrite } from '../notifications/notifications.service';
 import type { RegisterDto } from './dto/register.dto';
 import type { LoginDto } from './dto/login.dto';
 import type { ChangePasswordDto } from './dto/change-password.dto';
@@ -56,6 +57,7 @@ export class AuthService {
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(JwtService) private readonly jwt: JwtService,
     @Inject(ConfigService) private readonly config: ConfigService,
+    @Inject(NotificationsService) private readonly notifications: NotificationsService,
   ) {
     this.jwtAccessSecret = this.config.get<string>('JWT_ACCESS_SECRET') || '';
     if (!this.jwtAccessSecret) {
@@ -138,7 +140,6 @@ export class AuthService {
             },
             null,
           );
-
           await tx.userMarketingProfile.create({
             data: {
               userId: created.id,
@@ -156,6 +157,31 @@ export class AuthService {
               ...consent,
             },
           });
+        }
+
+        // Fan-out `new_<role>_registration` to every ACTIVE admin, inside this transaction
+        // (INV-NOTIF-11/13): N admins = N separate rows, one multi-row insert, no loop.
+        // The recipient resolution is this module's job per 07-notifications.md §10.3 —
+        // the notifications module only writes what it is handed.
+        const admins = await tx.user.findMany({
+          where: { role: 'admin', status: 'active' },
+          select: { id: true },
+        });
+        if (admins.length > 0) {
+          const registrationType: NotificationWrite['type'] =
+            created.role === 'teacher' ? 'new_teacher_registration' : 'new_student_registration';
+          // referenceType stays null for account-level events — the enum has no `user`
+          // value (INV-NOTIF-10), so the admin bell gets items without a deep-link for now.
+          await this.notifications.createManyWithinTx(
+            tx,
+            admins.map((admin) => ({
+              userId: admin.id,
+              type: registrationType,
+              referenceId: created.id,
+              referenceType: null,
+              payload: { email: created.email, nickname: created.nickname, role: created.role },
+            })),
+          );
         }
 
         return created;
