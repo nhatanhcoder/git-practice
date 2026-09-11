@@ -339,6 +339,14 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
 
 ## Off-sprint / spike
 
+- 🔶 (zcode · 2026-09-12) **Student completion wave — slice 2: Word bank S-SRS-6/7.**
+  New module spec `docs/api/modules/student/02-word-bank.md` (transport was the open
+  blocker named by 01-srs §16) + Mongoose `user_saved_words` (per
+  ENTITY_USER_SAVED_WORD: unique (userId, hanzi), upsert-on-duplicate) + 4 student
+  endpoints + save/unsave buttons in the flashcards browser + a word-bank tab there
+  (S-SRS-7 list/delete). Branch `feat/student-word-bank`.
+
+
 - ✅ (claude · 2026-09-09) **Docs batch — sync module-status records with the implemented
   backend + record two QC findings.** Verified an external Modules 01→08 audit first, then:
   `_INDEX.md` — removed the obsolete "Only Auth is ready to code" line (7/8 implemented);
