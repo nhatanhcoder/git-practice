@@ -339,6 +339,14 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
 
 ## Off-sprint / spike
 
+- 🔶 (zcode · 2026-09-11) **WEB-020 — Mobile "More" sheet: nav labels compact by tile
+  width.** The 2-column sheet grid wraps 3 long labels ("Bài tập được giao", "Từ vựng
+  Flashcard", "Mô phỏng công sở") to two lines, making those rows ~20px taller than the
+  rest. Fix: each tile renders both `label` and existing `short`, a CSS container query
+  per tile swaps them (narrow tile → short one-line label, wide tile → full label), so
+  every row returns to one uniform height. `student-shell.tsx` + both `components.css`
+  copies. Shared component → FULL LANE verify. Branch `fix/student-sheet-labels`.
+
 - ✅ (claude · 2026-09-09) **Docs batch — sync module-status records with the implemented
   backend + record two QC findings.** Verified an external Modules 01→08 audit first, then:
   `_INDEX.md` — removed the obsolete "Only Auth is ready to code" line (7/8 implemented);
