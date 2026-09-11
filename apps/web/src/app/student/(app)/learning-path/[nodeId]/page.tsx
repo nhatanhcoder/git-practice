@@ -8,6 +8,9 @@
  * point of the boss nodes, so it is enforced here rather than implied.
  *
  * MOCK(student): nothing is submitted anywhere; completion writes to the store.
+ * Contract: docs/front-end-design-docs/pages/student-pages/student-learning-path-node.md
+ * (S-SELF-1, status contracted). The ⛔ progress write fires here when the backend
+ * exists; until then the local store is the record.
  */
 
 import { useMemo, useState } from "react";
@@ -152,16 +155,24 @@ export default function LessonPage() {
       toast(`Ải trùm cần đúng từ ${Math.round(BOSS_PASS_RATE * 100)}% — thử lại nhé`, "warn");
       return;
     }
+    // MOCK(S-SELF-1): local store until the ⛔ progress write exists.
     completeLesson(lesson.id, lesson.xp);
     toast(`Hoàn thành «${lesson.title}» — +${lesson.xp} XP`, "success");
     router.push("/student/learning-path");
   }
 
+  // Back keeps the map filters: history preserves the exact map URL (with query
+  // params); a direct deep link falls back to the unfiltered map.
+  function goBack() {
+    if (typeof window !== "undefined" && window.history.length > 1) router.back();
+    else router.push("/student/learning-path");
+  }
+
   return (
     <>
-      <Link href="/student/learning-path" className="backlink">
+      <button type="button" className="backlink" onClick={goBack}>
         <ArrowLeft size={14} /> Bản đồ HSK {level}
-      </Link>
+      </button>
 
       <PageHead
         title={node.title}
