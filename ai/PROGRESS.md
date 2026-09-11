@@ -339,7 +339,7 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
 
 ## Off-sprint / spike
 
-- 🔶 (codex · 2026-09-10) **Grammar production gate G** — implemented wrapper outside hooks, 147/147 web regressions and targeted lint passed. Production API remains NOT IMPLEMENTED; publication pending. Isolated from the uncommitted broad student hooks worktree.
+- 🔶 (codex · 2026-09-10) **Grammar production gate G** — implemented wrapper outside hooks, 147/147 web regressions, targeted lint and web build 42/42 passed. Production API remains NOT IMPLEMENTED; publication pending. Isolated from the uncommitted broad student hooks worktree.
 
 
 - ✅ (claude · 2026-09-09) **Docs batch — sync module-status records with the implemented
