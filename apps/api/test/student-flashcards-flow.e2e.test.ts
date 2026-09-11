@@ -34,6 +34,42 @@ const STUDENT_A_EMAIL = 'test.srsflow.a@hsk.local';
 const STUDENT_B_EMAIL = 'test.srsflow.b@hsk.local';
 const OWNED_EMAILS = [STUDENT_A_EMAIL, STUDENT_B_EMAIL];
 const TEST_TAG = 'test-srs-flow-e2e';
+const PAGE_LIMIT = 100;
+
+type CardState = {
+  easeFactor: number;
+  repetitionsCount: number;
+  intervalDays: number;
+  nextReviewDate: string;
+  lastReviewedAt: string | null;
+  isSavedByUser: boolean;
+  totalReviews: number;
+  correctReviews: number;
+};
+
+type CardRow = {
+  id: string;
+  hskLevel: number;
+  hanzi: string;
+  state: CardState | null;
+};
+
+type BrowseBody = {
+  data: CardRow[];
+  meta: { total: number; page: number; limit: number; totalPages: number };
+};
+
+type StatsBody = {
+  data: { totalCards: number; dueToday: number; totalReviews: number; retentionRate: number; streak: null };
+};
+
+type ReviewBody = {
+  data: { flashcardId: string; rating: number; state: CardState };
+};
+
+type ErrorBody = { code: string };
+
+type AuthBody = { data: { id: string; accessToken: string } };
 
 let app: INestApplication;
 let base: string;
@@ -59,18 +95,18 @@ function toDetails(errors: ValidationError[], prefix = ''): Record<string, strin
 async function req(
   method: 'GET' | 'POST' | 'PATCH',
   path: string,
-  body?: any,
+  body?: unknown,
   token?: string,
-) {
+): Promise<{ status: number; body: unknown }> {
   const headers: Record<string, string> = {};
-  if (body) headers['content-type'] = 'application/json; charset=utf-8';
+  if (body !== undefined) headers['content-type'] = 'application/json; charset=utf-8';
   if (token) headers.authorization = `Bearer ${token}`;
   const response = await fetch(`${base}/${PREFIX}${path}`, {
     method,
     headers,
-    body: body ? JSON.stringify(body) : undefined,
+    body: body !== undefined ? JSON.stringify(body) : undefined,
   });
-  return { status: response.status, body: await response.json().catch(() => null) };
+  return { status: response.status, body: (await response.json().catch(() => null)) as unknown };
 }
 
 async function registerApproveLogin(email: string, adminToken: string) {
@@ -80,9 +116,34 @@ async function registerApproveLogin(email: string, adminToken: string) {
     fullName: email,
     role: 'student',
   });
-  await req('PATCH', `/admin/users/${registered.body.data.id}/approve`, undefined, adminToken);
+  const registeredBody = registered.body as AuthBody;
+  await req('PATCH', `/admin/users/${registeredBody.data.id}/approve`, undefined, adminToken);
   const login = await req('POST', '/auth/login', { email, password: 'Password123!' });
-  return { id: registered.body.data.id as string, token: login.body.data.accessToken as string };
+  const loginBody = login.body as AuthBody;
+  return { id: registeredBody.data.id, token: loginBody.data.accessToken };
+}
+
+/**
+ * Own fixtures share the catalog with production imports (A11 wrote 1,118+
+ * cards into the dev database), so a single first page is not guaranteed to
+ * hold our card. Walk pages until found — deterministic on any catalog size.
+ */
+async function findOwnCard(token: string, hskLevel: number, id: string): Promise<CardRow | undefined> {
+  let page = 1;
+  for (;;) {
+    const res = await req(
+      'GET',
+      `/student/flashcards?hskLevel=${hskLevel}&page=${page}&limit=${PAGE_LIMIT}`,
+      undefined,
+      token,
+    );
+    assert.equal(res.status, 200);
+    const body = res.body as BrowseBody;
+    const found = body.data.find((row) => row.id === id);
+    if (found) return found;
+    if (page >= body.meta.totalPages) return undefined;
+    page += 1;
+  }
 }
 
 async function sweepTaggedFixtures() {
@@ -123,7 +184,7 @@ before(async () => {
     email: 'admin@hsk.local',
     password: 'Password123!',
   });
-  const adminToken = admin.body.data.accessToken as string;
+  const adminToken = (admin.body as AuthBody).data.accessToken;
   const a = await registerApproveLogin(STUDENT_A_EMAIL, adminToken);
   const b = await registerApproveLogin(STUDENT_B_EMAIL, adminToken);
   userAId = a.id;
@@ -173,15 +234,16 @@ describe('SRS study → feedback → reload-state flow', () => {
   it('returns an empty page with the envelope intact when the page is out of range', async () => {
     const page = await req('GET', '/student/flashcards?hskLevel=4&page=9999&limit=20', undefined, tokenA);
     assert.equal(page.status, 200);
-    assert.deepEqual(page.body.data, []);
-    assert.ok(page.body.meta.total >= 1);
-    assert.equal(page.body.meta.page, 9999);
+    const body = page.body as BrowseBody;
+    assert.deepEqual(body.data, []);
+    assert.ok(body.meta.total >= 1);
+    assert.equal(body.meta.page, 9999);
   });
 
   it('keeps concurrent level browses self-consistent (rapid filter switching)', async () => {
     const [l4, l5] = await Promise.all([
-      req('GET', '/student/flashcards?hskLevel=4&limit=100', undefined, tokenA),
-      req('GET', '/student/flashcards?hskLevel=5&limit=100', undefined, tokenA),
+      req('GET', `/student/flashcards?hskLevel=4&limit=${PAGE_LIMIT}`, undefined, tokenA),
+      req('GET', `/student/flashcards?hskLevel=5&limit=${PAGE_LIMIT}`, undefined, tokenA),
     ]);
     assert.equal(l4.status, 200);
     assert.equal(l5.status, 200);
@@ -189,29 +251,33 @@ describe('SRS study → feedback → reload-state flow', () => {
     // response can never paint the other level's words. Client-side ordering
     // (which response wins on screen) is owned by `isStaleResponse` and is
     // covered by `apps/web/scripts/srs-session.test.mjs`.
-    assert.ok(l4.body.data.every((row: any) => row.hskLevel === 4));
-    assert.ok(l5.body.data.every((row: any) => row.hskLevel === 5));
-    assert.ok(l4.body.data.some((row: any) => row.id === cardL4Id));
-    assert.ok(!l5.body.data.some((row: any) => row.id === cardL4Id));
-    assert.ok(l5.body.data.some((row: any) => row.id === cardL5Id));
+    const bodyL4 = l4.body as BrowseBody;
+    const bodyL5 = l5.body as BrowseBody;
+    assert.ok(bodyL4.data.every((row) => row.hskLevel === 4));
+    assert.ok(bodyL5.data.every((row) => row.hskLevel === 5));
+    assert.ok(!bodyL5.data.some((row) => row.id === cardL4Id));
+    assert.ok((await findOwnCard(tokenA, 4, cardL4Id)) !== undefined);
+    assert.ok((await findOwnCard(tokenA, 5, cardL5Id)) !== undefined);
   });
 
   it('persists a review and reloads the identical state on browse and stats', async () => {
     const reviewed = await req('POST', `/student/flashcards/${cardL4Id}/review`, { rating: 4 }, tokenA);
     assert.equal(reviewed.status, 201);
-    assert.equal(reviewed.body.data.state.repetitionsCount, 1);
+    const reviewedBody = reviewed.body as ReviewBody;
+    assert.equal(reviewedBody.data.state.repetitionsCount, 1);
 
     // Reload 1: the card row carries the exact state the POST returned.
-    const browse = await req('GET', '/student/flashcards?hskLevel=4&limit=100', undefined, tokenA);
-    const row = browse.body.data.find((entry: any) => entry.id === cardL4Id);
-    assert.deepEqual(row.state, reviewed.body.data.state);
+    const row = await findOwnCard(tokenA, 4, cardL4Id);
+    assert.ok(row);
+    assert.deepEqual(row.state, reviewedBody.data.state);
 
     // Reload 2: the aggregates reflect the same single review.
     const stats = await req('GET', '/student/flashcards/stats', undefined, tokenA);
     assert.equal(stats.status, 200);
-    assert.equal(stats.body.data.totalReviews, 1);
-    assert.equal(stats.body.data.retentionRate, 100);
-    assert.equal(stats.body.data.streak, null);
+    const statsBody = stats.body as StatsBody;
+    assert.equal(statsBody.data.totalReviews, 1);
+    assert.equal(statsBody.data.retentionRate, 100);
+    assert.equal(statsBody.data.streak, null);
   });
 
   it('serves a past-due fixture from the due queue, most overdue first', async () => {
@@ -229,17 +295,18 @@ describe('SRS study → feedback → reload-state flow', () => {
     });
     const due = await req('GET', '/student/flashcards/due', undefined, tokenA);
     assert.equal(due.status, 200);
-    assert.ok(due.body.data.some((row: any) => row.id === cardL5Id));
-    assert.ok(due.body.data.length <= 20);
+    const dueBody = due.body as { data: CardRow[] };
+    assert.ok(dueBody.data.some((row) => row.id === cardL5Id));
+    assert.ok(dueBody.data.length <= 20);
   });
 
   it('applies a second rating on top of the reloaded state and clears the due queue', async () => {
     const second = await req('POST', `/student/flashcards/${cardL5Id}/review`, { rating: 5 }, tokenA);
     assert.equal(second.status, 201);
-    assert.equal(second.body.data.state.repetitionsCount, 2);
+    assert.equal((second.body as ReviewBody).data.state.repetitionsCount, 2);
 
     const due = await req('GET', '/student/flashcards/due', undefined, tokenA);
-    assert.ok(!due.body.data.some((row: any) => row.id === cardL5Id));
+    assert.ok(!(due.body as { data: CardRow[] }).data.some((row) => row.id === cardL5Id));
   });
 
   it('documents the observed behaviour of two parallel reviews of one card', async () => {
@@ -255,41 +322,44 @@ describe('SRS study → feedback → reload-state flow', () => {
     // (`canSubmitRating` + ref lock, covered by srs-session.test.mjs) — that is
     // the documented division of labour, not a silent server dedupe.
     const afterStats = await req('GET', '/student/flashcards/stats', undefined, tokenA);
-    assert.equal(afterStats.body.data.totalReviews, before.body.data.totalReviews + 2);
+    assert.equal(
+      (afterStats.body as StatsBody).data.totalReviews,
+      (before.body as StatsBody).data.totalReviews + 2,
+    );
   });
 
   it('keeps two students’ progress mutually invisible on the shared catalog', async () => {
-    const browseB = await req('GET', '/student/flashcards?hskLevel=4&limit=100', undefined, tokenB);
-    const rowB = browseB.body.data.find((entry: any) => entry.id === cardL4Id);
+    const rowB = await findOwnCard(tokenB, 4, cardL4Id);
     assert.ok(rowB);
     assert.equal(rowB.state, null);
 
     const dueB = await req('GET', '/student/flashcards/due', undefined, tokenB);
-    assert.deepEqual(dueB.body.data, []);
+    assert.deepEqual((dueB.body as { data: CardRow[] }).data, []);
 
     const statsB = await req('GET', '/student/flashcards/stats', undefined, tokenB);
-    assert.equal(statsB.body.data.totalCards, 0);
-    assert.equal(statsB.body.data.totalReviews, 0);
+    const statsBBody = statsB.body as StatsBody;
+    assert.equal(statsBBody.data.totalCards, 0);
+    assert.equal(statsBBody.data.totalReviews, 0);
 
     // B reviewing the same shared card creates B's own private state and leaves A's untouched.
     const reviewB = await req('POST', `/student/flashcards/${cardL4Id}/review`, { rating: 3 }, tokenB);
     assert.equal(reviewB.status, 201);
-    const browseA = await req('GET', '/student/flashcards?hskLevel=4&limit=100', undefined, tokenA);
-    const rowA = browseA.body.data.find((entry: any) => entry.id === cardL4Id);
+    const rowA = await findOwnCard(tokenA, 4, cardL4Id);
+    assert.ok(rowA?.state);
     // A rated this card three times by now (single + parallel pair); B rated it
     // once. Separate counters prove separate states — reading never leaks.
-    assert.ok(rowA.state.totalReviews > reviewB.body.data.state.totalReviews);
+    assert.ok(rowA.state.totalReviews > (reviewB.body as ReviewBody).data.state.totalReviews);
     const statsA = await req('GET', '/student/flashcards/stats', undefined, tokenA);
-    assert.ok(statsA.body.data.totalCards >= 1);
+    assert.ok((statsA.body as StatsBody).data.totalCards >= 1);
   });
 
   it('rejects a forged session with 401 and a registered code', async () => {
     const forged = await req('GET', '/student/flashcards/stats', undefined, 'invalid.token.here');
     assert.equal(forged.status, 401);
-    assert.equal(forged.body.code, ErrorCode.AUTH_TOKEN_INVALID);
+    assert.equal((forged.body as ErrorBody).code, ErrorCode.AUTH_TOKEN_INVALID);
     const missing = await req('GET', '/student/flashcards/stats');
     assert.equal(missing.status, 401);
-    assert.equal(missing.body.code, ErrorCode.AUTH_TOKEN_INVALID);
+    assert.equal((missing.body as ErrorBody).code, ErrorCode.AUTH_TOKEN_INVALID);
   });
 
   it('maps a well-formed but absent id to FLASHCARD_NOT_FOUND', async () => {
@@ -300,6 +370,6 @@ describe('SRS study → feedback → reload-state flow', () => {
       tokenA,
     );
     assert.equal(absent.status, 404);
-    assert.equal(absent.body.code, ErrorCode.FLASHCARD_NOT_FOUND);
+    assert.equal((absent.body as ErrorBody).code, ErrorCode.FLASHCARD_NOT_FOUND);
   });
 });
