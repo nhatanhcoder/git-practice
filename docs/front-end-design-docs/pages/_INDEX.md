@@ -76,6 +76,8 @@ Analytics (T-ANL-1…4): _not yet mapped._ Every other Teacher area has a contra
 | `/student/classes/[classId]` | S-CLS-3,4, S-LESSON-1 | [student-class-detail](./student-pages/student-class-detail.md) | built | v1 | — |
 | `/student/foundation` | S-SELF-2,9 | [student-foundation](./student-pages/student-foundation.md) | contracted (proposed) | — | ⛔ source, schema, API and media approval |
 | `/student/grammar` | S-SELF-3,9 | [student-grammar](./student-pages/student-grammar.md) | contracted (proposed) | — | ⛔ source, schema, API and exercise approval |
+| `/student/learning-path` | S-SELF-1,9 | [student-learning-path](./student-pages/student-learning-path.md) | contracted (proposed) | — | ⛔ catalog paths, progress reads/writes |
+| `/student/learning-path/[nodeId]` | S-SELF-1,9 | [student-learning-path-node](./student-pages/student-learning-path-node.md) | contracted (proposed) | — | ⛔ catalog read, progress write |
 
 Foundation/Grammar contracts describe a blocked production proposal; their current UI is still mock-backed.
 
