@@ -50,3 +50,11 @@ nhatanhcoder/git-practice: prior publication approval covered Foundation/Grammar
 The user resumed work but has not explicitly authorized public publication of these three
 new code branches. All three are local, committed and reviewable. Request permission to push
 these concrete code/test/record packages and create review PRs; no merge or deployment.
+
+## Publication completed — 2026-09-11
+
+The user replied "continue" to the explicit request to publish the three named code branches
+and open review PRs. The branch is now pushed and draft PR #58 is open:
+https://github.com/nhatanhcoder/git-practice/pull/58
+This supersedes the publication blocker above. CI results remain separate from local checks.
+No merge or deployment performed. PR bodies identify overlap with PR55 for coordinated review.
