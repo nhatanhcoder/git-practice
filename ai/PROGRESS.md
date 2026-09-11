@@ -339,6 +339,14 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
 
 ## Off-sprint / spike
 
+- 🔶 (zcode · 2026-09-12) **Student completion wave — slice 1: Notifications module 07
+  (mailbox) + producers (API-013, S-BILL-3).** Implementing the accepted-by-plan spec
+  `07-notifications.md`: 4 mailbox endpoints (any role, own mailbox only), producers wired
+  in-transaction (register fan-out to admins, approve/suspend → account notices), batch
+  invoice notification fixed to single-transaction multi-row insert (INV-NOTIF-13),
+  `NOTIFICATION_*` error family registered. Part of the owner-approved batch: word bank,
+  drill, gamification, lessons detail, self-study. Branch `feat/student-notifications`.
+
 - ✅ (claude · 2026-09-09) **Docs batch — sync module-status records with the implemented
   backend + record two QC findings.** Verified an external Modules 01→08 audit first, then:
   `_INDEX.md` — removed the obsolete "Only Auth is ready to code" line (7/8 implemented);
