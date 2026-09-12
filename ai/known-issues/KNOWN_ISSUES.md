@@ -1625,3 +1625,40 @@ GitHub Actions run 34252312577 passed web-quality and api-quality, including mig
 seed and the API suite against disposable PostgreSQL/MongoDB services. Run 34252312622
 passed check-docs. Branch protection still requires owner configuration. DEBT-006 remains
 open: a passing baseline-aware lint gate does not mean the existing findings are fixed.
+
+### 2026-09-10 — API-016 / PR 55 review correction
+
+**Status**: single-instance limitation remains open; A1+A2 corrections implemented locally
+in codex/auth-proxy-review. Original PR 55 defaulted TRUST_PROXY to one hop without proving
+all deployments cross a protected proxy; direct callers could vary XFF to evade the limiter.
+Default is now false; 1 hop or trusted address/CIDR lists require explicit deployment config.
+AuthController consumes req.ip only, with a shared neutral key if Express provides no IP.
+
+Preserved Antigravity's sweep/TTL/10,000-entry cache behavior. Nine isolated real-controller
+regressions pass; persistence is stubbed and these do not replace auth.e2e or refresh concurrency
+DB suites. Removed the 19 new lint findings instead of adding suppressions. The original
+PR's CI failed both lint and type-check, so its completion record was not proof of green CI.
+
+New main 73bdd2c includes an unrelated A11 Model<Flashcard>/ImportFlashcardDoc incompatibility
+at apps/api/src/flashcards/import/vocab-apply.ts:56; API build fails there. Its owner must fix
+that lane. Also, API_CONVENTIONS calls the limiter a sliding window while AuthService uses a
+first-failure-anchored window; the accepted auth spec describes independent counters while
+implementation uses a composite key. Both mismatches are recorded, not silently changed here.
+
+### 2026-09-11 — API-016 / WEB-016 review continuation
+
+**Status**: local corrections complete; public publication blocked. PR55 is now 9128ae8 and
+its Grammar wrapper is correct. Its production Swagger test only evaluates a local boolean;
+shutdown test only checks method existence. The isolated HTTP and child-process tests in
+codex/api-bootstrap-hardening are stronger but still do not verify real database teardown.
+PR55 still defaults proxy trust to one hop; codex/auth-proxy-review defaults it off.
+New Throttler thresholds and unrelated UI additions in PR55 are not covered by A1+A2 tests.
+See sessions/2026-09-11-security-checklist-review.md for branch commits, validation scope and
+publication blocker. Existing issue IDs retained; no issue was renumbered or closed broadly.
+
+### 2026-09-12 — WEB-020 merge review follow-up
+
+**Status**: remains resolved. Its Playwright assertions used Set spread syntax unsupported by
+the test compiler target, causing web-quality to fail after the visual fix itself passed.
+Replacing those spreads with `Array.from(new Set(...))` restores type-check without changing
+the tested label or uniform-height behavior.

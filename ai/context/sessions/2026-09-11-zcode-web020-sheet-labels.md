@@ -57,3 +57,9 @@ convention on main). If #62 merges first, its deletion covers the fork and only 
 
 **Next steps**: review + merge this branch; WEB-013 (usageCount) and the S4 grading screen
 remain the next real slices per PROGRESS.
+
+**Merge review (2026-09-12)**: CI exposed six TS2802 failures in this Playwright spec because
+the test compiler target does not permit direct Set iteration. Replaced each Set spread with
+`Array.from(new Set(...))`; assertion behavior is unchanged. After updating onto current main,
+web type-check, workspace lint and check-docs 9/9 pass. Browser e2e was not rerun locally because
+it requires the seeded DB and running API; CI remains the merge gate.

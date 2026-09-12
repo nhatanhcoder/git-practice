@@ -58,11 +58,7 @@ export class AuthController {
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const ip =
-      req.ip ??
-      (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() ??
-      req.socket?.remoteAddress ??
-      '127.0.0.1';
+    const ip = req.ip ?? 'unknown';
     const { result, rawRefreshToken } = await this.authService.login(dto, ip);
     res.cookie(COOKIE_NAME, rawRefreshToken, cookieOptions());
     return result;

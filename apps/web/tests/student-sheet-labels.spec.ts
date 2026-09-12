@@ -67,7 +67,7 @@ async function assertUniformTileHeights(page: Page, testInfoName: string, name: 
     .evaluateAll((tiles) => tiles.map((tile) => Math.round((tile as HTMLElement).offsetHeight)));
 
   expect(heights.length).toBe(15);
-  const distinct = [...new Set(heights)];
+  const distinct = Array.from(new Set(heights));
   // One shared height for every tile is the whole point of the fix; allow none
   // to differ by even a pixel.
   expect(distinct.length, `tile heights at ${name}: [${heights.join(", ")}]`).toBe(1);
@@ -99,8 +99,8 @@ test.describe("WEB-020 sheet label compaction", () => {
       const fulls = Array.from(document.querySelectorAll<HTMLElement>(".sheet__label"));
       const shorts = Array.from(document.querySelectorAll<HTMLElement>(".sheet__label--short"));
       return {
-        full: [...new Set(fulls.map((el) => getComputedStyle(el).display))],
-        short: [...new Set(shorts.map((el) => getComputedStyle(el).display))],
+        full: Array.from(new Set(fulls.map((el) => getComputedStyle(el).display))),
+        short: Array.from(new Set(shorts.map((el) => getComputedStyle(el).display))),
       };
     });
     expect(swap.full).toEqual(["none"]);
@@ -129,8 +129,8 @@ test.describe("WEB-020 sheet label compaction", () => {
       const fulls = Array.from(document.querySelectorAll<HTMLElement>(".sheet__label"));
       const shorts = Array.from(document.querySelectorAll<HTMLElement>(".sheet__label--short"));
       return {
-        full: [...new Set(fulls.map((el) => getComputedStyle(el).display))],
-        short: [...new Set(shorts.map((el) => getComputedStyle(el).display))],
+        full: Array.from(new Set(fulls.map((el) => getComputedStyle(el).display))),
+        short: Array.from(new Set(shorts.map((el) => getComputedStyle(el).display))),
       };
     });
     expect(swap.full).toEqual(["block"]);
@@ -162,7 +162,7 @@ test.describe("WEB-020 sheet label compaction", () => {
     const heights = await page
       .locator(".sheet__grid > .sheet__item")
       .evaluateAll((tiles) => tiles.map((tile) => Math.round((tile as HTMLElement).offsetHeight)));
-    const distinct = [...new Set(heights)];
+    const distinct = Array.from(new Set(heights));
     expect(distinct.length, `tile heights at 520px: [${heights.join(", ")}]`).toBe(1);
     expect(distinct[0]).toBeLessThanOrEqual(60);
 
