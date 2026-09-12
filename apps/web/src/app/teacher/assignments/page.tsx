@@ -1,9 +1,11 @@
 "use client";
 
-// MOCK(T-ASGN-*): assignment CRUD + submission stats in-memory until
-// /api/v1/teacher/assignments exists. Edit/delete only when submittedCount = 0 (T-ASGN-5).
+// Live against /api/v1/teacher/assignments (03-assignments spec, S3 backend).
+// Edit/delete stay gated by real submission counts (T-ASGN-5): the server
+// enforces INV-TASG-04 with 409 ASSIGNMENT_ALREADY_SUBMITTED and the UI
+// mirrors the same gate so the button is not even offered once attempts exist.
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   AlertCircle,
   Check,
@@ -26,13 +28,20 @@ import {
 } from "@/components/teacher/teacher-widgets";
 import {
   assignmentTypeLabels,
-  mockAssignments,
-  submissionRosters,
   type Assignment,
   type AssignmentType,
 } from "@/lib/teacher/assignment-data";
-import { mockQuestions } from "@/lib/teacher/question-data";
-import { mockTeacherClasses } from "@/lib/teacher-data";
+import type { Question } from "@/lib/teacher/question-data";
+import {
+  createAssignment,
+  deleteAssignment,
+  describeAssignmentError,
+  fetchAssignmentDetail,
+  fetchAssignments,
+  updateAssignment,
+} from "@/lib/teacher/teacher-assignments-service";
+import { fetchQuestions } from "@/lib/teacher/question-service";
+import { fetchTeacherClasses } from "@/lib/teacher-service";
 import { useDismissMenu } from "@/hooks/use-overlay";
 import { assignmentTimeLimitValid, questionIdsForClass } from "@/lib/teacher/teacher-rules.js";
 import { formatDate } from "@/lib/formatters";
@@ -50,7 +59,9 @@ interface Draft {
 }
 
 export default function TeacherAssignmentsPage() {
-  const [assignments, setAssignments] = useState<Assignment[]>(mockAssignments);
+  const [assignments, setAssignments] = useState<Assignment[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [classFilter, setClassFilter] = useState<string>("all");
   const [typeFilter, setTypeFilter] = useState<AssignmentType | "all">("all");
   const [reviewState, setReviewState] = useState<ReviewState>("ready");
@@ -59,12 +70,46 @@ export default function TeacherAssignmentsPage() {
   const [draft, setDraft] = useState<Draft>(emptyDraft());
   const [stats, setStats] = useState<Assignment | null>(null);
   const [deleting, setDeleting] = useState<Assignment | null>(null);
+  const [submitting, setSubmitting] = useState(false);
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
   // C3: outside-click / Escape dismissal for the open row menu.
   const menuRef = useDismissMenu<HTMLTableCellElement>(activeMenu !== null, () => setActiveMenu(null));
   const [toast, setToast] = useState("");
 
-  const ownClasses = useMemo(() => mockTeacherClasses.filter((c) => c.status === "active"), []);
+  // Real data, replacing the MOCK fixtures: own classes (active only) and the
+  // teacher's question bank, plus the assignments list itself.
+  const [ownClasses, setOwnClasses] = useState<{ id: string; name: string; hskLevel: number }[]>([]);
+  const [bankQuestions, setBankQuestions] = useState<Question[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const [assignmentRows, classRows, questionRows] = await Promise.all([
+          fetchAssignments(),
+          fetchTeacherClasses(),
+          fetchQuestions({}),
+        ]);
+        if (cancelled) return;
+        setAssignments(assignmentRows);
+        setOwnClasses(
+          classRows.classes
+            .filter((c) => c.status === "active")
+            .map((c) => ({ id: c.id, name: c.name, hskLevel: c.hskLevel })),
+        );
+        setBankQuestions(questionRows.questions);
+        setLoadError(null);
+      } catch (err) {
+        if (cancelled) return;
+        setLoadError(describeAssignmentError(err));
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const filtered = useMemo(
     () =>
@@ -94,7 +139,7 @@ export default function TeacherAssignmentsPage() {
     // from legacy data or from a class change made before pruning existed. Prune on open, so the
     // count, the checkboxes and what gets saved all agree.
     const cls = ownClasses.find((c) => c.id === a.classId) ?? null;
-    const kept = questionIdsForClass(a.questionIds, cls?.hskLevel ?? null, mockQuestions);
+    const kept = questionIdsForClass(a.questionIds, cls?.hskLevel ?? null, bankQuestions);
     if (kept.length !== a.questionIds.length) {
       flash("Đã bỏ " + (a.questionIds.length - kept.length) + " câu hỏi không thuộc HSK của lớp");
     }
@@ -110,50 +155,70 @@ export default function TeacherAssignmentsPage() {
     setEditing(a);
   }
 
-  function submitDraft() {
+  async function submitDraft() {
     if (!draft.title.trim() || !draft.classId || !draft.dueDate) return;
     // B1: guard the write too, not just the step-1 button.
     if (!timeLimitValid(draft)) return;
     const cls = ownClasses.find((c) => c.id === draft.classId);
     // C1 follow-up: never persist an id outside the class HSK, whatever the draft happens to hold.
-    const questionIds = questionIdsForClass(draft.questionIds, cls?.hskLevel ?? null, mockQuestions);
+    const questionIds = questionIdsForClass(draft.questionIds, cls?.hskLevel ?? null, bankQuestions);
     if (questionIds.length === 0) return;
     // homework always stores null; mock_test stores the validated integer.
     const timeLimit = draft.type === "mock_test" ? Number(draft.timeLimitMinutes) : null;
-    // MOCK: POST/PATCH /api/v1/teacher/assignments — error codes TODO(error-code)
-    if (editing) {
-      setAssignments((current) =>
-        current.map((a) => (a.id === editing.id ? { ...a, ...draft, timeLimitMinutes: timeLimit, className: cls?.name ?? a.className, hskLevel: cls?.hskLevel ?? a.hskLevel, questionIds } : a)),
-      );
-      flash("Đã lưu bài tập");
-    } else {
-      const created: Assignment = {
-        id: "a-" + Date.now(),
+
+    // One write in flight at a time; a double-click must not create two
+    // assignments (the same ref-lock lesson as the A09 leave flow).
+    if (submitting) return;
+    setSubmitting(true);
+    try {
+      const payload = {
         title: draft.title.trim(),
         type: draft.type,
         classId: draft.classId,
-        className: cls?.name ?? "",
-        hskLevel: cls?.hskLevel ?? 1,
-        dueDate: draft.dueDate,
+        dueDate: new Date(draft.dueDate).toISOString(),
         timeLimitMinutes: timeLimit,
         questionIds,
-        submittedCount: 0,
-        totalStudents: 0,
-        pendingGradingCount: 0,
-        createdAt: new Date().toISOString().slice(0, 10),
       };
-      setAssignments((current) => [created, ...current]);
-      flash("Đã tạo bài tập");
+      if (editing) {
+        const updated = await updateAssignment(editing.id, payload);
+        setAssignments((current) =>
+          current.map((a) =>
+            a.id === editing.id
+              ? { ...updated, className: cls?.name ?? updated.className, hskLevel: cls?.hskLevel ?? 0 }
+              : a,
+          ),
+        );
+        flash("Đã lưu bài tập");
+      } else {
+        const created = await createAssignment(payload);
+        setAssignments((current) => [
+          { ...created, className: cls?.name ?? "", hskLevel: cls?.hskLevel ?? 1 },
+          ...current,
+        ]);
+        flash("Đã tạo bài tập");
+      }
+      setEditing(undefined);
+    } catch (err) {
+      flash(describeAssignmentError(err));
+    } finally {
+      setSubmitting(false);
     }
-    setEditing(undefined);
   }
 
-  function handleDelete() {
+  async function handleDelete() {
     if (!deleting) return;
-    // MOCK: DELETE /api/v1/teacher/assignments/:id — only when no submissions
-    setAssignments((current) => current.filter((a) => a.id !== deleting.id));
-    flash("Đã xoá bài tập");
-    setDeleting(null);
+    if (submitting) return;
+    setSubmitting(true);
+    try {
+      await deleteAssignment(deleting.id);
+      setAssignments((current) => current.filter((a) => a.id !== deleting.id));
+      flash("Đã xoá bài tập");
+      setDeleting(null);
+    } catch (err) {
+      flash(describeAssignmentError(err));
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   // B1: ENTITY_ASSIGNMENT — `timeLimitMinutes` is required when type = mock_test.
@@ -164,8 +229,8 @@ export default function TeacherAssignmentsPage() {
   // Filter for real, from the class currently chosen in the draft.
   const selectedClass = ownClasses.find((c) => c.id === draft.classId) ?? null;
   const eligibleQuestions = useMemo(
-    () => (selectedClass ? mockQuestions.filter((q) => q.hskLevel === selectedClass.hskLevel) : []),
-    [selectedClass],
+    () => (selectedClass ? bankQuestions.filter((q) => q.hskLevel === selectedClass.hskLevel) : []),
+    [bankQuestions, selectedClass],
   );
 
   const step1Valid =
@@ -175,10 +240,20 @@ export default function TeacherAssignmentsPage() {
   const eligibleSelectedIds = questionIdsForClass(
     draft.questionIds,
     selectedClass?.hskLevel ?? null,
-    mockQuestions,
+    bankQuestions,
   );
   const step2Valid = eligibleSelectedIds.length > 0;
-  const roster = stats ? submissionRosters[stats.id] : null;
+
+  // T-ASGN-4: submission stats are derived server-side from Attempt records
+  // (INV-TASG-07) — fetch the detail, never a fixture roster.
+  async function openStats(a: Assignment) {
+    try {
+      const detail = await fetchAssignmentDetail(a.id);
+      setStats(detail);
+    } catch (err) {
+      flash(describeAssignmentError(err));
+    }
+  }
 
   return (
     <TeacherShell crumbs={[{ label: "Giáo viên" }, { label: "Bài tập & Đề" }]}>
@@ -222,19 +297,19 @@ export default function TeacherAssignmentsPage() {
         </div>
       </section>
 
-      {reviewState === "error" && (
+      {(reviewState === "error" || loadError) && (
         <div className={styles.errorBanner} role="alert">
           <AlertCircle size={19} />
           <div>
             <strong>Không tải được danh sách bài tập.</strong>
-            <span>Vui lòng kiểm tra kết nối và thử lại.</span>
+            <span>{loadError ?? "Vui lòng kiểm tra kết nối và thử lại."}</span>
           </div>
-          <button onClick={() => setReviewState("ready")}>Thử lại</button>
+          <button onClick={() => { setReviewState("ready"); setLoadError(null); window.location.reload(); }}>Thử lại</button>
         </div>
       )}
 
       <section className={styles.tableCard} aria-label="Danh sách bài tập">
-        {reviewState === "loading" ? (
+        {reviewState === "loading" || loading ? (
           <div className={styles.loading} aria-busy="true" aria-label="Đang tải">
             {[1, 2, 3, 4].map((r) => <div key={r} className={styles.skeletonRow}><span /><span /><span /></div>)}
           </div>
@@ -271,8 +346,8 @@ export default function TeacherAssignmentsPage() {
                     <tr
                       key={a.id}
                       tabIndex={0}
-                      onClick={() => setStats(a)}
-                      onKeyDown={(e) => e.key === "Enter" && setStats(a)}
+                      onClick={() => { void openStats(a); }}
+                      onKeyDown={(e) => { if (e.key === "Enter") void openStats(a); }}
                     >
                       <td>
                         <div className={styles.nameCell}>
@@ -307,7 +382,7 @@ export default function TeacherAssignmentsPage() {
                         </button>
                         {activeMenu === a.id && (
                           <div className={styles.actionMenu} id={"amenu-" + a.id} role="menu">
-                            <button onClick={() => setStats(a)}>Thống kê nộp bài</button>
+                            <button onClick={() => { void openStats(a); }}>Thống kê nộp bài</button>
                             <button disabled={a.submittedCount > 0} title={a.submittedCount > 0 ? "Đã có bài nộp — không sửa được (T-ASGN-5)" : undefined} onClick={() => openEdit(a)}>
                               <Pencil size={14} />Sửa
                             </button>
@@ -334,7 +409,7 @@ export default function TeacherAssignmentsPage() {
                     {a.className} · hạn {formatDate(a.dueDate)} · nộp {a.submittedCount}/{a.totalStudents || "—"}
                   </p>
                   <div className={styles.mobileCardActions}>
-                    <button onClick={() => setStats(a)}>Thống kê</button>
+                    <button onClick={() => { void openStats(a); }}>Thống kê</button>
                     <button disabled={a.submittedCount > 0} onClick={() => openEdit(a)}>Sửa</button>
                     <button disabled={a.submittedCount > 0} onClick={() => setDeleting(a)}>Xoá</button>
                   </div>
@@ -394,7 +469,7 @@ export default function TeacherAssignmentsPage() {
                         // otherwise they stay hidden in the picker but still get submitted.
                         const keptIds = nextClass
                           ? draft.questionIds.filter((id) => {
-                              const q = mockQuestions.find((x) => x.id === id);
+                              const q = bankQuestions.find((x) => x.id === id);
                               return q ? q.hskLevel === nextClass.hskLevel : false;
                             })
                           : [];
@@ -490,27 +565,33 @@ export default function TeacherAssignmentsPage() {
               </div>
               <button className={styles.modalClose} onClick={() => setStats(null)} aria-label="Đóng"><X size={17} /></button>
             </div>
-            {roster ? (
-              <>
-                <div className={styles.statsGrid}>
-                  <div><strong>{roster.submitted.length}</strong><small>đã nộp</small></div>
-                  <div><strong>{roster.notSubmitted.length}</strong><small>chưa nộp</small></div>
-                  <div><strong>{stats.pendingGradingCount}</strong><small>chờ chấm</small></div>
-                </div>
-                <div className={styles.rosterCols}>
-                  <div>
-                    <h3><Check size={14} />Đã nộp</h3>
-                    <ul>{roster.submitted.map((n) => <li key={n}>{n}</li>)}</ul>
-                  </div>
-                  <div>
-                    <h3><Users size={14} />Chưa nộp</h3>
-                    <ul>{roster.notSubmitted.map((n) => <li key={n} className={styles.notSubmitted}>{n}</li>)}</ul>
-                  </div>
-                </div>
-              </>
-            ) : (
-              <p className={styles.noRoster}>Lớp chưa có học sinh hoặc chưa có dữ liệu nộp bài cho bài tập này.</p>
-            )}
+            {/* INV-TASG-07: every number here is derived server-side from Attempt
+                records at read time — nothing is stored, nothing is a fixture.
+                The per-student name list needs the Sprint 4 attempts surface
+                (GET /teacher/attempts), so the drawer shows real counts only. */}
+            <div className={styles.statsGrid}>
+              <div><strong>{stats.submittedCount}</strong><small>đã nộp</small></div>
+              <div><strong>{stats.pendingGradingCount}</strong><small>chờ chấm</small></div>
+              <div><strong>{stats.totalStudents}</strong><small>học viên active</small></div>
+            </div>
+            <div className={styles.rosterCols}>
+              <div>
+                <h3><Check size={14} />Đã nộp</h3>
+                <ul>
+                  <li><strong>{stats.submittedCount}</strong> lượt nộp</li>
+                </ul>
+              </div>
+              <div>
+                <h3><Users size={14} />Chưa nộp</h3>
+                <ul>
+                  <li className={styles.notSubmitted}><strong>{Math.max(0, stats.totalStudents - stats.submittedCount - 0)}</strong> học viên chưa nộp</li>
+                </ul>
+              </div>
+            </div>
+            <p className={styles.noRoster}>
+              Danh sách tên học viên đã/chưa nộp sẽ khả dụng khi endpoint danh sách lượt làm
+              (Sprint 4 — Attempts) hoàn tất. Số liệu trên lấy trực tiếp từ máy chủ.
+            </p>
           </Overlay>
       )}
 

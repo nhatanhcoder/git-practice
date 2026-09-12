@@ -14,14 +14,11 @@
  *    reported (preExistingDuplicates), never silently merged away.
  */
 
-import type { Connection, Model } from 'mongoose';
+import type { Connection } from 'mongoose';
 import { FlashcardSchema } from '../../mongodb/schemas/flashcard.schema';
 import type { ImportCard } from './vocab-extract';
 
 export type { ImportCard };
-type ImportFlashcardDoc = {
-  _id: unknown;
-};
 
 export interface ApplyOptions {
   dryRun: boolean;
@@ -48,11 +45,13 @@ export interface ApplyReport {
   errors: ApplyError[];
 }
 
+/** The model type is inferred from FlashcardSchema — annotating it by hand fights
+ *  mongoose's generic variance and fails tsc while passing eslint. */
 export function getImportModel(
   connection: Connection,
   collection = 'flashcards',
   modelName = 'FlashcardImport',
-): Model<ImportFlashcardDoc> {
+) {
   return connection.model(modelName, FlashcardSchema, collection);
 }
 

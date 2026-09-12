@@ -1,4 +1,5 @@
 import type { Config } from "tailwindcss";
+import plugin from "tailwindcss/plugin";
 
 const config: Config = {
   content: [
@@ -63,6 +64,18 @@ const config: Config = {
       },
     },
   },
-  plugins: [],
+  plugins: [
+    // Custom classes composed with the sp-* utilities in components/student/*.
+    // Defined here — not in a stylesheet stack — so they resolve on every route
+    // that compiles Tailwind, independent of which CSS stack is loaded.
+    // (sp-press/sp-font-head were used 14× with no definition anywhere.)
+    plugin(({ addComponents }) => {
+      addComponents({
+        ".sp-font-head": { fontFamily: "Nunito, system-ui, sans-serif" },
+        ".sp-press": { transition: "transform .12s ease" },
+        ".sp-press:active:not(:disabled)": { transform: "translateY(1px)" },
+      });
+    }),
+  ],
 };
 export default config;

@@ -68,6 +68,10 @@ export default function GrammarPage() {
       />
     );
   }
+  return <GrammarInner />;
+}
+
+function GrammarInner() {
   const [demo, setDemo] = useState<DemoState>("ready");
   const [level, setLevel] = useState<number | "all">("all");
   const [category, setCategory] = useState<string>("all");

@@ -7,6 +7,7 @@ import crypto from 'node:crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { AppException } from '../common/errors/app.exception';
 import { ErrorCode } from '../common/errors/error-codes';
+import { NotificationsService, type NotificationWrite } from '../notifications/notifications.service';
 import type { RegisterDto } from './dto/register.dto';
 import type { LoginDto } from './dto/login.dto';
 import type { ChangePasswordDto } from './dto/change-password.dto';
@@ -49,13 +50,15 @@ export class AuthService {
   private readonly jwtAccessTtl: string;
   private readonly rotationCache = new Map<string, RotationCacheEntry>();
   private readonly loginAttempts = new Map<string, LoginRateLimitEntry>();
-  private static readonly MAX_LOGIN_ATTEMPTS = 5;
-  private static readonly LOGIN_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
+  public static readonly MAX_LOGIN_ATTEMPTS = 5;
+  public static readonly LOGIN_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
+  public static readonly MAX_ROTATION_CACHE_ENTRIES = 10_000;
 
   constructor(
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(JwtService) private readonly jwt: JwtService,
     @Inject(ConfigService) private readonly config: ConfigService,
+    @Inject(NotificationsService) private readonly notifications: NotificationsService,
   ) {
     this.jwtAccessSecret = this.config.get<string>('JWT_ACCESS_SECRET') || '';
     if (!this.jwtAccessSecret) {
@@ -64,16 +67,21 @@ export class AuthService {
     this.jwtAccessTtl = this.config.get<string>('JWT_ACCESS_TTL') || '15m';
   }
 
+  private sweepExpiredLoginAttempts(now = Date.now()): void {
+    for (const [key, entry] of this.loginAttempts.entries()) {
+      if (now - entry.firstAttemptAt > AuthService.LOGIN_WINDOW_MS) {
+        this.loginAttempts.delete(key);
+      }
+    }
+  }
+
   private checkLoginRateLimit(ip: string, email: string): void {
-    const key = `${ip}:${email.toLowerCase().trim()}`;
     const now = Date.now();
+    this.sweepExpiredLoginAttempts(now);
+
+    const key = `${ip}:${email.toLowerCase().trim()}`;
     const entry = this.loginAttempts.get(key);
     if (!entry) return;
-
-    if (now - entry.firstAttemptAt > AuthService.LOGIN_WINDOW_MS) {
-      this.loginAttempts.delete(key);
-      return;
-    }
 
     if (entry.attempts >= AuthService.MAX_LOGIN_ATTEMPTS) {
       throw new AppException(
@@ -84,8 +92,10 @@ export class AuthService {
   }
 
   private recordFailedLogin(ip: string, email: string): void {
-    const key = `${ip}:${email.toLowerCase().trim()}`;
     const now = Date.now();
+    this.sweepExpiredLoginAttempts(now);
+
+    const key = `${ip}:${email.toLowerCase().trim()}`;
     const entry = this.loginAttempts.get(key);
 
     if (!entry || now - entry.firstAttemptAt > AuthService.LOGIN_WINDOW_MS) {
@@ -98,6 +108,37 @@ export class AuthService {
   private clearFailedLogins(ip: string, email: string): void {
     const key = `${ip}:${email.toLowerCase().trim()}`;
     this.loginAttempts.delete(key);
+  }
+
+  private sweepExpiredRotationCache(now = Date.now()): void {
+    for (const [key, entry] of this.rotationCache.entries()) {
+      if (entry.expiresAt <= now) {
+        this.rotationCache.delete(key);
+      }
+    }
+  }
+
+  private getRotationCache(tokenHash: string): RotationCacheEntry | undefined {
+    const cached = this.rotationCache.get(tokenHash);
+    if (!cached) return undefined;
+    if (cached.expiresAt <= Date.now()) {
+      this.rotationCache.delete(tokenHash);
+      return undefined;
+    }
+    return cached;
+  }
+
+  private setRotationCache(tokenHash: string, entry: RotationCacheEntry): void {
+    const now = Date.now();
+    if (this.rotationCache.size >= AuthService.MAX_ROTATION_CACHE_ENTRIES) {
+      this.sweepExpiredRotationCache(now);
+    }
+    while (this.rotationCache.size >= AuthService.MAX_ROTATION_CACHE_ENTRIES) {
+      const oldestKey = this.rotationCache.keys().next().value;
+      if (!oldestKey) break;
+      this.rotationCache.delete(oldestKey);
+    }
+    this.rotationCache.set(tokenHash, entry);
   }
 
   /**
@@ -138,7 +179,6 @@ export class AuthService {
             },
             null,
           );
-
           await tx.userMarketingProfile.create({
             data: {
               userId: created.id,
@@ -156,6 +196,31 @@ export class AuthService {
               ...consent,
             },
           });
+        }
+
+        // Fan-out `new_<role>_registration` to every ACTIVE admin, inside this transaction
+        // (INV-NOTIF-11/13): N admins = N separate rows, one multi-row insert, no loop.
+        // The recipient resolution is this module's job per 07-notifications.md §10.3 —
+        // the notifications module only writes what it is handed.
+        const admins = await tx.user.findMany({
+          where: { role: 'admin', status: 'active' },
+          select: { id: true },
+        });
+        if (admins.length > 0) {
+          const registrationType: NotificationWrite['type'] =
+            created.role === 'teacher' ? 'new_teacher_registration' : 'new_student_registration';
+          // referenceType stays null for account-level events — the enum has no `user`
+          // value (INV-NOTIF-10), so the admin bell gets items without a deep-link for now.
+          await this.notifications.createManyWithinTx(
+            tx,
+            admins.map((admin) => ({
+              userId: admin.id,
+              type: registrationType,
+              referenceId: created.id,
+              referenceType: null,
+              payload: { email: created.email, nickname: created.nickname, role: created.role },
+            })),
+          );
         }
 
         return created;
@@ -296,8 +361,8 @@ export class AuthService {
         }
 
         // Return cached rotation result (includes new raw refresh token cookie for lost response recovery)
-        const cached = this.rotationCache.get(tokenHash);
-        if (cached && cached.expiresAt > Date.now()) {
+        const cached = this.getRotationCache(tokenHash);
+        if (cached) {
           return {
             result: { accessToken: cached.accessToken },
             newRawRefreshToken: cached.rawRefreshToken,
@@ -410,7 +475,7 @@ export class AuthService {
       });
 
       // Cache rotation result for 15s to serve concurrent races and restore lost cookies (01-auth.md §8 Option A)
-      this.rotationCache.set(tokenHash, {
+      this.setRotationCache(tokenHash, {
         accessToken,
         rawRefreshToken: newRawRefreshToken,
         expiresAt: Date.now() + 15_000,

@@ -1,13 +1,13 @@
 .appShell {
   display: flex;
   min-height: 100vh;
-  background-color: var(--background, #F8FAFC);
+  background-color: var(--background, var(--background));
 }
 
 .sidebar {
   width: 240px;
   flex: 0 0 240px;
-  background-color: #0F172A;
+  background-color: var(--primary);
   display: flex;
   flex-direction: column;
   position: sticky;
@@ -22,28 +22,28 @@
   align-items: center;
   gap: 10px;
   padding: 18px 20px;
-  color: #FFFFFF;
+  color: var(--surface);
   font-family: "Lexend", sans-serif;
   font-weight: 600;
   font-size: 15px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid color-mix(in srgb, var(--surface) 8%, transparent);
 }
 
 .brandMark {
   width: 30px;
   height: 30px;
   border-radius: 6px;
-  background-color: #2563EB;
+  background-color: var(--accent);
   display: grid;
   place-items: center;
   font-size: 16px;
-  color: #FFFFFF;
+  color: var(--surface);
 }
 
 .closeNav {
   display: none;
   margin-left: auto;
-  color: #94A3B8;
+  color: var(--slate-400);
   padding: 4px;
 }
 
@@ -61,7 +61,7 @@
   gap: 12px;
   padding: 10px 12px;
   border-radius: 8px;
-  color: #94A3B8;
+  color: var(--slate-400);
   text-decoration: none;
   font-size: 13.5px;
   font-weight: 500;
@@ -69,17 +69,17 @@
 }
 
 .navItem:hover {
-  background-color: rgba(255, 255, 255, 0.06);
-  color: #FFFFFF;
+  background-color: color-mix(in srgb, var(--surface) 6%, transparent);
+  color: var(--surface);
 }
 
 .navActive {
-  background-color: rgba(37, 99, 235, 0.22);
-  color: #FFFFFF;
+  background-color: color-mix(in srgb, var(--accent) 22%, transparent);
+  color: var(--surface);
 }
 
 .navActive svg {
-  color: #93C5FD;
+  color: var(--blue-300);
 }
 
 .sidebarFooter {
@@ -87,13 +87,13 @@
   align-items: center;
   gap: 10px;
   padding: 16px 20px;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-  color: #94A3B8;
+  border-top: 1px solid color-mix(in srgb, var(--surface) 8%, transparent);
+  color: var(--slate-400);
   font-size: 12px;
 }
 
 .sidebarFooter strong {
-  color: #FFFFFF;
+  color: var(--surface);
   display: block;
   font-size: 12.5px;
 }
@@ -101,7 +101,7 @@
 .navBackdrop {
   position: fixed;
   inset: 0;
-  background-color: rgba(15, 23, 42, 0.4);
+  background-color: color-mix(in srgb, var(--primary) 40%, transparent);
   z-index: 35;
   border: none;
 }
@@ -115,8 +115,8 @@
 
 .topbar {
   height: 56px;
-  background-color: #FFFFFF;
-  border-bottom: 1px solid #E2E8F0;
+  background-color: var(--surface);
+  border-bottom: 1px solid var(--border);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -131,18 +131,18 @@
   align-items: center;
   gap: 8px;
   font-size: 13px;
-  color: #475569;
+  color: var(--muted);
 }
 
 .breadcrumb strong {
-  color: #0F172A;
+  color: var(--text);
   font-weight: 600;
 }
 
 .menuButton {
   display: none;
   padding: 6px;
-  color: #475569;
+  color: var(--muted);
   border-radius: 6px;
 }
 
@@ -159,7 +159,7 @@
   border-radius: 8px;
   display: grid;
   place-items: center;
-  color: #475569;
+  color: var(--muted);
 }
 
 .notificationDot {
@@ -169,14 +169,14 @@
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background-color: #DC2626;
-  border: 1.5px solid #FFFFFF;
+  background-color: var(--danger);
+  border: 1.5px solid var(--surface);
 }
 
 .headerDivider {
   width: 1px;
   height: 22px;
-  background-color: #E2E8F0;
+  background-color: var(--border);
 }
 
 .profileButton {
@@ -217,7 +217,7 @@
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #2563EB;
+  color: var(--accent);
   margin-bottom: 4px;
 }
 
@@ -225,13 +225,13 @@
   font-family: "Lexend", sans-serif;
   font-size: 26px;
   font-weight: 600;
-  color: #0F172A;
+  color: var(--text);
   line-height: 1.2;
 }
 
 .subtitle {
   font-size: 14px;
-  color: #475569;
+  color: var(--muted);
   margin-top: 4px;
 }
 
@@ -245,8 +245,8 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  background-color: #0F172A;
-  color: #FFFFFF;
+  background-color: var(--primary);
+  color: var(--surface);
   padding: 8px 14px;
   border-radius: 6px;
   font-size: 13px;
@@ -256,16 +256,16 @@
 }
 
 .primaryAction:hover {
-  background-color: #1E293B;
+  background-color: var(--primary-hover);
 }
 
 .secondaryAction {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  background-color: #FFFFFF;
-  color: #0F172A;
-  border: 1px solid #CBD5E1;
+  background-color: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--slate-300);
   padding: 8px 14px;
   border-radius: 6px;
   font-size: 13px;
@@ -275,7 +275,7 @@
 }
 
 .secondaryAction:hover {
-  background-color: #F8FAFC;
+  background-color: var(--background);
 }
 
 /* KPI Tiles Grid */
@@ -287,11 +287,11 @@
 }
 
 .kpiCard {
-  background-color: #FFFFFF;
-  border: 1px solid #E2E8F0;
+  background-color: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 8px;
   padding: 20px;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--primary) 5%, transparent);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -303,8 +303,8 @@
 
 .kpiCard:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.08);
-  border-color: #CBD5E1;
+  box-shadow: 0 6px 16px color-mix(in srgb, var(--primary) 8%, transparent);
+  border-color: var(--slate-300);
 }
 
 .kpiTop {
@@ -314,21 +314,21 @@
   margin-bottom: 8px;
   font-size: 12.5px;
   font-weight: 600;
-  color: #64748B;
+  color: var(--neutral);
 }
 
 .kpiVal {
   font-family: "Lexend", sans-serif;
   font-size: 24px;
   font-weight: 600;
-  color: #0F172A;
+  color: var(--text);
   margin-bottom: 10px;
   font-variant-numeric: tabular-nums;
 }
 
 .kpiProgressTrack {
   height: 5px;
-  background-color: #E2E8F0;
+  background-color: var(--border);
   border-radius: 3px;
   overflow: hidden;
   margin-bottom: 8px;
@@ -341,25 +341,25 @@
 
 .kpiFoot {
   font-size: 12px;
-  color: #64748B;
+  color: var(--neutral);
 }
 
 /* Attention Required Section */
 .attentionCard {
-  background-color: #FFFFFF;
-  border: 1px solid #E2E8F0;
-  border-left: 4px solid #2563EB;
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--accent);
   border-radius: 8px;
   padding: 18px 20px;
   margin-bottom: 24px;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--primary) 5%, transparent);
 }
 
 .attentionTitle {
   font-family: "Lexend", sans-serif;
   font-size: 14.5px;
   font-weight: 600;
-  color: #0F172A;
+  color: var(--text);
   margin-bottom: 12px;
 }
 
@@ -373,8 +373,8 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background-color: #F8FAFC;
-  border: 1px solid #E2E8F0;
+  background-color: var(--background);
+  border: 1px solid var(--border);
   border-radius: 6px;
   padding: 10px 14px;
   font-size: 13px;
@@ -382,12 +382,12 @@
 
 .attentionItem span {
   font-weight: 500;
-  color: #0F172A;
+  color: var(--text);
 }
 
 .attentionItem a {
   font-size: 12.5px;
-  color: #2563EB;
+  color: var(--accent);
   font-weight: 600;
   text-decoration: none;
 }
@@ -401,7 +401,7 @@
   font-family: "Lexend", sans-serif;
   font-size: 17px;
   font-weight: 600;
-  color: #0F172A;
+  color: var(--text);
   margin-bottom: 14px;
 }
 
@@ -413,13 +413,13 @@
 }
 
 .moduleCard {
-  background-color: #FFFFFF;
-  border: 1px solid #E2E8F0;
+  background-color: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 8px;
   padding: 20px;
   text-decoration: none;
   color: inherit;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--primary) 5%, transparent);
   transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
   display: flex;
   flex-direction: column;
@@ -428,8 +428,8 @@
 
 .moduleCard:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.08);
-  border-color: #CBD5E1;
+  box-shadow: 0 6px 16px color-mix(in srgb, var(--primary) 8%, transparent);
+  border-color: var(--slate-300);
 }
 
 .moduleIconWrap {
@@ -445,13 +445,13 @@
   font-family: "Lexend", sans-serif;
   font-size: 15px;
   font-weight: 600;
-  color: #0F172A;
+  color: var(--text);
   margin-bottom: 6px;
 }
 
 .moduleCard p {
   font-size: 12.5px;
-  color: #64748B;
+  color: var(--neutral);
   line-height: 1.4;
   margin-bottom: 14px;
 }
@@ -462,21 +462,21 @@
   gap: 4px;
   font-size: 12.5px;
   font-weight: 600;
-  color: #2563EB;
+  color: var(--accent);
 }
 
 /* Activity Feed Table Card */
 .activityCard {
-  background-color: #FFFFFF;
-  border: 1px solid #E2E8F0;
+  background-color: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 8px;
   overflow: hidden;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--primary) 5%, transparent);
 }
 
 .activityHeader {
   padding: 16px 20px;
-  border-bottom: 1px solid #E2E8F0;
+  border-bottom: 1px solid var(--border);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -486,7 +486,7 @@
   font-family: "Lexend", sans-serif;
   font-size: 15px;
   font-weight: 600;
-  color: #0F172A;
+  color: var(--text);
 }
 
 .activityTable {
@@ -498,7 +498,7 @@
 
 .activityTable tbody td {
   padding: 12px 20px;
-  border-bottom: 1px solid #E2E8F0;
+  border-bottom: 1px solid var(--border);
   vertical-align: middle;
 }
 
@@ -508,7 +508,7 @@
 }
 
 .activityTable tbody tr:hover {
-  background-color: #F8FAFC;
+  background-color: var(--background);
 }
 
 .activityTable tbody tr:last-child td {
@@ -525,11 +525,11 @@
 
 .eventText strong {
   display: block;
-  color: #0F172A;
+  color: var(--text);
 }
 
 .eventText small {
-  color: #64748B;
+  color: var(--neutral);
   font-size: 12px;
 }
 
@@ -542,18 +542,18 @@
   display: flex;
   align-items: center;
   gap: 4px;
-  background: rgba(255, 255, 255, 0.94);
+  background: color-mix(in srgb, var(--surface) 94%, transparent);
   backdrop-filter: blur(6px);
-  border: 1px solid #CBD5E1;
+  border: 1px solid var(--slate-300);
   border-radius: 8px;
   padding: 4px;
-  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.1);
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--primary) 10%, transparent);
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 11px;
 }
 
 .stateSwitcher span {
-  color: #64748B;
+  color: var(--neutral);
   padding: 0 6px;
   font-weight: 600;
 }
@@ -561,14 +561,14 @@
 .stateSwitcher button {
   padding: 4px 8px;
   border-radius: 5px;
-  color: #475569;
+  color: var(--muted);
   border: none;
   background: none;
 }
 
 .stateSwitcher button.stateActive {
-  background-color: #0F172A;
-  color: #FFFFFF;
+  background-color: var(--primary);
+  color: var(--surface);
 }
 
 .toast {
@@ -576,8 +576,8 @@
   bottom: 24px;
   left: 50%;
   transform: translateX(-50%);
-  background-color: #0F172A;
-  color: #FFFFFF;
+  background-color: var(--primary);
+  color: var(--surface);
   border-radius: 8px;
   padding: 10px 18px;
   font-size: 13.5px;
@@ -586,7 +586,7 @@
   align-items: center;
   gap: 8px;
   z-index: 90;
-  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.15);
+  box-shadow: 0 6px 20px color-mix(in srgb, var(--primary) 15%, transparent);
   animation: fadeUp 0.25s ease;
 }
 

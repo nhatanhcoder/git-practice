@@ -37,7 +37,7 @@ machine, so they share one module.
 | 4 | Sessions + Attendance | `04-sessions-attendance.md` | ✅ `accepted` | 16 | — |
 | 5 | Payroll + Pay Rates | `05-payroll.md` | ✅ `accepted` | 33 | — |
 | 6 | Billing (rate+invoice+payment) | `06-billing.md` | ✅ `accepted` | 34 | — |
-| 7 | Notifications | `07-notifications.md` | 🔶 `proposed` | 21 | no endpoint defined yet |
+| 7 | Notifications | `07-notifications.md` | 🔶 `implemented 2026-09-12` — 4 mailbox endpoints + register/approve/suspend/new_invoice producers live; `deadline_reminder`/`graded`/`session_submitted_for_review` producers + partial-unique migration still open (spec frontmatter) | 21 | DEBT-002 (60s polling) · 4 of 11 types wait on other lanes |
 | 8 | Dashboard / Reporting | `08-dashboard.md` | ✅ `accepted` | 14 | — |
 
 **168 invariants total.** Each invariant has at least one line in the test matrix (section 15)
@@ -52,14 +52,15 @@ of its module — this is the **invariant gate** replacing coverage %.
 > `proposed`. Until then, treat the **spec frontmatter as authoritative** for what is
 > contract-locked, and this row as stale.
 
-**Implementation status (re-verified 2026-09-09 against `apps/api/src`):** Modules 01–06 and 08
-are implemented and wired to the frontend (Auth, Users approval, Classes/Enrollment, Lessons,
-Sessions+Attendance, Payroll, Billing, Dashboard+Monitoring, Question Bank, Flashcards/SRS —
-13 e2e suites, last full run 170/170). **Module 07 (Notifications) is the only module not
-coded** — no controller, no Prisma model, no test suite; it stays `proposed`/deferred per its
-spec §16 and `DEBT-002`. The old line "Only Auth is ready to code right now" (mid-August
-wording) was removed as obsolete on 2026-09-09; the module-spec status table above is the
-authority for what is *accepted*, not for what is *built*.
+**Implementation status (re-verified 2026-09-09 against `apps/api/src`; module 07 updated
+2026-09-12):** Modules 01–08 are now all implemented and wired to the frontend (Auth, Users
+approval, Classes/Enrollment, Lessons, Sessions+Attendance, Payroll, Billing, Dashboard+
+Monitoring, Question Bank, Flashcards/SRS, Notifications — 14 e2e suites, last full run
+208/208 on 2026-09-12, branch `feat/student-notifications`). Module 07's read side and the
+register/approve/suspend/new_invoice producers went live 2026-09-12 per its spec §16 defaults
+(owner-approved student completion wave); its scheduler/grading producers remain open with
+their lanes. The module-spec status table above is the authority for what is *accepted*, not
+for what is *built*.
 
 ## 2. Dependency order
 

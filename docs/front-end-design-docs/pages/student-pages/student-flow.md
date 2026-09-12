@@ -151,3 +151,51 @@ Missing contracts: F-read, F-progress, F-save, G-read, G-progress, G-save, G-pra
 There is no Student create/delete/publish catalog path because existing permissions forbid it.
 No microphone-upload path, cloud scorer, Teacher progress surface, gamification event or
 Assignment-grade transition is introduced. No persisted-write edge is executable yet.
+
+## Learning Path proposal — 2026-09-11
+
+**Status: proposed / blocked; NOT IMPLEMENTED.** Contracts
+`student-learning-path.md` + `student-learning-path-node.md` (S-SELF-1). All reads/writes
+below are ⛔ per `API_STUDENT.md` §83–94 (learning catalog and curriculum paths have no
+path/DTO/error contract). Existing SRS/Classes/FG branches above are unchanged.
+
+### Learning Path traversal
+
+```text
+/student  Dashboard
+└── Navigation: Lộ trình HSK
+    ▼
+    /student/learning-path?curriculum=&level=&view=   ⛔ catalog + progress reads
+    ├── Đổi curriculum/HSK/map-list → same screen     local URL params; ⛔ read on change
+    ├── Mở node → drawer (no route change)            local
+    │   ├── Mở khoá bằng XP → drawer confirms         local XP guard (mock rule)
+    │   └── Bắt đầu / Học lại → node route
+    │       ▼
+    │       /student/learning-path/[nodeId]           ⛔ catalog read
+    │       ├── Học → Luyện → Hoàn thành              local steps
+    │       ├── Trả lời → đúng/sai tại chỗ            local
+    │       └── Boss < 80% → stays locked             local gate (mock rule)
+    ├── Retry failed read → same screen               ⛔ catalog / progress reads
+    └── Back to Dashboard
+        ▼
+        /student                           navigation only
+```
+
+### Learning Path transition table
+
+| # | From | Action | To | API | Errors |
+|---|---|---|---|---|---|
+| LP1 | Dashboard | Open Learning Path | map hub | ⛔ catalog + progress | TODO(error-code) |
+| LP2 | map hub | Change filters | same hub (new URL) | local / ⛔ read | TODO(error-code) |
+| LP3 | map hub | Open node | drawer, no route | local | — |
+| LP4 | drawer | Force-unlock / Start | drawer / node route | local | — |
+| LP5 | node route | Study → practise → finish | result, same route | local / ⛔ progress write | TODO(error-code) |
+| LP6 | node route | Back | map hub (filters kept) | none | — |
+
+### Learning Path state transitions and absent paths
+
+Node: `locked → available → current → completed` (force-unlock spends XP locally until
+the server owns XP). Boss clears at ≥80% practice score. No Student catalog
+create/delete/publish path (permissions forbid it); no XP/badge server event; no
+Assignment-grade transition. Missing contracts: catalog path read, curriculum read,
+self-study progress read/write — all under API_STUDENT §83.

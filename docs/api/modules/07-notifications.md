@@ -1,9 +1,9 @@
 ---
 module: Notifications
-status: proposed
-blocked_by: NO endpoint of this module is defined in any API_*.md (§2) · no `NOTIFICATION_*` error code exists in API_ERROR_CODES.md (§9) · DEBT-002 60s polling (§16)
+status: implemented (2026-09-12, branch `feat/student-notifications`) — the 4 mailbox endpoints, the `NOTIFICATION_NOT_FOUND` code and the register/approve/suspend/new_invoice producers are live per this spec's §2/§3/§5/§7/§8 recommendations. Still proposed, NOT coded: `session_submitted_for_review` producer (needs the teacher submit endpoint), `deadline_reminder` (scheduler unowned), `graded` (Sprint 4), the partial-unique anti-duplicate migration (§8 — callers' guarded updates carry INV-NOTIF-12 for now), and the composite/partial indexes (§11 — the seed dev table is tiny; measure before indexing). Endpoints were approved as part of the owner's 2026-09-12 student completion wave; the open §16 defaults picked in that approval: FE builds sentences from type+payload (no message column), no senderId, admin fan-out to every active admin, `read-all` → `{updated}`, `unread-count` kept as its own endpoint, `PATCH /:id/read` → 200 with the record.
+blocked_by: DEBT-002 60s polling (acknowledged; realtime is Sprint 6 scope) · producers for 4 of 11 types depend on lanes that have no endpoint yet (§10.1)
 owner: -
-last_updated: 2026-09-03
+last_updated: 2026-09-12
 ---
 
 ## 0. Summary

@@ -165,6 +165,17 @@ one code so a caller cannot probe for another student's bookmark ids.
 |------|------|-------|
 | `WORD_BANK_NOT_FOUND` | 404 | Saved word does not exist or belongs to another student |
 
+### Notification Errors (NOTIFICATION_*)
+
+Registered 2026-09-12 with module 07's implementation (branch `feat/student-notifications`).
+One code is the whole family by design: "not found" and "not yours" deliberately share it so
+a caller cannot probe for the existence of other users' notifications
+(`07-notifications.md` §5/§9).
+
+| Code | HTTP | Description |
+|------|------|-------|
+| `NOTIFICATION_NOT_FOUND` | 404 | Notification does not exist or belongs to another user |
+
 ### Payroll Errors (PAYROLL_*)
 
 | Code | HTTP | Description |

@@ -65,7 +65,6 @@ export interface StudentState {
   writingMastery: Record<string, { practised: number; bestScore: number }>;
   legoStars: Record<string, number>;
   workplaceProgress: Record<string, { bestScore: number; attempts: number }>;
-  vocabBox: Record<string, number>;
   learnedRadicals: number[];
   masteredSounds: string[];
   earnedBadges: string[];
@@ -87,7 +86,6 @@ export interface StudentState {
   saveWriting: (id: string, score: number) => void;
   setLegoStars: (stationId: string, stars: number) => void;
   saveWorkplace: (scenarioId: string, score: number) => void;
-  rateVocab: (id: string, correct: boolean) => void;
   toggleRadical: (no: number) => void;
   toggleSound: (id: string) => void;
   saveAttempt: (attempt: ExamAttempt) => void;
@@ -118,7 +116,6 @@ const seed = () => ({
   writingMastery: {} as Record<string, { practised: number; bestScore: number }>,
   legoStars: {} as Record<string, number>,
   workplaceProgress: {} as Record<string, { bestScore: number; attempts: number }>,
-  vocabBox: {} as Record<string, number>,
   learnedRadicals: [] as number[],
   masteredSounds: [] as string[],
   earnedBadges: [] as string[],
@@ -251,11 +248,6 @@ export const useStudentStore = create<StudentState>()(
           };
         }),
 
-      rateVocab: (id, correct) =>
-        set((s) => ({
-          vocabBox: { ...s.vocabBox, [id]: advanceBox(s.vocabBox[id] || 1, correct) },
-        })),
-
       toggleRadical: (no) =>
         set((s) => ({
           learnedRadicals: s.learnedRadicals.includes(no)
@@ -283,10 +275,19 @@ export const useStudentStore = create<StudentState>()(
     }),
     {
       name: "hanlu-student",
-      version: 1,
+      version: 2,
       storage: createJSONStorage(() => localStorage),
       skipHydration: true,
       partialize: ({ hydrated, ...rest }) => rest,
+      // v1 persisted state still carries `vocabBox` from the Leitner mock SRS
+      // (removed by A12). The default merge would re-attach that key onto the
+      // store forever as unrecognized junk; v2 drops it explicitly.
+      migrate: (persisted, version) => {
+        if (version < 2 && persisted && typeof persisted === "object") {
+          delete (persisted as Record<string, unknown>).vocabBox;
+        }
+        return persisted as StudentState;
+      },
     },
   ),
 );
