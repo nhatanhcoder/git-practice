@@ -259,16 +259,6 @@
       "count": 4
     }
   },
-  "apps/web/src/app/student/(app)/learning-path/[nodeId]/page.tsx": {
-    "react-hooks/rules-of-hooks": {
-      "count": 13
-    }
-  },
-  "apps/web/src/app/student/(app)/learning-path/page.tsx": {
-    "react-hooks/rules-of-hooks": {
-      "count": 12
-    }
-  },
   "apps/web/src/app/student/(app)/lego/page.tsx": {
     "react-hooks/rules-of-hooks": {
       "count": 14
