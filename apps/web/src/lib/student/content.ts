@@ -140,8 +140,6 @@ export const vocabCards: VocabCard[] = [
   { id: "v24", hanzi: "影响", pinyin: "yǐngxiǎng", vi: "ảnh hưởng", level: 4, topic: "Động từ", examples: [{ word: "受影响", pinyin: "shòu yǐngxiǎng", vi: "bị ảnh hưởng" }] },
 ];
 
-export const vocabTopics = Array.from(new Set(vocabCards.map((v) => v.topic)));
-
 /* ------------------------------------------------------------------
    Character writing
 ------------------------------------------------------------------ */
