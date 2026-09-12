@@ -53,7 +53,7 @@ export function getImportModel(
   collection = 'flashcards',
   modelName = 'FlashcardImport',
 ): Model<ImportFlashcardDoc> {
-  return connection.model(modelName, FlashcardSchema, collection);
+  return connection.model(modelName, FlashcardSchema, collection) as unknown as Model<ImportFlashcardDoc>;
 }
 
 export async function applyVocabulary(
