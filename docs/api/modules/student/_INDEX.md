@@ -10,6 +10,7 @@ last_updated: 2026-09-10
 |---|---|---|---|---:|---|
 | 1 | SRS Flashcards | `01-srs-flashcards.md` | ✅ `accepted` | 12 | vocabulary source for production seed; streak timezone |
 | 2 | Foundation and Grammar | [02-foundation-grammar.md](02-foundation-grammar.md) | 🔶 proposed / NOT IMPLEMENTED | 12 proposed | content, storage, transport, media and completion decisions |
+| 3 | Attempt Lifecycle (S-ASGN-2..7) | [03-attempt-lifecycle.md](03-attempt-lifecycle.md) | 🔶 proposed → owner-approved to code 2026-09-12 | 11 | none — AI re-open recorded in §16-Q0 |
 
 The remaining self-study, drill, gamification and analytics capabilities are accepted product
 scope under ADR-016 but do not yet have transport contracts. Add modules here before coding them.

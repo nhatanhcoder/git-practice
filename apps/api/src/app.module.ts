@@ -12,6 +12,7 @@ import { ClassesModule } from './classes/classes.module';
 import { LessonsModule } from './lessons/lessons.module';
 import { QuestionsModule } from './questions/questions.module';
 import { AssignmentsModule } from './assignments/assignments.module';
+import { AttemptsModule } from './attempts/attempts.module';
 import { SessionsModule } from './sessions/sessions.module';
 import { PayrollModule } from './payroll/payroll.module';
 import { BillingModule } from './billing/billing.module';
@@ -60,6 +61,7 @@ import { RolesGuard } from './common/guards/roles.guard';
     UsersModule,
     QuestionsModule,
     AssignmentsModule,
+    AttemptsModule,
 
     MongooseModule.forRootAsync({
       imports: [ConfigModule],

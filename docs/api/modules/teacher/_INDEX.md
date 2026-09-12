@@ -27,7 +27,7 @@ last_updated: 2026-09-03
 | T1 | Classes + Lessons | `01-classes-lessons.md` | 🔶 proposed | 14 | 10 (INV-TCL) | — (`LESSON_*` agreed 2026-09-03) |
 | T2 | Question Bank (MongoDB) | `02-question-bank.md` | 🔶 proposed | 5 | 7 (INV-TQ) | CR-3 (upload flow only; CRUD unblocked) |
 | T3 | Assignments | `03-assignments.md` | 🔶 proposed | 5 | 8 (INV-TASG) | §16 sign-offs |
-| T4 | Attempts + Grading | `04-attempts-grading.md` | 🔶 proposed | 4 | 8 (INV-TGRD) | AI parked · per-question max not modeled |
+| T4 | Attempts + Grading | `04-attempts-grading.md` | 🔶 proposed | 4 | 8 (INV-TGRD) | per-question max not modeled (Q2); AI unparked 2026-09-12 |
 | T5 | Sessions (teacher side) | `05-sessions.md` | 🔶 proposed | 6 | 9 (INV-TSES) | Q-SES-2 (re-submit after reject) |
 | T6 | Income (read-only) | `06-income.md` | 🔶 proposed | 2 | 4 (INV-TINC) | — (reads stored data only) |
 

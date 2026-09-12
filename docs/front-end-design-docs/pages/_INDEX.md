@@ -75,6 +75,8 @@ Analytics (T-ANL-1…4): _not yet mapped._ Every other Teacher area has a contra
 | `/student/classes` | S-CLS-1,2 | [student-classes-list](./student-pages/student-classes-list.md) | built | v1 | — |
 | `/student/classes/[classId]` | S-CLS-3,4, S-LESSON-1 | [student-class-detail](./student-pages/student-class-detail.md) | built | v1 | — |
 | `/student/assignments` | S-ASGN-1 | *(inline in page doc — wired without a separate contract file, same gap as the register screens)* | built (live) | v1 | **LIVE on GET /student/assignments (S3, 2026-09-11)** — published-only, active-enrollment-only enforced server-side; attempt status badges need Sprint 4 |
+| `/student/attempts/[attemptId]` | S-ASGN-2..6 | [student-attempt-take](./student-pages/student-attempt-take.md) | built (live) | v1 | **LIVE on attempt endpoints (Sprint 4)** — autosave debounce + server-enforced deadline; attempt status needs no mock |
+| `/student/attempts/[attemptId]/result` | S-ASGN-7,8 | [student-attempt-result](./student-pages/student-attempt-result.md) | built (live) | v1 | **LIVE on GET result (Sprint 4)** — partial (submitted) never presented as final; keys only at graded |
 | `/student/foundation` | S-SELF-2,9 | [student-foundation](./student-pages/student-foundation.md) | contracted (proposed) | — | ⛔ source, schema, API and media approval |
 | `/student/grammar` | S-SELF-3,9 | [student-grammar](./student-pages/student-grammar.md) | contracted (proposed) | — | ⛔ source, schema, API and exercise approval |
 | `/student/learning-path` | S-SELF-1,9 | [student-learning-path](./student-pages/student-learning-path.md) | contracted (proposed) | — | ⛔ catalog paths, progress reads/writes |

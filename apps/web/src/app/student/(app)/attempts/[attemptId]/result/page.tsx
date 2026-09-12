@@ -4,16 +4,16 @@
  * /student/attempts/[attemptId]/result — the official score and the teacher's feedback.
  *
  * Contract: docs/front-end-design-docs/pages/student-pages/student-attempt-result.md
- * Features: S-ASGN-7 (result), S-ASGN-8 (review).
- *
- * MOCK(S-ASGN-7): `GET /api/v1/student/attempts/:id/result` is defined and unimplemented.
+ * Features: S-ASGN-7 (result), S-ASGN-8 (review) — live against
+ * GET /api/v1/student/attempts/:id/result (03-attempt-lifecycle.md).
  *
  * The state that matters here is Partial. MCQ grades itself while Writing waits for the
- * teacher, so a real attempt is routinely half-marked — and presenting half a paper's
- * points as a final score is the failure this screen has to avoid.
+ * teacher, so a real attempt is routinely half-marked — presenting half a paper's
+ * points as a final score is the failure this screen avoids: a missing total reads
+ * "—" with a provisional note, never 0, via `formatStat` (same rule as srs-session).
  */
 
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { ArrowLeft, Check, Clock, X } from "lucide-react";
@@ -25,14 +25,13 @@ import {
   Panel,
   SkeletonPanel,
 } from "@/components/student/primitives";
-import { UnavailableState } from "@/components/student/unavailable-state";
-import { DemoStateSwitcher, type DemoState } from "@/components/student/controls";
+import { formatStat } from "@/lib/student/srs-session";
 import {
-  assignmentById,
-  attemptById,
-  resultByAttemptId,
-} from "@/lib/student/lms-data";
-import { gradedMaxScore, gradedScore, isProvisional } from "@/lib/student/lms-rules";
+  fetchAttemptResult,
+  isValidUuid,
+  type TakePayload,
+  type TakeQuestion,
+} from "@/lib/student/attempts-service";
 
 function formatMoment(iso: string): string {
   return new Date(iso).toLocaleString("vi-VN", {
@@ -44,30 +43,61 @@ function formatMoment(iso: string): string {
   });
 }
 
-export default function AttemptResultPage() {
-  if (process.env.NODE_ENV === "production") {
-    return (
-      <UnavailableState
-        title="Kết quả bài tập"
-        description="Kết quả bài tập chưa được kết nối máy chủ dữ liệu trong phiên bản hiện tại (Sprint 4). Vui lòng quay lại sau."
-      />
-    );
+function correctness(q: TakeQuestion): "graded" | "right" | "wrong" | "pending" {
+  // A teacher score settles the question whatever the auto mark said — writing
+  // has no binary correctness, so without this branch a scored essay would read
+  // "Chờ chấm" next to its own points.
+  if (q.answer?.teacherScore !== null && q.answer?.teacherScore !== undefined) return "graded";
+  const finalScore = q.answer?.autoScore ?? null;
+  if (finalScore === null) return "pending";
+  if (q.answer?.isCorrect !== null && q.answer?.isCorrect !== undefined) {
+    return q.answer.isCorrect ? "right" : "wrong";
   }
+  return "pending";
+}
+
+export default function AttemptResultPage() {
   const params = useParams<{ attemptId: string }>();
   const attemptId = decodeURIComponent(params?.attemptId ?? "");
-  const [demo, setDemo] = useState<DemoState>("ready");
+  const validId = isValidUuid(attemptId);
 
-  const result = useMemo(() => resultByAttemptId(attemptId), [attemptId]);
-  const attempt = useMemo(() => attemptById(attemptId), [attemptId]);
-  const assignment = useMemo(
-    () => (result ? assignmentById(result.assignmentId) : null),
-    [result],
-  );
+  const [payload, setPayload] = useState<TakePayload | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<unknown | null>(null);
 
-  if (!result || !assignment) {
+  const loadResult = useCallback(async () => {
+    if (!validId) {
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    try {
+      setPayload(await fetchAttemptResult(attemptId));
+    } catch (err) {
+      setError(err);
+    } finally {
+      setLoading(false);
+    }
+  }, [attemptId, validId]);
+
+  useEffect(() => {
+    loadResult();
+  }, [loadResult]);
+
+  if (loading) {
     return (
       <div className="stack gap-6">
-        <PageHead title="Không tìm thấy kết quả" sub="Bài làm này chưa có kết quả, hoặc không phải của bạn." />
+        <PageHead title="Đang tải kết quả..." sub="Vui lòng chờ giây lát" />
+        <SkeletonPanel rows={3} height={72} />
+      </div>
+    );
+  }
+
+  if (!validId || (!payload && !error)) {
+    return (
+      <div className="stack gap-6">
+        <PageHead title="Không tìm thấy kết quả" sub="Đường dẫn không đúng định dạng." />
         <Panel className="panel--pad">
           <EmptyState
             title="Không mở được kết quả"
@@ -82,12 +112,40 @@ export default function AttemptResultPage() {
     );
   }
 
-  const provisional = isProvisional(result);
-  const earned = gradedScore(result);
-  const outOf = provisional
-    ? gradedMaxScore(result, attempt?.questions ?? [])
-    : result.maxScore;
-  const pending = result.questions.filter((q) => q.score === null).length;
+  if (error || !payload) {
+    const apiErr = error as { statusCode?: number } | null;
+    const forbidden = apiErr?.statusCode === 403 || apiErr?.statusCode === 404;
+    return (
+      <div className="stack gap-6">
+        <PageHead
+          title={forbidden ? "Không có quyền xem" : "Lỗi kết nối"}
+          sub={forbidden ? "Đây không phải bài làm của bạn." : "Không thể tải kết quả."}
+        />
+        <Panel className="panel--pad">
+          {forbidden ? (
+            <EmptyState
+              title="Không mở được kết quả"
+              action={
+                <Link href="/student/assignments" className="btn btn--primary">
+                  <ArrowLeft size={16} /> Về danh sách bài tập
+                </Link>
+              }
+            />
+          ) : (
+            <ErrorState
+              title="Không tải được kết quả"
+              text="Đã xảy ra lỗi khi kết nối tới máy chủ. Vui lòng thử lại."
+              onRetry={loadResult}
+            />
+          )}
+        </Panel>
+      </div>
+    );
+  }
+
+  const { attempt, assignment, questions } = payload;
+  const graded = attempt.status === "graded";
+  const provisional = !graded;
 
   return (
     <div className="stack gap-6">
@@ -96,98 +154,82 @@ export default function AttemptResultPage() {
       </Link>
 
       <PageHead
-        eyebrow={provisional ? "Kết quả tạm thời" : "Kết quả chính thức"}
+        eyebrow={graded ? "Đã chấm xong" : "Đã nộp — chờ chấm"}
         title={assignment.title}
-        sub={`Nộp lúc ${formatMoment(result.submittedAt)}${
-          result.gradedAt ? ` · chấm xong ${formatMoment(result.gradedAt)}` : ""
-        }`}
+        sub={`Nộp lúc ${attempt.submittedAt ? formatMoment(attempt.submittedAt) : "—"}`}
       />
 
-      {demo === "loading" ? <SkeletonPanel rows={3} height={96} /> : null}
+      <Panel className="panel--pad">
+        <div className="stack gap-2">
+          <h2 className="section-title">Tổng điểm</h2>
+          <p style={{ fontSize: "var(--step-3)", fontWeight: 700, margin: 0 }}>
+            {formatStat(attempt.totalScore)} / {formatStat(attempt.maxScore)}
+          </p>
+          {provisional ? (
+            <p className="section-sub" style={{ color: "var(--text-2)" }}>
+              <Clock size={14} aria-hidden="true" /> Điểm trắc nghiệm đã có; phần tự luận
+              đang chờ giáo viên chấm — đây chưa phải điểm cuối cùng.
+            </p>
+          ) : null}
+        </div>
+      </Panel>
 
-      {demo === "error" ? (
-        <Panel className="panel--pad">
-          <ErrorState title="Không tải được kết quả" onRetry={() => setDemo("ready")} />
-        </Panel>
-      ) : null}
+      <div className="stack gap-3">
+        {questions.map((q, i) => {
+          const mark = correctness(q);
+          const finalScore = q.answer?.teacherScore ?? q.answer?.autoScore ?? null;
+          return (
+            <Panel key={q.questionId} className="panel--pad">
+              <div className="stack gap-2">
+                <div className="row gap-2 wrap">
+                  <strong className="grow">
+                    Câu {i + 1}: {q.content?.prompt ?? "Câu hỏi"}
+                  </strong>
+                  {mark === "graded" ? (
+                    <Chip tone="success">
+                      <Check size={13} /> Đã chấm
+                    </Chip>
+                  ) : mark === "right" ? (
+                    <Chip tone="success">
+                      <Check size={13} /> Đúng
+                    </Chip>
+                  ) : mark === "wrong" ? (
+                    <Chip tone="danger">
+                      <X size={13} /> Sai
+                    </Chip>
+                  ) : (
+                    <Chip tone="neutral">
+                      <Clock size={13} /> Chờ chấm
+                    </Chip>
+                  )}
+                  <Chip tone="neutral">{formatStat(finalScore)} / 1</Chip>
+                </div>
 
-      {demo === "ready" || demo === "empty" ? (
-        <>
-          <Panel className="panel--pad">
-            <div className="row gap-4 wrap">
-              <div className="stack gap-1 grow">
-                <span className="eyebrow">Điểm</span>
-                <span className="result-score">
-                  {earned}
-                  <span className="result-score__max">/{outOf}</span>
-                </span>
-                {/* The denominator scales to what has been marked. Showing 10/20 while half
-                    the paper is unmarked reads as ten wrong answers, which is not what
-                    happened. */}
-                {provisional ? (
-                  <span className="section-sub">
-                    Tính trên phần đã chấm. Bài đầy đủ {result.maxScore} điểm.
-                  </span>
+                {q.answer?.selectedOptions && q.answer.selectedOptions.length > 0 ? (
+                  <p className="section-sub" style={{ margin: 0 }}>
+                    Bạn chọn: {q.answer.selectedOptions.join(", ")}
+                  </p>
+                ) : null}
+                {q.answer?.writtenAnswer ? (
+                  <p className="lms-prose" style={{ margin: 0 }}>
+                    {q.answer.writtenAnswer}
+                  </p>
+                ) : null}
+                {q.answer?.teacherFeedback ? (
+                  <p className="section-sub" style={{ margin: 0 }}>
+                    Nhận xét của giáo viên: {q.answer.teacherFeedback}
+                  </p>
+                ) : null}
+                {graded && q.correctAnswer !== undefined && q.correctAnswer !== null ? (
+                  <p className="section-sub" style={{ margin: 0 }}>
+                    Đáp án đúng: {Array.isArray(q.correctAnswer) ? q.correctAnswer.join(", ") : q.correctAnswer}
+                  </p>
                 ) : null}
               </div>
-              {provisional ? (
-                <Chip tone="warn" icon={<Clock size={13} />}>
-                  Còn {pending} câu chờ giáo viên chấm
-                </Chip>
-              ) : (
-                <Chip tone="success" icon={<Check size={13} />}>
-                  Đã chấm xong
-                </Chip>
-              )}
-            </div>
-          </Panel>
-
-          {result.teacherFeedback ? (
-            <Panel className="panel--pad">
-              <div className="stack gap-2">
-                <h2 className="section-title">Nhận xét của giáo viên</h2>
-                <p className="lms-prose">{result.teacherFeedback}</p>
-              </div>
             </Panel>
-          ) : null}
-
-          <Panel className="panel--pad">
-            <div className="stack gap-3">
-              <h2 className="section-title">Chi tiết từng câu</h2>
-              {result.questions.map((q, i) => {
-                const ungraded = q.score === null;
-                const correct = !ungraded && q.correctAnswer !== null && q.answer === q.correctAnswer;
-                return (
-                  <div key={q.questionId} className="result-row">
-                    <span className="result-row__index">{i + 1}</span>
-                    <span className="grow stack gap-1">
-                      <span className="lms-lesson__summary">Bạn trả lời: {q.answer}</span>
-                      {!ungraded && q.correctAnswer !== null && !correct ? (
-                        <span className="lms-lesson__summary">Đáp án đúng: {q.correctAnswer}</span>
-                      ) : null}
-                      {q.feedback ? <span className="result-row__note">{q.feedback}</span> : null}
-                    </span>
-                    {ungraded ? (
-                      <Chip tone="warn" icon={<Clock size={13} />}>
-                        Chờ giáo viên chấm
-                      </Chip>
-                    ) : (
-                      <Chip
-                        tone={correct ? "success" : "danger"}
-                        icon={correct ? <Check size={13} /> : <X size={13} />}
-                      >
-                        {q.score} điểm
-                      </Chip>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </Panel>
-        </>
-      ) : null}
-
-      <DemoStateSwitcher value={demo} onChange={setDemo} />
+          );
+        })}
+      </div>
     </div>
   );
 }
