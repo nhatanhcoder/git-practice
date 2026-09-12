@@ -1652,6 +1652,33 @@ seed and the API suite against disposable PostgreSQL/MongoDB services. Run 34252
 passed check-docs. Branch protection still requires owner configuration. DEBT-006 remains
 open: a passing baseline-aware lint gate does not mean the existing findings are fixed.
 
+---
+
+### [DEBT-007] Billing batch invoices wrote notifications per-row, outside any transaction
+
+**Severity**: Medium
+**Status**: ✅ Resolved 2026-09-12 — branch `feat/student-notifications`.
+
+**Description**: `BillingService.batchCreate()` looped over eligible students with one
+awaited `create()` per invoice and a separate `create()` per notification. Two contract
+violations against `07-notifications.md` §7/§10.3: the notification INSERT sat **outside**
+the invoice transaction (a crash mid-loop left notifications for invoices that never
+committed — and worse, billing side effects for a partially applied batch), and fan-out ran
+as N single-row inserts instead of one multi-row insert. The single-invoice path was
+in-transaction but duplicated its own inline notification write with `referenceId = code`
+(the human invoice code) where the spec's §10.1 says the reference is the **invoice id**.
+
+**Resolution**: both paths now go through `NotificationsService.createManyWithinTx` with the
+caller's transaction handle; the batch is one `$transaction` (invoice `createMany` + one
+notification `createMany` + a read-back by unique codes to patch in the real invoice ids),
+and both paths reference the invoice id. Covered by the notifications e2e suite (fan-out
+count, exactly-one row, referenceId assertions).
+
+**Lesson**: the producer existed since the Billing build and passed every suite — the tests
+asserted what it wrote, never *when* (which transaction) or *how many round-trips*.
+INV-NOTIF-13 is untestable without forcing a failure between the business write and the
+notification write; that negative-path test remains open with §15's INV-NOTIF-13 row.
+
 ### 2026-09-10 — WEB-016 / DEBT-006 Grammar follow-up
 
 **Status**: corrected locally in codex/grammar-production-gate; production backend remains
@@ -1731,3 +1758,11 @@ the hooks live in `LessonInner`; both learning-path suppressions are removed.
 response helper and fixing frontend imports/memo dependencies. This merge repair does not add
 `usageCount` to the question list or change the server-side delete gate, so it does not close or
 partially claim WEB-013.
+
+### 2026-09-12 — PR #67 merge review follow-up
+
+**Status**: DEBT-007 remains resolved by the notification branch's single-transaction invoice
+batch. Merge review removed four notification e2e lint failures and retained main's dense SRS
+grid while integrating notification styles. No issue ID is closed by lint/build checks alone;
+the real database notification suite is NOT RUN locally and current-head CI is required before
+merge.

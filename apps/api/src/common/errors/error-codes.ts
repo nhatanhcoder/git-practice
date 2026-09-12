@@ -54,6 +54,12 @@ export const ErrorCode = {
   FLASHCARD_ALREADY_IN_REVIEW: 'FLASHCARD_ALREADY_IN_REVIEW',
   FLASHCARD_INVALID_RATING: 'FLASHCARD_INVALID_RATING',
 
+  // Notifications (registry § Notification Errors) — the mailbox read side.
+  // The only branch this module needs: "not found OR not mine" deliberately share one
+  // code so a caller cannot probe for the existence of other users' notifications
+  // (07-notifications.md §5).
+  NOTIFICATION_NOT_FOUND: 'NOTIFICATION_NOT_FOUND',
+
   // Session review & teacher sessions (registry § Session Review Errors)
   SESSION_NOT_FOUND: 'SESSION_NOT_FOUND',
   SESSION_ALREADY_REVIEWED: 'SESSION_ALREADY_REVIEWED',
@@ -139,6 +145,7 @@ export const ERROR_STATUS: Record<ErrorCodeValue, number> = {
   FLASHCARD_NOT_FOUND: 404,
   FLASHCARD_ALREADY_IN_REVIEW: 409,
   FLASHCARD_INVALID_RATING: 400,
+  NOTIFICATION_NOT_FOUND: 404,
   SESSION_NOT_FOUND: 404,
   SESSION_ALREADY_REVIEWED: 409,
   SESSION_REJECT_REASON_REQUIRED: 400,

@@ -15,6 +15,7 @@
 .srs-grid-4 {
   display: grid;
   gap: var(--sp-3);
+  grid-template-columns: 1fr;
 }
 
 @media (min-width: 640px) {
@@ -24,7 +25,7 @@
 }
 
 @media (min-width: 1024px) {
-  .srs-grid-4 {
+  .student-root .srs-stat-grid {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
@@ -38,6 +39,103 @@
   grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
+@media (min-width: 1080px) {
+  .student-root .srs-vocab-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+/* Backward compatibility fallbacks */
+.srs-grid-4 {
+  display: grid;
+  gap: var(--sp-3);
+}
+@media (min-width: 640px) {
+  .srs-grid-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (min-width: 1024px) {
+  .srs-grid-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+
+/* ---------- 4 stat metrics ---------- */
+
+.student-root .srs-stat {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  padding: var(--sp-4) var(--sp-5);
+  border-radius: 14px;
+  background: var(--surface);
+  border: 1px solid var(--line-soft);
+  transition:
+    border-color var(--dur-2) var(--ease),
+    transform var(--dur-2) var(--ease);
+}
+
+.student-root .srs-stat:hover {
+  border-color: var(--line);
+  transform: translateY(-1px);
+}
+
+.student-root .srs-stat__top {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+}
+
+.student-root .srs-stat__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
+.student-root .srs-stat--due .srs-stat__icon {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.student-root .srs-stat--learned .srs-stat__icon {
+  background: var(--info-soft);
+  color: var(--info);
+}
+
+.student-root .srs-stat--retention .srs-stat__icon {
+  background: var(--success-soft);
+  color: var(--success);
+}
+
+.student-root .srs-stat--reviews .srs-stat__icon {
+  background: var(--epic-soft);
+  color: var(--epic);
+}
+
+.student-root .srs-stat__label {
+  font-size: var(--step--1);
+  font-weight: 500;
+  color: var(--text-2);
+  line-height: 1.2;
+}
+
+.student-root .srs-stat__value {
+  font-family: var(--font-display);
+  font-size: clamp(1.75rem, 2.2vw, 2.25rem);
+  font-weight: 700;
+  line-height: 1;
+  color: var(--text-1);
+  letter-spacing: -0.02em;
+}
+
+.student-root .srs-stat__unit {
+  font-size: var(--step-0);
+  font-weight: 600;
+  color: var(--text-3);
+  margin-left: 2px;
+}
+
 /* A degraded-but-usable notice: the stats request failed while the card list did not. Warn
    tone rather than danger, because nothing the learner came here to do is blocked. */
 .srs-note {
@@ -49,14 +147,16 @@
 
 /* ---------- the review card ---------- */
 
-.srs-card {
+.student-root .srs-card {
   max-width: 46rem;
   margin-inline: auto;
+  padding: var(--sp-8) var(--sp-6);
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: var(--sp-4);
   text-align: center;
+  border: 1px solid var(--line-soft);
 }
 
 .srs-card__counter {
@@ -105,6 +205,26 @@
   margin: var(--sp-1) 0 0;
   font-size: var(--step--1);
   color: var(--text-2);
+}
+
+/* ---------- controls toolbar (Tabs & Level Selector) ---------- */
+
+.student-root .srs-controls {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+}
+
+.student-root .srs-controls__bar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: var(--sp-4);
+}
+
+.student-root .srs-controls__levels {
+  display: flex;
+  align-items: center;
 }
 
 /* ---------- ratings ---------- */
@@ -182,7 +302,27 @@
   min-width: 0;
 }
 
-.srs-tile__hanzi {
+.student-root .srs-tile:hover {
+  border-color: var(--line);
+  box-shadow: var(--shadow-1);
+  transform: translateY(-2px);
+}
+
+.student-root .srs-tile__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--sp-3);
+}
+
+.student-root .srs-tile__headings {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.student-root .srs-tile__hanzi {
   margin: 0;
   font-size: var(--step-2);
   line-height: 1.2;
@@ -190,7 +330,7 @@
   overflow-wrap: anywhere;
 }
 
-.srs-tile__pinyin {
+.student-root .srs-tile__pinyin {
   margin: 0;
   font-size: var(--step--1);
   font-weight: 600;
@@ -198,10 +338,29 @@
   overflow-wrap: anywhere;
 }
 
-.srs-tile__meaning {
+.student-root .srs-tile__badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 22px;
+  padding: 0 8px;
+  border-radius: var(--r-pill, 9999px);
+  background: var(--surface-2);
+  border: 1px solid var(--line-soft);
+  color: var(--text-3);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.student-root .srs-tile__meaning {
   margin: 0;
   font-size: var(--step--2);
   color: var(--text-2);
+  line-height: 1.45;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -229,4 +388,131 @@
   color: var(--text-1);
   font-size: var(--step--1);
   text-align: left;
+}
+
+/* ---------- pagination toolbar ---------- */
+
+.student-root .srs-pagination {
+  margin-top: var(--sp-3);
+  padding-top: var(--sp-4);
+  border-top: 1px solid var(--line-soft);
+}
+
+
+/* ---------- notifications (module 07 mailbox) ---------- */
+
+.student-root .notif-link {
+  text-decoration: none;
+  color: inherit;
+  display: block;
+}
+
+.student-root .notif-row {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-3);
+  padding: var(--sp-4);
+  border: 1px solid var(--line-soft);
+  border-radius: 14px;
+  background: var(--surface);
+  transition: border-color var(--dur-2) var(--ease), background-color var(--dur-2) var(--ease);
+}
+
+.student-root .notif-row--read {
+  background: var(--surface-2);
+}
+
+.student-root .notif-link:hover .notif-row,
+.student-root .notif-link:focus-visible .notif-row {
+  border-color: var(--line);
+}
+
+.student-root .notif-row__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  flex-shrink: 0;
+}
+
+.student-root .notif-row--read .notif-row__icon {
+  background: var(--surface-2);
+  color: var(--text-3);
+}
+
+.student-root .notif-row__body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  flex: 1;
+}
+
+.student-root .notif-row__text {
+  margin: 0;
+  font-size: var(--step-0);
+  font-weight: 500;
+  color: var(--text-1);
+  line-height: 1.4;
+}
+
+.student-root .notif-row--read .notif-row__text {
+  color: var(--text-2);
+}
+
+.student-root .notif-row__meta {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  font-size: var(--step--2);
+  color: var(--text-3);
+}
+
+.student-root .notif-row__scope {
+  color: var(--text-3);
+  font-weight: 600;
+}
+
+.student-root .notif-row__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--r-pill);
+  background: var(--accent);
+  flex-shrink: 0;
+}
+
+/* ---------- the bell in the mobile top bar / desktop HUD ---------- */
+
+.student-root .bell-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--r-pill);
+  color: var(--text-2);
+}
+
+.student-root .bell-btn__badge {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: var(--r-pill);
+  background: var(--danger);
+  color: var(--on-accent, #fff);
+  font-size: 0.625rem;
+  font-weight: 700;
+  line-height: 16px;
+  text-align: center;
+}
+
+.student-root .bell-btn__badge:empty {
+  display: none;
 }

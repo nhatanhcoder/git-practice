@@ -155,6 +155,17 @@
 | `FLASHCARD_ALREADY_IN_REVIEW` | 409 | Already added to the review list |
 | `FLASHCARD_INVALID_RATING` | 400 | The rating must be between 0 and 5 |
 
+### Notification Errors (NOTIFICATION_*)
+
+Registered 2026-09-12 with module 07's implementation (branch `feat/student-notifications`).
+One code is the whole family by design: "not found" and "not yours" deliberately share it so
+a caller cannot probe for the existence of other users' notifications
+(`07-notifications.md` §5/§9).
+
+| Code | HTTP | Description |
+|------|------|-------|
+| `NOTIFICATION_NOT_FOUND` | 404 | Notification does not exist or belongs to another user |
+
 ### Payroll Errors (PAYROLL_*)
 
 | Code | HTTP | Description |

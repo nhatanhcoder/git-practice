@@ -348,6 +348,31 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
 
 ## Off-sprint / spike
 
+- ✅ (zcode · 2026-09-12) **Student completion wave — slice 1: Notifications module 07
+  (mailbox) + producers (closes API-013, S-BILL-3's visibility side).** Built to the
+  module's own spec (§2/§3/§5/§7/§8; the §16 defaults picked in the owner-approved wave:
+  FE builds sentences from type+payload, no senderId, fan-out to every active admin,
+  `{updated}`/`{unreadCount}` shapes, PATCH→200-with-record):
+  **BE** — `apps/api/src/notifications/` (repository with a structurally-required `userId`
+  on every query · service with the only creation path, transaction-handle passed in ·
+  4 endpoints, no POST/DELETE ever · `NOTIFICATION_NOT_FOUND` 404 registered). Producers
+  wired in-transaction: register fan-out, approve→`account_approved`, suspend→
+  `account_suspended`; billing `new_invoice` single-create moved onto the service and the
+  **batch path restructured from per-row loop writes to ONE transaction + multi-row
+  inserts** (INV-NOTIF-13 fix), referenceId now the invoice id (was the code).
+  **FE** — `lib/student/notifications-service.ts` (Vietnamese sentences per enum type,
+  deep-links only where referenceType allows) + `/student/notifications` (distinct
+  empty vs all-read vs ready states, mark-read only after server confirms) + shell bell
+  (desktop HUD + mobilebar) polling every 60s per DEBT-002, badge shows only what the
+  server last confirmed.
+  **Verified**: notifications e2e **20/20** (ownership vs DB, one-way read gate + readAt
+  immutability, no POST/DELETE routes, producer fan-out counts, 404-not-403 on foreign
+  rows, envelope + ISO-8601) · **full API suite 208/208 (35 suites)** · web build clean ·
+  web tests 156/156 · check-docs 9/9 · Playwright 4/4 (real login, production build) ·
+  screenshot forensics PASS (badge 1→0 honest across states, unread dot vs dimmed read
+  rows, no 375px overflow). Still open per spec frontmatter: 4 of 11 types' producers
+  wait on their lanes; partial-unique + composite/partial indexes deferred until the
+  table has load. Branch `feat/student-notifications`.
 - 🔶 (codex · 2026-09-10) **Grammar production gate G** — implemented wrapper outside hooks, 147/147 web regressions, targeted lint and web build 42/42 passed. Production API remains NOT IMPLEMENTED; publication pending. Isolated from the uncommitted broad student hooks worktree.
 - ✅ (opencode · 2026-09-11) **Student CSS+Tailwind collaboration** — defined dead
   `sp-press`/`sp-font-head` once via Tailwind plugin; deduped byte-identical
@@ -951,3 +976,12 @@ are accepted and implemented; 02 is implemented but its spec status is in confli
 - Foundation/Grammar documentation publication approved by the owner; branch pushed and
   PR #54 opened: https://github.com/nhatanhcoder/git-practice/pull/54. The publication blocker
   above is cleared. D1–D5 still block implementation; no merge or deployment.
+
+## Merge review — notifications PR #67 — 2026-09-12
+
+- 🔶 Integrated the latest security/bootstrap/dead-code main changes into
+  `feat/student-notifications`, preserving the dense flashcard grid while retaining the
+  notification styles outside the overlapping SRS blocks.
+- Removed four lint failures in the notification e2e suite by typing response envelopes and
+  deleting an unused admin-mailbox query. Local verification and current-head CI are required
+  before merge; the database-backed notification suite remains NOT RUN in this review worktree.
