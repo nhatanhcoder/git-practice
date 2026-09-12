@@ -348,6 +348,15 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
 
 ## Off-sprint / spike
 
+- ✅ (opencode · 2026-09-12) **PW screen sweep: all dynamic routes registered + PW_ALL=1 green 101/102.**
+  `routes.ts` gains 4 mock-id routes (exam-detail/result, workplace-scenario, writing-char) and
+  9 resolved routes (`resolve-ids.ts`: seed-first ids; timestamped sweep fixtures only for
+  attempt/lesson, public API only, no seed writes); `screens.spec.ts` runs the same
+  heading/gate/not-found/overflow/console checks on resolved paths and SKIPs with reason when
+  unresolvable. Sweep on prod build: **101/102** (desktop + 375px, 0 skips — every resolver
+  hit). Sole failure: `/admin/payroll` 591px overflow at 375px → filed `WEB-021` (pre-existing,
+  admin lane; no screenshot — the check asserts before shooting). Branch `feat/pw-sweep-routes`.
+
 - ✅ (zcode · 2026-09-12) **Student completion wave — slice 1: Notifications module 07
   (mailbox) + producers (closes API-013, S-BILL-3's visibility side).** Built to the
   module's own spec (§2/§3/§5/§7/§8; the §16 defaults picked in the owner-approved wave:

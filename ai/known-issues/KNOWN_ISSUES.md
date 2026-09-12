@@ -1766,3 +1766,17 @@ batch. Merge review removed four notification e2e lint failures and retained mai
 grid while integrating notification styles. No issue ID is closed by lint/build checks alone;
 the real database notification suite is NOT RUN locally and current-head CI is required before
 merge.
+
+### [WEB-021] `/admin/payroll` scrolls horizontally at 375px (591px content)
+
+**Severity**: Low
+**Status**: Open — found 2026-09-12 by the PW_ALL screen sweep (101/102 green)
+
+**Description**: the payroll periods ledger table has no mobile-card fallback, so at
+375px the page renders 591px wide. Every other admin table screen passed the same
+overflow assertion. No screenshot was captured — `screens.spec.ts` asserts overflow
+before shooting, so failing screens leave only the trace.zip.
+
+**Fix Plan**: render the existing period rows as mobile cards under 640px (the pattern
+`admin-invoices` already uses), or gate the wide table behind horizontal scroll containment
+that does not widen the page. Verify with `PW_ROUTES=/admin/payroll` on both viewports.
