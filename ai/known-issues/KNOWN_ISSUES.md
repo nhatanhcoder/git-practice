@@ -1662,6 +1662,13 @@ New Throttler thresholds and unrelated UI additions in PR55 are not covered by A
 See sessions/2026-09-11-security-checklist-review.md for branch commits, validation scope and
 publication blocker. Existing issue IDs retained; no issue was renumbered or closed broadly.
 
+### 2026-09-12 — PR #65 merge review follow-up
+
+**Status**: resolved on `feat/student-learning-path`. The node route previously returned its
+production unavailable state before thirteen hooks, leaving a real Rules of Hooks violation
+hidden by the suppression baseline. The production gate now lives in the default wrapper and
+the hooks live in `LessonInner`; both learning-path suppressions are removed.
+
 ### 2026-09-12 — PR #63 merge review follow-up (WEB-013)
 
 **Status**: WEB-013 remains open. The Assignments branch now passes lint after typing its e2e

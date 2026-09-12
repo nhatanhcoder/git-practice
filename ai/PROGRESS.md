@@ -348,6 +348,14 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
 
 ## Off-sprint / spike
 
+- ✅ (opencode · 2026-09-11) **Student learning-path contract + rebuild (S-SELF-1)** —
+  Page Contracts + Tier-0 specs (all reads ⛔, no backend), rebuilt 2 mock-honest routes
+  with URL-synced filters (branch `feat/student-learning-path`). Build 42/42, 4
+  screenshots read, check-docs 9/9. Session:
+  `ai/context/sessions/2026-09-11-opencode-learning-path.md`.
+  Merge review 2026-09-12: moved the node page's production gate into the default wrapper
+  and all hooks into `LessonInner`, then removed the two obsolete learning-path hook
+  suppressions. Workspace lint and web type-check pass on current main.
 - ✅ (opencode · 2026-09-11) **Admin/teacher CSS hex → vars sweep** — wired ~1,700 hardcoded
   literals in 25 CSS Modules to `globals.css` vars (existing 8 + doc-table status 5 +
   verbatim palette scales), exact values only, zero-visual-diff
