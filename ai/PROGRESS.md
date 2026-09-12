@@ -348,6 +348,11 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
 
 ## Off-sprint / spike
 
+- ✅ (opencode · 2026-09-11) **Student CSS+Tailwind collaboration** — defined dead
+  `sp-press`/`sp-font-head` once via Tailwind plugin; deduped byte-identical
+  `student/{tokens,base,components}.css` forks onto hanlu canonicals
+  (branch `fix/student-css-collab`). Build green, 4 screenshots read, guard intact.
+  Session: `ai/context/sessions/2026-09-11-opencode-css-collab.md`.
 - ✅ (zcode · 2026-09-11) **WEB-020 — Mobile "More" sheet: nav labels compact by tile
   width.** The 2-column sheet grid wrapped 3 long labels ("Bài tập được giao", "Từ vựng
   Flashcard", "Mô phỏng công sở") to two lines, making those rows ~20px taller than the
