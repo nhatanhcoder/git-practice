@@ -348,6 +348,7 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
 
 ## Off-sprint / spike
 
+- 🔶 (codex · 2026-09-10) **Grammar production gate G** — implemented wrapper outside hooks, 147/147 web regressions, targeted lint and web build 42/42 passed. Production API remains NOT IMPLEMENTED; publication pending. Isolated from the uncommitted broad student hooks worktree.
 - ✅ (opencode · 2026-09-11) **Student CSS+Tailwind collaboration** — defined dead
   `sp-press`/`sp-font-head` once via Tailwind plugin; deduped byte-identical
   `student/{tokens,base,components}.css` forks onto hanlu canonicals

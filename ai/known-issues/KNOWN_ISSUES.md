@@ -1652,6 +1652,15 @@ seed and the API suite against disposable PostgreSQL/MongoDB services. Run 34252
 passed check-docs. Branch protection still requires owner configuration. DEBT-006 remains
 open: a passing baseline-aware lint gate does not mean the existing findings are fixed.
 
+### 2026-09-10 — WEB-016 / DEBT-006 Grammar follow-up
+
+**Status**: corrected locally in codex/grammar-production-gate; production backend remains
+NOT IMPLEMENTED. GrammarPage selects UnavailableState before mounting GrammarInner, avoiding
+conditional hooks and production demo execution. Runtime regression: 2/2; full web scripts
+147/147. The uncommitted Real-fe-prod-hooks alternative incorrectly gates MatchExercise, not
+the page. Do not treat its whole-file scan as proof of production isolation. Only Grammar's
+obsolete hook suppression was removed; unrelated lint debt remains.
+
 ### 2026-09-10 — API bootstrap hardening review (API-016 / BUILD-002 follow-up)
 
 **Status**: API-016 remains open. Helmet and development-only Swagger are implemented in
