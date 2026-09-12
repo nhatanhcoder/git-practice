@@ -672,6 +672,23 @@ _(discovered while mapping the Admin UI — 2026-08-13)_
 - [x] (be) ~~Missing endpoints~~ — 2026-09-05: all endpoints implemented in live NestJS modules.
 - [ ] (be) **`packages/types` does not exist** — no shared contract between the two lanes.
       This is the most important unlock; it must be the first commit of a parallel session
+- [ ] (fe → be) **Student analytics module spec** — `GET /student/progress` and
+      `/student/progress/chart` are reserved paths in `API_STUDENT.md`, but no module spec
+      defines their request/response DTOs (F6.1/F6.2 blocked in Sprint 5). Found writing the
+      `student-progress` Page Contract 2026-09-12. Streak/XP figures on the same screen are
+      gamification (below), not analytics.
+- [ ] (fe → be) **S-MSTK mistake-notebook collection endpoints** — the source data now exists
+      (Sprint 4 attempts, PR #73), but no contract collects wrongly-answered questions from it.
+      `student-mistakes.md` contract written; the screen renders an honest empty state.
+- [ ] (fe → be) **Placement + platform mock-exam transport contract** — ADR-005
+      (server-authoritative exam) is a 0-byte stub (`DOC-017`); placement decision rule never
+      settled. Blocks `student-exams` / `student-placement` contracts.
+- [ ] (fe → be) **Gamification contracts** — XP sources, rank/level curve, streak
+      calendar/timezone rule (also blocks the SRS stats `streak: null`), badge unlock
+      conditions (server-authoritative), leaderboard aggregation + privacy/visibility.
+      Blocks `student-badges` / `student-leaderboard` / progress mock figures.
+      (Self-study content contracts for foundation/grammar/writing/lego/workplace are already
+      covered by the Foundation/Grammar proposal D1–D5 + `DOC-011` — not duplicated here.)
 
 ## Business decisions
 
