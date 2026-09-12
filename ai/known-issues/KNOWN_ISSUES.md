@@ -1356,6 +1356,32 @@ Gemini quota figures should be removed, not faked.
 
 ---
 
+### [BUILD-004] `pnpm --filter api build` is red on `origin/main` — TS2322 in `vocab-apply.ts`
+
+**Severity**: Medium
+**Status**: Open — found 2026-09-11 while verifying the SRS flow suite in a fresh worktree
+
+**Description**: `nest build` (tsc) fails with one error:
+`src/flashcards/import/vocab-apply.ts:56 — connection.model(...)` returns
+`Model<Flashcard, ...>` which is not assignable to `Model<ImportFlashcardDoc>`
+(`_id` required by the local interface, missing on `Flashcard`). Verified on pristine
+`origin/main@73bdd2c` after `db:generate`, so it is not caused by any worktree edit.
+(A fresh worktree additionally needs `db:generate` first — 254 `PrismaService`
+errors without it; that part is setup, see `BUILD-002`.)
+
+**Impact**: the typecheck/build gate is red; the API test suites are unaffected because
+they run via tsx (no typecheck) and tsc still emits `dist/` despite the error. Any CI
+step running `nest build` strictly fails.
+
+**Not fixed here**: out of scope (test-files-only slice). Note — the main checkout on
+`feat/s3-assignments` carries an uncommitted 1-line `as unknown as` cast on this exact
+line; that is another lane's in-flight work, not taken here to avoid a cross-lane edit.
+
+**Fix Plan**: type the import model honestly (or keep the cast, owned by whoever lands
+it first), then confirm `pnpm --filter api build` exits 0 on a clean worktree.
+
+---
+
 ## Technical Debt
 
 ### [DEBT-005] The landing page ships ~8.5 MB of uncompressed teacher photos
@@ -1661,6 +1687,13 @@ PR55 still defaults proxy trust to one hop; codex/auth-proxy-review defaults it 
 New Throttler thresholds and unrelated UI additions in PR55 are not covered by A1+A2 tests.
 See sessions/2026-09-11-security-checklist-review.md for branch commits, validation scope and
 publication blocker. Existing issue IDs retained; no issue was renumbered or closed broadly.
+
+### 2026-09-12 — PR #63 merge review follow-up (WEB-013)
+
+**Status**: WEB-013 remains open. The Assignments branch now passes lint after typing its e2e
+response helper and fixing frontend imports/memo dependencies. This merge repair does not add
+`usageCount` to the question list or change the server-side delete gate, so it does not close or
+partially claim WEB-013.
 
 ### 2026-09-12 — PR #67 merge review follow-up
 
