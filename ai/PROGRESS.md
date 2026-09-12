@@ -348,6 +348,12 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
 
 ## Off-sprint / spike
 
+- ✅ (opencode · 2026-09-11) **Admin/teacher CSS hex → vars sweep** — wired ~1,700 hardcoded
+  literals in 25 CSS Modules to `globals.css` vars (existing 8 + doc-table status 5 +
+  verbatim palette scales), exact values only, zero-visual-diff
+  (branch `fix/admin-css-tokens`). Verified live as admin+teacher: 5 routes 200,
+  computed token rgb exact, 7 screenshots read. Session:
+  `ai/context/sessions/2026-09-11-opencode-css-tokens.md`.
 - 🔶 (codex · 2026-09-10) **API bootstrap hardening B+C+D** — implemented locally: Helmet, development-only Swagger and HTTP drain; 3/3 tests, API build/type-check passed on base 8050cba. Public publication blocked; DB/Linux signal checks NOT RUN. User authorized this backend lane for Codex; A1+A2 remain separate pending completed-work location.
 - 🔶 (codex · 2026-09-10) **A1+A2 review of PR 55** — user explicitly authorized review and corrections after Antigravity completed. Cleanup retained; unsafe default proxy trust and 19 test lint errors corrected locally; 9/9 isolated tests pass. API build blocked by A11 importer on main; real DB suites NOT RUN. Backend lane assigned to Codex for this named Auth scope. Resumed 2026-09-11: reviewed new PR55 head 9128ae8; three local code packages remain unpublished pending explicit public push permission (session 2026-09-11-security-checklist-review).
 
