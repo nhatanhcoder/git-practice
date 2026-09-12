@@ -260,6 +260,12 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
       but request/response contracts are not approved; no payload was invented
       *(if F9–F16 ever land, `SkillScore.skill` widens 3 → 7 values — `PROJECT_KNOWLEDGE.md` §8. Blocked, see Sprint 5b)*
 - ⬜ F6.3 Class dashboard (Teacher) · ⬜ F6.4 API Quota Monitoring (Admin)
+- 🔶 (zcode · 2026-09-12) **S-BILL-1/2 Student invoice read path** — `GET /student/invoices` +
+      `GET /student/invoices/:id` (both defined in `API_STUDENT.md` § Billing, mandated by
+      accepted `06-billing.md` §5 SCOPE-BILL-01: dedicated handler, `studentId` from token in
+      the WHERE, `status <> 'void'` hidden from students, INV-BILLING-33/34). Includes Page
+      Contract `student-invoices` + FE routes `/student/invoices`(+detail). No new endpoint,
+      field or error code invented. Branch `feat/student-invoices`.
 - **DoD**: Rating a card reschedules it correctly per SM-2. Teacher sees red alerts for weak students.
 
 ## Sprint 6 — Attendance, Payroll, Tuition ⚠️
