@@ -668,6 +668,41 @@ are accepted and implemented; 02 is implemented but its spec status is in confli
 
 ### Backend — Teacher module specs
 
+- ✅ (claude · 2026-09-11) **CODE S3 — AssignmentsModule BUILT end to end** (teacher spec
+  `03-assignments.md` (17 sections), `ENTITY_ASSIGNMENT.md`, `ENTITY_LESSON_ASSIGNMENT.md`,
+  agreed endpoints in `API_TEACHER.md`, agreed `ASSIGNMENT_*` error codes — no endpoint, field
+  or code invented). Delivered:
+  **DB** — 3 migrations: `assignments` + `lesson_assignments` (per entity specs, snake_case
+  fix included), `attempts` (per `ENTITY_ATTEMPT.md` — S3 only READS it for INV-TASG-04/07;
+  the official-attempt partial unique index added by hand; writing attempts belongs to S4),
+  + column-name fix migration.
+  **BE** — `apps/api/src/assignments/`: 6 teacher endpoints + student
+  `GET /student/assignments` (S-ASGN-1, published-only, active-enrollment-only — server-side).
+  All 8 invariants enforced (ownership 404-not-403 · mock_test/homework timeLimit cross-rule
+  both directions · Mongo existence check BEFORE the Postgres write (DEBT-001-safe order) ·
+  Attempt freeze 409 · no un-publish · publish→`new_assignment` Notification per
+  active-enrolled student — the `notifications` table already existed from the earlier
+  migration · read-time stats · questionIds order preserved). Three real bugs found by the
+  suite and fixed: INV-TASG-02 was silently stripping instead of rejecting (the test was
+  right, the code was wrong); every service return was double-wrapped by the envelope
+  interceptor; `computeStats` groupBy 500'd → plain findMany.
+  **FE** — `/teacher/assignments` live (real list/classes/question-bank, real
+  create/update/delete with single-flight lock, stats drawer showing server-derived counts,
+  honest note that per-student names need S4; MOCK markers gone) and `/student/assignments`
+  rewritten onto `GET /student/assignments` (no more mock lms-data, no attempt-status
+  fiction — a note says S4 will unlock làm-bài).
+  **Verified**: assignments e2e **22/22** (invariants, ownership, publish fan-out, student
+  visibility, dropped-student isolation) · FULL API suite **210/210 across 35 suites**
+  · web build clean · web tests **145/145** · check-docs 9/9 · browser production check on
+  live API: teacher sees both fixtures, drawer shows "1 học viên active / 0 nộp" real counts,
+  student sees the published mock_test but NOT the draft, 375px no overflow.
+  WEB-013 (usageCount) NOT closed here — needs the question-list response change, tracked.
+  Branch `feat/s3-assignments` (grew through a worktree migration mid-task — see session file).
+  Merge review 2026-09-12: removed six explicit `any` uses from the Assignments e2e helper,
+  removed two unused student icons, fixed the teacher question-picker memo dependency, and
+  pruned the now-obsolete Assignments hook suppression. Lint, API type-check/build, web build
+  and check-docs pass on the current main base; DB e2e remains delegated to isolated CI.
+
 - 🔶 (claude · 2026-09-01) **API surface gaps closed, module specs not started.**
   `API_TEACHER.md` § Lessons written (8 endpoints, `API-007` closed) + `LESSON_*` error family
   (*proposed, not agreed*); `API-006` route convention settled **role-prefixed** by the owner and

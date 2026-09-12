@@ -1661,3 +1661,10 @@ PR55 still defaults proxy trust to one hop; codex/auth-proxy-review defaults it 
 New Throttler thresholds and unrelated UI additions in PR55 are not covered by A1+A2 tests.
 See sessions/2026-09-11-security-checklist-review.md for branch commits, validation scope and
 publication blocker. Existing issue IDs retained; no issue was renumbered or closed broadly.
+
+### 2026-09-12 — PR #63 merge review follow-up (WEB-013)
+
+**Status**: WEB-013 remains open. The Assignments branch now passes lint after typing its e2e
+response helper and fixing frontend imports/memo dependencies. This merge repair does not add
+`usageCount` to the question list or change the server-side delete gate, so it does not close or
+partially claim WEB-013.
