@@ -41,7 +41,26 @@ last_updated: 2026-09-10
         └── Rời lớp → Modal xác nhận          DELETE /api/v1/student/classes/:id/leave
 ```
 
-## 3. Note on Sổ tay lỗi sai (`S-MSTK`)
+## 3. Billing branch (S-BILL-1/2 — read-only)
+
+```text
+/student  Dashboard
+│
+└── Sidebar: Học phí
+    ▼
+    /student/invoices  Hóa đơn học phí           GET /api/v1/student/invoices
+    ├── Chọn hóa đơn → chi tiết
+    │   ▼
+    │   /student/invoices/[invoiceId]            GET /api/v1/student/invoices/:id
+    │   └── Back → danh sách
+    └── (no mutating action — creation/payment/void are Admin-side, A-INV-2/5)
+```
+
+Ownership is in the query WHERE (`studentId` from the token, `status <> 'void'`), never a
+`?studentId=` parameter — INV-BILLING-33. Money renders from the envelope; the FE subtracts
+nothing (`outstandingAmount` is server-derived, INV-BILLING-16).
+
+## 4. Note on Sổ tay lỗi sai (`S-MSTK`)
 
 `/student/mistakes` (Sổ tay lỗi sai) and `/student/mistakes/review` are dedicated to diagnostic error review for questions answered incorrectly during homework assignments and CBT mock exams. They are separate from vocabulary flashcards (`/student/flashcards`). Backend error-collection endpoints will be defined in Sprint 4 (Assignments & Attempts); in the interim, `/student/mistakes` remains in prototype/demo mode without being conflated with flashcard SRS.
 
@@ -58,6 +77,8 @@ last_updated: 2026-09-10
 | 7 | `/student/classes` | Tham gia lớp | same / modal | POST join | `CLASS_ENROLL_CODE_INVALID`, `CLASS_ALREADY_ARCHIVED`, `CLASS_ALREADY_ENROLLED`, `VALIDATION_ERROR` |
 | 8 | `/student/classes` | Chọn lớp | `/student/classes/[classId]` | GET class detail | `CLASS_ACCESS_DENIED`, `CLASS_NOT_FOUND`, `VALIDATION_ERROR` |
 | 9 | `/student/classes/[classId]` | Rời lớp | `/student/classes` | DELETE leave | `CLASS_NOT_ENROLLED`, `CLASS_ACCESS_DENIED`, `CLASS_NOT_FOUND`, `VALIDATION_ERROR` |
+| 10 | `/student` | Học phí | `/student/invoices` | GET own invoices | auth errors |
+| 11 | `/student/invoices` | Chọn hóa đơn | `/student/invoices/[invoiceId]` | GET invoice detail | `INVOICE_NOT_FOUND`, `VALIDATION_ERROR` |
 
 ## Entity state transitions
 
