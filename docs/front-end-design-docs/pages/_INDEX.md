@@ -54,7 +54,7 @@ and Income. **Analytics (T-ANL-1…4) is the only FEATURES_TEACHER area still un
 | `/teacher/classes/[classId]` | T-CLASS-3,4,6 | [teacher-class-detail](./teacher-pages/teacher-class-detail.md) | built | v1 | average score field; attendance rate (S5) |
 | `/teacher/classes/[classId]/lessons` | T-LESSON-1,2,4,5 | [teacher-lessons-list](./teacher-pages/teacher-lessons-list.md) | built | v1 | `LESSON_*` codes *proposed, not agreed* — `API-007` closed 2026-09-01, endpoints now defined |
 | `/teacher/questions` | T-QB-1,2,4,5,6 | [teacher-question-bank](./teacher-pages/teacher-question-bank.md) | built | v1 | error codes TODO; audio upload mocked |
-| `/teacher/assignments` | T-ASGN-1..5 | [teacher-assignments](./teacher-pages/teacher-assignments.md) | built | v1 | error codes TODO |
+| `/teacher/assignments` | T-ASGN-1..5 | [teacher-assignments](./teacher-pages/teacher-assignments.md) | built | v1 | **LIVE on /teacher/assignments (S3, 2026-09-11)** — `ASSIGNMENT_*` codes agreed and used; submission stats real from Attempt records; per-student roster names need Sprint 4 `GET /teacher/attempts` |
 | `/teacher/grading` | T-GRADE-1..5 | [teacher-grading](./teacher-pages/teacher-grading.md) | built | v1 | error codes TODO |
 | `/teacher/sessions` | T-SES-1..7 | [teacher-sessions](./teacher-pages/teacher-sessions.md) | built | v1 | error codes TODO |
 | `/teacher/income` | T-INC-1,2,3 | [teacher-income](./teacher-pages/teacher-income.md) | built | v1 | none — both endpoints defined |
@@ -74,8 +74,11 @@ Analytics (T-ANL-1…4): _not yet mapped._ Every other Teacher area has a contra
 | `/student/flashcards` | S-SRS-1..5 | [student-srs](./student-pages/student-srs.md) | built | v1 | vocabulary seed; streak timezone |
 | `/student/classes` | S-CLS-1,2 | [student-classes-list](./student-pages/student-classes-list.md) | built | v1 | — |
 | `/student/classes/[classId]` | S-CLS-3,4, S-LESSON-1 | [student-class-detail](./student-pages/student-class-detail.md) | built | v1 | — |
+| `/student/assignments` | S-ASGN-1 | *(inline in page doc — wired without a separate contract file, same gap as the register screens)* | built (live) | v1 | **LIVE on GET /student/assignments (S3, 2026-09-11)** — published-only, active-enrollment-only enforced server-side; attempt status badges need Sprint 4 |
 | `/student/foundation` | S-SELF-2,9 | [student-foundation](./student-pages/student-foundation.md) | contracted (proposed) | — | ⛔ source, schema, API and media approval |
 | `/student/grammar` | S-SELF-3,9 | [student-grammar](./student-pages/student-grammar.md) | contracted (proposed) | — | ⛔ source, schema, API and exercise approval |
+| `/student/learning-path` | S-SELF-1,9 | [student-learning-path](./student-pages/student-learning-path.md) | contracted (proposed) | — | ⛔ catalog paths, progress reads/writes |
+| `/student/learning-path/[nodeId]` | S-SELF-1,9 | [student-learning-path-node](./student-pages/student-learning-path-node.md) | contracted (proposed) | — | ⛔ catalog read, progress write |
 
 Foundation/Grammar contracts describe a blocked production proposal; their current UI is still mock-backed.
 

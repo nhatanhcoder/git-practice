@@ -1252,6 +1252,46 @@ page asserting things that are not true; do not fix it in isolation from that de
 
 ---
 
+### [WEB-020] Mobile "More" sheet: three nav labels wrapped to two lines, stretching their rows
+
+**Severity**: Low
+**Status**: ✅ Resolved 2026-09-11 — branch `fix/student-sheet-labels`, per-tile CSS container
+query swaps the label.
+
+**Description**: the "Tất cả khu vực học" bottom sheet (mobile tab bar → "Thêm") renders a
+2-column grid of 15 navigation tiles using each item's **full** `label`. Three of them —
+"Bài tập được giao", "Từ vựng Flashcard", "Mô phỏng công sở" — exceeded the ~100px text box of
+a 375px tile and wrapped to two lines, making their rows ~20px taller than the other five
+(single-line) rows. `navlink`/`tabbar` had already adopted the `short` field for exactly this
+reason; the sheet was the one surface still rendering `label`.
+
+**Resolution**: each tile now renders both spellings (`sheet__label` + `sheet__label--short`),
+and each `.sheet__item` is a CSS container (`container-type: inline-size`) whose
+`@container (max-width: 189px)` query shows whichever spelling fits one line. Narrow tile →
+short label ("Bài tập", "Từ vựng", "Công sở"); wide tile → full label. Every row returns to one
+uniform height. Two lessons from verification, both kept as code comments: **@container adds no
+specificity** — a bare `.sheet__label--short` inside the query (0,1,0) lost to the outer
+`.student-root .sheet__label--short` (0,2,0) and hid BOTH labels at 375px; the query selectors
+must mirror the outer ones. And the first Playwright cut asserted only the hidden half of the
+swap, which let that icon-only regression pass green — the spec now asserts both directions
+(plus flex-item blockification: the computed display of a visible span is `block`, not the
+declared `inline`).
+
+**Verification**: `tests/student-sheet-labels.spec.ts` 6/6 (desktop + mobile-375 ×
+375/520/640px, real login, production build): uniform tile heights everywhere, short labels
+at 375px, full labels single-line at 520/640px. Screenshot forensics re-verified after the
+specificity fix (round 1 caught the icon-only bug). Unit suite 156/156, check-docs 9/9,
+demo-isolation spec 9/9. Pre-existing, unrelated: 2 `student-identity.spec.ts` cases fail with
+or without this change (proven by stashing it) — `a01.student@hsk.local` is not in the dev DB
+(fixture never created by the spec) and the failed attempts then trip the 5-per-15-min login
+rate limit (429); not counted against this fix.
+
+**Numbering note**: `WEB-019` is taken by the unmerged `feat/student-prod-return-hooks`; per
+`DOC-014` reconcile by hand on merge. `WEB-020` was verified free across all live remote
+branches before assignment.
+
+---
+
 ### [API-015] No central env validation; the refresh-cookie path is hardcoded and can drift from `API_PREFIX`
 
 **Severity**: High
@@ -1353,6 +1393,32 @@ ping probes for PostgreSQL, MongoDB Atlas, Redis" is wrong for 2 of 3 services; 
 measured latency, cached to respect quota — ADR-014) or relabel the stubs honestly
 ("not configured" / "no probe") so the screen stops asserting what it did not measure. The
 Gemini quota figures should be removed, not faked.
+
+---
+
+### [BUILD-004] `pnpm --filter api build` is red on `origin/main` — TS2322 in `vocab-apply.ts`
+
+**Severity**: Medium
+**Status**: Open — found 2026-09-11 while verifying the SRS flow suite in a fresh worktree
+
+**Description**: `nest build` (tsc) fails with one error:
+`src/flashcards/import/vocab-apply.ts:56 — connection.model(...)` returns
+`Model<Flashcard, ...>` which is not assignable to `Model<ImportFlashcardDoc>`
+(`_id` required by the local interface, missing on `Flashcard`). Verified on pristine
+`origin/main@73bdd2c` after `db:generate`, so it is not caused by any worktree edit.
+(A fresh worktree additionally needs `db:generate` first — 254 `PrismaService`
+errors without it; that part is setup, see `BUILD-002`.)
+
+**Impact**: the typecheck/build gate is red; the API test suites are unaffected because
+they run via tsx (no typecheck) and tsc still emits `dist/` despite the error. Any CI
+step running `nest build` strictly fails.
+
+**Not fixed here**: out of scope (test-files-only slice). Note — the main checkout on
+`feat/s3-assignments` carries an uncommitted 1-line `as unknown as` cast on this exact
+line; that is another lane's in-flight work, not taken here to avoid a cross-lane edit.
+
+**Fix Plan**: type the import model honestly (or keep the cast, owned by whoever lands
+it first), then confirm `pnpm --filter api build` exits 0 on a clean worktree.
 
 ---
 
@@ -1586,6 +1652,26 @@ seed and the API suite against disposable PostgreSQL/MongoDB services. Run 34252
 passed check-docs. Branch protection still requires owner configuration. DEBT-006 remains
 open: a passing baseline-aware lint gate does not mean the existing findings are fixed.
 
+### 2026-09-10 — API bootstrap hardening review (API-016 / BUILD-002 follow-up)
+
+**Status**: API-016 remains open. Helmet and development-only Swagger are implemented in
+codex/api-bootstrap-hardening. HTTP draining precedes database teardown (30-second grace).
+The custom limiter uses a composite IP/email key; 01-auth section 13 still specifies two
+independent counters. This conflict is recorded, not resolved by changing limiter policy.
+PR #49 was documentation only and does not implement shared storage. Request logging / request-id
+(F), shared storage, frontend debounce and token consolidation remain outside this change.
+BUILD-002 reproduced locally: the documented engines/dist/index.js copy workaround restored
+Prisma generation. Real database suite and real Linux SIGTERM verification require isolated CI;
+local handler tests alone do not establish Prisma/Mongoose disconnect behavior.
+
+### 2026-09-10 — Validation follow-up (DEBT-006 / WEB-016)
+
+**Status**: open. Latest main includes three unsuppressed lint errors from A08/A09 (two
+no-useless-escape at student-class-detail.test.mjs:163 and unused hasLessons at the class
+detail page:203), reproduced by the bootstrap branch's full lint. They are outside B+C+D.
+The uncommitted feat/student-prod-return-hooks Grammar diff moves its production gate into
+MatchExercise; GrammarPage would still render demo content. The whole-file hook scan does
+not establish the guard belongs to the page component. G needs a wrapper-specific regression.
 ### 2026-09-10 — API-016 / PR 55 review correction
 
 **Status**: single-instance limitation remains open; A1+A2 corrections implemented locally
@@ -1615,3 +1701,24 @@ PR55 still defaults proxy trust to one hop; codex/auth-proxy-review defaults it 
 New Throttler thresholds and unrelated UI additions in PR55 are not covered by A1+A2 tests.
 See sessions/2026-09-11-security-checklist-review.md for branch commits, validation scope and
 publication blocker. Existing issue IDs retained; no issue was renumbered or closed broadly.
+
+### 2026-09-12 — WEB-020 merge review follow-up
+
+**Status**: remains resolved. Its Playwright assertions used Set spread syntax unsupported by
+the test compiler target, causing web-quality to fail after the visual fix itself passed.
+Replacing those spreads with `Array.from(new Set(...))` restores type-check without changing
+the tested label or uniform-height behavior.
+
+### 2026-09-12 — PR #65 merge review follow-up
+
+**Status**: resolved on `feat/student-learning-path`. The node route previously returned its
+production unavailable state before thirteen hooks, leaving a real Rules of Hooks violation
+hidden by the suppression baseline. The production gate now lives in the default wrapper and
+the hooks live in `LessonInner`; both learning-path suppressions are removed.
+
+### 2026-09-12 — PR #63 merge review follow-up (WEB-013)
+
+**Status**: WEB-013 remains open. The Assignments branch now passes lint after typing its e2e
+response helper and fixing frontend imports/memo dependencies. This merge repair does not add
+`usageCount` to the question list or change the server-side delete gate, so it does not close or
+partially claim WEB-013.

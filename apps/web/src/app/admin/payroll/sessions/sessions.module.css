@@ -1,13 +1,13 @@
 .appShell {
   display: flex;
   min-height: 100vh;
-  background-color: var(--background, #F8FAFC);
+  background-color: var(--background, var(--background));
 }
 
 .sidebar {
   width: 240px;
   flex: 0 0 240px;
-  background-color: #0F172A;
+  background-color: var(--primary);
   display: flex;
   flex-direction: column;
   position: sticky;
@@ -22,28 +22,28 @@
   align-items: center;
   gap: 10px;
   padding: 18px 20px;
-  color: #FFFFFF;
+  color: var(--surface);
   font-family: "Lexend", sans-serif;
   font-weight: 600;
   font-size: 15px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid color-mix(in srgb, var(--surface) 8%, transparent);
 }
 
 .brandMark {
   width: 30px;
   height: 30px;
   border-radius: 6px;
-  background-color: #2563EB;
+  background-color: var(--accent);
   display: grid;
   place-items: center;
   font-size: 16px;
-  color: #FFFFFF;
+  color: var(--surface);
 }
 
 .closeNav {
   display: none;
   margin-left: auto;
-  color: #94A3B8;
+  color: var(--slate-400);
   padding: 4px;
 }
 
@@ -61,7 +61,7 @@
   gap: 12px;
   padding: 10px 12px;
   border-radius: 8px;
-  color: #94A3B8;
+  color: var(--slate-400);
   text-decoration: none;
   font-size: 13.5px;
   font-weight: 500;
@@ -69,17 +69,17 @@
 }
 
 .navItem:hover {
-  background-color: rgba(255, 255, 255, 0.06);
-  color: #FFFFFF;
+  background-color: color-mix(in srgb, var(--surface) 6%, transparent);
+  color: var(--surface);
 }
 
 .navActive {
-  background-color: rgba(37, 99, 235, 0.22);
-  color: #FFFFFF;
+  background-color: color-mix(in srgb, var(--accent) 22%, transparent);
+  color: var(--surface);
 }
 
 .navActive svg {
-  color: #93C5FD;
+  color: var(--blue-300);
 }
 
 .sidebarFooter {
@@ -87,13 +87,13 @@
   align-items: center;
   gap: 10px;
   padding: 16px 20px;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-  color: #94A3B8;
+  border-top: 1px solid color-mix(in srgb, var(--surface) 8%, transparent);
+  color: var(--slate-400);
   font-size: 12px;
 }
 
 .sidebarFooter strong {
-  color: #FFFFFF;
+  color: var(--surface);
   display: block;
   font-size: 12.5px;
 }
@@ -101,7 +101,7 @@
 .navBackdrop {
   position: fixed;
   inset: 0;
-  background-color: rgba(15, 23, 42, 0.4);
+  background-color: color-mix(in srgb, var(--primary) 40%, transparent);
   z-index: 35;
   border: none;
 }
@@ -115,8 +115,8 @@
 
 .topbar {
   height: 56px;
-  background-color: #FFFFFF;
-  border-bottom: 1px solid #E2E8F0;
+  background-color: var(--surface);
+  border-bottom: 1px solid var(--border);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -131,23 +131,23 @@
   align-items: center;
   gap: 8px;
   font-size: 13px;
-  color: #475569;
+  color: var(--muted);
 }
 
 .breadcrumb a {
-  color: #475569;
+  color: var(--muted);
   text-decoration: none;
 }
 
 .breadcrumb strong {
-  color: #0F172A;
+  color: var(--text);
   font-weight: 600;
 }
 
 .menuButton {
   display: none;
   padding: 6px;
-  color: #475569;
+  color: var(--muted);
   border-radius: 6px;
 }
 
@@ -164,7 +164,7 @@
   border-radius: 8px;
   display: grid;
   place-items: center;
-  color: #475569;
+  color: var(--muted);
 }
 
 .notificationDot {
@@ -174,14 +174,14 @@
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background-color: #DC2626;
-  border: 1.5px solid #FFFFFF;
+  background-color: var(--danger);
+  border: 1.5px solid var(--surface);
 }
 
 .headerDivider {
   width: 1px;
   height: 22px;
-  background-color: #E2E8F0;
+  background-color: var(--border);
 }
 
 .profileButton {
@@ -222,7 +222,7 @@
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #2563EB;
+  color: var(--accent);
   margin-bottom: 4px;
 }
 
@@ -230,13 +230,13 @@
   font-family: "Lexend", sans-serif;
   font-size: 26px;
   font-weight: 600;
-  color: #0F172A;
+  color: var(--text);
   line-height: 1.2;
 }
 
 .subtitle {
   font-size: 14px;
-  color: #475569;
+  color: var(--muted);
   margin-top: 4px;
 }
 
@@ -250,9 +250,9 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  background-color: #FFFFFF;
-  color: #0F172A;
-  border: 1px solid #CBD5E1;
+  background-color: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--slate-300);
   padding: 6px 14px;
   border-radius: 6px;
   font-size: 13px;
@@ -262,12 +262,12 @@
 }
 
 .secondaryButton:hover {
-  background-color: #F8FAFC;
+  background-color: var(--background);
 }
 
 .queueBadge {
-  background-color: #EEF2FF;
-  color: #2563EB;
+  background-color: var(--indigo-50);
+  color: var(--accent);
   padding: 4px 12px;
   border-radius: 9999px;
   font-size: 13px;
@@ -277,15 +277,15 @@
 
 /* Filter Card */
 .filterCard {
-  background-color: #FFFFFF;
-  border: 1px solid #E2E8F0;
+  background-color: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 8px;
   padding: 12px 16px;
   margin-bottom: 16px;
   display: flex;
   align-items: center;
   gap: 16px;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--primary) 5%, transparent);
 }
 
 .selectField {
@@ -293,26 +293,26 @@
   align-items: center;
   gap: 8px;
   font-size: 13px;
-  color: #64748B;
+  color: var(--neutral);
 }
 
 .selectField select {
   height: 36px;
   padding: 0 10px;
-  border: 1px solid #CBD5E1;
+  border: 1px solid var(--slate-300);
   border-radius: 6px;
   font-size: 13.5px;
-  color: #0F172A;
-  background-color: #FFFFFF;
+  color: var(--text);
+  background-color: var(--surface);
 }
 
 /* Table Card */
 .tableCard {
-  background-color: #FFFFFF;
-  border: 1px solid #E2E8F0;
+  background-color: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 8px;
   overflow: hidden;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--primary) 5%, transparent);
 }
 
 .tableWrap {
@@ -327,14 +327,14 @@
 }
 
 .table thead th {
-  background-color: #F8FAFC;
+  background-color: var(--background);
   padding: 10px 16px;
   font-size: 11.5px;
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: #475569;
-  border-bottom: 1px solid #E2E8F0;
+  color: var(--muted);
+  border-bottom: 1px solid var(--border);
   white-space: nowrap;
 }
 
@@ -344,7 +344,7 @@
 
 .table tbody td {
   padding: 11px 16px;
-  border-bottom: 1px solid #E2E8F0;
+  border-bottom: 1px solid var(--border);
   font-size: 13.5px;
   vertical-align: middle;
 }
@@ -355,7 +355,7 @@
 }
 
 .table tbody tr:hover {
-  background-color: #F8FAFC;
+  background-color: var(--background);
 }
 
 .table tbody tr:last-child td {
@@ -388,7 +388,7 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  color: #475569;
+  color: var(--muted);
 }
 
 /* Attendance meter */
@@ -403,14 +403,14 @@
 .meterTrack {
   width: 44px;
   height: 5px;
-  background-color: #E2E8F0;
+  background-color: var(--border);
   border-radius: 3px;
   overflow: hidden;
 }
 
 .meterFill {
   height: 100%;
-  background-color: #16A34A;
+  background-color: var(--success);
   border-radius: 3px;
 }
 
@@ -427,14 +427,14 @@
   border-radius: 6px;
   display: grid;
   place-items: center;
-  background-color: rgba(22, 163, 74, 0.1);
-  color: #16A34A;
+  background-color: color-mix(in srgb, var(--success) 10%, transparent);
+  color: var(--success);
   transition: background-color 0.15s;
 }
 
 .quickApproveBtn:hover {
-  background-color: #16A34A;
-  color: #FFFFFF;
+  background-color: var(--success);
+  color: var(--surface);
 }
 
 .quickRejectBtn {
@@ -443,21 +443,21 @@
   border-radius: 6px;
   display: grid;
   place-items: center;
-  background-color: rgba(220, 38, 38, 0.1);
-  color: #DC2626;
+  background-color: color-mix(in srgb, var(--danger) 10%, transparent);
+  color: var(--danger);
   transition: background-color 0.15s;
 }
 
 .quickRejectBtn:hover {
-  background-color: #DC2626;
-  color: #FFFFFF;
+  background-color: var(--danger);
+  color: var(--surface);
 }
 
 /* Review Drawer */
 .drawerBackdrop {
   position: fixed;
   inset: 0;
-  background-color: rgba(15, 23, 42, 0.4);
+  background-color: color-mix(in srgb, var(--primary) 40%, transparent);
   z-index: 70;
   display: flex;
   justify-content: flex-end;
@@ -467,8 +467,8 @@
   width: 100%;
   max-width: 520px;
   height: 100vh;
-  background-color: #FFFFFF;
-  box-shadow: -4px 0 25px rgba(15, 23, 42, 0.15);
+  background-color: var(--surface);
+  box-shadow: -4px 0 25px color-mix(in srgb, var(--primary) 15%, transparent);
   display: flex;
   flex-direction: column;
   animation: slideLeft 0.22s ease-out;
@@ -481,7 +481,7 @@
 
 .drawerHeader {
   padding: 20px 24px;
-  border-bottom: 1px solid #E2E8F0;
+  border-bottom: 1px solid var(--border);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -491,7 +491,7 @@
   font-family: "Lexend", sans-serif;
   font-size: 18px;
   font-weight: 600;
-  color: #0F172A;
+  color: var(--text);
 }
 
 .drawerBody {
@@ -514,43 +514,43 @@
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: #64748B;
+  color: var(--neutral);
 }
 
 .timeCompare {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12px;
-  background-color: #F8FAFC;
+  background-color: var(--background);
   padding: 12px 14px;
   border-radius: 8px;
-  border: 1px solid #E2E8F0;
+  border: 1px solid var(--border);
 }
 
 .timeCol small {
   display: block;
   font-size: 11.5px;
-  color: #64748B;
+  color: var(--neutral);
   margin-bottom: 2px;
 }
 
 .timeCol strong {
   font-size: 14px;
-  color: #0F172A;
+  color: var(--text);
 }
 
 .timeActual strong {
-  color: #2563EB;
+  color: var(--accent);
 }
 
 .textContent {
   font-size: 14px;
-  color: #0F172A;
+  color: var(--text);
   line-height: 1.5;
-  background-color: #F8FAFC;
+  background-color: var(--background);
   padding: 12px 14px;
   border-radius: 8px;
-  border: 1px solid #E2E8F0;
+  border: 1px solid var(--border);
 }
 
 .attendanceList {
@@ -564,15 +564,15 @@
   align-items: center;
   justify-content: space-between;
   padding: 8px 12px;
-  background-color: #F8FAFC;
+  background-color: var(--background);
   border-radius: 6px;
   font-size: 13.5px;
 }
 
 .drawerFooter {
   padding: 18px 24px;
-  border-top: 1px solid #E2E8F0;
-  background-color: #F8FAFC;
+  border-top: 1px solid var(--border);
+  background-color: var(--background);
   display: flex;
   align-items: center;
   justify-content: flex-end;
@@ -583,8 +583,8 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  background-color: #16A34A;
-  color: #FFFFFF;
+  background-color: var(--success);
+  color: var(--surface);
   padding: 9px 18px;
   border-radius: 6px;
   font-size: 13.5px;
@@ -593,7 +593,7 @@
 }
 
 .approveBtn:hover {
-  background-color: #15803D;
+  background-color: var(--green-700);
 }
 
 .rejectBtn {
@@ -601,8 +601,8 @@
   align-items: center;
   gap: 8px;
   background-color: transparent;
-  color: #DC2626;
-  border: 1px solid #FECACA;
+  color: var(--danger);
+  border: 1px solid var(--red-200);
   padding: 8px 16px;
   border-radius: 6px;
   font-size: 13.5px;
@@ -611,14 +611,14 @@
 }
 
 .rejectBtn:hover {
-  background-color: #FEF2F2;
+  background-color: var(--red-50);
 }
 
 /* Reject Modal */
 .modalBackdrop {
   position: fixed;
   inset: 0;
-  background-color: rgba(15, 23, 42, 0.4);
+  background-color: color-mix(in srgb, var(--primary) 40%, transparent);
   display: grid;
   place-items: center;
   z-index: 80;
@@ -626,32 +626,32 @@
 }
 
 .modal {
-  background-color: #FFFFFF;
+  background-color: var(--surface);
   border-radius: 8px;
   width: 100%;
   max-width: 480px;
   padding: 24px;
-  box-shadow: 0 20px 25px -5px rgba(15, 23, 42, 0.15);
+  box-shadow: 0 20px 25px -5px color-mix(in srgb, var(--primary) 15%, transparent);
 }
 
 .modal h2 {
   font-family: "Lexend", sans-serif;
   font-size: 18px;
   font-weight: 600;
-  color: #0F172A;
+  color: var(--text);
   margin-bottom: 6px;
 }
 
 .modal p {
   font-size: 13.5px;
-  color: #475569;
+  color: var(--muted);
   margin-bottom: 14px;
 }
 
 .modal textarea {
   width: 100%;
   padding: 8px 12px;
-  border: 1px solid #CBD5E1;
+  border: 1px solid var(--slate-300);
   border-radius: 6px;
   font-size: 13.5px;
   min-height: 80px;
@@ -678,7 +678,7 @@
 .successIcon {
   width: 56px;
   height: 56px;
-  color: #16A34A;
+  color: var(--success);
   opacity: 0.25;
   margin-bottom: 16px;
 }
@@ -687,13 +687,13 @@
   font-family: "Lexend", sans-serif;
   font-size: 18px;
   font-weight: 600;
-  color: #0F172A;
+  color: var(--text);
   margin-bottom: 6px;
 }
 
 .emptyStateSuccess p {
   font-size: 14px;
-  color: #475569;
+  color: var(--muted);
 }
 
 /* Status Pills */
@@ -702,8 +702,8 @@
   border-radius: 9999px;
   font-size: 12px;
   font-weight: 500;
-  background-color: rgba(22, 163, 74, 0.15);
-  color: #16A34A;
+  background-color: color-mix(in srgb, var(--success) 15%, transparent);
+  color: var(--success);
 }
 
 .pillWarning {
@@ -711,8 +711,8 @@
   border-radius: 9999px;
   font-size: 12px;
   font-weight: 500;
-  background-color: rgba(217, 119, 6, 0.15);
-  color: #D97706;
+  background-color: color-mix(in srgb, var(--warning) 15%, transparent);
+  color: var(--warning);
 }
 
 .pillDanger {
@@ -720,8 +720,8 @@
   border-radius: 9999px;
   font-size: 12px;
   font-weight: 500;
-  background-color: rgba(220, 38, 38, 0.15);
-  color: #DC2626;
+  background-color: color-mix(in srgb, var(--danger) 15%, transparent);
+  color: var(--danger);
 }
 
 /* State Switcher */
@@ -733,18 +733,18 @@
   display: flex;
   align-items: center;
   gap: 4px;
-  background: rgba(255, 255, 255, 0.94);
+  background: color-mix(in srgb, var(--surface) 94%, transparent);
   backdrop-filter: blur(6px);
-  border: 1px solid #CBD5E1;
+  border: 1px solid var(--slate-300);
   border-radius: 8px;
   padding: 4px;
-  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.1);
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--primary) 10%, transparent);
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 11px;
 }
 
 .stateSwitcher span {
-  color: #64748B;
+  color: var(--neutral);
   padding: 0 6px;
   font-weight: 600;
 }
@@ -752,14 +752,14 @@
 .stateSwitcher button {
   padding: 4px 8px;
   border-radius: 5px;
-  color: #475569;
+  color: var(--muted);
   border: none;
   background: none;
 }
 
 .stateSwitcher button.stateActive {
-  background-color: #0F172A;
-  color: #FFFFFF;
+  background-color: var(--primary);
+  color: var(--surface);
 }
 
 .toast {
@@ -767,8 +767,8 @@
   bottom: 24px;
   left: 50%;
   transform: translateX(-50%);
-  background-color: #0F172A;
-  color: #FFFFFF;
+  background-color: var(--primary);
+  color: var(--surface);
   border-radius: 8px;
   padding: 10px 18px;
   font-size: 13.5px;
@@ -777,7 +777,7 @@
   align-items: center;
   gap: 8px;
   z-index: 90;
-  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.15);
+  box-shadow: 0 6px 20px color-mix(in srgb, var(--primary) 15%, transparent);
   animation: fadeUp 0.25s ease;
 }
 
