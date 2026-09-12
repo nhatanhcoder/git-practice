@@ -216,11 +216,6 @@
       "count": 2
     }
   },
-  "apps/web/src/app/student/(app)/assignments/page.tsx": {
-    "react-hooks/rules-of-hooks": {
-      "count": 4
-    }
-  },
   "apps/web/src/app/student/(app)/attempts/[attemptId]/page.tsx": {
     "react-hooks/exhaustive-deps": {
       "count": 2
