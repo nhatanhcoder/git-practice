@@ -373,6 +373,44 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
   rows, no 375px overflow). Still open per spec frontmatter: 4 of 11 types' producers
   wait on their lanes; partial-unique + composite/partial indexes deferred until the
   table has load. Branch `feat/student-notifications`.
+- 🔶 (codex · 2026-09-10) **Grammar production gate G** — implemented wrapper outside hooks, 147/147 web regressions, targeted lint and web build 42/42 passed. Production API remains NOT IMPLEMENTED; publication pending. Isolated from the uncommitted broad student hooks worktree.
+- ✅ (opencode · 2026-09-11) **Student CSS+Tailwind collaboration** — defined dead
+  `sp-press`/`sp-font-head` once via Tailwind plugin; deduped byte-identical
+  `student/{tokens,base,components}.css` forks onto hanlu canonicals
+  (branch `fix/student-css-collab`). Build green, 4 screenshots read, guard intact.
+  Session: `ai/context/sessions/2026-09-11-opencode-css-collab.md`.
+- ✅ (zcode · 2026-09-11) **WEB-020 — Mobile "More" sheet: nav labels compact by tile
+  width.** The 2-column sheet grid wrapped 3 long labels ("Bài tập được giao", "Từ vựng
+  Flashcard", "Mô phỏng công sở") to two lines, making those rows ~20px taller than the
+  rest. Fixed: each tile renders both `label` and existing `short`, and a per-tile CSS
+  container query (`container-type: inline-size`) swaps them — narrow tile → short
+  one-line label, wide tile → full label — so every row returns to one uniform height.
+  `student-shell.tsx` + both `components.css` copies (kept identical; PR #62 will delete
+  the `app/student/` fork — trivial resolution). Shared component → FULL LANE: new spec
+  `student-sheet-labels.spec.ts` **6/6** (375/520/640px × 2 projects, real login,
+  production build), screenshot forensics PASS at all three widths (round 1 caught a
+  real specificity bug the first test cut missed: @container adds no specificity, both
+  labels went hidden at 375px; fixed + test asserts both swap directions now), unit
+  156/156, check-docs 9/9, demo-isolation 9/9. 2 pre-existing identity-spec failures
+  (missing DB fixture + 429 rate limit) proven unrelated by stash. Branch
+  `fix/student-sheet-labels`.
+  Merge review 2026-09-12: replaced six Set spread expressions in the Playwright spec with
+  `Array.from(new Set(...))`, preserving assertions while satisfying the web test compiler;
+  web type-check, workspace lint and check-docs pass on current main.
+- ✅ (opencode · 2026-09-11) **Student learning-path contract + rebuild (S-SELF-1)** —
+  Page Contracts + Tier-0 specs (all reads ⛔, no backend), rebuilt 2 mock-honest routes
+  with URL-synced filters (branch `feat/student-learning-path`). Build 42/42, 4
+  screenshots read, check-docs 9/9. Session:
+  `ai/context/sessions/2026-09-11-opencode-learning-path.md`.
+  Merge review 2026-09-12: moved the node page's production gate into the default wrapper
+  and all hooks into `LessonInner`, then removed the two obsolete learning-path hook
+  suppressions. Workspace lint and web type-check pass on current main.
+- ✅ (opencode · 2026-09-11) **Admin/teacher CSS hex → vars sweep** — wired ~1,700 hardcoded
+  literals in 25 CSS Modules to `globals.css` vars (existing 8 + doc-table status 5 +
+  verbatim palette scales), exact values only, zero-visual-diff
+  (branch `fix/admin-css-tokens`). Verified live as admin+teacher: 5 routes 200,
+  computed token rgb exact, 7 screenshots read. Session:
+  `ai/context/sessions/2026-09-11-opencode-css-tokens.md`.
 - 🔶 (codex · 2026-09-10) **API bootstrap hardening B+C+D** — implemented locally: Helmet, development-only Swagger and HTTP drain; 3/3 tests, API build/type-check passed on base 8050cba. Public publication blocked; DB/Linux signal checks NOT RUN. User authorized this backend lane for Codex; A1+A2 remain separate pending completed-work location.
 - 🔶 (codex · 2026-09-10) **A1+A2 review of PR 55** — user explicitly authorized review and corrections after Antigravity completed. Cleanup retained; unsafe default proxy trust and 19 test lint errors corrected locally; 9/9 isolated tests pass. API build blocked by A11 importer on main; real DB suites NOT RUN. Backend lane assigned to Codex for this named Auth scope. Resumed 2026-09-11: reviewed new PR55 head 9128ae8; three local code packages remain unpublished pending explicit public push permission (session 2026-09-11-security-checklist-review).
 

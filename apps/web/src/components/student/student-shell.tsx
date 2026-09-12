@@ -538,7 +538,8 @@ export function StudentShell({ children }: { children: ReactNode }) {
                 >
                   {item.icon}
                   {/* WEB-020: both spellings render; the per-tile container query in
-                      components.css shows whichever fits one line. */}
+                      components.css shows whichever fits on one line, so a narrow tile
+                      reads the short label instead of wrapping and stretching its row. */}
                   <span className="sheet__label">{item.label}</span>
                   <span className="sheet__label--short">{item.short}</span>
                 </Link>

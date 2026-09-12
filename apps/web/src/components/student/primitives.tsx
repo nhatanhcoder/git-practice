@@ -4,7 +4,7 @@
  * Student primitives — Panel, SectionHeader, Chip, Bar, Ring, Metric, states.
  *
  * Distilled from the "Hán Lộ" prototype's Primitives.tsx. Every component here
- * renders the semantic class names defined in `app/student/components.css`;
+ * renders the semantic class names defined in `styles/hanlu/components.css`;
  * none of them picks a colour, which is what keeps the whole area on one
  * palette (see ai/rules/working-rules.md § Frontend Design Rules).
  *

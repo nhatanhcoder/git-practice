@@ -624,6 +624,7 @@
 }
 
 .student-root .sheet__item {
+  container-type: inline-size;
   display: flex;
   align-items: center;
   gap: var(--sp-3);
@@ -641,6 +642,27 @@
   color: var(--accent);
   border-color: var(--accent-line);
   background: var(--accent-soft);
+}
+
+/* WEB-020 — every tile carries both spellings and measures itself: a tile too narrow
+   for the full label shows the short one instead of wrapping to two lines, which is
+   what made three rows of this grid ~20px taller than the rest. The threshold fits the
+   longest label ("Bài tập được giao" @ 13px/600) plus icon, gap and padding with room
+   to spare, so a tile that keeps the full label never wraps either.
+   Selectors inside the query mirror the outer ones: @container adds NO specificity,
+   so a bare `.sheet__label--short` here (0,1,0) would lose to the outer
+   `.student-root .sheet__label--short` (0,2,0) and both spans would end up hidden. */
+.student-root .sheet__label--short {
+  display: none;
+}
+
+@container (max-width: 189px) {
+  .student-root .sheet__label {
+    display: none;
+  }
+  .student-root .sheet__label--short {
+    display: inline;
+  }
 }
 
 @media (max-width: 640px) {

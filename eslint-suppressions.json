@@ -252,24 +252,11 @@
   "apps/web/src/app/student/(app)/grammar/page.tsx": {
     "@typescript-eslint/no-unused-vars": {
       "count": 1
-    },
-    "react-hooks/rules-of-hooks": {
-      "count": 16
     }
   },
   "apps/web/src/app/student/(app)/leaderboard/page.tsx": {
     "react-hooks/rules-of-hooks": {
       "count": 4
-    }
-  },
-  "apps/web/src/app/student/(app)/learning-path/[nodeId]/page.tsx": {
-    "react-hooks/rules-of-hooks": {
-      "count": 13
-    }
-  },
-  "apps/web/src/app/student/(app)/learning-path/page.tsx": {
-    "react-hooks/rules-of-hooks": {
-      "count": 12
     }
   },
   "apps/web/src/app/student/(app)/lego/page.tsx": {
