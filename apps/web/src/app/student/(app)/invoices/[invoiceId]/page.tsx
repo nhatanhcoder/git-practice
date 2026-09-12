@@ -31,6 +31,7 @@ import {
   INVOICE_STATUS_TONES,
   formatMoney,
   formatPeriod,
+  formatDate,
   isValidInvoiceId,
   resolveMyInvoiceOutcome,
   resolveRecorderName,
@@ -109,7 +110,7 @@ export default function StudentInvoiceDetailPage() {
           <PageHead
             eyebrow="Học phí"
             title={detail.code}
-            sub={`Kỳ ${formatPeriod(detail.periodStart, detail.periodEnd)} · Hạn thanh toán ${formatPeriod(detail.dueDate, detail.dueDate)}`}
+            sub={`Kỳ ${formatPeriod(detail.periodStart, detail.periodEnd)} · Hạn thanh toán ${formatDate(detail.dueDate)}`}
             action={
               <Chip tone={INVOICE_STATUS_TONES[detail.status]}>
                 {INVOICE_STATUS_LABELS[detail.status]}

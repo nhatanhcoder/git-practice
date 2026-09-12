@@ -15,6 +15,7 @@ import assert from "node:assert/strict";
 import {
   formatMoney,
   formatPeriod,
+  formatDate,
   INVOICE_STATUS_LABELS,
   INVOICE_STATUS_TONES,
   isValidUuid,
@@ -124,4 +125,10 @@ test("a payment's recorder shows a display name, never an email or empty string"
   assert.equal(resolveRecorderName({ name: "Cô Hoa" }), "Cô Hoa");
   assert.equal(resolveRecorderName({ name: null }), "Trung tâm");
   assert.equal(resolveRecorderName({ name: "   " }), "Trung tâm");
+});
+
+test("formatDate renders one date — a due date is never a range", () => {
+  assert.equal(formatDate("2026-10-07"), "07/10/2026");
+  assert.equal(formatDate("2026-10-07T00:00:00Z"), "07/10/2026");
+  assert.equal(formatDate("junk"), "—");
 });

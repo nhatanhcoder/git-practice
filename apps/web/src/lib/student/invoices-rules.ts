@@ -92,6 +92,11 @@ export function formatPeriod(periodStart: string, periodEnd: string): string {
   return `${start} – ${end}`;
 }
 
+/** A single ISO date (e.g. a due date) as dd/MM/yyyy — a period range around one date reads as a typo. */
+export function formatDate(iso: string): string {
+  return formatDateParts(iso) ?? "—";
+}
+
 function formatDateParts(iso: string): string | null {
   const parts = iso.split("T")[0].split("-");
   if (parts.length !== 3) return null;

@@ -30,6 +30,7 @@ import {
   INVOICE_STATUS_TONES,
   formatMoney,
   formatPeriod,
+  formatDate,
   resolveInvoicesOutcome,
   type InvoiceListMeta,
   type StudentInvoice,
@@ -126,7 +127,7 @@ export default function StudentInvoicesPage() {
                     </span>
                     <span className="lms-card__meta">
                       Kỳ {formatPeriod(inv.periodStart, inv.periodEnd)} · Hạn{" "}
-                      {formatPeriod(inv.dueDate, inv.dueDate)}
+                      {formatDate(inv.dueDate)}
                     </span>
                   </span>
                   <span className="stack gap-1" style={{ textAlign: "right" }}>
