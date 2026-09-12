@@ -6,10 +6,13 @@
  * Contract: docs/front-end-design-docs/pages/student-pages/student-lesson-detail.md
  * Features: S-LESSON-2 (content), S-LESSON-3 (attached assignments).
  *
- * API status: GET /student/classes/:id returns real lesson metadata (id, title, description,
- * contentType, contentUrl, orderIndex). Per A08 requirement 5, interactive content
- * and assignment CTAs without approved/implemented student endpoints render clear
- * unavailable notices rather than fabricated mock state.
+ * Data: GET /student/classes/:classId/lessons/:lessonId via
+ * fetchEnrolledLessonDetail — the server verifies active enrollment and that
+ * the lesson belongs to the class. The class name for the header comes from
+ * GET /student/classes/:id; its failure is non-fatal (header falls back).
+ * Per A08 requirement 5, interactive content and assignment CTAs without
+ * approved/implemented student endpoints render clear unavailable notices
+ * rather than fabricated mock state.
  */
 
 import { useCallback, useEffect, useState } from "react";
@@ -26,9 +29,10 @@ import {
 } from "@/components/student/primitives";
 import {
   fetchEnrolledClassDetail,
+  fetchEnrolledLessonDetail,
   isValidUuid,
-  resolveLessonDetailOutcome,
-  type EnrolledClassDetail,
+  resolveSingleLessonOutcome,
+  type EnrolledLesson,
 } from "@/lib/student/classes-service";
 
 export default function LessonDetailPage() {
@@ -37,7 +41,8 @@ export default function LessonDetailPage() {
   const lessonId = decodeURIComponent(params?.lessonId ?? "");
 
   const validIds = isValidUuid(classId) && isValidUuid(lessonId);
-  const [detail, setDetail] = useState<EnrolledClassDetail | null>(null);
+  const [lesson, setLesson] = useState<EnrolledLesson | null>(null);
+  const [className, setClassName] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<unknown | null>(null);
 
@@ -48,21 +53,26 @@ export default function LessonDetailPage() {
     }
     setLoading(true);
     setError(null);
-    try {
-      const res = await fetchEnrolledClassDetail(classId);
-      setDetail(res);
-    } catch (err) {
-      setError(err);
-    } finally {
-      setLoading(false);
+    const [lessonRes, classRes] = await Promise.allSettled([
+      fetchEnrolledLessonDetail(classId, lessonId),
+      fetchEnrolledClassDetail(classId),
+    ]);
+    if (lessonRes.status === "rejected") {
+      setError(lessonRes.reason);
+      setLesson(null);
+    } else {
+      setLesson(lessonRes.value);
     }
-  }, [classId, validIds]);
+    // Header context only: a failed class read must not hide a loaded lesson.
+    setClassName(classRes.status === "fulfilled" ? classRes.value.name : null);
+    setLoading(false);
+  }, [classId, lessonId, validIds]);
 
   useEffect(() => {
     loadDetail();
   }, [loadDetail]);
 
-  const outcome = resolveLessonDetailOutcome(loading, error, detail, lessonId, validIds);
+  const outcome = resolveSingleLessonOutcome(loading, error, lesson, validIds);
 
   if (outcome === "loading") {
     return (
@@ -139,7 +149,7 @@ export default function LessonDetailPage() {
     );
   }
 
-  if (outcome === "error" || !detail) {
+  if (outcome === "error" || !lesson) {
     return (
       <div className="stack gap-6">
         <PageHead title="Lỗi kết nối" sub="Không thể tải dữ liệu bài học." />
@@ -154,18 +164,16 @@ export default function LessonDetailPage() {
     );
   }
 
-  const lesson = detail.lessons.find((l) => l.id === lessonId)!;
-
   return (
     <div className="stack gap-6">
-      <Link href={`/student/classes/${detail.id}`} className="backlink">
-        <ArrowLeft size={15} /> {detail.name}
+      <Link href={`/student/classes/${classId}`} className="backlink">
+        <ArrowLeft size={15} /> {className ?? "Về lớp học"}
       </Link>
 
       <PageHead
         eyebrow={`Bài ${lesson.orderIndex + 1}`}
         title={lesson.title}
-        sub={detail.name}
+        sub={className ?? "Bài học"}
       />
 
       {lesson.description ? (
@@ -215,4 +223,3 @@ export default function LessonDetailPage() {
     </div>
   );
 }
-

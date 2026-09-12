@@ -1585,3 +1585,37 @@ GitHub Actions run 34252312577 passed web-quality and api-quality, including mig
 seed and the API suite against disposable PostgreSQL/MongoDB services. Run 34252312622
 passed check-docs. Branch protection still requires owner configuration. DEBT-006 remains
 open: a passing baseline-aware lint gate does not mean the existing findings are fixed.
+
+### [WEB-019] Lesson eyebrow shows `orderIndex + 1` while `orderIndex` is 1-based
+
+**Severity**: Low
+**Status**: Open — found 2026-09-12 while wiring the student lesson-detail page to the real endpoint
+
+**Description**: `apps/web/src/app/student/(app)/classes/[classId]/lessons/[lessonId]/page.tsx`
+renders `Bài ${lesson.orderIndex + 1}`. `ENTITY_LESSON.md` and the teacher `create()` path
+define `orderIndex` as 1-based (`max + 1`, reorder requires exactly `1..N`), so the first
+lesson of a class reads "Bài 2". Pre-existing in the stub; kept byte-identical through the
+endpoint rewiring to stay in scope.
+
+**Fix Plan**: render `Bài ${lesson.orderIndex}` (one line), or confirm a 0-based convention
+somewhere and record it against `ENTITY_LESSON.md`. Do not "harmonise" by editing the entity
+spec silently — see Conflict Rules.
+
+### [BUILD-004] `node --import tsx --test` fails on Node 25 — tsx 4.23.12 loader
+
+**Severity**: Low (environmental — CI unaffected)
+**Status**: Open — found 2026-09-12 running the student lesson-detail e2e suite
+
+**Description**: with local Node v25.9.0, `node --import tsx --test test/*.test.ts` (the
+`pnpm --filter api test` path) dies with `ERR_MODULE_NOT_FOUND` on the extensionless
+`../dist/src/app.module` import — identically for pre-existing suites
+(`teacher-lessons.e2e.test.ts` fails the same way), so it is the toolchain, not the test.
+CI pins Node 24 (`quality.yml`) and is unaffected.
+
+**Workaround**: `tsx --test` (the tsx CLI instead of the Node loader hook) resolves the same
+imports fine on Node 25: `node --env-file ../../.env ./node_modules/tsx/dist/cli.mjs --test
+--test-concurrency=1 <files>`. Full suite verified this way 2026-09-12: 198/198 across
+32 suites.
+
+**Fix Plan**: pin a Node version for local dev (`.nvmrc`/volta, matching CI's 24) or upgrade
+tsx past the Node 25 loader incompatibility, then re-run `pnpm --filter api test` verbatim.

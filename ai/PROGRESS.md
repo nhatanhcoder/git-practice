@@ -339,6 +339,7 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
 
 ## Off-sprint / spike
 
+- ✅ (opencode · 2026-09-12) **Student lesson detail (S-LESSON-2): Page Contract + GET /student/classes/:classId/lessons/:lessonId + FE wiring.** RBAC-gated read: service verifies active enrollment (`CLASS_ACCESS_DENIED` 403), lesson must belong to the class (`LESSON_NOT_FOUND` 404); only registry codes, no migration. Contract `student-lesson-detail.md` = `built`, `_INDEX` + `student-flow.md` + `API_STUDENT.md` updated. FE page reads the dedicated endpoint (`fetchEnrolledLessonDetail` + `resolveSingleLessonOutcome`); class name is best-effort context, assignments panel stays an honest unavailable notice (S-LESSON-3/4 ⛔). Verify: API **198/198 across 32 suites** (10 new ownership-matrix e2e) · tracked web tests **155/155** (11 new) · web build 42/42 · check-docs 9/9. Branch `feat/student-lesson-detail`. Filed `WEB-019` (eyebrow off-by-one, kept as-is) + `BUILD-004` (`node --import tsx` broken on Node 25; ran suite via `tsx --test`).
 - ✅ (codex · 2026-09-12) **`docs/README.md` refreshed to the current repo structure.**
   The repo's only README is the documentation index at `docs/README.md`; it was last updated
   2026-09-03 and had fallen behind by whole directories. Rewritten: added `api/modules/`

@@ -469,6 +469,41 @@ export class ClassesService {
     };
   }
 
+  /**
+   * Lesson detail for an enrolled student - S-LESSON-2.
+   * INV-CLASS-07: content is readable only while the enrollment is `active`.
+   * The lesson must belong to the class in the path: a lesson id from another
+   * class (or no lesson at all) is LESSON_NOT_FOUND, never a cross-class leak.
+   */
+  async findEnrolledLessonDetail(studentId: string, classId: string, lessonId: string) {
+    if (!UUID_REGEX.test(classId)) {
+      throw new AppException(ErrorCode.VALIDATION_ERROR, 'classId không đúng định dạng uuid');
+    }
+    if (!UUID_REGEX.test(lessonId)) {
+      throw new AppException(ErrorCode.VALIDATION_ERROR, 'lessonId không đúng định dạng uuid');
+    }
+
+    const enrollment = await this.prisma.classEnrollment.findUnique({
+      where: { classId_studentId: { classId, studentId } },
+    });
+
+    // Ownership is enforced here in the service, not by @Roles('student') on the controller -
+    // the guard only proves the caller is *a* student, never that this class is theirs.
+    if (!enrollment || enrollment.status !== 'active') {
+      throw new AppException(ErrorCode.CLASS_ACCESS_DENIED, 'Bạn không có quyền xem lớp học này');
+    }
+
+    const lesson = await this.prisma.lesson.findUnique({
+      where: { id: lessonId },
+    });
+
+    if (!lesson || lesson.classId !== classId) {
+      throw new AppException(ErrorCode.LESSON_NOT_FOUND, 'Không tìm thấy bài học');
+    }
+
+    return lesson;
+  }
+
   private toEnrollmentResult(
     cls: { id: string; name: string; hskLevel: number },
     row: { status: string; joinedAt: Date; rejoinedAt: Date | null },

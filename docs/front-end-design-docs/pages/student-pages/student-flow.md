@@ -37,7 +37,9 @@ last_updated: 2026-09-10
     └── Chọn lớp → Chi tiết lớp
         ▼
         /student/classes/[classId]             GET /api/v1/student/classes/:id
-        ├── Xem bài học → chi tiết bài học    /student/classes/[classId]/lessons/[lessonId]
+        ├── Xem bài học → chi tiết bài học    GET /api/v1/student/classes/:classId/lessons/:lessonId
+        │   ▼
+        │   /student/classes/[classId]/lessons/[lessonId]  Lesson detail (S-LESSON-2)
         └── Rời lớp → Modal xác nhận          DELETE /api/v1/student/classes/:id/leave
 ```
 
@@ -58,6 +60,7 @@ last_updated: 2026-09-10
 | 7 | `/student/classes` | Tham gia lớp | same / modal | POST join | `CLASS_ENROLL_CODE_INVALID`, `CLASS_ALREADY_ARCHIVED`, `CLASS_ALREADY_ENROLLED`, `VALIDATION_ERROR` |
 | 8 | `/student/classes` | Chọn lớp | `/student/classes/[classId]` | GET class detail | `CLASS_ACCESS_DENIED`, `CLASS_NOT_FOUND`, `VALIDATION_ERROR` |
 | 9 | `/student/classes/[classId]` | Rời lớp | `/student/classes` | DELETE leave | `CLASS_NOT_ENROLLED`, `CLASS_ACCESS_DENIED`, `CLASS_NOT_FOUND`, `VALIDATION_ERROR` |
+| 10 | `/student/classes/[classId]` | Xem bài học | `/student/classes/[classId]/lessons/[lessonId]` | GET lesson detail | `CLASS_ACCESS_DENIED`, `CLASS_NOT_FOUND`, `LESSON_NOT_FOUND`, `VALIDATION_ERROR` |
 
 ## Entity state transitions
 
