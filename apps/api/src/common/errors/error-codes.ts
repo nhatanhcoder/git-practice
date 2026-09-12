@@ -48,6 +48,10 @@ export const ErrorCode = {
   FLASHCARD_ALREADY_IN_REVIEW: 'FLASHCARD_ALREADY_IN_REVIEW',
   FLASHCARD_INVALID_RATING: 'FLASHCARD_INVALID_RATING',
 
+  // Word bank (registry § Word Bank Errors) — "not found OR not mine" deliberately share
+  // one code so a caller cannot probe for another student's bookmark ids (02-word-bank §5).
+  WORD_BANK_NOT_FOUND: 'WORD_BANK_NOT_FOUND',
+
   // Session review & teacher sessions (registry § Session Review Errors)
   SESSION_NOT_FOUND: 'SESSION_NOT_FOUND',
   SESSION_ALREADY_REVIEWED: 'SESSION_ALREADY_REVIEWED',
@@ -129,6 +133,7 @@ export const ERROR_STATUS: Record<ErrorCodeValue, number> = {
   FLASHCARD_NOT_FOUND: 404,
   FLASHCARD_ALREADY_IN_REVIEW: 409,
   FLASHCARD_INVALID_RATING: 400,
+  WORD_BANK_NOT_FOUND: 404,
   SESSION_NOT_FOUND: 404,
   SESSION_ALREADY_REVIEWED: 409,
   SESSION_REJECT_REASON_REQUIRED: 400,
