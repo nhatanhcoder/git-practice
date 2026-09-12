@@ -15,7 +15,7 @@
  */
 
 import { useEffect, useMemo, useState } from "react";
-import { CalendarClock, ClipboardList, Timer } from "lucide-react";
+import { ClipboardList } from "lucide-react";
 import {
   Chip,
   EmptyState,

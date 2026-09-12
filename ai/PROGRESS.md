@@ -688,6 +688,10 @@ are accepted and implemented; 02 is implemented but its spec status is in confli
   student sees the published mock_test but NOT the draft, 375px no overflow.
   WEB-013 (usageCount) NOT closed here — needs the question-list response change, tracked.
   Branch `feat/s3-assignments` (grew through a worktree migration mid-task — see session file).
+  Merge review 2026-09-12: removed six explicit `any` uses from the Assignments e2e helper,
+  removed two unused student icons, fixed the teacher question-picker memo dependency, and
+  pruned the now-obsolete Assignments hook suppression. Lint, API type-check/build, web build
+  and check-docs pass on the current main base; DB e2e remains delegated to isolated CI.
 
 - 🔶 (claude · 2026-09-01) **API surface gaps closed, module specs not started.**
   `API_TEACHER.md` § Lessons written (8 endpoints, `API-007` closed) + `LESSON_*` error family

@@ -49,3 +49,10 @@ are the next slices, both now unblocked by the `attempts` table existing.
 
 **DB/Auth/RBAC/money**: 3 new tables (review-committed separately); no auth/RBAC change;
 no money code.
+
+**Merge review (2026-09-12)**: updated the branch onto current `main` and repaired the nine
+reported lint failures without changing runtime contracts: the e2e response helper now uses a
+generic typed body, student imports contain only the icon used, and the teacher question picker
+memo includes `bankQuestions`. Removed the obsolete Assignments hook suppression. Verified
+`pnpm lint`, API type-check/build, `pnpm --filter web build`, and check-docs 9/9. The database
+suite was not rerun against developer data; isolated GitHub CI is the merge gate.

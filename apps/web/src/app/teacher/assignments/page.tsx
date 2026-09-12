@@ -230,7 +230,7 @@ export default function TeacherAssignmentsPage() {
   const selectedClass = ownClasses.find((c) => c.id === draft.classId) ?? null;
   const eligibleQuestions = useMemo(
     () => (selectedClass ? bankQuestions.filter((q) => q.hskLevel === selectedClass.hskLevel) : []),
-    [selectedClass],
+    [bankQuestions, selectedClass],
   );
 
   const step1Valid =

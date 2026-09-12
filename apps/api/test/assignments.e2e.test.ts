@@ -47,14 +47,31 @@ function toDetails(errors: ValidationError[], prefix = ''): Record<string, strin
   return out;
 }
 
-type Res = { status: number; body: any };
+type AssignmentTestRecord = {
+  id: string;
+  accessToken: string;
+  status: string;
+  teacherId: string;
+  classId: string;
+  className: string;
+  title: string;
+  questionIds: string[];
+  stats: {
+    enrolledActive: number;
+    submittedCount: number;
+    notStartedCount: number;
+  };
+};
 
-async function req(
+type ApiBody<T> = { data: T; code: string };
+type Res<T> = { status: number; body: ApiBody<T> };
+
+async function req<T = AssignmentTestRecord>(
   method: 'GET' | 'POST' | 'PATCH' | 'DELETE',
   path: string,
-  body?: any,
+  body?: unknown,
   token?: string,
-): Promise<Res> {
+): Promise<Res<T>> {
   const headers: Record<string, string> = {};
   if (body) headers['content-type'] = 'application/json; charset=utf-8';
   if (token) headers['authorization'] = `Bearer ${token}`;
@@ -63,7 +80,10 @@ async function req(
     headers,
     body: body ? JSON.stringify(body) : undefined,
   });
-  return { status: res.status, body: await res.json().catch(() => null) };
+  return {
+    status: res.status,
+    body: (await res.json().catch(() => null)) as ApiBody<T>,
+  };
 }
 
 let adminToken: string;
@@ -292,22 +312,22 @@ describe('B · list & detail — INV-TASG-01/07/08', () => {
   });
 
   it('lists only the caller\u2019s assignments (INV-TASG-01)', async () => {
-    const mine = await req('GET', '/teacher/assignments', undefined, teacherToken);
-    const other = await req('GET', '/teacher/assignments', undefined, otherTeacherToken);
+    const mine = await req<AssignmentTestRecord[]>('GET', '/teacher/assignments', undefined, teacherToken);
+    const other = await req<AssignmentTestRecord[]>('GET', '/teacher/assignments', undefined, otherTeacherToken);
     assert.ok(mine.body.data.length >= 1);
     assert.equal(other.body.data.length, 0);
-    assert.ok(mine.body.data.every((a: any) => a.classId === classId));
+    assert.ok(mine.body.data.every((a) => a.classId === classId));
   });
 
   it('filters by classId and status', async () => {
-    const res = await req(
+    const res = await req<AssignmentTestRecord[]>(
       'GET',
       `/teacher/assignments?classId=${classId}&status=draft`,
       undefined,
       teacherToken,
     );
     assert.ok(res.body.data.length >= 1);
-    assert.ok(res.body.data.every((a: any) => a.status === 'draft'));
+    assert.ok(res.body.data.every((a) => a.status === 'draft'));
   });
 
   it('detail returns stats derived at read time (INV-TASG-07)', async () => {
@@ -444,17 +464,18 @@ describe('D · publish fan-out & student visibility — INV-TASG-05/06, S-ASGN-1
   });
 
   it('S-ASGN-1: an active student sees published assignments of their classes', async () => {
-    const res = await req('GET', '/student/assignments', undefined, studentToken);
+    const res = await req<AssignmentTestRecord[]>('GET', '/student/assignments', undefined, studentToken);
     assert.equal(res.status, 200);
-    const titles = res.body.data.map((a: any) => a.id);
+    const titles = res.body.data.map((a) => a.id);
     assert.ok(titles.includes(publishedId));
     assert.ok(!titles.includes(draftId));
-    const row = res.body.data.find((a: any) => a.id === publishedId);
+    const row = res.body.data.find((a) => a.id === publishedId);
+    assert.ok(row);
     assert.equal(row.className, 'Lớp bài tập thử');
   });
 
   it('S-ASGN-1: a dropped student sees nothing', async () => {
-    const res = await req('GET', '/student/assignments', undefined, outsiderToken);
+    const res = await req<AssignmentTestRecord[]>('GET', '/student/assignments', undefined, outsiderToken);
     assert.equal(res.status, 200);
     assert.equal(res.body.data.length, 0);
   });
