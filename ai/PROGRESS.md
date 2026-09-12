@@ -348,6 +348,16 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
 
 ## Off-sprint / spike
 
+- ✅ (zcode · 2026-09-12) **Page Contracts for every remaining student route (DOCS).** 11
+      contracts on `docs/student-page-contracts`: assignments (promotes the inline S-ASGN-1
+      contract to a file) and notifications (matches merged module 07 BE exactly — role-agnostic
+      paths, 11-type enum, no API display text) are live; nine ⛔ prototype contracts carry
+      their real blockers (ADR-005 stub/DOC-017, reserved-but-undescribed analytics paths,
+      DOC-011 corpus, aggregation/privacy rules, collection endpoints). No endpoint invented,
+      no `apps/` change. `student-flow.md` gains the blocked-branch table; four new entries in
+      § Needs from the other lane are the student lane's FE↔BE contract backlog. Flagged for
+      the notifications lane: its invoice deep-link still returns null while PR #72 builds the
+      target screens. check-docs 9/9.
 - ✅ (zcode · 2026-09-12) **Student completion wave — slice 1: Notifications module 07
   (mailbox) + producers (closes API-013, S-BILL-3's visibility side).** Built to the
   module's own spec (§2/§3/§5/§7/§8; the §16 defaults picked in the owner-approved wave:
