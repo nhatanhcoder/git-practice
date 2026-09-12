@@ -694,6 +694,22 @@ are accepted and implemented; 02 is implemented but its spec status is in confli
 ---
 
 ## Active work — student identity slice
+- ✅ (opencode · 2026-09-08) **A12 — Dọn UI cũ sau tích hợp** (branch `chore/a12-dead-code`,
+      base `f656d71` = A09).
+      Audit grep toàn cây (kể cả dynamic) chứng minh dead: `vocabBox`/`rateVocab` trong
+      store (Leitner mock SRS của A05, 0 consumer — có test A05 cũ đã cấm chúng quay lại
+      flashcards page) và `vocabTopics` trong content (0 consumer). ĐÃ XÓA kèm **persist
+      migration v1→v2** strip key `vocabBox` thừa khỏi localStorage cũ — không có nó,
+      partialize `...rest` + default merge sẽ gắn lại key lạ thành state rác vĩnh viễn.
+      Giữ nguyên mọi thứ còn consumer: `vocabCards` (quiz learning-path), `advanceBox`
+      (reviewMistake), `boxInterval` (dashboard + notebook), `mistakeSeed` (seed state
+      mistakes — audit bằng tay bắt được chính script audit suýt báo sai là dead vì đã loại
+      store.ts khỏi danh sách tìm).
+      Verification: test A12 mới **8/8** (red→green: 5 fail trước khi xóa) · full web suite
+      **153/153** (145 cũ + 8 mới, `srs-routes.test.mjs` của A05 pass nguyên vẹn) ·
+      `pnpm --filter web build` sạch · `check-docs` 8/8. Diff chỉ chạm store.ts + content.ts
+      (−11/+10 dòng), không đụng baseline/Admin/Teacher/mock corpus/route/business logic.
+
 
 - ✅ (opencode · 2026-09-08) **A11 — Importer từ vựng** (branch `feat/a11-vocab-importer`,
       stack trên `docs/a10-vocab-audit`; 3 commits: claim → source copy + decisions → importer).
