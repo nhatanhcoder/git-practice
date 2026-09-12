@@ -1612,3 +1612,60 @@ count, exactly-one row, referenceId assertions).
 asserted what it wrote, never *when* (which transaction) or *how many round-trips*.
 INV-NOTIF-13 is untestable without forcing a failure between the business write and the
 notification write; that negative-path test remains open with §15's INV-NOTIF-13 row.
+### 2026-09-10 — API bootstrap hardening review (API-016 / BUILD-002 follow-up)
+
+**Status**: API-016 remains open. Helmet and development-only Swagger are implemented in
+codex/api-bootstrap-hardening. HTTP draining precedes database teardown (30-second grace).
+The custom limiter uses a composite IP/email key; 01-auth section 13 still specifies two
+independent counters. This conflict is recorded, not resolved by changing limiter policy.
+PR #49 was documentation only and does not implement shared storage. Request logging / request-id
+(F), shared storage, frontend debounce and token consolidation remain outside this change.
+BUILD-002 reproduced locally: the documented engines/dist/index.js copy workaround restored
+Prisma generation. Real database suite and real Linux SIGTERM verification require isolated CI;
+local handler tests alone do not establish Prisma/Mongoose disconnect behavior.
+
+### 2026-09-10 — Validation follow-up (DEBT-006 / WEB-016)
+
+**Status**: open. Latest main includes three unsuppressed lint errors from A08/A09 (two
+no-useless-escape at student-class-detail.test.mjs:163 and unused hasLessons at the class
+detail page:203), reproduced by the bootstrap branch's full lint. They are outside B+C+D.
+The uncommitted feat/student-prod-return-hooks Grammar diff moves its production gate into
+MatchExercise; GrammarPage would still render demo content. The whole-file hook scan does
+not establish the guard belongs to the page component. G needs a wrapper-specific regression.
+### 2026-09-10 — API-016 / PR 55 review correction
+
+**Status**: single-instance limitation remains open; A1+A2 corrections implemented locally
+in codex/auth-proxy-review. Original PR 55 defaulted TRUST_PROXY to one hop without proving
+all deployments cross a protected proxy; direct callers could vary XFF to evade the limiter.
+Default is now false; 1 hop or trusted address/CIDR lists require explicit deployment config.
+AuthController consumes req.ip only, with a shared neutral key if Express provides no IP.
+
+Preserved Antigravity's sweep/TTL/10,000-entry cache behavior. Nine isolated real-controller
+regressions pass; persistence is stubbed and these do not replace auth.e2e or refresh concurrency
+DB suites. Removed the 19 new lint findings instead of adding suppressions. The original
+PR's CI failed both lint and type-check, so its completion record was not proof of green CI.
+
+New main 73bdd2c includes an unrelated A11 Model<Flashcard>/ImportFlashcardDoc incompatibility
+at apps/api/src/flashcards/import/vocab-apply.ts:56; API build fails there. Its owner must fix
+that lane. Also, API_CONVENTIONS calls the limiter a sliding window while AuthService uses a
+first-failure-anchored window; the accepted auth spec describes independent counters while
+implementation uses a composite key. Both mismatches are recorded, not silently changed here.
+
+### 2026-09-11 — API-016 / WEB-016 review continuation
+
+**Status**: local corrections complete; public publication blocked. PR55 is now 9128ae8 and
+its Grammar wrapper is correct. Its production Swagger test only evaluates a local boolean;
+shutdown test only checks method existence. The isolated HTTP and child-process tests in
+codex/api-bootstrap-hardening are stronger but still do not verify real database teardown.
+PR55 still defaults proxy trust to one hop; codex/auth-proxy-review defaults it off.
+New Throttler thresholds and unrelated UI additions in PR55 are not covered by A1+A2 tests.
+See sessions/2026-09-11-security-checklist-review.md for branch commits, validation scope and
+publication blocker. Existing issue IDs retained; no issue was renumbered or closed broadly.
+
+### 2026-09-12 — PR #67 merge review follow-up
+
+**Status**: DEBT-007 remains resolved by the notification branch's single-transaction invoice
+batch. Merge review removed four notification e2e lint failures and retained main's dense SRS
+grid while integrating notification styles. No issue ID is closed by lint/build checks alone;
+the real database notification suite is NOT RUN locally and current-head CI is required before
+merge.

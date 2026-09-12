@@ -64,3 +64,12 @@ migration + composite/partial indexes deferred until the table carries real load
 **Next steps (this wave)**: slice 2 word bank (S-SRS-6/7) → slice 3 drill → slice 4
 gamification → slice 5 lesson detail (after PR #63 merges) → slice 6 self-study → slice 7
 quiz room. Each with the same RECORD discipline as this one.
+
+## Merge review follow-up — 2026-09-12
+
+Merged the current `main` security/bootstrap/dead-code work into the branch. The SRS stylesheet
+conflict kept main's owner-requested dense flashcard grid and retained the notification styles
+that did not overlap it. The four CI lint failures in `notifications.e2e.test.ts` were fixed with
+typed response envelopes and by removing an unused admin mailbox count. This review does not
+restate the earlier real-DB result: the database-backed notification suite is NOT RUN in the
+review worktree and must be proved again by current-head CI before merge.

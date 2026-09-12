@@ -364,6 +364,27 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
   rows, no 375px overflow). Still open per spec frontmatter: 4 of 11 types' producers
   wait on their lanes; partial-unique + composite/partial indexes deferred until the
   table has load. Branch `feat/student-notifications`.
+- 🔶 (codex · 2026-09-10) **API bootstrap hardening B+C+D** — implemented locally: Helmet, development-only Swagger and HTTP drain; 3/3 tests, API build/type-check passed on base 8050cba. Public publication blocked; DB/Linux signal checks NOT RUN. User authorized this backend lane for Codex; A1+A2 remain separate pending completed-work location.
+- 🔶 (codex · 2026-09-10) **A1+A2 review of PR 55** — user explicitly authorized review and corrections after Antigravity completed. Cleanup retained; unsafe default proxy trust and 19 test lint errors corrected locally; 9/9 isolated tests pass. API build blocked by A11 importer on main; real DB suites NOT RUN. Backend lane assigned to Codex for this named Auth scope. Resumed 2026-09-11: reviewed new PR55 head 9128ae8; three local code packages remain unpublished pending explicit public push permission (session 2026-09-11-security-checklist-review).
+
+- ✅ (codex · 2026-09-12) **`docs/README.md` refreshed to the current repo structure.**
+  The repo's only README is the documentation index at `docs/README.md`; it was last updated
+  2026-09-03 and had fallen behind by whole directories. Rewritten: added `api/modules/`
+  (8 Admin + 6 Teacher + Student specs — the specs the backend was coded from), `content/`
+  (VOCAB_SOURCE_AUDIT, cross-linked to `DOC-011`), the 4 missing `testing/` files, a
+  "Root-level docs" section, and a "Start here" table pointing at `AGENTS.md` /
+  `PROJECT_KNOWLEDGE.md` §9 / `ai/context/sessions/`. ADRs expanded from 1 link to a full
+  table — **and ADR-009 is recorded as non-existent** (numbering jumps 008 → 010).
+  Corrected the stale "Student screens are not yet mapped" line: `pages/student-pages/`
+  now has 6 files, 3 `built` and 2 ⛔ blocked. The duplicated agent rules at the bottom now
+  point at `init-promt.md` as the single source so the copies do not drift.
+  **Deliberately not linked**: `api/modules/student/02-word-bank.md` — never committed,
+  exists only on `feat/student-word-bank`, so linking it from a README built on `origin/main`
+  would have shipped the file's first broken link.
+  Verified: 0 broken links (every relative link checked against disk) · `check-docs` 9/9.
+  ⚠️ **The repo still has no root `README.md`** — verified absent from the working tree, from
+  `origin/main`, and from all history (`git log --all --diff-filter=A -- "README*"` is empty).
+  Adding one is a separate call, not done here. Branch `readme-index-2026-09-12`.
 
 - ✅ (claude · 2026-09-09) **Docs batch — sync module-status records with the implemented
   backend + record two QC findings.** Verified an external Modules 01→08 audit first, then:
@@ -701,6 +722,22 @@ are accepted and implemented; 02 is implemented but its spec status is in confli
 ---
 
 ## Active work — student identity slice
+- ✅ (opencode · 2026-09-08) **A12 — Dọn UI cũ sau tích hợp** (branch `chore/a12-dead-code`,
+      base `f656d71` = A09).
+      Audit grep toàn cây (kể cả dynamic) chứng minh dead: `vocabBox`/`rateVocab` trong
+      store (Leitner mock SRS của A05, 0 consumer — có test A05 cũ đã cấm chúng quay lại
+      flashcards page) và `vocabTopics` trong content (0 consumer). ĐÃ XÓA kèm **persist
+      migration v1→v2** strip key `vocabBox` thừa khỏi localStorage cũ — không có nó,
+      partialize `...rest` + default merge sẽ gắn lại key lạ thành state rác vĩnh viễn.
+      Giữ nguyên mọi thứ còn consumer: `vocabCards` (quiz learning-path), `advanceBox`
+      (reviewMistake), `boxInterval` (dashboard + notebook), `mistakeSeed` (seed state
+      mistakes — audit bằng tay bắt được chính script audit suýt báo sai là dead vì đã loại
+      store.ts khỏi danh sách tìm).
+      Verification: test A12 mới **8/8** (red→green: 5 fail trước khi xóa) · full web suite
+      **153/153** (145 cũ + 8 mới, `srs-routes.test.mjs` của A05 pass nguyên vẹn) ·
+      `pnpm --filter web build` sạch · `check-docs` 8/8. Diff chỉ chạm store.ts + content.ts
+      (−11/+10 dòng), không đụng baseline/Admin/Teacher/mock corpus/route/business logic.
+
 
 - ✅ (opencode · 2026-09-08) **A11 — Importer từ vựng** (branch `feat/a11-vocab-importer`,
       stack trên `docs/a10-vocab-audit`; 3 commits: claim → source copy + decisions → importer).
@@ -857,3 +894,12 @@ are accepted and implemented; 02 is implemented but its spec status is in confli
 - Foundation/Grammar documentation publication approved by the owner; branch pushed and
   PR #54 opened: https://github.com/nhatanhcoder/git-practice/pull/54. The publication blocker
   above is cleared. D1–D5 still block implementation; no merge or deployment.
+
+## Merge review — notifications PR #67 — 2026-09-12
+
+- 🔶 Integrated the latest security/bootstrap/dead-code main changes into
+  `feat/student-notifications`, preserving the dense flashcard grid while retaining the
+  notification styles outside the overlapping SRS blocks.
+- Removed four lint failures in the notification e2e suite by typing response envelopes and
+  deleting an unused admin-mailbox query. Local verification and current-head CI are required
+  before merge; the database-backed notification suite remains NOT RUN in this review worktree.

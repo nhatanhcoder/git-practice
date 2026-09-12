@@ -43,14 +43,33 @@ function toDetails(errors: ValidationError[], prefix = ''): Record<string, strin
   return out;
 }
 
-type Res = { status: number; body: any };
+type ApiBody<T> = {
+  data: T;
+  code: string;
+  meta: { total: number };
+};
 
-async function req(
+type Res<T> = { status: number; body: ApiBody<T> };
+
+type AuthData = { accessToken: string; id: string };
+type NotificationItem = {
+  id: string;
+  createdAt: string;
+  isRead: boolean;
+  readAt: string | null;
+  referenceId: string | null;
+  referenceType: string | null;
+};
+type UnreadCountData = { unreadCount: number };
+type UpdatedData = { updated: number };
+type InvoiceData = { invoice: { id: string } };
+
+async function req<T = Record<string, unknown>>(
   method: 'GET' | 'POST' | 'PATCH' | 'DELETE',
   path: string,
-  body?: any,
+  body?: unknown,
   token?: string,
-): Promise<Res> {
+): Promise<Res<T>> {
   const headers: Record<string, string> = {};
   if (body) headers['content-type'] = 'application/json';
   if (token) headers['authorization'] = `Bearer ${token}`;
@@ -59,7 +78,10 @@ async function req(
     headers,
     body: body ? JSON.stringify(body) : undefined,
   });
-  return { status: res.status, body: await res.json().catch(() => null) };
+  return {
+    status: res.status,
+    body: (await res.json().catch(() => null)) as ApiBody<T>,
+  };
 }
 
 let adminToken: string;
@@ -67,9 +89,6 @@ let studentAToken: string;
 let studentBToken: string;
 let studentAId: string;
 let studentBId: string;
-
-/** How many notifications the seed admin already has — the fan-out tests assert growth from here. */
-let adminMailboxBaseline: number;
 
 before(async () => {
   app = await NestFactory.create(AppModule, { logger: false });
@@ -92,7 +111,7 @@ before(async () => {
 
   await prisma.user.deleteMany({ where: { email: { in: OWNED_EMAILS } } });
 
-  const adminLogin = await req('POST', '/auth/login', {
+  const adminLogin = await req<AuthData>('POST', '/auth/login', {
     email: 'admin@hsk.local',
     password: 'Password123!',
   });
@@ -102,7 +121,6 @@ before(async () => {
     await prisma.user.findUnique({ where: { email: 'admin@hsk.local' }, select: { id: true } })
   )?.id;
   assert.ok(adminId, 'seed admin missing — run pnpm --filter api db:seed');
-  adminMailboxBaseline = await prisma.notification.count({ where: { userId: adminId } });
 });
 
 after(async () => {
@@ -112,7 +130,7 @@ after(async () => {
 
 describe('Notifications — producers', () => {
   it('register (student) fans out exactly one new_student_registration row to every active admin (INV-NOTIF-11)', async () => {
-    const reg = await req('POST', '/auth/register', {
+    const reg = await req<AuthData>('POST', '/auth/register', {
       email: STUDENT_A_EMAIL,
       password: 'Password123!',
       fullName: 'Học Sinh Thông Báo A',
@@ -201,7 +219,7 @@ describe('Notifications — producers', () => {
   });
 
   it('register + login for student B, giving the ownership tests a second mailbox', async () => {
-    const reg = await req('POST', '/auth/register', {
+    const reg = await req<AuthData>('POST', '/auth/register', {
       email: STUDENT_B_EMAIL,
       password: 'Password123!',
       fullName: 'Học Sinh Thông Báo B',
@@ -211,13 +229,13 @@ describe('Notifications — producers', () => {
     studentBId = reg.body.data.id;
     await req('PATCH', `/admin/users/${studentBId}/approve`, undefined, adminToken);
 
-    const login = await req('POST', '/auth/login', {
+    const login = await req<AuthData>('POST', '/auth/login', {
       email: STUDENT_A_EMAIL,
       password: 'Password123!',
     });
     studentAToken = login.body.data.accessToken;
 
-    const loginB = await req('POST', '/auth/login', {
+    const loginB = await req<AuthData>('POST', '/auth/login', {
       email: STUDENT_B_EMAIL,
       password: 'Password123!',
     });
@@ -227,7 +245,7 @@ describe('Notifications — producers', () => {
 
 describe('Notifications — mailbox (07-notifications §2)', () => {
   it('GET /notifications lists only my rows, newest first (INV-NOTIF-05/16)', async () => {
-    const res = await req('GET', '/notifications', undefined, studentAToken);
+    const res = await req<NotificationItem[]>('GET', '/notifications', undefined, studentAToken);
     assert.equal(res.status, 200);
     const { data, meta } = res.body;
     assert.ok(Array.isArray(data));
@@ -250,8 +268,18 @@ describe('Notifications — mailbox (07-notifications §2)', () => {
   });
 
   it('filters: ?isRead=false and the unread count agree (INV-NOTIF-06)', async () => {
-    const list = await req('GET', '/notifications?isRead=false', undefined, studentAToken);
-    const count = await req('GET', '/notifications/unread-count', undefined, studentAToken);
+    const list = await req<NotificationItem[]>(
+      'GET',
+      '/notifications?isRead=false',
+      undefined,
+      studentAToken,
+    );
+    const count = await req<UnreadCountData>(
+      'GET',
+      '/notifications/unread-count',
+      undefined,
+      studentAToken,
+    );
     assert.equal(count.status, 200);
     assert.equal(count.body.data.unreadCount, list.body.meta.total);
     assert.equal(list.body.data.length, list.body.meta.total);
@@ -312,7 +340,12 @@ describe('Notifications — mailbox (07-notifications §2)', () => {
   });
 
   it('PATCH /read-all marks every unread row of MINE, in one statement (INV-NOTIF-07)', async () => {
-    const res = await req('PATCH', '/notifications/read-all', undefined, studentAToken);
+    const res = await req<UpdatedData>(
+      'PATCH',
+      '/notifications/read-all',
+      undefined,
+      studentAToken,
+    );
     assert.equal(res.status, 200);
     assert.ok(res.body.data.updated >= 1);
 
@@ -326,12 +359,22 @@ describe('Notifications — mailbox (07-notifications §2)', () => {
     });
     assert.ok(bUnread >= 1, "read-all may not touch anyone else's mailbox");
 
-    const count = await req('GET', '/notifications/unread-count', undefined, studentAToken);
+    const count = await req<UnreadCountData>(
+      'GET',
+      '/notifications/unread-count',
+      undefined,
+      studentAToken,
+    );
     assert.equal(count.body.data.unreadCount, 0);
   });
 
   it('read-all twice is idempotent: updated = 0', async () => {
-    const res = await req('PATCH', '/notifications/read-all', undefined, studentAToken);
+    const res = await req<UpdatedData>(
+      'PATCH',
+      '/notifications/read-all',
+      undefined,
+      studentAToken,
+    );
     assert.equal(res.status, 200);
     assert.equal(res.body.data.updated, 0);
   });
@@ -341,14 +384,19 @@ describe('Notifications — mailbox (07-notifications §2)', () => {
     // registration never reads anything until approved, so its mailbox is just
     // producer output... unless it was suspended. Simplest honest check: a page
     // beyond the last row.
-    const res = await req('GET', '/notifications?page=999&limit=50', undefined, studentBToken);
+    const res = await req<NotificationItem[]>(
+      'GET',
+      '/notifications?page=999&limit=50',
+      undefined,
+      studentBToken,
+    );
     assert.equal(res.status, 200);
     assert.deepEqual(res.body.data, []);
     assert.equal(res.body.meta.total >= 0, true);
   });
 
   it('every DateTime on the wire is UTC ISO 8601 (INV-NOTIF-18)', async () => {
-    const res = await req('GET', '/notifications', undefined, studentAToken);
+    const res = await req<NotificationItem[]>('GET', '/notifications', undefined, studentAToken);
     const iso = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z$/;
     for (const item of res.body.data) {
       assert.match(item.createdAt, iso, 'createdAt ends with Z');
@@ -364,7 +412,12 @@ describe('Notifications — mailbox (07-notifications §2)', () => {
     const post = await req('POST', '/notifications', { type: 'graded' }, studentAToken);
     assert.ok([404, 405].includes(post.status), 'no POST route may exist');
 
-    const list = await req('GET', '/notifications', undefined, studentAToken);
+    const list = await req<NotificationItem[]>(
+      'GET',
+      '/notifications',
+      undefined,
+      studentAToken,
+    );
     const first = list.body.data[list.body.data.length - 1]; // oldest of mine
     if (first) {
       const del = await req('DELETE', `/notifications/${first.id}`, undefined, studentAToken);
@@ -396,7 +449,7 @@ describe('Notifications — new_invoice producer (billing)', () => {
     );
     assert.ok([201, 409].includes(rate.status), JSON.stringify(rate.body));
 
-    const create = await req(
+    const create = await req<InvoiceData>(
       'POST',
       '/admin/invoices',
       {
@@ -423,10 +476,15 @@ describe('Notifications — new_invoice producer (billing)', () => {
 
   it('the student sees the invoice notification in their mailbox with an invoice deep-link', async () => {
     if (!invoiceId) return;
-    const res = await req('GET', '/notifications?type=new_invoice', undefined, studentAToken);
+    const res = await req<NotificationItem[]>(
+      'GET',
+      '/notifications?type=new_invoice',
+      undefined,
+      studentAToken,
+    );
     assert.equal(res.status, 200);
     const mine = res.body.data.filter(
-      (item: any) => item.referenceId === invoiceId && item.referenceType === 'invoice',
+      (item) => item.referenceId === invoiceId && item.referenceType === 'invoice',
     );
     assert.equal(mine.length, 1);
     assert.equal(mine[0].isRead, false);
