@@ -53,11 +53,13 @@ then `contracted` after the code landed.
    old tabs worked — pre-existing auth-layer limitation (single-flight is per-tab only; see
    API-016), reproduced and left alone (out of scope).
 
-**Verification** (all in the worktree, rebased onto origin/main):
+**Verification** (all in the worktree, rebased onto origin/main; the two carried
+non-invoice commits — lesson-detail and dashboard-live, each owned by its own session/branch —
+were dropped from this branch so the PR stays single-purpose):
 - invoice e2e **10/10** (isolation, void-hidden, email-absent, role-gate, filter, ordering)
-- full API suite **272/272 across 46 suites** (tsx CLI per BUILD-005; Node 25 loader broken)
+- full API suite **262/262 across 45 suites** (tsx CLI per BUILD-005; Node 25 loader broken)
 - web build **44/44**, both routes generated (`○` list, `ƒ` detail)
-- web script tests **192/192** (15 new in `student-invoices.test.mjs`)
+- web script tests **170/170** (15 new in `student-invoices.test.mjs`)
 - check-docs **9/9**
 - **Live browser** (production build, real login `student@hsk.local`, 2 seeded invoices):
   list — codes, status chips, correct digit grouping (1.500.000,00 ₫), server outstanding

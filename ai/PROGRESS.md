@@ -273,8 +273,8 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
       arithmetic), sidebar "Học phí" entry, 7 states per contract. The suite caught a real
       first-cut bug: `?status=void` fell through to the unfiltered branch — void now answers an
       explicit empty set. No endpoint, field or error code invented.
-      **Verified**: invoice e2e **10/10** · full API suite **272/272 across 46 suites** (tsx CLI
-      per BUILD-005) · web build 44/44 with both routes · web script tests **192/192** (15 new)
+      **Verified**: invoice e2e **10/10** · full API suite **262/262 across 45 suites** (tsx CLI
+      per BUILD-005) · web build 44/44 with both routes · web script tests **170/170** (15 new)
       · check-docs 9/9 · live browser: login → list (2 real invoices, correct grouping) →
       detail (3 amount tiles + payment history, recorder shows display name) desktop
       screenshots read; one display bug (due date as a doubled range) caught on screen and
