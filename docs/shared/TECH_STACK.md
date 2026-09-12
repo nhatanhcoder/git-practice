@@ -1,7 +1,8 @@
 # 🛠️ TECH_STACK.md — Technology Stack
 
 > **Version**: 2.0 (updated for the NestJS architecture)  
-> **Last updated**: 2026-07-09
+> **Last updated**: 2026-09-10
+> **Status**: maintained — API security entries verified against implementation
 
 ---
 
@@ -48,9 +49,9 @@ NestJS 10.x
 ├── Auth: @nestjs/jwt + @nestjs/passport + passport-jwt
 ├── Validation: class-validator + class-transformer
 ├── Config: @nestjs/config
-├── Swagger: @nestjs/swagger
-├── Rate Limiting: @nestjs/throttler
-├── Security: helmet
+├── Swagger: @nestjs/swagger (non-production only; UI, JSON and YAML disabled in production)
+├── Rate Limiting: custom AuthService in-memory limiter (IP + normalized email key; API-016)
+├── Security: helmet (CSP, nosniff, frame protections; HSTS in production)
 ├── File Upload: @cloudinary/url-gen + multer
 ├── Database: prisma + @prisma/client
 ├── MongoDB: mongoose + @nestjs/mongoose
@@ -125,3 +126,12 @@ Both frontend and backend import from `@hsk/shared-types` → cross-service type
 | MongoDB | 512MB | TTL indexes for old SRS states |
 
 The admin dashboard will show API quota usage (already present in the schema).
+
+## API shutdown and security verification (2026-09-10)
+
+SIGTERM/SIGINT stop accepting HTTP connections and drain active responses for up to 30 seconds
+before app.close() invokes Nest resource teardown. Overdue connections are closed.
+Automatic enableShutdownHooks is deliberately not registered alongside this handler: Nest's
+automatic sequence destroys providers before closing HTTP, which could interrupt DB-backed requests.
+Development CSP permits inline Swagger initialization and does not upgrade localhost to HTTPS;
+production uses the default restrictive script policy and has no Swagger routes.
