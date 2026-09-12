@@ -337,25 +337,20 @@ export default function MistakesPage() {
       {!activeCard && outcome === "has-cards" ? (
         <section className="srs-grid-3" aria-label="Danh sách từ vựng">
           {cards.map((card, index) => (
-            <Panel key={card.id} className="srs-tile">
-              <div className="row gap-3">
-                <div className="stack gap-1 grow">
-                  <p lang="zh" className="srs-tile__hanzi han">
-                    {card.hanzi}
-                  </p>
-                  <p className="srs-tile__pinyin">{card.pinyin}</p>
-                </div>
-                <span className="pill">HSK {card.hskLevel}</span>
-              </div>
+            <div key={card.id} className="srs-tile">
+              <p lang="zh" className="srs-tile__hanzi han">
+                {card.hanzi}
+              </p>
+              <p className="srs-tile__pinyin">{card.pinyin}</p>
               <p className="srs-tile__meaning">{card.meaning}</p>
               <button
                 type="button"
-                className="btn btn--primary btn--block"
+                className="btn btn--sm btn--block"
                 onClick={() => setActiveIndex(index)}
               >
                 Ôn thẻ này
               </button>
-            </Panel>
+            </div>
           ))}
         </section>
       ) : null}

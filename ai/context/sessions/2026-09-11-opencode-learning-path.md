@@ -19,3 +19,9 @@
 - Worktree `Real-learnpath` from `origin/main@73bdd2c`; main checkout untouched.
 
 **In progress**: commits local; push + PR next, no merge/deploy.
+
+**Merge review (2026-09-12)**: CI exposed that the list page suppression was obsolete while
+the node page still returned before thirteen hooks. The default node export now performs only
+the production gate and mounts `LessonInner` in development; all hooks live in that inner
+component. Removed both learning-path suppression entries. Workspace lint and web type-check
+pass on current main; a production web build is the remaining local merge check.

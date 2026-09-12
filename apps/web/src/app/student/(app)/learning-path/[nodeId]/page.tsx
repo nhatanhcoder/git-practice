@@ -65,6 +65,11 @@ export default function LessonPage() {
       />
     );
   }
+
+  return <LessonInner />;
+}
+
+function LessonInner() {
   const params = useParams<{ nodeId: string }>();
   const nodeId = decodeURIComponent(params?.nodeId ?? "");
   const router = useRouter();
