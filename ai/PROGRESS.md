@@ -341,6 +341,24 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
 
 - 🔶 (codex · 2026-09-10) **API bootstrap hardening B+C+D** — implemented locally: Helmet, development-only Swagger and HTTP drain; 3/3 tests, API build/type-check passed on base 8050cba. Public publication blocked; DB/Linux signal checks NOT RUN. User authorized this backend lane for Codex; A1+A2 remain separate pending completed-work location.
 
+- ✅ (codex · 2026-09-12) **`docs/README.md` refreshed to the current repo structure.**
+  The repo's only README is the documentation index at `docs/README.md`; it was last updated
+  2026-09-03 and had fallen behind by whole directories. Rewritten: added `api/modules/`
+  (8 Admin + 6 Teacher + Student specs — the specs the backend was coded from), `content/`
+  (VOCAB_SOURCE_AUDIT, cross-linked to `DOC-011`), the 4 missing `testing/` files, a
+  "Root-level docs" section, and a "Start here" table pointing at `AGENTS.md` /
+  `PROJECT_KNOWLEDGE.md` §9 / `ai/context/sessions/`. ADRs expanded from 1 link to a full
+  table — **and ADR-009 is recorded as non-existent** (numbering jumps 008 → 010).
+  Corrected the stale "Student screens are not yet mapped" line: `pages/student-pages/`
+  now has 6 files, 3 `built` and 2 ⛔ blocked. The duplicated agent rules at the bottom now
+  point at `init-promt.md` as the single source so the copies do not drift.
+  **Deliberately not linked**: `api/modules/student/02-word-bank.md` — never committed,
+  exists only on `feat/student-word-bank`, so linking it from a README built on `origin/main`
+  would have shipped the file's first broken link.
+  Verified: 0 broken links (every relative link checked against disk) · `check-docs` 9/9.
+  ⚠️ **The repo still has no root `README.md`** — verified absent from the working tree, from
+  `origin/main`, and from all history (`git log --all --diff-filter=A -- "README*"` is empty).
+  Adding one is a separate call, not done here. Branch `readme-index-2026-09-12`.
 
 - ✅ (claude · 2026-09-09) **Docs batch — sync module-status records with the implemented
   backend + record two QC findings.** Verified an external Modules 01→08 audit first, then:
@@ -678,7 +696,73 @@ are accepted and implemented; 02 is implemented but its spec status is in confli
 ---
 
 ## Active work — student identity slice
+- ✅ (opencode · 2026-09-08) **A12 — Dọn UI cũ sau tích hợp** (branch `chore/a12-dead-code`,
+      base `f656d71` = A09).
+      Audit grep toàn cây (kể cả dynamic) chứng minh dead: `vocabBox`/`rateVocab` trong
+      store (Leitner mock SRS của A05, 0 consumer — có test A05 cũ đã cấm chúng quay lại
+      flashcards page) và `vocabTopics` trong content (0 consumer). ĐÃ XÓA kèm **persist
+      migration v1→v2** strip key `vocabBox` thừa khỏi localStorage cũ — không có nó,
+      partialize `...rest` + default merge sẽ gắn lại key lạ thành state rác vĩnh viễn.
+      Giữ nguyên mọi thứ còn consumer: `vocabCards` (quiz learning-path), `advanceBox`
+      (reviewMistake), `boxInterval` (dashboard + notebook), `mistakeSeed` (seed state
+      mistakes — audit bằng tay bắt được chính script audit suýt báo sai là dead vì đã loại
+      store.ts khỏi danh sách tìm).
+      Verification: test A12 mới **8/8** (red→green: 5 fail trước khi xóa) · full web suite
+      **153/153** (145 cũ + 8 mới, `srs-routes.test.mjs` của A05 pass nguyên vẹn) ·
+      `pnpm --filter web build` sạch · `check-docs` 8/8. Diff chỉ chạm store.ts + content.ts
+      (−11/+10 dòng), không đụng baseline/Admin/Teacher/mock corpus/route/business logic.
 
+
+- ✅ (opencode · 2026-09-08) **A11 — Importer từ vựng** (branch `feat/a11-vocab-importer`,
+      stack trên `docs/a10-vocab-audit`; 3 commits: claim → source copy + decisions → importer).
+      Owner đã duyệt 3 điều kiện mở khóa A10 (provenance, `words[]`, copy nguồn vào repo) —
+      nguồn giờ ở `apps/api/content/writing.json`, quyết định import trong
+      `docs/content/VOCAB_SOURCE_AUDIT.md` §6.
+      Importer theo đủ 8 rule của prompt A11: **dry-run mặc định** (CLI không có `--apply`
+      thì không ghi gì), báo cáo valid/invalid/duplicate/conflict từng record (29 conflict
+      hiện ra đầy đủ, winner = level thấp nhất + source order, loser được liệt kê không bỏ
+      âm thầm), apply tường minh in rõ DB+collection đích, **idempotent** — upsert theo
+      `hanzi` (bất kể level) giữ nguyên `_id` nên rerun không trùng lặp và level-change không
+      tạo row thứ hai, **không đụng `user_flashcard_states`** (test riêng chứng minh state
+      sống sót qua import), không drop collection/reset DB, failure giữa chừng → 1 retry/op
+      + rerun là recovery (đã gặp thật: 1 monitor-timeout Atlas, retry chữa, exit 0).
+      Không đổi schema/index.
+      Verification: pure tests **11/11** (counts khớp audit độc lập: 1.228 → 1.119, per-level
+      922/50/40/32/25/16/12/11/11) · e2e sandbox trên Atlas thật **7/7** (dry-run không ghi,
+      apply-idempotent, `_id` ổn định, state-guard, partial-failure recovery) · CLI dry-run
+      thật trên `hsk_dev.flashcards`: **errors 0, would create 1.118 + update 1** ·
+      `nest build` + `tsc --noEmit` sạch · `check-docs` 8/8.
+      ⚠️ Full API suite NOT RUN (Docker tắt, không Postgres) — chỉ 2 file test mới chạy
+      standalone.
+      **APPLY THẬT đã chạy (owner "làm luôn", 2026-09-08) vào `hsk_dev.flashcards`:**
+      lần 1 created 1.118 + updated 1 · lần 2 (chứng minh idempotent) created 0, updated
+      1.119 · **errors 0 cả hai lần**. Verify DB trực tiếp sau import: tổng 1.120 thẻ
+      (1.119 `hanlo` + 1 thẻ `学习` HSK3 fixture seed cũ `hsk3-core` đã có sẵn trong dev) ·
+      per-level 922/50/41/32/25/16/12/11/11 (level-3 có 41 vì fixture cũ đếm thêm) · thẻ
+      `学习` tồn tại 2 row (HSK1 hanlo + HSK3 fixture) — importer đã báo đúng "1
+      pre-existing same-hanzi duplicate", theo thiết kế không tự gộp ·
+      `user_flashcard_states` = 0 docs trong dev, không state nào bị ảnh hưởng. **Lưu ý
+      deploy:** seed `prisma/seed.ts` hiện có thể vẫn chèn fixture `学习` — cần rà trước khi
+      đưa lên môi trường khác để tránh trùng lặp tương tự; DB production chưa được import
+      (việc này thuộc deploy pipeline, chạy `vocab:import` tường minh).
+
+- ✅ (opencode · 2026-09-08) **A10 — Kiểm kê nguồn từ vựng** (branch `docs/a10-vocab-audit`).
+      READ-ONLY audit xong, docs đã duyệt. **Kết quả chính: corpus ngoài KHÔNG có file
+      vocabulary riêng** (11 file, không file nào là danh sách từ HSK). `writing.json` là bộ
+      dữ liệu CHỮ (587 entries: 500/27/17/12/10/6/5/5/5 theo level 1–9); ứng viên từ vựng tốt
+      nhất là 1.228 `words[]` nhúng (không có level/id riêng). `levels.json` khai báo 10.110
+      `newWords` chỉ là con số trang trí — không có word list tương ứng. 3 lỗi dữ liệu:
+      `喜欢` (2 chữ) lẫn trong list chữ, `strokes.json` phủ 59/586 chữ, level-1=500 chữ trùng
+      số TỪ HSK 3.0 (file dựng từ word list). Mapping vào `Flashcard` đủ 4 field bắt buộc
+      (level→hskLevel, char/word→hanzi, pinyin, vi→meaning) nhưng map thẳng sẽ mất 8 field
+      chữ-specific. **Import BLOCKED**: provenance/license không rõ + owner chưa quyết
+      words-vs-characters + nguồn chưa repo-owned. Audit + unlock conditions +
+      review-state protection: `docs/content/VOCAB_SOURCE_AUDIT.md`. Không copy data, không
+      ghi DB, không đổi schema. A11 chỉ bắt đầu khi 3 điều kiện mở khóa được duyệt.
+
+- 🔶 (opencode · 2026-09-07) **A07 — Form tham gia lớp thật** (commit `abf6def`, branch
+      `codex/a07-student-join-class`, base `codex/a06-student-classes-list` @ `2f12310`
+      — A06 chưa có PR/merge, stack có báo theo tiền lệ A05).
 - ✅ (opencode · 2026-09-08) **A09 — Rời lớp Student theo server thật**
   Reused the existing A08 `DELETE /student/classes/:id/leave` wiring and completed the A09
   acceptance surface: cancel sends zero DELETE requests, confirm is ref-locked and disabled while

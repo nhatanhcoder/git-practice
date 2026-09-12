@@ -160,7 +160,7 @@ describe("A08 · Static Security & Integration Invariants", () => {
 
   it("service defines leaveEnrolledClass using the documented DELETE endpoint", () => {
     assert.match(serviceFile, /leaveEnrolledClass/);
-    assert.match(serviceFile, /method:\s*[\"']DELETE[\"']/);
+    assert.match(serviceFile, /method:\s*["']DELETE["']/);
     assert.match(serviceFile, /\/student\/classes\/\$\{encodeURIComponent\(classId\)\}\/leave/);
   });
 
