@@ -1356,6 +1356,32 @@ Gemini quota figures should be removed, not faked.
 
 ---
 
+### [BUILD-004] `pnpm --filter api build` is red on `origin/main` — TS2322 in `vocab-apply.ts`
+
+**Severity**: Medium
+**Status**: Open — found 2026-09-11 while verifying the SRS flow suite in a fresh worktree
+
+**Description**: `nest build` (tsc) fails with one error:
+`src/flashcards/import/vocab-apply.ts:56 — connection.model(...)` returns
+`Model<Flashcard, ...>` which is not assignable to `Model<ImportFlashcardDoc>`
+(`_id` required by the local interface, missing on `Flashcard`). Verified on pristine
+`origin/main@73bdd2c` after `db:generate`, so it is not caused by any worktree edit.
+(A fresh worktree additionally needs `db:generate` first — 254 `PrismaService`
+errors without it; that part is setup, see `BUILD-002`.)
+
+**Impact**: the typecheck/build gate is red; the API test suites are unaffected because
+they run via tsx (no typecheck) and tsc still emits `dist/` despite the error. Any CI
+step running `nest build` strictly fails.
+
+**Not fixed here**: out of scope (test-files-only slice). Note — the main checkout on
+`feat/s3-assignments` carries an uncommitted 1-line `as unknown as` cast on this exact
+line; that is another lane's in-flight work, not taken here to avoid a cross-lane edit.
+
+**Fix Plan**: type the import model honestly (or keep the cast, owned by whoever lands
+it first), then confirm `pnpm --filter api build` exits 0 on a clean worktree.
+
+---
+
 ## Technical Debt
 
 ### [DEBT-005] The landing page ships ~8.5 MB of uncompressed teacher photos
@@ -1594,3 +1620,60 @@ conditional hooks and production demo execution. Runtime regression: 2/2; full w
 147/147. The uncommitted Real-fe-prod-hooks alternative incorrectly gates MatchExercise, not
 the page. Do not treat its whole-file scan as proof of production isolation. Only Grammar's
 obsolete hook suppression was removed; unrelated lint debt remains.
+
+### 2026-09-10 — API bootstrap hardening review (API-016 / BUILD-002 follow-up)
+
+**Status**: API-016 remains open. Helmet and development-only Swagger are implemented in
+codex/api-bootstrap-hardening. HTTP draining precedes database teardown (30-second grace).
+The custom limiter uses a composite IP/email key; 01-auth section 13 still specifies two
+independent counters. This conflict is recorded, not resolved by changing limiter policy.
+PR #49 was documentation only and does not implement shared storage. Request logging / request-id
+(F), shared storage, frontend debounce and token consolidation remain outside this change.
+BUILD-002 reproduced locally: the documented engines/dist/index.js copy workaround restored
+Prisma generation. Real database suite and real Linux SIGTERM verification require isolated CI;
+local handler tests alone do not establish Prisma/Mongoose disconnect behavior.
+
+### 2026-09-10 — Validation follow-up (DEBT-006 / WEB-016)
+
+**Status**: open. Latest main includes three unsuppressed lint errors from A08/A09 (two
+no-useless-escape at student-class-detail.test.mjs:163 and unused hasLessons at the class
+detail page:203), reproduced by the bootstrap branch's full lint. They are outside B+C+D.
+The uncommitted feat/student-prod-return-hooks Grammar diff moves its production gate into
+MatchExercise; GrammarPage would still render demo content. The whole-file hook scan does
+not establish the guard belongs to the page component. G needs a wrapper-specific regression.
+### 2026-09-10 — API-016 / PR 55 review correction
+
+**Status**: single-instance limitation remains open; A1+A2 corrections implemented locally
+in codex/auth-proxy-review. Original PR 55 defaulted TRUST_PROXY to one hop without proving
+all deployments cross a protected proxy; direct callers could vary XFF to evade the limiter.
+Default is now false; 1 hop or trusted address/CIDR lists require explicit deployment config.
+AuthController consumes req.ip only, with a shared neutral key if Express provides no IP.
+
+Preserved Antigravity's sweep/TTL/10,000-entry cache behavior. Nine isolated real-controller
+regressions pass; persistence is stubbed and these do not replace auth.e2e or refresh concurrency
+DB suites. Removed the 19 new lint findings instead of adding suppressions. The original
+PR's CI failed both lint and type-check, so its completion record was not proof of green CI.
+
+New main 73bdd2c includes an unrelated A11 Model<Flashcard>/ImportFlashcardDoc incompatibility
+at apps/api/src/flashcards/import/vocab-apply.ts:56; API build fails there. Its owner must fix
+that lane. Also, API_CONVENTIONS calls the limiter a sliding window while AuthService uses a
+first-failure-anchored window; the accepted auth spec describes independent counters while
+implementation uses a composite key. Both mismatches are recorded, not silently changed here.
+
+### 2026-09-11 — API-016 / WEB-016 review continuation
+
+**Status**: local corrections complete; public publication blocked. PR55 is now 9128ae8 and
+its Grammar wrapper is correct. Its production Swagger test only evaluates a local boolean;
+shutdown test only checks method existence. The isolated HTTP and child-process tests in
+codex/api-bootstrap-hardening are stronger but still do not verify real database teardown.
+PR55 still defaults proxy trust to one hop; codex/auth-proxy-review defaults it off.
+New Throttler thresholds and unrelated UI additions in PR55 are not covered by A1+A2 tests.
+See sessions/2026-09-11-security-checklist-review.md for branch commits, validation scope and
+publication blocker. Existing issue IDs retained; no issue was renumbered or closed broadly.
+
+### 2026-09-12 — PR #63 merge review follow-up (WEB-013)
+
+**Status**: WEB-013 remains open. The Assignments branch now passes lint after typing its e2e
+response helper and fixing frontend imports/memo dependencies. This merge repair does not add
+`usageCount` to the question list or change the server-side delete gate, so it does not close or
+partially claim WEB-013.

@@ -3,7 +3,7 @@ module: Auth
 status: accepted
 blocked_by: - (no business decision blocks the core; open points recorded in §16 — C1 blocks DTO field names, not flows)
 owner: -
-last_updated: 2026-08-19
+last_updated: 2026-09-10
 ---
 
 ## 0. Summary
@@ -531,6 +531,14 @@ this spec states them as mandatory technical requirements, and approving the `Re
   lifetimes without waiting for real time.
 
 ## 13. Security & rate limit
+
+**Implementation verification (2026-09-10; status remains accepted):** bootstrap now uses
+Helmet, exposes Swagger only outside production, and drains HTTP before resource teardown.
+The limiter remains custom in-process code, not @nestjs/throttler. The two-counter requirement
+below differs from the implemented composite IP + normalized-email key; this mismatch is
+recorded under API-016, not silently resolved by bootstrap hardening. A1/A2 cleanup/proxy work
+is reviewed separately and this change makes no claim that it has landed.
+
 
 **Data that must never leave**
 
