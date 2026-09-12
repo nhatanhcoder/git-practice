@@ -260,12 +260,26 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
       but request/response contracts are not approved; no payload was invented
       *(if F9–F16 ever land, `SkillScore.skill` widens 3 → 7 values — `PROJECT_KNOWLEDGE.md` §8. Blocked, see Sprint 5b)*
 - ⬜ F6.3 Class dashboard (Teacher) · ⬜ F6.4 API Quota Monitoring (Admin)
-- 🔶 (zcode · 2026-09-12) **S-BILL-1/2 Student invoice read path** — `GET /student/invoices` +
-      `GET /student/invoices/:id` (both defined in `API_STUDENT.md` § Billing, mandated by
-      accepted `06-billing.md` §5 SCOPE-BILL-01: dedicated handler, `studentId` from token in
-      the WHERE, `status <> 'void'` hidden from students, INV-BILLING-33/34). Includes Page
-      Contract `student-invoices` + FE routes `/student/invoices`(+detail). No new endpoint,
-      field or error code invented. Branch `feat/student-invoices`.
+- ✅ (zcode · 2026-09-12) **S-BILL-1/2 Student invoice read path — SCOPE-BILL-01 closed.**
+      `GET /student/invoices` + `GET /student/invoices/:id` (both defined in `API_STUDENT.md`
+      § Billing, mandated by accepted `06-billing.md` §5: dedicated handler, `studentId` from
+      the token in the WHERE, `status <> 'void'` hidden from students, INV-BILLING-33/34).
+      `?studentId=` is not in the query DTO, so `forbidNonWhitelisted` rejects it with
+      `VALIDATION_ERROR`; another student's invoice, a voided one and a malformed id all answer
+      `INVOICE_NOT_FOUND` — indistinguishable by design. Responses carry no
+      studentId/studentName/studentEmail; `outstandingAmount` server-derived (INV-BILLING-16);
+      payments[] in the admin detail's deterministic order. FE `/student/invoices`(+detail) in
+      the Hán Lộ design: money renders from envelope decimal strings (no parsing, no
+      arithmetic), sidebar "Học phí" entry, 7 states per contract. The suite caught a real
+      first-cut bug: `?status=void` fell through to the unfiltered branch — void now answers an
+      explicit empty set. No endpoint, field or error code invented.
+      **Verified**: invoice e2e **10/10** · full API suite **272/272 across 46 suites** (tsx CLI
+      per BUILD-005) · web build 44/44 with both routes · web script tests **192/192** (15 new)
+      · check-docs 9/9 · live browser: login → list (2 real invoices, correct grouping) →
+      detail (3 amount tiles + payment history, recorder shows display name) desktop
+      screenshots read; one display bug (due date as a doubled range) caught on screen and
+      fixed. Contracts → `built`. Branch `feat/student-invoices` (rebased onto origin/main
+      after the notifications wave landed; developed in worktree `Real-invoices` — see GIT-004).
 - **DoD**: Rating a card reschedules it correctly per SM-2. Teacher sees red alerts for weak students.
 
 ## Sprint 6 — Attendance, Payroll, Tuition ⚠️

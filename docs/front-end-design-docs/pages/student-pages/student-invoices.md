@@ -2,7 +2,7 @@
 feature: S-BILL-1, S-BILL-2
 role: student
 route: /student/invoices
-status: contracted
+status: built
 last_updated: 2026-09-12
 ---
 
