@@ -155,6 +155,16 @@
 | `FLASHCARD_ALREADY_IN_REVIEW` | 409 | Already added to the review list |
 | `FLASHCARD_INVALID_RATING` | 400 | The rating must be between 0 and 5 |
 
+### Word Bank Errors (WORD_BANK_*)
+
+Registered 2026-09-12 with the word-bank module (branch `feat/student-word-bank`,
+`docs/api/modules/student/02-word-bank.md`). "Not found" and "not mine" deliberately share
+one code so a caller cannot probe for another student's bookmark ids.
+
+| Code | HTTP | Description |
+|------|------|-------|
+| `WORD_BANK_NOT_FOUND` | 404 | Saved word does not exist or belongs to another student |
+
 ### Payroll Errors (PAYROLL_*)
 
 | Code | HTTP | Description |

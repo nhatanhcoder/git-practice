@@ -339,12 +339,23 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
 
 ## Off-sprint / spike
 
-- 🔶 (zcode · 2026-09-12) **Student completion wave — slice 2: Word bank S-SRS-6/7.**
-  New module spec `docs/api/modules/student/02-word-bank.md` (transport was the open
-  blocker named by 01-srs §16) + Mongoose `user_saved_words` (per
-  ENTITY_USER_SAVED_WORD: unique (userId, hanzi), upsert-on-duplicate) + 4 student
-  endpoints + save/unsave buttons in the flashcards browser + a word-bank tab there
-  (S-SRS-7 list/delete). Branch `feat/student-word-bank`.
+- ✅ (zcode · 2026-09-12) **Student completion wave — slice 2: Word bank S-SRS-6/7
+  (S-SRS-6/7 closed for the flashcard_browser surface).** Spec
+  `docs/api/modules/student/02-word-bank.md` written and pinned in the wave (transport
+  was the open blocker 01-srs §16 named), then built to it: Mongoose `user_saved_words`
+  per ENTITY_USER_SAVED_WORD verbatim (unique `(userId, hanzi)`; upsert IS the duplicate
+  rule), 4 student endpoints (save/list/delete/review-session), `WORD_BANK_NOT_FOUND`
+  registered. Review-session hydrates banked words into module-01 card payloads — the
+  existing SM-2 endpoint/screen serve the bank with no second review path; unmatched
+  hanzi → `id: null`, listed but unreviewable. FE: `Lưu từ` on every browse tile (saved
+  state only after the server confirms) + `Kho từ` tab (list, `Bỏ lưu`, `Ôn các từ trong
+  kho`; refetch on entry). Two real defects the Playwright cut caught were fixed before
+  commit (browse grid stacked under the bank tab; heading-locator vs EmptyState's `<p>`).
+  **Verified**: word-bank e2e 10/10 · full API 198/198 (34 suites; main baseline 190) ·
+  web unit 150/150 (3 pre-existing fails live in the parallel lane's untracked
+  `srs-pagination.test.mjs`, not this slice's) · check-docs 9/9 · Playwright 4/4
+  production build. Branch `feat/student-word-bank`. Still open per spec §16: lesson/
+  passage save surfaces arrive with the content screens (wave slices 5–6).
 
 
 - ✅ (claude · 2026-09-09) **Docs batch — sync module-status records with the implemented
