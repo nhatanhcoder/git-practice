@@ -339,3 +339,50 @@ pnpm install
 - `next/font/google` fetch lúc **build**, cần mạng. Máy không có mạng ra ngoài thì dùng
   `@import` trong `globals.css`
 - **Bắt buộc `subsets: ['latin', 'vietnamese']`** — thiếu `vietnamese` là mất dấu toàn bộ UI
+
+---
+
+## 11. Bản chạy hàng ngày (ghi 2026-09-13, đã kiểm chứng)
+
+### Bảng ports
+
+| Cái gì | Địa chỉ | Nguồn | Dữ liệu |
+|---|---|---|---|
+| FE dev (mockup) | `localhost:3000` | `pnpm dev`, hot reload | Demo ở route chưa wire + công tắc demo |
+| FE prod (bản duy nhất) | `localhost:3100` | `pnpm --filter web build` rồi `next start -p 3100` (chạy ở `apps/web`) | Live chỗ đã wire; còn lại "Chưa khả dụng", không demo |
+| API dev | `localhost:3001` | `pnpm dev` (Nest watch) | Thật — Postgres local + Mongo Atlas |
+| Postgres | `localhost:5432` | container `hsk-postgres` (`docker compose up -d`) | DB dev `hsk_dev` |
+| Health | `localhost:3001/api/v1/health` | — | `postgres.up` phải `true`, không thì login 500 |
+
+- Test tính năng thật → `:3100`. Sửa code/design → `:3000`. Sửa code xong muốn `:3100`
+  cập nhật → build lại + restart process prod.
+- Tài khoản seed: `admin@hsk.local` / `teacher@hsk.local` / `student@hsk.local`
+  (mật khẩu trong `apps/api/prisma/seed.ts`).
+
+### Bẫy Docker Desktop tự tắt (gặp 2 lần trong 2 ngày)
+
+Triệu chứng: FE báo "Không kết nối được máy chủ", log API `P1001 Can't reach
+database server at localhost:5432`, process API chết luôn lúc khởi động.
+
+```powershell
+docker ps  # daemon chết → lỗi npipe dockerDesktopLinuxEngine
+Start-Process "$env:LOCALAPPDATA\Programs\DockerDesktop\Docker Desktop.exe"
+# chờ docker version --format '{{.Server.Version}}' trả về số
+docker compose up -d   # ở root, dựng lại hsk-postgres
+# rồi Ctrl+C + chạy lại pnpm dev (process api:dev đã chết, turbo không tự hồi sinh)
+```
+
+Phòng ngừa: bật "Start Docker Desktop when you sign in" trong Settings.
+Chẩn đoán nhanh server API cũ treo: `/health` báo `postgres.up:false` trong khi
+container healthy → kill process cũ, chạy server mới.
+
+### Cho máy khác test qua LAN (cùng WiFi)
+
+`localhost` của máy họ không trỏ về máy bạn. Cần (không sửa file repo, chỉ biến
+môi trường lúc chạy):
+
+1. Build lại web với `NEXT_PUBLIC_API_URL=http://<IP-LAN>:3001`
+   (biến này đóng cứng lúc build).
+2. Chạy API với `CORS_ORIGIN=http://<IP-LAN>:<port-FE>` — mặc định
+   (`apps/api/src/main.ts:59`) API chỉ cho `http://localhost:3000`.
+3. Mở firewall 2 port API + FE.
