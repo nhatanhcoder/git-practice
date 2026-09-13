@@ -3,13 +3,19 @@
  * for the dynamic ones — a dynamic route visited with a bogus id renders the
  * "not found" branch and proves nothing about the real screen.
  *
- * Ids come from the mock fixtures in `src/lib/student/*` and `src/lib/teacher-data.ts`.
- * When a fixture id changes, this list changes with it.
+ * Ids used to come from the mock fixtures in `src/lib/student/*` and
+ * `src/lib/teacher-data.ts`. Those fixtures are gone from the pages that matter:
+ * the student class/exam/attempt screens now read through the live services in
+ * `src/lib/student/*-service.ts`, and `prisma/seed.ts` creates its classes,
+ * invoices and payroll periods with generated ids (only user emails are fixed).
+ * So there is no id that is valid across two runs of the seed, and inventing one
+ * here would screenshot a "not found" screen and call it a pass.
  *
- * Update 2026-09-12 (PW sweep): closed as designed. Entries below carry
- * `resolve` keys implemented in `resolve-ids.ts` (seed-first; timestamped sweep
- * fixtures only for attempts/lessons, which have no seed equivalent). Mock-id
- * routes (exams/workplace/writing) register literal mock keys from content.ts.
+ * The gap this created (dynamic routes unregistered) was closed 2026-09-12 by
+ * the PW sweep: entries below carry `resolve` keys implemented in
+ * `resolve-ids.ts` (seed-first; timestamped sweep fixtures only for
+ * attempts/lessons, which have no seed equivalent). Mock-id routes
+ * (exams/workplace/writing) register literal mock keys from content.ts.
  */
 
 export type Area = "student" | "teacher" | "admin";
@@ -50,6 +56,13 @@ const student: Screen[] = [
   { path: "/student/progress", name: "progress", area: "student" },
   { path: "/student/leaderboard", name: "leaderboard", area: "student" },
   { path: "/student/badges", name: "badges", area: "student" },
+  // Added 2026-09-12: these three shipped without ever being registered, so the
+  // screen check proved nothing about them. All three are static, so they need
+  // no id. The dynamic siblings under these paths are still missing — see the
+  // header comment for why.
+  { path: "/student/classes", name: "classes", area: "student" },
+  { path: "/student/notifications", name: "notifications", area: "student" },
+  { path: "/student/assignments", name: "assignments", area: "student" },
   // Added 2026-09-12 (PW sweep): mock-id detail routes. Ids are static mock keys
   // from `src/lib/student/content.ts`, so they need no runtime resolution.
   { path: "/student/exams/e-h1-1", name: "exam-detail", area: "student" },
