@@ -185,6 +185,12 @@ export async function resolveOne(
       const id = await firstId(request, apiBase, "student", "/student/classes");
       return id ? { path: `/student/classes/${id}` } : fail("seeded student joined no class");
     }
+    case "studentInvoice": {
+      // Student-scoped list, never the admin one: the seeded student must own
+      // the invoice, or the screen under test is someone else's.
+      const id = await firstId(request, apiBase, "student", "/student/invoices");
+      return id ? { path: `/student/invoices/${id}` } : fail("seeded student has no invoice");
+    }
     case "studentLesson": {
       // Resolved from the sweep class (seeded teacher owns it, seeded student is
       // enrolled) — never by writing lessons into seed classes.

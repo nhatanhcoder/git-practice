@@ -63,6 +63,9 @@ const student: Screen[] = [
   { path: "/student/classes", name: "classes", area: "student" },
   { path: "/student/notifications", name: "notifications", area: "student" },
   { path: "/student/assignments", name: "assignments", area: "student" },
+  // Added 2026-09-13: student invoices shipped on main (PR #72) after the sweep
+  // list was last touched — same gap as the three above, closed on arrival.
+  { path: "/student/invoices", name: "invoices", area: "student" },
   // Added 2026-09-12 (PW sweep): mock-id detail routes. Ids are static mock keys
   // from `src/lib/student/content.ts`, so they need no runtime resolution.
   { path: "/student/exams/e-h1-1", name: "exam-detail", area: "student" },
@@ -76,6 +79,7 @@ const student: Screen[] = [
   { path: "/student/classes/[classId]/lessons/[lessonId]", name: "lesson-detail", area: "student", resolve: "studentLesson" },
   { path: "/student/attempts/[attemptId]", name: "attempt-take", area: "student", resolve: "studentAttempt" },
   { path: "/student/attempts/[attemptId]/result", name: "attempt-result", area: "student", resolve: "studentAttemptResult" },
+  { path: "/student/invoices/[invoiceId]", name: "invoice-detail", area: "student", resolve: "studentInvoice" },
 ];
 
 const teacher: Screen[] = [
