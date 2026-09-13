@@ -1,6 +1,7 @@
 import { test, expect, type ConsoleMessage, type Page } from "@playwright/test";
 import { join } from "node:path";
-import { selectScreens } from "./routes";
+import { selectScreens, type Screen } from "./routes";
+import { resolveOne } from "./resolve-ids";
 
 /**
  * The screen check every UI commit runs.
@@ -79,7 +80,28 @@ function collectPageErrors(page: Page) {
 }
 
 for (const screen of screens) {
-  test(`${screen.area} ${screen.name} — ${screen.path}`, async ({ page }, testInfo) => {
+  test(`${screen.area} ${screen.name} — ${screen.path}`, async ({ page, request }, testInfo) => {
+    // Dynamic entries resolve to a concrete id at run time (resolve-ids.ts).
+    // Unresolvable screens SKIP with the reason — a skip is honest about what
+    // was not checked, while screenshotting a "not found" branch would lie.
+    let path = screen.path;
+    if (screen.resolve) {
+      const resolved = await resolveOne(request, API_BASE, screen);
+      if ("reason" in resolved) {
+        test.skip(true, `no id to visit: ${resolved.reason}`);
+        return;
+      }
+      path = resolved.path;
+    }
+    await runScreenCheck(page, testInfo, { ...screen, path });
+  });
+}
+
+async function runScreenCheck(
+  page: Page,
+  testInfo: { project: { name: string }; attach: (name: string, options: { path: string; contentType: string }) => Promise<void> },
+  screen: Screen,
+) {
     const errors = collectPageErrors(page);
     await signIn(page, screen.area);
 
@@ -130,5 +152,4 @@ for (const screen of screens) {
     await testInfo.attach(`${testInfo.project.name}/${shot}`, { path: file, contentType: "image/png" });
 
     expect(errors, `${screen.path} logged browser errors`).toEqual([]);
-  });
 }
