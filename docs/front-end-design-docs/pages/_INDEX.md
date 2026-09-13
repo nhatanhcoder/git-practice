@@ -74,7 +74,7 @@ Analytics (T-ANL-1…4): _not yet mapped._ Every other Teacher area has a contra
 | `/student/flashcards` | S-SRS-1..5 | [student-srs](./student-pages/student-srs.md) | built | v1 | vocabulary seed; streak timezone |
 | `/student/classes` | S-CLS-1,2 | [student-classes-list](./student-pages/student-classes-list.md) | built | v1 | — |
 | `/student/classes/[classId]` | S-CLS-3,4, S-LESSON-1 | [student-class-detail](./student-pages/student-class-detail.md) | built | v1 | — |
-| `/student/assignments` | S-ASGN-1 | [student-assignments](./student-pages/student-assignments.md) | built (live) | v1 | — (list live on GET /student/assignments; attempt status badges arrive with 03-attempt-lifecycle, PR #73) |
+| `/student/assignments` | S-ASGN-1 | [student-assignments-list](./student-pages/student-assignments-list.md) | built (live) | v1 | GET list live; ⛔ detail endpoint unimplemented; attempt status badges need PR #73 |
 | `/student/notifications` | S-BILL-3 + Notifications table | [student-notifications](./student-pages/student-notifications.md) | built | v1 | — (module 07 live; role-agnostic `/api/v1/notifications` per 07-notifications.md) |
 | `/student/mistakes` | S-MSTK | [student-mistakes](./student-pages/student-mistakes.md) | built (mock) | v1 | ⛔ mistake-collection endpoints (Needs lane) |
 | `/student/exams` | S-SELF-7 | [student-exams](./student-pages/student-exams.md) | built (mock) | v1 | ⛔ ADR-005 is a 0-byte stub (DOC-017); exam transport contract |

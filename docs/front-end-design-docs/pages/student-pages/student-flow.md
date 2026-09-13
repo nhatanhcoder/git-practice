@@ -41,6 +41,19 @@ last_updated: 2026-09-10
         └── Rời lớp → Modal xác nhận          DELETE /api/v1/student/classes/:id/leave
 ```
 
+## 2b. Assignments branch
+
+```text
+/student  Dashboard
+│
+└── Sidebar: Bài tập
+    ▼
+    /student/assignments  Bài tập đã phát hành  GET /api/v1/student/assignments
+    ├── Lọc theo lớp → same screen              local filter (options from GET /student/classes)
+    └── Mở chi tiết → ⛔                         GET /student/assignments/:id unimplemented —
+                                                rows deliberately have no navigation
+```
+
 ## 3. Note on Sổ tay lỗi sai (`S-MSTK`)
 
 `/student/mistakes` (Sổ tay lỗi sai) and `/student/mistakes/review` are dedicated to diagnostic error review for questions answered incorrectly during homework assignments and CBT mock exams. They are separate from vocabulary flashcards (`/student/flashcards`). Backend error-collection endpoints will be defined in Sprint 4 (Assignments & Attempts); in the interim, `/student/mistakes` remains in prototype/demo mode without being conflated with flashcard SRS.
@@ -58,6 +71,8 @@ last_updated: 2026-09-10
 | 7 | `/student/classes` | Tham gia lớp | same / modal | POST join | `CLASS_ENROLL_CODE_INVALID`, `CLASS_ALREADY_ARCHIVED`, `CLASS_ALREADY_ENROLLED`, `VALIDATION_ERROR` |
 | 8 | `/student/classes` | Chọn lớp | `/student/classes/[classId]` | GET class detail | `CLASS_ACCESS_DENIED`, `CLASS_NOT_FOUND`, `VALIDATION_ERROR` |
 | 9 | `/student/classes/[classId]` | Rời lớp | `/student/classes` | DELETE leave | `CLASS_NOT_ENROLLED`, `CLASS_ACCESS_DENIED`, `CLASS_NOT_FOUND`, `VALIDATION_ERROR` |
+| 10 | `/student` | Bài tập | `/student/assignments` | GET published list | auth errors |
+| 11 | `/student/assignments` | Lọc theo lớp | same | local (options: GET classes) | — |
 
 ## Entity state transitions
 
@@ -92,7 +107,7 @@ edges ⛔ there is no traversal to document beyond list → detail inside each f
 | Mô phỏng công sở | [student-workplace](./student-workplace.md) | DOC-011 corpus + scorer unspecified |
 
 Live branches with contracts: SRS (`student-srs`), Classes (`student-classes-list`,
-`student-class-detail`), Assignments (`student-assignments`), Attempts
+`student-class-detail`), Assignments (`student-assignments-list`), Attempts
 (`student-attempt-take`, `student-attempt-result`, PR #73), Invoices
 (`student-invoices`, `student-invoice-detail`, PR #72), Notifications
 (`student-notifications` — module 07 merged via PR #67).

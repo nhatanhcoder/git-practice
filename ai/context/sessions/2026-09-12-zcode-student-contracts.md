@@ -1,4 +1,4 @@
-## [2026-09-12] — Page Contracts for every remaining student route — zcode — branch `docs/student-page-contracts`
+## [2026-09-12] — Page Contracts for ten remaining student routes — zcode — branch `docs/student-page-contracts`
 
 **Context**: owner asked for Page Contracts per remaining student item (route, RBAC, 7 states,
 data, endpoint), endpoints unapproved → ⛔ + a "Needs" entry, nothing invented, **no `apps/`
@@ -6,14 +6,12 @@ changes**; the notifications contract must match the notifications branch's BE, 
 
 **Task type**: DOCS. No schema, Auth, RBAC, or money change; no `apps/` file touched.
 
-**Scope decided** (student routes with no contract file on `origin/main`): assignments,
-notifications, mistakes, exams, placement, progress, leaderboard, badges, writing, lego,
-workplace — 11 contracts. Deliberately out: `/student` dashboard (no FEATURES row; its own
+**Scope decided** (student routes still missing contracts after PR #71): notifications, mistakes, exams, placement, progress, leaderboard, badges, writing, lego,
+workplace — 10 contracts. Deliberately out: `/student` dashboard (no FEATURES row; its own
 follow-up), attempts take/result + invoices (already contracted in open PRs #73/#72).
 
 **Done**:
-- `student-assignments.md` — promotes the inline S-ASGN-1 contract (flagged as a gap in
-  `_INDEX`) to a real file; live on `GET /student/assignments`.
+- S-ASGN-1 uses the `student-assignments-list.md` contract merged by PR #71; this PR does not add a duplicate contract.
 - `student-notifications.md` — written against the **merged** module 07 BE (PR #67 landed the
   branch; the controller/DTO/service on `origin/main` are the source of truth, not memory):
   role-agnostic `/api/v1/notifications` (4 endpoints), 11-type enum, no display text from the
@@ -29,7 +27,7 @@ follow-up), attempts take/result + invoices (already contracted in open PRs #73/
   corpus + progress contracts (writing, lego, workplace), aggregation/privacy rules
   (leaderboard), server-authoritative unlocks (badges), collection endpoints (mistakes —
   source data now exists via PR #73).
-- `_INDEX.md`: 11 rows; the "mockups outside the pipeline" note retired — every student route
+- `_INDEX.md`: 10 new rows; the "mockups outside the pipeline" note retired — every student route
   is now mapped. Flow map: blocked-branch table + extended Missing endpoints.
 - `ai/PROGRESS.md` § Needs from the other lane: four new unchecked needs (analytics spec,
   S-MSTK collection, exam/placement transport, gamification cluster).
