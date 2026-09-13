@@ -21,11 +21,21 @@ Show the learner's own study progress: the skill×week heatmap, the average-scor
 ## Data
 | Need | Endpoint | Envelope field |
 |---|---|---|
-| Heatmap + skill breakdown (S-ANL-1) | `GET /api/v1/student/progress` — path reserved, **shape ⛔** | unspecified |
-| Score-over-time chart (S-ANL-2) | `GET /api/v1/student/progress/chart` — path reserved, **shape ⛔** | unspecified |
+| Heatmap + skill breakdown (S-ANL-1) | `GET /api/v1/student/progress` — shapes proposed in `04-progress-analytics.md` (unapproved, needs PR #73) | `data` (proposed) |
+| Score-over-time chart (S-ANL-2) | `GET /api/v1/student/progress/chart` — shapes proposed in `04-progress-analytics.md` (unapproved) | `data.points[]` (proposed) |
 | ⛔ Streak / XP figures (S-GAME-2/3) | none defined | — |
 
-Conflict recorded, not picked: the two paths exist in `API_STUDENT.md` § Progress & Analytics, but `ai/PROGRESS.md` Sprint 5 marks F6.1/F6.2 ⛔ because **no module spec defines their request/response contracts**. Per the Conflict Rules this contract treats the paths as reserved and the payloads as unapproved; building against them needs the analytics module spec first (recorded under "Needs from the other lane"). Streak/XP/level blocks are gamification (`S-GAME-1..3`) with no contract at all — the dashboard already renders those as missing rather than invented (`WEB-011` family).
+Conflict recorded, not picked: the two paths exist in `API_STUDENT.md` § Progress & Analytics, but `ai/PROGRESS.md`
+Sprint 5 marks F6.1/F6.2 ⛔ because **no module spec defines their request/response contracts**. Per the Conflict
+Rules this contract treats the paths as reserved and the payloads as unapproved; building against them needs the
+analytics module spec first (recorded under "Needs from the other lane"). Streak/XP/level blocks are gamification
+(`S-GAME-1..3`) with no contract at all — the dashboard already renders those as missing rather than invented
+(`WEB-011` family).
+
+Update 2026-09-12: the analytics module spec now exists as a proposal —
+`docs/api/modules/student/04-progress-analytics.md` (read-only aggregation, no new tables; code waits for
+PR #73). Payloads above stay unapproved until a BE owner signs the module; this contract's status and
+mock-fidelity sections are unchanged.
 
 ## Regions
 1. Page Header: eyebrow "Cộng đồng", title "Tiến độ học tập"

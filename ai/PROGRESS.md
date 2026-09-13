@@ -368,6 +368,16 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
 
 ## Off-sprint / spike
 
+- ✅ (opencode · 2026-09-12) **Task E design slice — analytics module + board/badge decisions (contracts linked, not replaced).**
+  Full BE/FE blocked by 4 approval gates + PR #73, so no code. PR #74 had just merged
+  mock-fidelity contracts for the 3 routes — per Conflict Rules those stay authoritative;
+  this slice only links them to the new module: `04-progress-analytics.md` (7 invariants,
+  read-only, no new tables/codes, streak omitted) fills the exact gap #74's progress contract
+  recorded ("needs the analytics module spec first"); board/badge contracts untouched (their
+  ⛔ stances match this slice's findings). `_INDEX` row 4 (+no-collision note vs PR #73's
+  `03`); decisions list in §16 (XP curve, streak rule, badge unlocks, board privacy).
+  Verify: check-docs 9/9. Branch `feat/student-progress-contracts`.
+
 - ✅ (zcode · 2026-09-13) **Merged the stuck merge + landed two uncommitted sibling slices on
       `feat/pw-sweep-routes`.** (1) Completed the day-old unresolved merge of `origin/main@198271f`
       (PR #74; sole conflict `ai/PROGRESS.md` — kept both lanes' entries) and merged the 4 newer
