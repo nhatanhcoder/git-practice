@@ -379,6 +379,19 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
       Verify: fresh web build **43/43** · check-docs **9/9** · browser on the production
       build: `/student/landing` → **307 → /login** (curl + real navigation), brand link → `/`
       → gate, 375px screenshot clean, no error text. Branch `fix/remove-landing-prototype`.
+- ✅ (zcode · 2026-09-12) **Landing returns at `/landing` + login theme/contrast sync (owner
+      direction later the same day).** New public route `/landing` (outside /student) with the
+      factual half only — verified counts, HSK 3.0 path table, method (SM-2 corrected); asserts
+      nothing about people, enforced by a source greptest. `/student/landing` → `/landing`
+      (backward compat); auth brand leads there. Login theme: the shell hardcoded dark AND
+      styled text through `--fg`/`--fg-muted` tokens tokens.css never defines (title inherited
+      the browser default → washed out on dark — the reported bug). Now reads the shared
+      `useStudentPreferences` store (hydration-guarded), renders a toggle, uses real
+      `--text-1/--text-2`; submit button + landing CTA switch to `--text-inverse` (#fff on
+      #ff7454 measured ~2.6:1, an AA failure). Tests: `landing-routes.test.mjs` (source),
+      `landing-route.spec.ts` (render/redirect/brand/375px — 3× 4/4), `login-theme.spec.ts`
+      (computed-style WCAG contrast both themes + toggle/persist — 3× 5/5). Full web scripts
+      **219/219** · check-docs **9/9** · build **44/44**. Same branch/PR (extended).
 
 - ✅ (zcode · 2026-09-13) **Merged the stuck merge + landed two uncommitted sibling slices on
       `feat/pw-sweep-routes`.** (1) Completed the day-old unresolved merge of `origin/main@198271f`

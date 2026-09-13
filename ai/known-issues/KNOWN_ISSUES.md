@@ -1229,6 +1229,15 @@ stage, `landing-data.ts` and the four ~8.5 MB teacher PNGs (also closing `DEBT-0
 links land on the gate. The auth-shell brand link and `student-chrome`'s landing bypass branch
 were cleaned up with it. A real landing page returns only with owner-approved content.
 
+**Update (2026-09-12, later the same day — owner direction)**: a public landing returned at a
+new path, **`/landing`** (outside `/student`), built exclusively from the factual half of the
+removed prototype — verified content counts, the HSK 1–9 path at 3.0 standard vocabulary sizes,
+and the method description corrected to SM-2. It asserts nothing about people; a source test
+(`landing-routes.test.mjs`) greps the page for the banned invented-content words, and
+`login-theme.spec.ts`/`landing-route.spec.ts` pin render, redirect and contrast. `/student/landing`
+now redirects to `/landing` for backward compatibility. The invented content was NOT restored;
+this resolution stands.
+
 **Related**: the rest of `feat/student-hanlu-ui` is still unmerged — 24 commits, and `main` has
 moved 64 past it. Its PR #24 was closed 2026-09-05 04:06 UTC with `mergedAt: null` and **no
 comment recording why**. Only the landing route was ported here; the branch also rewrites the
