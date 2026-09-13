@@ -1065,3 +1065,5 @@ are accepted and implemented; 02 is implemented but its spec status is in confli
 - Removed four lint failures in the notification e2e suite by typing response envelopes and
   deleting an unused admin-mailbox query. Local verification and current-head CI are required
   before merge; the database-backed notification suite remains NOT RUN in this review worktree.
+
+- ✅ (codex · 2026-09-13) **AttemptAnswer migration integration.** Schema and migration only, split from PR #73 so the database change reaches main before attempt lifecycle code. Prisma schema valid; check-docs 9/9; DB apply NOT RUN locally.

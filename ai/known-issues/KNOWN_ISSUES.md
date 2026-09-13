@@ -1850,3 +1850,9 @@ before shooting, so failing screens leave only the trace.zip.
 **Fix Plan**: render the existing period rows as mobile cards under 640px (the pattern
 `admin-invoices` already uses), or gate the wide table behind horizontal scroll containment
 that does not widen the page. Verify with `PW_ROUTES=/admin/payroll` on both viewports.
+
+---
+
+### 2026-09-13 migration-only review note
+
+No new issue ID assigned. The AttemptAnswer migration was split from PR #73 so it can be verified and merged before dependent API/FE code.
