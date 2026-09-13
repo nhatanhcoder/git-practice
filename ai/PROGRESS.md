@@ -368,6 +368,14 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
 
 ## Off-sprint / spike
 
+- ✅ (opencode · 2026-09-13) **Landing `/student/landing` → `/landing` + login theme/contrast.**
+  `git mv` route công khai ra khỏi segment guarded (history kept); old URL redirect 308;
+  11 src refs updated (shell/chrome/comments/eslint path); auth theo persisted theme
+  (dark default, no flash); `--fg`/`--fg-muted` map vào tokens (was undefined → chữ chìm);
+  nút dark dùng `--text-inverse` (2.67→7.30:1). Verify browser: /landing 200, redirect,
+  theme + contrast + login cả 2 modes, 0 console errors, screenshots read. Branch
+  `feat/landing-root-move`.
+
 - ✅ (zcode · 2026-09-13) **Merged the stuck merge + landed two uncommitted sibling slices on
       `feat/pw-sweep-routes`.** (1) Completed the day-old unresolved merge of `origin/main@198271f`
       (PR #74; sole conflict `ai/PROGRESS.md` — kept both lanes' entries) and merged the 4 newer

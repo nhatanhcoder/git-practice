@@ -2,7 +2,7 @@
    Auth screens — /login and /register.
 
    Built on the Hán Lộ tokens (tokens.css) so someone arriving from
-   /student/landing does not walk into a different product. Every colour here is
+   /landing does not walk into a different product. Every colour here is
    a var(); nothing is hardcoded.
 
    Motion is deliberate rather than decorative: the art panel drifts slowly
@@ -390,6 +390,17 @@
 
 .auth-submit:active:not(:disabled) {
   transform: translateY(0) scale(0.985);
+}
+
+/* Dark mode: white text on the light cinnabar accent is 2.67:1 — unreadable.
+   Ink text on the same ground is 7.30:1. Light mode keeps white (4.62:1). */
+.student-root[data-theme="dark"] .auth-submit {
+  color: var(--text-inverse);
+}
+
+.student-root[data-theme="dark"] .auth-spinner {
+  border-color: color-mix(in oklab, var(--text-inverse) 45%, transparent);
+  border-top-color: var(--text-inverse);
 }
 
 .auth-submit:disabled {
