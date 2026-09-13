@@ -220,6 +220,39 @@ export function resolveLessonDetailOutcome(
   return "ready";
 }
 
+/**
+ * Outcome for the dedicated lesson-detail endpoint
+ * (GET /student/classes/:classId/lessons/:lessonId, S-LESSON-2).
+ * Unlike resolveLessonDetailOutcome above — which finds the lesson inside a
+ * class payload — this resolves a single-lesson payload. A lesson id from
+ * another class arrives as LESSON_NOT_FOUND (404), never as a cross-class leak.
+ */
+export function resolveSingleLessonOutcome(
+  loading: boolean,
+  error: unknown,
+  lesson: EnrolledLesson | null,
+  validIds = true,
+): LessonDetailOutcome {
+  if (!validIds) return "invalid_id";
+  if (loading) return "loading";
+  if (error) {
+    const err = extractApiError(error);
+    if (err) {
+      if (err.statusCode === 400 || err.code === "VALIDATION_ERROR") return "invalid_id";
+      if (
+        err.statusCode === 404 ||
+        err.code === "CLASS_NOT_FOUND" ||
+        err.code === "LESSON_NOT_FOUND"
+      )
+        return "not_found";
+      if (err.statusCode === 403 || err.code === "CLASS_ACCESS_DENIED") return "forbidden";
+    }
+    return "error";
+  }
+  if (!lesson) return "error";
+  return "ready";
+}
+
 export function formatClassJoinedDate(isoString: string): string {
   try {
     const d = new Date(isoString);

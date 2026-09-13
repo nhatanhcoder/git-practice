@@ -44,6 +44,18 @@ export class StudentClassesController {
     return this.classesService.findEnrolledClassDetail(user.id, id);
   }
 
+  // Three segments, so GET ':id' (one segment) can never swallow it. Declared after
+  // detail anyway to keep the read paths in traversal order: list → class → lesson.
+  @Get(':classId/lessons/:lessonId')
+  @ApiOperation({ summary: 'Lesson detail for an enrolled student (S-LESSON-2)' })
+  lessonDetail(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('classId') classId: string,
+    @Param('lessonId') lessonId: string,
+  ) {
+    return this.classesService.findEnrolledLessonDetail(user.id, classId, lessonId);
+  }
+
   // DELETE, matching API_STUDENT.md. It is not a destructive delete: the service flips the
   // enrollment to `dropped` and keeps the row (INV-CLASS-06). The verb describes the student's
   // intent, not the storage operation.

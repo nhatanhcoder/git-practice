@@ -74,6 +74,7 @@ Analytics (T-ANL-1…4): _not yet mapped._ Every other Teacher area has a contra
 | `/student/flashcards` | S-SRS-1..5 | [student-srs](./student-pages/student-srs.md) | built | v1 | vocabulary seed; streak timezone |
 | `/student/classes` | S-CLS-1,2 | [student-classes-list](./student-pages/student-classes-list.md) | built | v1 | — |
 | `/student/classes/[classId]` | S-CLS-3,4, S-LESSON-1 | [student-class-detail](./student-pages/student-class-detail.md) | built | v1 | — |
+| `/student/classes/[classId]/lessons/[lessonId]` | S-LESSON-2,3,4 | [student-lesson-detail](./student-pages/student-lesson-detail.md) | built | v1 | assignments (S-LESSON-3) + supplements (S-LESSON-4) render as unavailable |
 | `/student/assignments` | S-ASGN-1 | [student-assignments-list](./student-pages/student-assignments-list.md) | built (live) | v1 | GET list live; ⛔ detail endpoint unimplemented; attempt status badges need PR #73 |
 | `/student/notifications` | S-BILL-3 + Notifications table | [student-notifications](./student-pages/student-notifications.md) | built | v1 | — (module 07 live; role-agnostic `/api/v1/notifications` per 07-notifications.md) |
 | `/student/mistakes` | S-MSTK | [student-mistakes](./student-pages/student-mistakes.md) | built (mock) | v1 | ⛔ mistake-collection endpoints (Needs lane) |
@@ -87,6 +88,8 @@ Analytics (T-ANL-1…4): _not yet mapped._ Every other Teacher area has a contra
 | `/student/workplace` | S-SELF-6 | [student-workplace](./student-pages/student-workplace.md) | built (mock) | v1 | ⛔ DOC-011 corpus + scorer contract |
 | `/student/foundation` | S-SELF-2,9 | [student-foundation](./student-pages/student-foundation.md) | contracted (proposed) | — | ⛔ source, schema, API and media approval |
 | `/student/grammar` | S-SELF-3,9 | [student-grammar](./student-pages/student-grammar.md) | contracted (proposed) | — | ⛔ source, schema, API and exercise approval |
+| `/student/invoices` | S-BILL-1 | [student-invoices](./student-pages/student-invoices.md) | built | v1 | — (endpoints defined in [API_STUDENT.md](../../api/API_STUDENT.md) § Billing; dedicated handler per SCOPE-BILL-01) |
+| `/student/invoices/[invoiceId]` | S-BILL-2 | [student-invoice-detail](./student-pages/student-invoice-detail.md) | built | v1 | — (embedded `payments[]`; `new_invoice` notification deep-link target) |
 | `/student/learning-path` | S-SELF-1,9 | [student-learning-path](./student-pages/student-learning-path.md) | contracted (proposed) | — | ⛔ catalog paths, progress reads/writes |
 | `/student/learning-path/[nodeId]` | S-SELF-1,9 | [student-learning-path-node](./student-pages/student-learning-path-node.md) | contracted (proposed) | — | ⛔ catalog read, progress write |
 

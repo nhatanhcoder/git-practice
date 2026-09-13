@@ -6,6 +6,7 @@ import {
   isValidUuid,
   resolveClassDetailOutcome,
   resolveLessonDetailOutcome,
+  resolveSingleLessonOutcome,
   describeLeaveFailure,
 } from "../src/lib/student/classes-rules.ts";
 
@@ -142,6 +143,57 @@ describe("A08 · Lesson Detail Outcome Resolution", () => {
   });
 });
 
+describe("Student lesson detail · single-endpoint outcome (S-LESSON-2)", () => {
+  const mockLesson = mockDetail.lessons[0];
+
+  it("resolves invalid_id when validIds is false", () => {
+    assert.equal(resolveSingleLessonOutcome(false, null, null, false), "invalid_id");
+    assert.equal(resolveSingleLessonOutcome(true, null, mockLesson, false), "invalid_id");
+  });
+
+  it("resolves loading when loading is true", () => {
+    assert.equal(resolveSingleLessonOutcome(true, null, null), "loading");
+    assert.equal(resolveSingleLessonOutcome(true, new Error("err"), mockLesson), "loading");
+  });
+
+  it("resolves invalid_id on 400 VALIDATION_ERROR", () => {
+    assert.equal(
+      resolveSingleLessonOutcome(false, { statusCode: 400, code: "VALIDATION_ERROR" }, null),
+      "invalid_id",
+    );
+  });
+
+  it("resolves forbidden on 403 CLASS_ACCESS_DENIED", () => {
+    assert.equal(
+      resolveSingleLessonOutcome(false, { statusCode: 403, code: "CLASS_ACCESS_DENIED" }, null),
+      "forbidden",
+    );
+  });
+
+  it("resolves not_found on 404 LESSON_NOT_FOUND (cross-class lesson)", () => {
+    assert.equal(
+      resolveSingleLessonOutcome(false, { statusCode: 404, code: "LESSON_NOT_FOUND" }, null),
+      "not_found",
+    );
+  });
+
+  it("resolves not_found on 404 CLASS_NOT_FOUND", () => {
+    assert.equal(
+      resolveSingleLessonOutcome(false, { statusCode: 404, code: "CLASS_NOT_FOUND" }, null),
+      "not_found",
+    );
+  });
+
+  it("resolves error when the payload is missing without an error", () => {
+    assert.equal(resolveSingleLessonOutcome(false, new Error("Network Failed"), null), "error");
+    assert.equal(resolveSingleLessonOutcome(false, null, null), "error");
+  });
+
+  it("resolves ready when the lesson payload is present", () => {
+    assert.equal(resolveSingleLessonOutcome(false, null, mockLesson), "ready");
+  });
+});
+
 describe("A08 · Date Formatting Helper", () => {
   it("formats valid ISO timestamp to locale date string", () => {
     const formatted = formatClassJoinedDate("2026-08-05T10:30:00.000Z");
@@ -201,13 +253,27 @@ describe("A08 · Static Security & Integration Invariants", () => {
     assert.doesNotMatch(lessonPage, /lms-data/);
   });
 
+  it("service defines fetchEnrolledLessonDetail calling the nested lesson endpoint", () => {
+    assert.match(serviceFile, /fetchEnrolledLessonDetail/);
+    assert.match(
+      serviceFile,
+      /\/student\/classes\/\$\{encodeURIComponent\(classId\)\}\/lessons\/\$\{encodeURIComponent\(lessonId\)\}/,
+    );
+  });
+
+  it("lessons/[lessonId]/page.tsx reads the dedicated endpoint instead of filtering a class payload", () => {
+    assert.match(lessonPage, /fetchEnrolledLessonDetail/);
+    assert.match(lessonPage, /resolveSingleLessonOutcome/);
+    assert.doesNotMatch(lessonPage, /detail\.lessons\.find/);
+  });
+
   it("lessons/[lessonId]/page.tsx does not include DemoStateSwitcher", () => {
     assert.doesNotMatch(lessonPage, /DemoStateSwitcher/);
   });
 
   it("both pages include backlink navigation", () => {
     assert.match(detailPage, /href="\/student\/classes"/);
-    assert.match(lessonPage, /href=\{`\/student\/classes\/\$\{detail\.id\}`\}/);
+    assert.match(lessonPage, /href=\{`\/student\/classes\/\$\{classId\}`\}/);
   });
 
   it("neither page uses dead CSS token var(--color-text-muted)", () => {

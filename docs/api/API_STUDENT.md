@@ -24,6 +24,7 @@ All routes require: `Authorization: Bearer <token>` + `role=student`
 | POST | `/api/v1/student/classes/join` | Join class via enrollmentCode |
 | GET | `/api/v1/student/classes` | List enrolled classes |
 | GET | `/api/v1/student/classes/:id` | Class detail |
+| GET | `/api/v1/student/classes/:classId/lessons/:lessonId` | Lesson detail — caller must be actively enrolled in `:classId`; lesson must belong to `:classId` (S-LESSON-2) |
 | DELETE | `/api/v1/student/classes/:id/leave` | Leave class (status=dropped) |
 
 ---

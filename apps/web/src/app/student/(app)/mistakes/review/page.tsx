@@ -25,6 +25,7 @@ import {
   Panel,
   SectionHeader,
 } from "@/components/student/primitives";
+import { DemoBanner } from "@/components/student/demo-banner";
 import { useToast } from "@/components/student/toast";
 import { useStudentStore } from "@/lib/student/store";
 import { boxInterval } from "@/lib/student/student-rules";
@@ -168,6 +169,7 @@ export default function MistakeReviewPage() {
         title={`Ôn lỗi sai · câu ${idx + 1}/${queue.length}`}
         sub={`Đúng ${right} · hộp hiện tại ${item.box} (${boxInterval(item.box)})`}
       />
+      <DemoBanner text="Phiên ôn này chạy trên dữ liệu mô phỏng trong trình duyệt — không phải sổ tay lỗi sai thật của bạn." />
 
       <Bar value={((idx + (picked ? 1 : 0)) / queue.length) * 100} label="Tiến độ phiên ôn" />
 

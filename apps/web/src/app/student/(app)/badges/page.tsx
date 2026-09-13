@@ -48,14 +48,6 @@ const RARITY_TONE: Record<BadgeRarity, "neutral" | "info" | "epic" | "warn"> = {
 };
 
 export default function BadgesPage() {
-  if (process.env.NODE_ENV === "production") {
-    return (
-      <UnavailableState
-        title="Kho huy hiệu"
-        description="Hệ thống huy hiệu chưa được kết nối máy chủ dữ liệu trong phiên bản hiện tại. Vui lòng quay lại sau."
-      />
-    );
-  }
   const [demo, setDemo] = useState<DemoState>("ready");
   const [category, setCategory] = useState<BadgeCategory | "all">("all");
   const [onlyLocked, setOnlyLocked] = useState(false);
@@ -94,6 +86,18 @@ export default function BadgesPage() {
   );
 
   const unlocked = badges.filter((b) => b.unlocked).length;
+
+  // Production renders the unavailable state, but only AFTER every hook has run —
+  // an early return above them would make the component conditionally hooked, which
+  // React forbids (A05 fixed this for /mistakes/review; this file follows the same rule).
+  if (process.env.NODE_ENV === "production") {
+    return (
+      <UnavailableState
+        title="Kho huy hiệu"
+        description="Hệ thống huy hiệu chưa được kết nối máy chủ dữ liệu trong phiên bản hiện tại. Vui lòng quay lại sau."
+      />
+    );
+  }
 
   return (
     <>

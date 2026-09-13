@@ -1365,6 +1365,37 @@ highest web id is also `WEB-017`. Per `DOC-014`, reconcile by hand if another br
 
 ---
 
+### [WEB-023] Seventeen student pages early-returned the prod branch before their hooks
+
+**Severity**: Medium (latent — build-time constant masked the crash risk; still an illegal component shape)
+**Status**: ✅ Resolved 2026-09-09 — branch `feat/student-prod-return-hooks`; regression test added
+
+**Description**: while planning `/student/mistakes` + `/student/exams` work (2026-09-09), a
+scan of all 20 `student/(app)` pages found **17 of them** rendering their production
+`UnavailableState` via an `if (NODE_ENV === "production") return …` placed **before** the
+component's hooks — a Rules-of-Hooks violation: the component is conditionally hooked. A05
+had already fixed exactly this for `/mistakes/review` (comment in the file explains the
+placement) but the pattern was copied 17 more times by the mockup-era screens without the fix.
+`/exams/*` prod copy also cited the wrong sprint ("Sprint 5"; the exam engine is **Sprint 4**
+per `SPRINT_PLAN.md`).
+
+**Impact**: `NODE_ENV` is a build-time constant, so the dev and prod builds each saw a
+consistent hook order — React did not crash in practice. The violation becomes live the day
+someone introduces any runtime-dependent early return nearby, or a lint rule / React strict
+mode flags the shape. The wrong sprint number also sent readers of the prod page to the wrong
+place in the plan.
+
+**Resolution**: the prod branch now runs after all hooks in every affected page (the A05
+placement, with the same explanatory comment), the three `/exams` messages name Sprint 4 and
+say what the screen is waiting for, and `apps/web/scripts/student-prod-return.test.mjs`
+enforces the invariant: any student page whose prod early-return is followed by a hook fails
+the suite. The test was proven to fire by reverting one file to the violating shape (red)
+and restoring it (green).
+
+**Numbering note**: assigned on a tree where `docs/module-status-sync` (PR #51) added
+API-017/DEBT-006 and `feat/a11-vocab-importer` (PR #53) touched no WEB ids; highest WEB id
+in use is WEB-018 (`feat/a05-srs-routes`).
+
 ### [API-017] Monitoring telemetry is hardcoded — `/admin/monitoring` shows fiction for Redis and Gemini
 
 **Severity**: High — the screen presents invented health data as live platform status
@@ -1592,6 +1623,45 @@ approved, repository-owned source and import/seed strategy. The same audit confi
 S-SRS-6/7 and Student analytics still have no approved transport contracts; they are recorded as
 `NOT IMPLEMENTED`, not counted as passing scope.
 
+---
+
+### [GIT-004] Two agent sessions shared one working tree — branch switches destroyed each other's state
+
+**Severity**: High
+**Status**: Open — process rule violated; the mechanism to prevent it already exists
+
+**Description**: found 2026-09-12 while building the student invoice read path
+(`feat/student-invoices`). A second session was working in `D:\PersonalProject\Real` at the
+same time as this one. Consequences observed in one afternoon, in order:
+
+1. This session's **branch refs vanished** mid-task (`git status` reported "No commits yet";
+   40+ loose refs were zeroed). Every commit survived as dangling objects and was recovered
+   via `git fsck --lost-found` + `git update-ref` — the branch's own reflog
+   (`0000… → 89183f3`) was the pointer that made recovery deterministic.
+2. A **stale API process** kept serving a pre-rebase build: `GET /student/invoices` answered
+   404 "Cannot GET" while the code believed the route existed. The screen showed a load error
+   that looked like a feature bug.
+3. Mid-browser-test, the other session **checked out a different branch in the shared tree**,
+   replacing the source (and served build) under the running web server. The invoice detail
+   page went **blank** — not a code defect; the environment mutated under test.
+4. Untracked scratch from both sessions accumulated in one `git status`, making it
+   non-obvious which files belonged to whom.
+
+**Impact**: every verification run in a shared checkout is unreliable when another session
+can switch branches or restart servers at any moment. A blank screen, a 404 route, and
+disappearing refs were all environment, not code — but each cost a debugging loop and could
+have been "fixed" wrongly.
+
+**Fix Plan**: enforce `multi-agent-workflow.md` §5 — one **worktree per active session**
+(`git worktree add ../Real-<name> <branch>`), never two agents in one checkout. This session
+finished in `D:\PersonalProject\Real-invoices` after the collision. Note: a fresh worktree
+needs `.env` copied from the main checkout (gitignored, absent after `worktree add`), and on
+pnpm 11 the BUILD-002 prisma-engine corruption did not reproduce.
+
+**Recovery recipe that worked** (for the next occurrence): `git fsck --lost-found` → identify
+dangling commits by subject → `git update-ref refs/heads/<branch> <sha>` → verify with
+`git log`. Do not re-run agents before refs are restored.
+
 ## Resolved Issues
 
 ### [BUILD-003] Application quality gates missing from CI
@@ -1780,3 +1850,42 @@ before shooting, so failing screens leave only the trace.zip.
 **Fix Plan**: render the existing period rows as mobile cards under 640px (the pattern
 `admin-invoices` already uses), or gate the wide table behind horizontal scroll containment
 that does not widen the page. Verify with `PW_ROUTES=/admin/payroll` on both viewports.
+
+---
+
+### [WEB-022] Lesson eyebrow shows `orderIndex + 1` while `orderIndex` is 1-based
+
+**Severity**: Low
+**Status**: Open — found 2026-09-12 while wiring the student lesson-detail page to the real endpoint
+
+**Description**: `apps/web/src/app/student/(app)/classes/[classId]/lessons/[lessonId]/page.tsx`
+renders `Bài ${lesson.orderIndex + 1}`. `ENTITY_LESSON.md` and the teacher `create()` path
+define `orderIndex` as 1-based (`max + 1`, reorder requires exactly `1..N`), so the first
+lesson of a class reads "Bài 2". Pre-existing in the stub; kept byte-identical through the
+endpoint rewiring to stay in scope.
+
+**Fix Plan**: render `Bài ${lesson.orderIndex}` (one line), or confirm a 0-based convention
+somewhere and record it against `ENTITY_LESSON.md`. Do not "harmonise" by editing the entity
+spec silently — see Conflict Rules.
+
+### [BUILD-005] `node --import tsx --test` fails on Node 25 — tsx 4.23.12 loader
+
+**Severity**: Low (environmental — CI unaffected)
+**Status**: Open — found 2026-09-12 running the student lesson-detail e2e suite
+
+**Description**: with local Node v25.9.0, `node --import tsx --test test/*.test.ts` (the
+`pnpm --filter api test` path) dies with `ERR_MODULE_NOT_FOUND` on the extensionless
+`../dist/src/app.module` import — identically for pre-existing suites
+(`teacher-lessons.e2e.test.ts` fails the same way), so it is the toolchain, not the test.
+CI pins Node 24 (`quality.yml`) and is unaffected.
+
+**Workaround**: `tsx --test` (the tsx CLI instead of the Node loader hook) resolves the same
+imports fine on Node 25: `node --env-file ../../.env ./node_modules/tsx/dist/cli.mjs --test
+--test-concurrency=1 <files>`. Full suite verified this way 2026-09-12: 198/198 across
+32 suites.
+
+**Fix Plan**: pin a Node version for local dev (`.nvmrc`/volta, matching CI's 24) or upgrade
+tsx past the Node 25 loader incompatibility, then re-run `pnpm --filter api test` verbatim.
+### 2026-09-13 migration-only review note
+
+No new issue ID assigned. The AttemptAnswer migration was split from PR #73 so it can be verified and merged before dependent API/FE code.

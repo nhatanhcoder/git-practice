@@ -72,14 +72,6 @@ function gradeInk(inkPixels: number, totalPixels: number, strokeCount: number): 
 }
 
 export default function WritingDetailPage() {
-  if (process.env.NODE_ENV === "production") {
-    return (
-      <UnavailableState
-        title="Luyện viết chữ Hán"
-        description="Chức năng luyện viết chữ Hán chưa được kết nối máy chủ dữ liệu trong phiên bản hiện tại. Vui lòng quay lại sau."
-      />
-    );
-  }
   const params = useParams<{ charId: string }>();
   const charId = decodeURIComponent(params?.charId ?? "");
   const char = writingChars.find((c) => c.id === charId) ?? null;
@@ -197,6 +189,18 @@ export default function WritingDetailPage() {
       awardXp(5, 2);
       toast(`Được ${result} điểm — cần ${WRITING_PASS_SCORE} để đạt chuẩn`, "warn");
     }
+  }
+
+  // Production renders the unavailable state, but only AFTER every hook has run —
+  // an early return above them would make the component conditionally hooked, which
+  // React forbids (A05 fixed this for /mistakes/review; this file follows the same rule).
+  if (process.env.NODE_ENV === "production") {
+    return (
+      <UnavailableState
+        title="Luyện viết chữ Hán"
+        description="Chức năng luyện viết chữ Hán chưa được kết nối máy chủ dữ liệu trong phiên bản hiện tại. Vui lòng quay lại sau."
+      />
+    );
   }
 
   return (

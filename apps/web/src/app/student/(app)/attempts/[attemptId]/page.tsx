@@ -33,14 +33,6 @@ function formatClock(totalSeconds: number): string {
 }
 
 export default function AttemptPage() {
-  if (process.env.NODE_ENV === "production") {
-    return (
-      <UnavailableState
-        title="Làm bài tập"
-        description="Chức năng làm bài tập chưa được kết nối máy chủ dữ liệu trong phiên bản hiện tại (Sprint 4). Vui lòng quay lại sau."
-      />
-    );
-  }
   const params = useParams<{ attemptId: string }>();
   const attemptId = decodeURIComponent(params?.attemptId ?? "");
   const router = useRouter();
@@ -150,6 +142,18 @@ export default function AttemptPage() {
 
   const question = attempt.questions[index];
   const answeredCount = attempt.questions.filter((q) => isAnswered(answers[q.id])).length;
+
+  // Production renders the unavailable state, but only AFTER every hook has run —
+  // an early return above them would make the component conditionally hooked, which
+  // React forbids (A05 fixed this for /mistakes/review; this file follows the same rule).
+  if (process.env.NODE_ENV === "production") {
+    return (
+      <UnavailableState
+        title="Làm bài tập"
+        description="Chức năng làm bài tập chưa được kết nối máy chủ dữ liệu trong phiên bản hiện tại (Sprint 4). Vui lòng quay lại sau."
+      />
+    );
+  }
 
   return (
     <div className="stack gap-5">

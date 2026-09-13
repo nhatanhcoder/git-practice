@@ -32,14 +32,6 @@ import { UnavailableState } from "@/components/student/unavailable-state";
 const LEVELS = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 
 export default function WritingPage() {
-  if (process.env.NODE_ENV === "production") {
-    return (
-      <UnavailableState
-        title="Luyện viết chữ Hán"
-        description="Luyện viết chữ Hán chưa được kết nối máy chủ dữ liệu trong phiên bản hiện tại. Vui lòng quay lại sau."
-      />
-    );
-  }
   const [demo, setDemo] = useState<DemoState>("ready");
   const [level, setLevel] = useState<number | "all">("all");
   const [radical, setRadical] = useState<string>("all");
@@ -70,6 +62,18 @@ export default function WritingPage() {
     const strokes = chars.reduce((sum, c) => sum + c.strokeCount * c.progress.practised, 0);
     return { practised, passed, strokes, total: chars.length };
   }, [chars]);
+
+  // Production renders the unavailable state, but only AFTER every hook has run —
+  // an early return above them would make the component conditionally hooked, which
+  // React forbids (A05 fixed this for /mistakes/review; this file follows the same rule).
+  if (process.env.NODE_ENV === "production") {
+    return (
+      <UnavailableState
+        title="Luyện viết chữ Hán"
+        description="Luyện viết chữ Hán chưa được kết nối máy chủ dữ liệu trong phiên bản hiện tại. Vui lòng quay lại sau."
+      />
+    );
+  }
 
   return (
     <>

@@ -278,11 +278,40 @@ model Attempt {
 
   assignment Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
   student    User       @relation("AttemptsMade", fields: [studentId], references: [id], onDelete: Cascade)
+  answers    AttemptAnswer[]
 
   @@index([assignmentId])
   @@index([studentId])
   @@index([status])
   @@map("attempts")
+}
+
+// ENTITY_ATTEMPT_ANSWER.md — one answer row per (attempt, question). Student writes
+// selectedOptions/writtenAnswer via autosave and autoScore/isCorrect land at submit;
+// teacher grading (module 04) writes teacherScore/teacherFeedback; AI suggest writes
+// aiSuggestedScore/aiFeedback only. Prisma has no optional scalar lists, so an
+// unanswered MCQ stores `[]`, never null.
+model AttemptAnswer {
+  id               String   @id @default(uuid()) @db.Uuid
+  attemptId        String   @map("attempt_id") @db.Uuid
+  questionId       String   @map("question_id")
+  selectedOptions  String[] @default([]) @map("selected_options")
+  writtenAnswer    String?  @map("written_answer")
+  autoScore        Float?   @map("auto_score")
+  teacherScore     Float?   @map("teacher_score")
+  aiSuggestedScore Float?   @map("ai_suggested_score")
+  aiFeedback       String?  @map("ai_feedback")
+  teacherFeedback  String?  @map("teacher_feedback")
+  isCorrect        Boolean? @map("is_correct")
+  savedAt          DateTime? @map("saved_at")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+
+  attempt Attempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+
+  @@unique([attemptId, questionId])
+  @@index([attemptId])
+  @@map("attempt_answers")
 }
 
 enum SessionStatus {

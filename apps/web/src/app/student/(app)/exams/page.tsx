@@ -25,6 +25,7 @@ import {
   SkeletonPanel,
 } from "@/components/student/primitives";
 import { UnavailableState } from "@/components/student/unavailable-state";
+import { DemoBanner } from "@/components/student/demo-banner";
 import { DemoStateSwitcher, LevelSelector, type DemoState } from "@/components/student/controls";
 import { Modal } from "@/components/student/overlay";
 import { useStudentProfile, useStudentStore } from "@/lib/student/store";
@@ -35,14 +36,6 @@ import type { Exam } from "@/lib/student/types";
 const LEVELS = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 
 export default function ExamsPage() {
-  if (process.env.NODE_ENV === "production") {
-    return (
-      <UnavailableState
-        title="Thi thử HSK"
-        description="Chức năng phòng thi thử HSK chưa được kết nối máy chủ dữ liệu trong phiên bản hiện tại (Sprint 5). Vui lòng quay lại sau."
-      />
-    );
-  }
   const [demo, setDemo] = useState<DemoState>("ready");
   const [level, setLevel] = useState<number | "all">("all");
   const [kind, setKind] = useState<"all" | "full" | "drill">("all");
@@ -81,6 +74,18 @@ export default function ExamsPage() {
     0,
   );
 
+  // Production renders the unavailable state, but only AFTER every hook has run —
+  // an early return above them would make the component conditionally hooked, which
+  // React forbids (A05 fixed this for /mistakes/review; this file follows the same rule).
+  if (process.env.NODE_ENV === "production") {
+    return (
+      <UnavailableState
+        title="Thi thử HSK"
+        description="Phòng thi thử HSK cần máy chấm điểm phía máy chủ (Attempts — Sprint 4 theo SPRINT_PLAN.md) chưa được xây dựng. Trang này sẽ hoạt động khi endpoint đó ra mắt."
+      />
+    );
+  }
+
   return (
     <>
       <PageHead
@@ -89,6 +94,7 @@ export default function ExamsPage() {
         sub="Thi thử trên máy theo định dạng CBT: đếm ngược, chuyển phần, bảng điều hướng câu hỏi và phiếu điểm chi tiết. Điểm và lịch sử thi được lưu lại; phần chấm vẫn chạy trên trình duyệt."
         action={<DemoStateSwitcher value={demo} onChange={setDemo} />}
       />
+      <DemoBanner text="Đề thi và kết quả trong trang này là dữ liệu mô phỏng, chạy cục bộ trong trình duyệt. Phòng thi thật cần máy chấm phía máy chủ (Sprint 4)." />
 
       {demo === "loading" ? (
         <SkeletonPanel rows={5} height={200} />

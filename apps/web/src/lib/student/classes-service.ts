@@ -5,7 +5,7 @@ import {
   normalizeJoinCode,
   type EnrolledClass,
 } from "./classes-rules";
-import type { EnrolledClassDetail } from "./classes-rules";
+import type { EnrolledClassDetail, EnrolledLesson } from "./classes-rules";
 
 export * from "./classes-rules";
 
@@ -61,6 +61,24 @@ export function describeJoinFailure(err: unknown): string {
  */
 export async function fetchEnrolledClassDetail(classId: string): Promise<EnrolledClassDetail> {
   const response = await apiRequest<EnrolledClassDetail>(`/student/classes/${encodeURIComponent(classId)}`);
+  return response.data;
+}
+
+/**
+ * Fetches one lesson of an enrolled class (S-LESSON-2).
+ * Endpoint: GET /student/classes/:classId/lessons/:lessonId
+ *
+ * Access is enforced server-side: active enrollment in :classId, and the
+ * lesson must belong to :classId. A lesson id from another class answers
+ * LESSON_NOT_FOUND (404) — the client never filters a class payload itself.
+ */
+export async function fetchEnrolledLessonDetail(
+  classId: string,
+  lessonId: string,
+): Promise<EnrolledLesson> {
+  const response = await apiRequest<EnrolledLesson>(
+    `/student/classes/${encodeURIComponent(classId)}/lessons/${encodeURIComponent(lessonId)}`,
+  );
   return response.data;
 }
 
