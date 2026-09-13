@@ -1,5 +1,5 @@
 ---
-status: verification-in-progress
+status: completed — pending PR review
 last_updated: 2026-09-14
 ---
 ## [2026-09-14] — S-MSTK Task B live notebook/review — codex — branch `codex/student-mistakes-live`
@@ -14,9 +14,12 @@ last_updated: 2026-09-14
 - API build/type-check, web production build, lint, 212/212 web scripts and check-docs 9/9 passed.
 - Claim dd0108b; backend 6c534e5; frontend e8f4ab9. Worktree D:/PersonalProject/Real-mistakes-live.
 
-**In progress**:
-- Full API regression suite running again after previous process was interrupted; incomplete output is not counted as PASS.
-- Final records and PR.
+**In progress**: PR review only; implementation and local verification complete.
+
+**Final regression**: 305/305 API tests, 53 suites, zero failed/cancelled/skipped (563.6s).
+SRS teardown updated for the new derived mistake records; both SRS suites rerun 15/15.
+Lint and API type-check rerun after the cleanup change. Both production browser projects
+passed; 212 web script tests passed; web/API builds and check-docs passed.
 
 **Contract/temporary decisions to preserve**:
 - Owner explicitly approved additive schema and student-owned API after being told existing mistake transport was missing.
@@ -39,12 +42,16 @@ last_updated: 2026-09-14
 **Needs from the other lane**: none.
 
 **Blocker / needs follow-up**:
-- Full-suite result pending. Merge is not performed under this Task B scope.
+- No implementation blocker. Merge is not performed under this Task B scope.
 - No new issue ID assigned; append-only KNOWN_ISSUES note records BUILD-005 and historical-source limitation.
 
-**Next steps**: finish full-suite result, commit records, push/open PR.
+**Next steps**: review the Task B PR; merge only with owner authorization.
+
+**Remote**: origin verified as nhatanhcoder/git-practice; authenticated owner has ADMIN access.
+An initial auto-review push rejection was resolved by verifying destination/ownership; branch push succeeded.
 
 ## Files updated
+
 - `ai/PROGRESS.md`
 - `ai/context/sessions/2026-09-14-codex-student-mistakes-live.md`
 - `ai/known-issues/KNOWN_ISSUES.md`
@@ -57,6 +64,8 @@ last_updated: 2026-09-14
 - `apps/api/src/mistakes/mistakes.service.ts`
 - `apps/api/src/mongodb/schemas/user-mistake.schema.ts`
 - `apps/api/test/mistakes.e2e.test.ts`
+- `apps/api/test/student-flashcards-flow.e2e.test.ts`
+- `apps/api/test/student-flashcards.e2e.test.ts`
 - `apps/web/scripts/srs-routes.test.mjs`
 - `apps/web/src/app/student/(app)/mistakes/page.tsx`
 - `apps/web/src/app/student/(app)/mistakes/review/page.tsx`

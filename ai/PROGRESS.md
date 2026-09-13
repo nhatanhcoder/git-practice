@@ -1116,4 +1116,4 @@ are accepted and implemented; 02 is implemented but its spec status is in confli
 
 - ✅ (codex · 2026-09-13) **AttemptAnswer migration integration.** Schema and migration only, split from PR #73 so the database change reaches main before attempt lifecycle code. Prisma schema valid; check-docs 9/9; DB apply NOT RUN locally.
 
-- 🔶 (codex · 2026-09-13) **S-MSTK Task B — live mistake notebook/review.** Owner approved schema and student-owned API; branch codex/student-mistakes-live. Sources: real failed flashcard review and graded wrong attempt answers. Implementation, lifecycle 3/3 and production browser 2/2 verified; full regression and PR records in `ai/context/sessions/2026-09-14-codex-student-mistakes-live.md`.
+- ✅ (codex · 2026-09-14) **S-MSTK Task B — live mistake notebook/review.** Owner approved schema and student-owned API; branch codex/student-mistakes-live. Sources: real failed flashcard review and graded wrong attempt answers. Implementation, API 305/305, SRS cleanup rerun 15/15 and production browser 2/2 verified; records in `ai/context/sessions/2026-09-14-codex-student-mistakes-live.md`.
