@@ -368,6 +368,22 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
 
 ## Off-sprint / spike
 
+- ✅ (zcode · 2026-09-12) **Landing contrast + theme toggle + route/theme tests (on top of PR
+      #83's /landing move).** Two sessions executed the owner's landing task in parallel: #83
+      (merged) moved the page to `/landing` with permanent redirects and restored the full
+      prototype content; this slice delivers what it lacked — the login-page contrast root cause
+      (auth.css styled text through `--fg`/`--fg-muted` tokens tokens.css never defines → title
+      inherited the browser default and washed out on dark; 15 references fixed to real
+      `--text-1/--text-2`), an auth-screen theme toggle (the shell read the preference but had
+      no switch), and the ink-on-cinnabar submit button (#fff on #ff7454 measured ~2.6:1).
+      Tests: `landing-routes.test.mjs` (source: redirects, no live old-path links, brand href,
+      token guard, toggle wired) · `landing-route.spec.ts` (render, both redirects, brand,
+      375px — 3× 5/5) · `login-theme.spec.ts` (computed-style WCAG ≥4.5 for
+      title/sub/label/input/button in BOTH themes + toggle/persist — 3× 5/5). Full web scripts
+      **219/219** · check-docs **9/9** · build **44/44**. ⚠ The invented-people content question
+      (WEB-017) is reopened and left to the owner: #83's restored prototype is live at /landing
+      pending that choice. Branch `fix/landing-contrast-theme-tests`.
+
 - ✅ (opencode · 2026-09-13) **Landing `/student/landing` → `/landing` + login theme/contrast.**
   `git mv` route công khai ra khỏi segment guarded (history kept); old URL redirect 308;
   11 src refs updated (shell/chrome/comments/eslint path); auth theo persisted theme
