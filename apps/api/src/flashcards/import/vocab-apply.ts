@@ -51,8 +51,8 @@ export function getImportModel(
   connection: Connection,
   collection = 'flashcards',
   modelName = 'FlashcardImport',
-): Model<ImportFlashcardDoc> {
-  return connection.model(modelName, FlashcardSchema, collection) as unknown as Model<ImportFlashcardDoc>;
+) {
+  return connection.model(modelName, FlashcardSchema, collection);
 }
 
 export async function applyVocabulary(

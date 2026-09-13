@@ -31,12 +31,14 @@ function toDetails(errors: ValidationError[], prefix = ''): Record<string, strin
   return out;
 }
 
+// Heterogeneous API envelopes are asserted per test case.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Res = { status: number; headers: Headers; body: any };
 
 async function req(
   method: 'GET' | 'POST' | 'PATCH' | 'DELETE',
   path: string,
-  body?: any,
+  body?: unknown,
   token?: string,
 ): Promise<Res> {
   const headers: Record<string, string> = {};
