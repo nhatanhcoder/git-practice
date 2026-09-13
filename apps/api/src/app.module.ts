@@ -17,6 +17,7 @@ import { PayrollModule } from './payroll/payroll.module';
 import { BillingModule } from './billing/billing.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { FlashcardsModule } from './flashcards/flashcards.module';
+import { WordBankModule } from './word-bank/word-bank.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
@@ -37,6 +38,7 @@ import { RolesGuard } from './common/guards/roles.guard';
     BillingModule,
     DashboardModule,
     FlashcardsModule,
+    WordBankModule,
     NotificationsModule,
 
     // Global so any guard can verify an access token without each feature module
