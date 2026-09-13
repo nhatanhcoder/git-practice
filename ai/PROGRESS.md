@@ -368,6 +368,7 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
 
 ## Off-sprint / spike
 
+- ✅ (opencode · 2026-09-12) **Student lesson detail (S-LESSON-2): Page Contract + GET /student/classes/:classId/lessons/:lessonId + FE wiring.** RBAC-gated read: service verifies active enrollment (`CLASS_ACCESS_DENIED` 403), lesson must belong to the class (`LESSON_NOT_FOUND` 404); only registry codes, no migration. Contract `student-lesson-detail.md` = `built`, `_INDEX` + `student-flow.md` + `API_STUDENT.md` updated. FE page reads the dedicated endpoint (`fetchEnrolledLessonDetail` + `resolveSingleLessonOutcome`); class name is best-effort context, assignments panel stays an honest unavailable notice (S-LESSON-3/4 ⛔). Verify: API **198/198 across 32 suites** (10 new ownership-matrix e2e) · tracked web tests **155/155** (11 new) · web build 42/42 · check-docs 9/9. Branch `feat/student-lesson-detail`. Filed `WEB-022` (eyebrow off-by-one, kept as-is) + `BUILD-005` (`node --import tsx` broken on Node 25; ran suite via `tsx --test`).
 - ✅ (claude · 2026-09-09) **FE batch — `/student/mistakes` + `/student/exams` honesty pass:
   prod-return-after-hooks across 17 pages, correct Sprint 4 copy, visible demo banners.**
   While planning the two routes the user asked for, measured the whole area: **17 student
