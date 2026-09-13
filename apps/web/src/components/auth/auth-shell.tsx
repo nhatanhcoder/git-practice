@@ -9,9 +9,9 @@ import { useStudentPreferences } from "@/lib/student/preferences";
  * The split layout both /login and /register sit in.
  *
  * The left panel is the reason this is a shared component rather than markup copied
- * twice: someone arriving from /landing should not feel handed off to a
- * different product, and the brand, palette and the drifting ink motif are what carry
- * that. Keeping it in one place also means the reduced-motion handling is written once.
+ * twice: the brand, palette and the drifting ink motif are what carry one product
+ * across both auth screens. Keeping it in one place also means the reduced-motion
+ * handling is written once.
  *
  * Theme follows the persisted learner preference (same store as the app shell),
  * defaulting to dark on first paint to avoid a hydration flash — an anonymous
@@ -52,7 +52,7 @@ export function AuthShell({
           汉
         </span>
 
-        <Link href="/landing" className="auth-brand">
+        <Link href="/" className="auth-brand">
           <span className="auth-brand__mark" aria-hidden="true">
             汉
           </span>
