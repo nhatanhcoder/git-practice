@@ -35,14 +35,6 @@ const SCOPE_LABEL: Record<LeaderScope, string> = {
 };
 
 export default function LeaderboardPage() {
-  if (process.env.NODE_ENV === "production") {
-    return (
-      <UnavailableState
-        title="Bảng xếp hạng"
-        description="Bảng xếp hạng chưa được kết nối máy chủ dữ liệu trong phiên bản hiện tại. Vui lòng quay lại sau."
-      />
-    );
-  }
   const [demo, setDemo] = useState<DemoState>("ready");
   const [scope, setScope] = useState<LeaderScope>("week");
   const profile = useStudentProfile();
@@ -66,6 +58,18 @@ export default function LeaderboardPage() {
   const you = rows.find((r) => r.isYou);
   const podium = rows.slice(0, 3);
   const rest = rows.slice(3);
+
+  // Production renders the unavailable state, but only AFTER every hook has run —
+  // an early return above them would make the component conditionally hooked, which
+  // React forbids (A05 fixed this for /mistakes/review; this file follows the same rule).
+  if (process.env.NODE_ENV === "production") {
+    return (
+      <UnavailableState
+        title="Bảng xếp hạng"
+        description="Bảng xếp hạng chưa được kết nối máy chủ dữ liệu trong phiên bản hiện tại. Vui lòng quay lại sau."
+      />
+    );
+  }
 
   return (
     <>

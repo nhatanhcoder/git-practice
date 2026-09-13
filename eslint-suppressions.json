@@ -216,74 +216,14 @@
       "count": 2
     }
   },
-  "apps/web/src/app/student/(app)/badges/page.tsx": {
-    "react-hooks/rules-of-hooks": {
-      "count": 13
-    }
-  },
-  "apps/web/src/app/student/(app)/exams/[examId]/page.tsx": {
-    "react-hooks/rules-of-hooks": {
-      "count": 14
-    }
-  },
-  "apps/web/src/app/student/(app)/exams/[examId]/result/page.tsx": {
-    "react-hooks/rules-of-hooks": {
-      "count": 7
-    }
-  },
-  "apps/web/src/app/student/(app)/exams/page.tsx": {
-    "react-hooks/rules-of-hooks": {
-      "count": 10
-    }
-  },
   "apps/web/src/app/student/(app)/grammar/page.tsx": {
     "@typescript-eslint/no-unused-vars": {
       "count": 1
     }
   },
-  "apps/web/src/app/student/(app)/leaderboard/page.tsx": {
-    "react-hooks/rules-of-hooks": {
-      "count": 4
-    }
-  },
-  "apps/web/src/app/student/(app)/lego/page.tsx": {
-    "react-hooks/rules-of-hooks": {
-      "count": 14
-    }
-  },
   "apps/web/src/app/student/(app)/page.tsx": {
     "@typescript-eslint/no-unused-vars": {
       "count": 1
-    }
-  },
-  "apps/web/src/app/student/(app)/placement/page.tsx": {
-    "react-hooks/rules-of-hooks": {
-      "count": 7
-    }
-  },
-  "apps/web/src/app/student/(app)/progress/page.tsx": {
-    "react-hooks/rules-of-hooks": {
-      "count": 7
-    }
-  },
-  "apps/web/src/app/student/(app)/workplace/[scenarioId]/page.tsx": {
-    "react-hooks/rules-of-hooks": {
-      "count": 11
-    }
-  },
-  "apps/web/src/app/student/(app)/workplace/page.tsx": {
-    "react-hooks/rules-of-hooks": {
-      "count": 5
-    }
-  },
-  "apps/web/src/app/student/(app)/writing/[charId]/page.tsx": {
-    "react-hooks/rules-of-hooks": {
-      "count": 13
-    }
-  },
-  "apps/web/src/app/student/(app)/writing/page.tsx": {
-    "react-hooks/rules-of-hooks": {
-      "count": 9
     }
   },
   "apps/web/src/app/student/landing/landing-view.tsx": {

@@ -32,14 +32,6 @@ import { withScenarioProgress } from "@/lib/student/student-rules";
 import { UnavailableState } from "@/components/student/unavailable-state";
 
 export default function WorkplacePage() {
-  if (process.env.NODE_ENV === "production") {
-    return (
-      <UnavailableState
-        title="Mô phỏng công sở"
-        description="Tình huống giao tiếp công sở chưa được kết nối máy chủ dữ liệu trong phiên bản hiện tại. Vui lòng quay lại sau."
-      />
-    );
-  }
   const [demo, setDemo] = useState<DemoState>("ready");
   const [kind, setKind] = useState<string>("all");
 
@@ -56,6 +48,18 @@ export default function WorkplacePage() {
 
   const attempted = list.filter((s) => s.progress.attempts > 0).length;
   const best = list.reduce((n, s) => Math.max(n, s.progress.bestScore), 0);
+
+  // Production renders the unavailable state, but only AFTER every hook has run —
+  // an early return above them would make the component conditionally hooked, which
+  // React forbids (A05 fixed this for /mistakes/review; this file follows the same rule).
+  if (process.env.NODE_ENV === "production") {
+    return (
+      <UnavailableState
+        title="Mô phỏng công sở"
+        description="Tình huống giao tiếp công sở chưa được kết nối máy chủ dữ liệu trong phiên bản hiện tại. Vui lòng quay lại sau."
+      />
+    );
+  }
 
   return (
     <>

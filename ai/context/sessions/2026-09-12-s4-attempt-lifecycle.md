@@ -58,3 +58,7 @@ untouched. DoD spec needs `--workers=1` (serial, shared attempt).
 - Mistake notebook (S-MSTK) still spec-first follow-up, untouched.
 
 **Next steps**: review/merge this branch (PR to open).
+
+## 2026-09-13 merge review
+
+Migration merged first via PR #76. Reconciled current Assignments/Billing flow and retained the live attempt take/result pages when older demo gates from PR #56 merged. Lint, web production build 44/44 and check-docs 9/9 pass; current-head CI required.
