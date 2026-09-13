@@ -368,6 +368,18 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
 
 ## Off-sprint / spike
 
+- ✅ (zcode · 2026-09-12) **WEB-017/WEB-018/DEBT-005 — the public prototype landing removed
+      (owner decision: "gỡ trang + redirect").** No approved real staff/outcome content exists,
+      so replacement was impossible without re-inventing. Deleted `/student/landing` (route +
+      view + css), `SiteShell`, the three.js teacher stage, `landing-data.ts`, the four
+      ~8.5 MB teacher PNGs, and the `three` dependency (sole consumer). `/student/landing` →
+      **temporary redirect to `/login`**; auth-shell brand retargeted to `/`; student-chrome's
+      landing bypass branch removed. The only public surface left asserts nothing about people.
+      A real landing returns only with owner-approved content (sources listed in its PR).
+      Verify: fresh web build **43/43** · check-docs **9/9** · browser on the production
+      build: `/student/landing` → **307 → /login** (curl + real navigation), brand link → `/`
+      → gate, 375px screenshot clean, no error text. Branch `fix/remove-landing-prototype`.
+
 - ✅ (zcode · 2026-09-13) **Merged the stuck merge + landed two uncommitted sibling slices on
       `feat/pw-sweep-routes`.** (1) Completed the day-old unresolved merge of `origin/main@198271f`
       (PR #74; sole conflict `ai/PROGRESS.md` — kept both lanes' entries) and merged the 4 newer

@@ -1221,6 +1221,14 @@ sees.
 staff and real outcomes, or cut the sections that assert facts about people. Do not simply
 enlarge the disclaimer.
 
+**Resolution (2026-09-12, owner decision)**: the page was **removed** rather than repopulated —
+no approved real staff/outcome content exists in the repo, and inventing substitutes would
+re-create the defect. `apps/web/src/app/student/landing/` plus `SiteShell`, the three.js teacher
+stage, `landing-data.ts` and the four ~8.5 MB teacher PNGs (also closing `DEBT-005`) are deleted;
+`/student/landing` now answers a **temporary redirect to `/login`** (next.config redirects) so old
+links land on the gate. The auth-shell brand link and `student-chrome`'s landing bypass branch
+were cleaned up with it. A real landing page returns only with owner-approved content.
+
 **Related**: the rest of `feat/student-hanlu-ui` is still unmerged — 24 commits, and `main` has
 moved 64 past it. Its PR #24 was closed 2026-09-05 04:06 UTC with `mergedAt: null` and **no
 comment recording why**. Only the landing route was ported here; the branch also rewrites the
@@ -1249,6 +1257,9 @@ lives at `/student/flashcards`, so the link is also pointing at the wrong screen
 **Fix Plan**: point that card at `/student/flashcards` and rewrite the copy for SM-2, or drop the
 card until the notebook has a backend. Belongs with `WEB-017`, which already covers the landing
 page asserting things that are not true; do not fix it in isolation from that decision.
+
+**Resolution (2026-09-12)**: resolved by `WEB-017`'s removal — the card, and the whole landing
+page advertising it, no longer exist. Nothing to re-point.
 
 ---
 
@@ -1470,6 +1481,10 @@ the whole first impression.
 **Fix Plan**: compress and resize to the size the cylinder faces actually sample, or convert to
 WebP with a PNG fallback. Do this before the page is linked anywhere public — see `WEB-017`,
 which has to be settled first anyway.
+
+**Resolution (2026-09-12)**: resolved by deletion — `WEB-017`'s owner decision removed the
+landing page, and the four PNGs existed only to serve its three.js carousel. `public/teachers/`
+is gone (~8.5 MB off the repo), and the `three` dependency with it (no other consumer).
 
 ---
 
