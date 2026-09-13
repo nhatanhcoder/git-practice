@@ -34,14 +34,6 @@ import { placementQuestions } from "@/lib/student/content";
 import { placementLevel } from "@/lib/student/student-rules";
 
 export default function PlacementPage() {
-  if (process.env.NODE_ENV === "production") {
-    return (
-      <UnavailableState
-        title="Kiểm tra xếp cấp"
-        description="Chức năng kiểm tra xếp cấp chưa được kết nối máy chủ dữ liệu trong phiên bản hiện tại. Vui lòng quay lại sau."
-      />
-    );
-  }
   const [idx, setIdx] = useState(0);
   const [picked, setPicked] = useState<number | null>(null);
   const [answers, setAnswers] = useState<Record<string, boolean>>({});
@@ -153,6 +145,18 @@ export default function PlacementPage() {
   }
 
   /* ---------- Question ---------- */
+  // Production renders the unavailable state, but only AFTER every hook has run —
+  // an early return above them would make the component conditionally hooked, which
+  // React forbids (A05 fixed this for /mistakes/review; this file follows the same rule).
+  if (process.env.NODE_ENV === "production") {
+    return (
+      <UnavailableState
+        title="Kiểm tra xếp cấp"
+        description="Chức năng kiểm tra xếp cấp chưa được kết nối máy chủ dữ liệu trong phiên bản hiện tại. Vui lòng quay lại sau."
+      />
+    );
+  }
+
   return (
     <>
       <Link href="/student" className="backlink">

@@ -368,6 +368,23 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
 
 ## Off-sprint / spike
 
+- ✅ (claude · 2026-09-09) **FE batch — `/student/mistakes` + `/student/exams` honesty pass:
+  prod-return-after-hooks across 17 pages, correct Sprint 4 copy, visible demo banners.**
+  While planning the two routes the user asked for, measured the whole area: **17 student
+  pages early-returned the production `UnavailableState` before their hooks** — the
+  Rules-of-Hooks violation A05 had fixed for `/mistakes/review` only (WEB-023, fixed here).
+  All 17 now use the A05 placement (hooks first, branch after, with the explanatory comment);
+  a scan-based regression test (`student-prod-return.test.mjs`) enforces the invariant and was
+  **proven to fire** (revert one file → red, restore → green). Exams' prod copy no longer cites
+  the wrong sprint ("Sprint 5" → **Sprint 4 Attempts**, per SPRINT_PLAN.md) and now says what
+  the screen is waiting for. New `DemoBanner` component: the 4 demo surfaces that run on
+  browser-local data (exams list, exam room, result sheet, mistakes/review) now show a
+  **visible** "dữ liệu mô phỏng" banner in dev — WEB-017's lesson is that a disclaimer living
+  only in code comments is never read. Production behavior unchanged (banners render nothing
+  there; the 17 routes keep their `UnavailableState` gates). No backend, no invented endpoints,
+  no schema/auth/RBAC. Verified: build clean, **111/111 web tests (28 suites, +1 new)**,
+  check-docs 8/8, browser-checked dev (all 4 banners render) and prod (`next start`: exams
+  shows the new Sprint-4 message), 375px no overflow. Branch `feat/student-prod-return-hooks`.
 - ✅ (zcode · 2026-09-12) **Page Contracts for remaining student routes (DOCS).** 10
       contracts on `docs/student-page-contracts`: notifications (matches merged module 07 BE exactly — role-agnostic
       paths, 11-type enum, no API display text) are live; nine ⛔ prototype contracts carry
