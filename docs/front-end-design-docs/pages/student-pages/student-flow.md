@@ -43,6 +43,19 @@ last_updated: 2026-09-10
         └── Rời lớp → Modal xác nhận          DELETE /api/v1/student/classes/:id/leave
 ```
 
+## 2b. Assignments branch
+
+```text
+/student  Dashboard
+│
+└── Sidebar: Bài tập
+    ▼
+    /student/assignments  Bài tập đã phát hành  GET /api/v1/student/assignments
+    ├── Lọc theo lớp → same screen              local filter (options from GET /student/classes)
+    └── Mở chi tiết → ⛔                         GET /student/assignments/:id unimplemented —
+                                                rows deliberately have no navigation
+```
+
 ## 3. Note on Sổ tay lỗi sai (`S-MSTK`)
 
 `/student/mistakes` (Sổ tay lỗi sai) and `/student/mistakes/review` are dedicated to diagnostic error review for questions answered incorrectly during homework assignments and CBT mock exams. They are separate from vocabulary flashcards (`/student/flashcards`). Backend error-collection endpoints will be defined in Sprint 4 (Assignments & Attempts); in the interim, `/student/mistakes` remains in prototype/demo mode without being conflated with flashcard SRS.
@@ -60,7 +73,9 @@ last_updated: 2026-09-10
 | 7 | `/student/classes` | Tham gia lớp | same / modal | POST join | `CLASS_ENROLL_CODE_INVALID`, `CLASS_ALREADY_ARCHIVED`, `CLASS_ALREADY_ENROLLED`, `VALIDATION_ERROR` |
 | 8 | `/student/classes` | Chọn lớp | `/student/classes/[classId]` | GET class detail | `CLASS_ACCESS_DENIED`, `CLASS_NOT_FOUND`, `VALIDATION_ERROR` |
 | 9 | `/student/classes/[classId]` | Rời lớp | `/student/classes` | DELETE leave | `CLASS_NOT_ENROLLED`, `CLASS_ACCESS_DENIED`, `CLASS_NOT_FOUND`, `VALIDATION_ERROR` |
-| 10 | `/student/classes/[classId]` | Xem bài học | `/student/classes/[classId]/lessons/[lessonId]` | GET lesson detail | `CLASS_ACCESS_DENIED`, `CLASS_NOT_FOUND`, `LESSON_NOT_FOUND`, `VALIDATION_ERROR` |
+| 10 | `/student` | Bài tập | `/student/assignments` | GET published list | auth errors |
+| 11 | `/student/assignments` | Lọc theo lớp | same | local (options: GET classes) | — |
+| 12 | `/student/classes/[classId]` | Xem bài học | `/student/classes/[classId]/lessons/[lessonId]` | GET lesson detail | `CLASS_ACCESS_DENIED`, `CLASS_NOT_FOUND`, `LESSON_NOT_FOUND`, `VALIDATION_ERROR` |
 
 ## Entity state transitions
 
@@ -71,7 +86,34 @@ last_updated: 2026-09-10
 
 - ⛔ Save a word from content (S-SRS-6).
 - ⛔ Manage/review the saved-word bank (S-SRS-7).
-- ⛔ Assignment/Attempt mistake collection (S-MSTK, Sprint 4).
+- ⛔ Assignment/Attempt mistake collection (S-MSTK) — the source data exists (Sprint 4 attempts), no collection contract.
+- ⛔ Exam room / result + placement transport (S-SELF-7) — ADR-005 is a 0-byte stub (DOC-017).
+- ⛔ Analytics response shapes — `GET /student/progress`(+`/chart`) paths are reserved in `API_STUDENT.md` but no module spec defines the payloads (F6.1/F6.2).
+- ⛔ Gamification — XP, rank/level, streak calendar, badge unlocks, leaderboard aggregation/privacy (S-GAME-1..5, S-ANL-4).
+
+## Blocked prototype branches — mapped 2026-09-12
+
+Every route below exists in `apps/web` as a prototype and now has a Page Contract; none has an
+approved backend, so no branch carries a live edge. Trees are omitted deliberately — with all
+edges ⛔ there is no traversal to document beyond list → detail inside each feature.
+
+| Branch | Contracts | Backend blocker |
+|---|---|---|
+| Sổ tay lỗi sai | [student-mistakes](./student-mistakes.md) | mistake collection (source data live via Sprint 4) |
+| Phòng thi + kết quả | [student-exams](./student-exams.md) | ADR-005 stub (DOC-017) |
+| Kiểm tra xếp cấp | [student-placement](./student-placement.md) | ADR-005 stub (DOC-017) |
+| Tiến độ học tập | [student-progress](./student-progress.md) | analytics response shapes unapproved |
+| Bảng xếp hạng | [student-leaderboard](./student-leaderboard.md) | aggregation + privacy rules |
+| Kho huy hiệu | [student-badges](./student-badges.md) | server-authoritative unlocks |
+| Luyện viết chữ | [student-writing](./student-writing.md) | DOC-011 corpus + progress contract |
+| Ghép câu Lego | [student-lego](./student-lego.md) | DOC-011 corpus + progress contract |
+| Mô phỏng công sở | [student-workplace](./student-workplace.md) | DOC-011 corpus + scorer unspecified |
+
+Live branches with contracts: SRS (`student-srs`), Classes (`student-classes-list`,
+`student-class-detail`), Assignments (`student-assignments-list`), Attempts
+(`student-attempt-take`, `student-attempt-result`, PR #73), Invoices
+(`student-invoices`, `student-invoice-detail`, PR #72), Notifications
+(`student-notifications` — module 07 merged via PR #67).
 
 
 ## Foundation and Grammar proposal — 2026-09-10
@@ -154,3 +196,51 @@ Missing contracts: F-read, F-progress, F-save, G-read, G-progress, G-save, G-pra
 There is no Student create/delete/publish catalog path because existing permissions forbid it.
 No microphone-upload path, cloud scorer, Teacher progress surface, gamification event or
 Assignment-grade transition is introduced. No persisted-write edge is executable yet.
+
+## Learning Path proposal — 2026-09-11
+
+**Status: proposed / blocked; NOT IMPLEMENTED.** Contracts
+`student-learning-path.md` + `student-learning-path-node.md` (S-SELF-1). All reads/writes
+below are ⛔ per `API_STUDENT.md` §83–94 (learning catalog and curriculum paths have no
+path/DTO/error contract). Existing SRS/Classes/FG branches above are unchanged.
+
+### Learning Path traversal
+
+```text
+/student  Dashboard
+└── Navigation: Lộ trình HSK
+    ▼
+    /student/learning-path?curriculum=&level=&view=   ⛔ catalog + progress reads
+    ├── Đổi curriculum/HSK/map-list → same screen     local URL params; ⛔ read on change
+    ├── Mở node → drawer (no route change)            local
+    │   ├── Mở khoá bằng XP → drawer confirms         local XP guard (mock rule)
+    │   └── Bắt đầu / Học lại → node route
+    │       ▼
+    │       /student/learning-path/[nodeId]           ⛔ catalog read
+    │       ├── Học → Luyện → Hoàn thành              local steps
+    │       ├── Trả lời → đúng/sai tại chỗ            local
+    │       └── Boss < 80% → stays locked             local gate (mock rule)
+    ├── Retry failed read → same screen               ⛔ catalog / progress reads
+    └── Back to Dashboard
+        ▼
+        /student                           navigation only
+```
+
+### Learning Path transition table
+
+| # | From | Action | To | API | Errors |
+|---|---|---|---|---|---|
+| LP1 | Dashboard | Open Learning Path | map hub | ⛔ catalog + progress | TODO(error-code) |
+| LP2 | map hub | Change filters | same hub (new URL) | local / ⛔ read | TODO(error-code) |
+| LP3 | map hub | Open node | drawer, no route | local | — |
+| LP4 | drawer | Force-unlock / Start | drawer / node route | local | — |
+| LP5 | node route | Study → practise → finish | result, same route | local / ⛔ progress write | TODO(error-code) |
+| LP6 | node route | Back | map hub (filters kept) | none | — |
+
+### Learning Path state transitions and absent paths
+
+Node: `locked → available → current → completed` (force-unlock spends XP locally until
+the server owns XP). Boss clears at ≥80% practice score. No Student catalog
+create/delete/publish path (permissions forbid it); no XP/badge server event; no
+Assignment-grade transition. Missing contracts: catalog path read, curriculum read,
+self-study progress read/write — all under API_STUDENT §83.

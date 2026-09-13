@@ -3,7 +3,7 @@ feature: T-ASGN-1, T-ASGN-2, T-ASGN-3, T-ASGN-4, T-ASGN-5
 role: teacher
 route: /teacher/assignments
 status: built
-last_updated: 2026-09-01
+last_updated: 2026-09-11 — live against /api/v1/teacher/assignments (S3 backend); submission stats derived from Attempt records (INV-TASG-07); edit/delete gated by the real 409 ASSIGNMENT_ALREADY_SUBMITTED
 ---
 
 # Page Contract — Teacher · Assignments & Tests

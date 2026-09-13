@@ -16,7 +16,7 @@
   border: 1px solid var(--border);
   border-radius: 14px;
   padding: 32px 28px;
-  box-shadow: 0 1px 2px rgb(15 23 42 / 6%), 0 12px 32px rgb(15 23 42 / 6%);
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--primary) 6%, transparent), 0 12px 32px color-mix(in srgb, var(--primary) 6%, transparent);
 }
 
 .brand {
@@ -85,17 +85,17 @@
 
 .input:focus-visible {
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgb(37 99 235 / 15%);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 15%, transparent);
 }
 
 .input[aria-invalid="true"] {
-  border-color: #dc2626;
+  border-color: var(--danger);
 }
 
 .fieldError {
   margin: 6px 0 0;
   font-size: 0.8125rem;
-  color: #b91c1c;
+  color: var(--red-700);
 }
 
 .submit {
@@ -130,9 +130,9 @@
   border-radius: 9px;
   font-size: 0.85rem;
   line-height: 1.45;
-  background: #fef2f2;
-  border: 1px solid #fecaca;
-  color: #991b1b;
+  background: var(--red-50);
+  border: 1px solid var(--red-200);
+  color: var(--red-800);
 }
 
 .hint {

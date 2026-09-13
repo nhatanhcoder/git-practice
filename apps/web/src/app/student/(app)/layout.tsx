@@ -3,13 +3,14 @@ import { RequireAuth } from "@/components/auth/require-auth";
 import { StudentChrome } from "@/components/student/student-chrome";
 
 // The Hán Lộ stylesheet stack, in the source branch's order — tokens first, because every
-// sheet below it reads the custom properties it defines. They live one level up, at the
-// segment root, so /student/landing can reach the same tokens without being dragged inside
-// this guarded group.
-import "../tokens.css";
-import "../base.css";
+// sheet below it reads the custom properties it defines. tokens/base/components are the
+// canonical hanlu files (the student/ copies were byte-identical forks, removed); order
+// is unchanged so the cascade is unchanged. They live at the segment root so
+// /student/landing can reach the same tokens without being dragged inside this group.
+import "@/styles/hanlu/tokens.css";
+import "@/styles/hanlu/base.css";
 import "../layout.css";
-import "../components.css";
+import "@/styles/hanlu/components.css";
 import "../pages.css";
 import "../lms.css";
 import "../student-ground.css";

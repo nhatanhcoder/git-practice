@@ -5,6 +5,11 @@
  *
  * Ids come from the mock fixtures in `src/lib/student/*` and `src/lib/teacher-data.ts`.
  * When a fixture id changes, this list changes with it.
+ *
+ * Update 2026-09-12 (PW sweep): closed as designed. Entries below carry
+ * `resolve` keys implemented in `resolve-ids.ts` (seed-first; timestamped sweep
+ * fixtures only for attempts/lessons, which have no seed equivalent). Mock-id
+ * routes (exams/workplace/writing) register literal mock keys from content.ts.
  */
 
 export type Area = "student" | "teacher" | "admin";
@@ -15,6 +20,12 @@ export type Screen = {
   /** Slug used for the screenshot filename. */
   name: string;
   area: Area;
+  /**
+   * Dynamic-route resolver key (see `resolve-ids.ts`). The `path` is the route
+   * pattern for selection (`PW_ROUTES=/student/classes/[classId]` matches it);
+   * the sweep resolves it to a concrete id at run time. Static screens omit it.
+   */
+  resolve?: string;
 };
 
 const student: Screen[] = [
@@ -39,11 +50,26 @@ const student: Screen[] = [
   { path: "/student/progress", name: "progress", area: "student" },
   { path: "/student/leaderboard", name: "leaderboard", area: "student" },
   { path: "/student/badges", name: "badges", area: "student" },
+  // Added 2026-09-12 (PW sweep): mock-id detail routes. Ids are static mock keys
+  // from `src/lib/student/content.ts`, so they need no runtime resolution.
+  { path: "/student/exams/e-h1-1", name: "exam-detail", area: "student" },
+  { path: "/student/exams/e-h1-1/result", name: "exam-result", area: "student" },
+  { path: "/student/workplace/sc-1", name: "workplace-scenario", area: "student" },
+  { path: "/student/writing/w1", name: "writing-char", area: "student" },
+  // Added 2026-09-12 (PW sweep): live-data dynamic routes. Ids resolve at run
+  // time in `resolve-ids.ts` (seed-first; timestamped sweep fixtures only where
+  // the seed has no equivalent). Never screenshot a "not found" branch.
+  { path: "/student/classes/[classId]", name: "class-detail", area: "student", resolve: "studentClass" },
+  { path: "/student/classes/[classId]/lessons/[lessonId]", name: "lesson-detail", area: "student", resolve: "studentLesson" },
+  { path: "/student/attempts/[attemptId]", name: "attempt-take", area: "student", resolve: "studentAttempt" },
+  { path: "/student/attempts/[attemptId]/result", name: "attempt-result", area: "student", resolve: "studentAttemptResult" },
 ];
 
 const teacher: Screen[] = [
   { path: "/teacher", name: "dashboard", area: "teacher" },
   { path: "/teacher/classes", name: "classes", area: "teacher" },
+  { path: "/teacher/classes/[classId]", name: "class-detail", area: "teacher", resolve: "teacherClass" },
+  { path: "/teacher/classes/[classId]/lessons", name: "class-lessons", area: "teacher", resolve: "teacherLessons" },
   { path: "/teacher/questions", name: "questions", area: "teacher" },
   { path: "/teacher/assignments", name: "assignments", area: "teacher" },
   { path: "/teacher/grading", name: "grading", area: "teacher" },
@@ -54,9 +80,12 @@ const teacher: Screen[] = [
 const admin: Screen[] = [
   { path: "/admin", name: "dashboard", area: "admin" },
   { path: "/admin/users", name: "users", area: "admin" },
+  { path: "/admin/users/[userId]", name: "user-detail", area: "admin", resolve: "adminUser" },
   { path: "/admin/invoices", name: "invoices", area: "admin" },
+  { path: "/admin/invoices/[invoiceId]", name: "invoice-detail", area: "admin", resolve: "adminInvoice" },
   { path: "/admin/invoices/generate", name: "invoices-generate", area: "admin" },
   { path: "/admin/payroll", name: "payroll", area: "admin" },
+  { path: "/admin/payroll/[periodId]", name: "payroll-detail", area: "admin", resolve: "adminPayrollPeriod" },
   { path: "/admin/payroll/sessions", name: "payroll-sessions", area: "admin" },
   { path: "/admin/pay-rates", name: "pay-rates", area: "admin" },
   { path: "/admin/tuition-rates", name: "tuition-rates", area: "admin" },

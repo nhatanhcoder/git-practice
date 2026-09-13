@@ -74,10 +74,17 @@ All routes require: `Authorization: Bearer <token>` + `role=student`
 
 ## Notifications
 
+Implemented 2026-09-12 (module 07, branch `feat/student-notifications`). Any authenticated
+role reads **its own** mailbox, so the paths are role-agnostic (`/api/v1/notifications`, per
+`07-notifications.md` §2 — not student-prefixed; the student mailbox is the same handler every
+role calls). Full contract: `docs/api/modules/07-notifications.md`.
+
 | Method | Path | Description |
 |--------|------|-------------|
-| GET | `/api/v1/student/notifications` | List notifications |
-| PATCH | `/api/v1/student/notifications/:id/read` | Mark as read |
+| GET | `/api/v1/notifications` | List one's own notifications — paginated, newest first; optional `?isRead=`/`?type=` filters |
+| GET | `/api/v1/notifications/unread-count` | Unread count for the bell badge |
+| PATCH | `/api/v1/notifications/:id/read` | Mark one as read — idempotent no-op when already read |
+| PATCH | `/api/v1/notifications/read-all` | Mark every unread row of mine as read |
 
 ---
 

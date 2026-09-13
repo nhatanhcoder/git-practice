@@ -44,8 +44,8 @@ CODE (touches RBAC → approval was mandatory, obtained).
   existing tests; the page uses the new single-payload resolver.
 
 **Blocker / needs follow-up**:
-- `WEB-019` (new): eyebrow `Bài ${orderIndex + 1}` vs 1-based `orderIndex` — kept as-is, one-line fix.
-- `BUILD-004` (new): `node --import tsx --test` broken on local Node 25 (tsx 4.23.12 loader);
+- `WEB-022` (new): eyebrow `Bài ${orderIndex + 1}` vs 1-based `orderIndex` — kept as-is, one-line fix.
+- `BUILD-005` (new): `node --import tsx --test` broken on local Node 25 (tsx 4.23.12 loader);
   ran the API suite via the tsx CLI instead. CI (Node 24) unaffected.
 - Pre-existing, not mine: `apps/web/.../(app)/page.tsx` (dashboard-live), `dashboard-live.ts`,
   `dashboard-live.test.mjs`, `srs-pagination.test.mjs`, `flashcards-interactive.spec.ts` are
