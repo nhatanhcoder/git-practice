@@ -7,6 +7,7 @@ import { ErrorCode } from '../common/errors/error-codes';
 import { NotificationsService } from '../notifications/notifications.service';
 import { CreateTuitionRateDto } from './dto/create-tuition-rate.dto';
 import { ListTuitionRatesQuery } from './dto/list-tuition-rates.query';
+import { ListMyInvoicesQuery } from './dto/list-my-invoices.query';
 import { CreateInvoiceDto } from './dto/create-invoice.dto';
 import { InvoiceSort, ListInvoicesQuery } from './dto/list-invoices.query';
 import { VoidInvoiceDto } from './dto/void-invoice.dto';
@@ -469,6 +470,126 @@ export class BillingService {
             id: p.recorder.id,
             name: p.recorder.nickname,
           },
+          createdAt: p.createdAt.toISOString(),
+        })),
+      },
+    };
+  }
+
+  // --------------------------------------------------------------------------
+  // STUDENT INVOICES (S-BILL-1/2, SCOPE-BILL-01, INV-BILLING-33/34)
+  //
+  // Dedicated student read path — never the admin handlers. Ownership is a
+  // WHERE condition on every query (`studentId = actorId AND status <> 'void'`),
+  // so another student's invoice is indistinguishable from a nonexistent one
+  // and a voided invoice is invisible to the student entirely (06-billing.md
+  // §5). Responses carry no email, no bio, no other user's data (INV-BILLING-34):
+  // the student is reading their own invoice, so `studentName`/`studentEmail`
+  // (admin-facing fields) are simply omitted.
+  // --------------------------------------------------------------------------
+
+  async listMyInvoices(actorId: string, query: ListMyInvoicesQuery) {
+    const page = query.page ?? 1;
+    const limit = query.limit ?? 20;
+
+    // INV-BILLING-33: the ownership filter lives in the WHERE, not in an `if`
+    // after reading — every Prisma query below carries `studentId = actorId`.
+    // `void` is not a value this route can produce rows for: the base
+    // condition already excludes voided invoices, so a `?status=void` request
+    // answers an explicit empty set rather than either exposing void or
+    // silently ignoring the filter.
+    if (query.status === InvoiceStatus.void) {
+      return {
+        data: [] as unknown[],
+        meta: { total: 0, page, limit, totalPages: 0 },
+      };
+    }
+
+    // Prisma takes ONE filter key per status object — `equals` and `not`
+    // together on the same object is not a merge it honors.
+    const statusFilter: Prisma.EnumInvoiceStatusFilter = query.status
+      ? { equals: query.status }
+      : { not: InvoiceStatus.void };
+
+    const where: Prisma.StudentInvoiceWhereInput = {
+      studentId: actorId,
+      status: statusFilter,
+    };
+
+    const [total, rows] = await this.prisma.$transaction([
+      this.prisma.studentInvoice.count({ where }),
+      this.prisma.studentInvoice.findMany({
+        where,
+        orderBy: { periodStart: 'desc' },
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+    ]);
+
+    // Money is serialized as decimal strings (ADR-010). `outstandingAmount` is
+    // derived here at read time — INV-BILLING-16 — so the FE never subtracts.
+    const data = rows.map((r) => ({
+      id: r.id,
+      code: r.code,
+      periodStart: r.periodStart.toISOString().slice(0, 10),
+      periodEnd: r.periodEnd.toISOString().slice(0, 10),
+      dueDate: r.dueDate.toISOString().slice(0, 10),
+      totalAmount: r.totalAmount,
+      paidAmount: r.paidAmount,
+      outstandingAmount: r.totalAmount.minus(r.paidAmount),
+      status: r.status,
+      createdAt: r.createdAt.toISOString(),
+    }));
+
+    return {
+      data,
+      meta: { total, page, limit, totalPages: Math.ceil(total / limit) },
+    };
+  }
+
+  async getMyInvoiceDetail(actorId: string, id: string) {
+    if (!UUID_REGEX.test(id)) {
+      throw new AppException(ErrorCode.INVOICE_NOT_FOUND, 'Hóa đơn không tồn tại');
+    }
+
+    // INV-BILLING-33 again, as one query: id + owner + non-void together. A
+    // valid invoice owned by someone else resolves to null and answers 404 —
+    // "not yours" and "does not exist" are deliberately the same answer.
+    const invoice = await this.prisma.studentInvoice.findFirst({
+      where: { id, studentId: actorId, status: { not: InvoiceStatus.void } },
+      include: {
+        payments: {
+          include: { recorder: { select: { id: true, nickname: true } } },
+          orderBy: [{ paidAt: 'asc' }, { id: 'asc' }],
+        },
+      },
+    });
+
+    if (!invoice) {
+      throw new AppException(ErrorCode.INVOICE_NOT_FOUND, 'Hóa đơn không tồn tại');
+    }
+
+    return {
+      invoice: {
+        id: invoice.id,
+        code: invoice.code,
+        periodStart: invoice.periodStart.toISOString().slice(0, 10),
+        periodEnd: invoice.periodEnd.toISOString().slice(0, 10),
+        dueDate: invoice.dueDate.toISOString().slice(0, 10),
+        totalAmount: invoice.totalAmount,
+        paidAmount: invoice.paidAmount,
+        outstandingAmount: invoice.totalAmount.minus(invoice.paidAmount),
+        status: invoice.status,
+        createdAt: invoice.createdAt.toISOString(),
+        // Same deterministic order as the admin detail (06-billing.md §3.5);
+        // recordedBy exposes only id + display name (INV-BILLING-34).
+        payments: invoice.payments.map((p) => ({
+          id: p.id,
+          amount: p.amount,
+          paidAt: p.paidAt.toISOString(),
+          paymentMethod: p.paymentMethod,
+          transactionReference: p.transactionReference,
+          recordedBy: { id: p.recorder.id, name: p.recorder.nickname },
           createdAt: p.createdAt.toISOString(),
         })),
       },
