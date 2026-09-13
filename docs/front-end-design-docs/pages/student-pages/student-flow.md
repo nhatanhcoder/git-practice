@@ -37,7 +37,9 @@ last_updated: 2026-09-10
     └── Chọn lớp → Chi tiết lớp
         ▼
         /student/classes/[classId]             GET /api/v1/student/classes/:id
-        ├── Xem bài học → chi tiết bài học    /student/classes/[classId]/lessons/[lessonId]
+        ├── Xem bài học → chi tiết bài học    GET /api/v1/student/classes/:classId/lessons/:lessonId
+        │   ▼
+        │   /student/classes/[classId]/lessons/[lessonId]  Lesson detail (S-LESSON-2)
         └── Rời lớp → Modal xác nhận          DELETE /api/v1/student/classes/:id/leave
 ```
 
@@ -100,6 +102,7 @@ backend dependency — the **Sprint 4** exam engine (`AttemptsModule`), previous
 | 11 | `/student/assignments` | Lọc theo lớp | same | local (options: GET classes) | — |
 | 12 | `/student` | Học phí | `/student/invoices` | GET own invoices | auth errors |
 | 13 | `/student/invoices` | Chọn hóa đơn | `/student/invoices/[invoiceId]` | GET invoice detail | `INVOICE_NOT_FOUND`, `VALIDATION_ERROR` |
+| 14 | `/student/classes/[classId]` | Xem bài học | `/student/classes/[classId]/lessons/[lessonId]` | GET lesson detail | `CLASS_ACCESS_DENIED`, `CLASS_NOT_FOUND`, `LESSON_NOT_FOUND`, `VALIDATION_ERROR` |
 
 ## Entity state transitions
 
