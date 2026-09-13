@@ -5,8 +5,8 @@ import { StudentChrome } from "@/components/student/student-chrome";
 // The Hán Lộ stylesheet stack, in the source branch's order — tokens first, because every
 // sheet below it reads the custom properties it defines. tokens/base/components are the
 // canonical hanlu files (the student/ copies were byte-identical forks, removed); order
-// is unchanged so the cascade is unchanged. They live at the segment root so
-// /student/landing can reach the same tokens without being dragged inside this group.
+// is unchanged so the cascade is unchanged. They live at the segment root so a future
+// public page can reach the same tokens without being dragged inside this group.
 import "@/styles/hanlu/tokens.css";
 import "@/styles/hanlu/base.css";
 import "../layout.css";
@@ -25,8 +25,9 @@ export const metadata: Metadata = {
  * The signed-in learner area, in the Hán Lộ design.
  *
  * `(app)` is a route group, so it contributes nothing to the URL — /student and every learner
- * route keep the paths they already had. The group exists so the guard and the chrome stop
- * applying to /student/landing, which is a public marketing page.
+ * route keep the paths they already had. The group exists so the guard and the chrome stay
+ * scoped to the signed-in area; public pages (the removed prototype landing, WEB-017) live
+ * outside it.
  *
  * RequireAuth is kept deliberately. The source branch's layout had no guard because that
  * branch predates PR #32; dropping it while porting would have taken the entire learner area

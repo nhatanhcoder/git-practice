@@ -4,9 +4,9 @@ import Link from "next/link";
  * The split layout both /login and /register sit in.
  *
  * The left panel is the reason this is a shared component rather than markup copied
- * twice: someone arriving from /student/landing should not feel handed off to a
- * different product, and the brand, palette and the drifting ink motif are what carry
- * that. Keeping it in one place also means the reduced-motion handling is written once.
+ * twice: the brand, palette and the drifting ink motif are what carry one product
+ * across both auth screens. Keeping it in one place also means the reduced-motion
+ * handling is written once.
  */
 export function AuthShell({
   title,
@@ -25,7 +25,7 @@ export function AuthShell({
           汉
         </span>
 
-        <Link href="/student/landing" className="auth-brand">
+        <Link href="/" className="auth-brand">
           <span className="auth-brand__mark" aria-hidden="true">
             汉
           </span>
