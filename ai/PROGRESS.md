@@ -368,6 +368,32 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
 
 ## Off-sprint / spike
 
+- ✅ (zcode · 2026-09-12) **Page Contracts for remaining student routes (DOCS).** 10
+      contracts on `docs/student-page-contracts`: notifications (matches merged module 07 BE exactly — role-agnostic
+      paths, 11-type enum, no API display text) are live; nine ⛔ prototype contracts carry
+      their real blockers (ADR-005 stub/DOC-017, reserved-but-undescribed analytics paths,
+      DOC-011 corpus, aggregation/privacy rules, collection endpoints). No endpoint invented,
+      no `apps/` change. `student-flow.md` gains the blocked-branch table; four new entries in
+      § Needs from the other lane are the student lane's FE↔BE contract backlog. Flagged for
+      the notifications lane: its invoice deep-link still returns null while PR #72 builds the
+      target screens. check-docs 9/9.
+- ✅ (opencode · 2026-09-12) **Student assignments list contract (S-ASGN-1) + cross-student isolation e2e.**
+  FE/BE already live from S3 (no mocks) — filled the recorded contract gap with
+  `student-assignments-list.md` (`built`), `_INDEX` row + `student-flow` §2b/rows 10–11.
+  `GET /student/assignments/:id` marked ⛔ (in `API_STUDENT.md`, unimplemented — not invented).
+  New `student-assignments-isolation.e2e.test.ts`: 2 students × 2 classes (own-published only,
+  own-draft hidden, cross-class hidden, shape + no `enrollmentCode` leak, anonymous 401).
+  Verify: api build clean · API **256/256 across 45 suites** (4 new) · web build 43/43 ·
+  check-docs 9/9. Branch `feat/student-assignments-list`.
+- ✅ (opencode · 2026-09-12) **PW screen sweep: all dynamic routes registered + PW_ALL=1 green 101/102.**
+  `routes.ts` gains 4 mock-id routes (exam-detail/result, workplace-scenario, writing-char) and
+  9 resolved routes (`resolve-ids.ts`: seed-first ids; timestamped sweep fixtures only for
+  attempt/lesson, public API only, no seed writes); `screens.spec.ts` runs the same
+  heading/gate/not-found/overflow/console checks on resolved paths and SKIPs with reason when
+  unresolvable. Sweep on prod build: **101/102** (desktop + 375px, 0 skips — every resolver
+  hit). Sole failure: `/admin/payroll` 591px overflow at 375px → filed `WEB-021` (pre-existing,
+  admin lane; no screenshot — the check asserts before shooting). Branch `feat/pw-sweep-routes`.
+
 - ✅ (zcode · 2026-09-12) **Student completion wave — slice 1: Notifications module 07
   (mailbox) + producers (closes API-013, S-BILL-3's visibility side).** Built to the
   module's own spec (§2/§3/§5/§7/§8; the §16 defaults picked in the owner-approved wave:
@@ -692,6 +718,23 @@ _(discovered while mapping the Admin UI — 2026-08-13)_
 - [x] (be) ~~Missing endpoints~~ — 2026-09-05: all endpoints implemented in live NestJS modules.
 - [ ] (be) **`packages/types` does not exist** — no shared contract between the two lanes.
       This is the most important unlock; it must be the first commit of a parallel session
+- [ ] (fe → be) **Student analytics module spec** — `GET /student/progress` and
+      `/student/progress/chart` are reserved paths in `API_STUDENT.md`, but no module spec
+      defines their request/response DTOs (F6.1/F6.2 blocked in Sprint 5). Found writing the
+      `student-progress` Page Contract 2026-09-12. Streak/XP figures on the same screen are
+      gamification (below), not analytics.
+- [ ] (fe → be) **S-MSTK mistake-notebook collection endpoints** — the source data now exists
+      (Sprint 4 attempts, PR #73), but no contract collects wrongly-answered questions from it.
+      `student-mistakes.md` contract written; the screen renders an honest empty state.
+- [ ] (fe → be) **Placement + platform mock-exam transport contract** — ADR-005
+      (server-authoritative exam) is a 0-byte stub (`DOC-017`); placement decision rule never
+      settled. Blocks `student-exams` / `student-placement` contracts.
+- [ ] (fe → be) **Gamification contracts** — XP sources, rank/level curve, streak
+      calendar/timezone rule (also blocks the SRS stats `streak: null`), badge unlock
+      conditions (server-authoritative), leaderboard aggregation + privacy/visibility.
+      Blocks `student-badges` / `student-leaderboard` / progress mock figures.
+      (Self-study content contracts for foundation/grammar/writing/lego/workplace are already
+      covered by the Foundation/Grammar proposal D1–D5 + `DOC-011` — not duplicated here.)
 
 ## Business decisions
 

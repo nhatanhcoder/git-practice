@@ -41,6 +41,19 @@ last_updated: 2026-09-10
         └── Rời lớp → Modal xác nhận          DELETE /api/v1/student/classes/:id/leave
 ```
 
+## 2b. Assignments branch
+
+```text
+/student  Dashboard
+│
+└── Sidebar: Bài tập
+    ▼
+    /student/assignments  Bài tập đã phát hành  GET /api/v1/student/assignments
+    ├── Lọc theo lớp → same screen              local filter (options from GET /student/classes)
+    └── Mở chi tiết → ⛔                         GET /student/assignments/:id unimplemented —
+                                                rows deliberately have no navigation
+```
+
 ## 3. Billing branch (S-BILL-1/2 — read-only)
 
 ```text
@@ -77,8 +90,10 @@ nothing (`outstandingAmount` is server-derived, INV-BILLING-16).
 | 7 | `/student/classes` | Tham gia lớp | same / modal | POST join | `CLASS_ENROLL_CODE_INVALID`, `CLASS_ALREADY_ARCHIVED`, `CLASS_ALREADY_ENROLLED`, `VALIDATION_ERROR` |
 | 8 | `/student/classes` | Chọn lớp | `/student/classes/[classId]` | GET class detail | `CLASS_ACCESS_DENIED`, `CLASS_NOT_FOUND`, `VALIDATION_ERROR` |
 | 9 | `/student/classes/[classId]` | Rời lớp | `/student/classes` | DELETE leave | `CLASS_NOT_ENROLLED`, `CLASS_ACCESS_DENIED`, `CLASS_NOT_FOUND`, `VALIDATION_ERROR` |
-| 10 | `/student` | Học phí | `/student/invoices` | GET own invoices | auth errors |
-| 11 | `/student/invoices` | Chọn hóa đơn | `/student/invoices/[invoiceId]` | GET invoice detail | `INVOICE_NOT_FOUND`, `VALIDATION_ERROR` |
+| 10 | `/student` | Bài tập | `/student/assignments` | GET published list | auth errors |
+| 11 | `/student/assignments` | Lọc theo lớp | same | local (options: GET classes) | — |
+| 12 | `/student` | Học phí | `/student/invoices` | GET own invoices | auth errors |
+| 13 | `/student/invoices` | Chọn hóa đơn | `/student/invoices/[invoiceId]` | GET invoice detail | `INVOICE_NOT_FOUND`, `VALIDATION_ERROR` |
 
 ## Entity state transitions
 
@@ -89,7 +104,34 @@ nothing (`outstandingAmount` is server-derived, INV-BILLING-16).
 
 - ⛔ Save a word from content (S-SRS-6).
 - ⛔ Manage/review the saved-word bank (S-SRS-7).
-- ⛔ Assignment/Attempt mistake collection (S-MSTK, Sprint 4).
+- ⛔ Assignment/Attempt mistake collection (S-MSTK) — the source data exists (Sprint 4 attempts), no collection contract.
+- ⛔ Exam room / result + placement transport (S-SELF-7) — ADR-005 is a 0-byte stub (DOC-017).
+- ⛔ Analytics response shapes — `GET /student/progress`(+`/chart`) paths are reserved in `API_STUDENT.md` but no module spec defines the payloads (F6.1/F6.2).
+- ⛔ Gamification — XP, rank/level, streak calendar, badge unlocks, leaderboard aggregation/privacy (S-GAME-1..5, S-ANL-4).
+
+## Blocked prototype branches — mapped 2026-09-12
+
+Every route below exists in `apps/web` as a prototype and now has a Page Contract; none has an
+approved backend, so no branch carries a live edge. Trees are omitted deliberately — with all
+edges ⛔ there is no traversal to document beyond list → detail inside each feature.
+
+| Branch | Contracts | Backend blocker |
+|---|---|---|
+| Sổ tay lỗi sai | [student-mistakes](./student-mistakes.md) | mistake collection (source data live via Sprint 4) |
+| Phòng thi + kết quả | [student-exams](./student-exams.md) | ADR-005 stub (DOC-017) |
+| Kiểm tra xếp cấp | [student-placement](./student-placement.md) | ADR-005 stub (DOC-017) |
+| Tiến độ học tập | [student-progress](./student-progress.md) | analytics response shapes unapproved |
+| Bảng xếp hạng | [student-leaderboard](./student-leaderboard.md) | aggregation + privacy rules |
+| Kho huy hiệu | [student-badges](./student-badges.md) | server-authoritative unlocks |
+| Luyện viết chữ | [student-writing](./student-writing.md) | DOC-011 corpus + progress contract |
+| Ghép câu Lego | [student-lego](./student-lego.md) | DOC-011 corpus + progress contract |
+| Mô phỏng công sở | [student-workplace](./student-workplace.md) | DOC-011 corpus + scorer unspecified |
+
+Live branches with contracts: SRS (`student-srs`), Classes (`student-classes-list`,
+`student-class-detail`), Assignments (`student-assignments-list`), Attempts
+(`student-attempt-take`, `student-attempt-result`, PR #73), Invoices
+(`student-invoices`, `student-invoice-detail`, PR #72), Notifications
+(`student-notifications` — module 07 merged via PR #67).
 
 
 ## Foundation and Grammar proposal — 2026-09-10
