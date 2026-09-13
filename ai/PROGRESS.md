@@ -368,6 +368,23 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
 
 ## Off-sprint / spike
 
+- ✅ (zcode · 2026-09-13) **Merged the stuck merge + landed two uncommitted sibling slices on
+      `feat/pw-sweep-routes`.** (1) Completed the day-old unresolved merge of `origin/main@198271f`
+      (PR #74; sole conflict `ai/PROGRESS.md` — kept both lanes' entries) and merged the 4 newer
+      main commits (#70 lesson-detail, #76 attempt answers, #56 prod-gated hooks, #72 student
+      invoices) — clean. (2) Landed the SRS slice found uncommitted: `/student/flashcards` browse
+      now paginated (16/page, page resets on level/mode change), stat row → 4 semantic accent
+      cards, tiles → padded cards reflowing 1/2/3/4 columns. ⚠️ **Supersedes the owner's
+      2026-09-10 "dense 4-per-row, zero-gap glossary" request — no session record of that
+      reversal was found; flagged for the owner.** Covered by new `srs-pagination.test.mjs` (11)
+      + `flashcards-interactive.spec.ts`. (3) Landed the sibling routes slice: 3 static student
+      routes registered + header unified; added `/student/invoices` + `[invoiceId]` with a
+      `studentInvoice` resolver for the PR #72 screens. Verified: web build exit 0 (57 routes) ·
+      web unit **193/193** · check-docs 9/9 · lint clean · live run (API dist :3001, prod web
+      :3000) `flashcards-interactive` **6/6** desktop+375, screenshot read. Env notes: API boots
+      from `dist`, not `tsx` (`CannotDetermineTypeError`); orphan `check-dashboard-live.mjs`
+      moved aside, not committed. Session:
+      `ai/context/sessions/2026-09-13-zcode-merge-srs-routes.md`.
 - ✅ (opencode · 2026-09-12) **Student lesson detail (S-LESSON-2): Page Contract + GET /student/classes/:classId/lessons/:lessonId + FE wiring.** RBAC-gated read: service verifies active enrollment (`CLASS_ACCESS_DENIED` 403), lesson must belong to the class (`LESSON_NOT_FOUND` 404); only registry codes, no migration. Contract `student-lesson-detail.md` = `built`, `_INDEX` + `student-flow.md` + `API_STUDENT.md` updated. FE page reads the dedicated endpoint (`fetchEnrolledLessonDetail` + `resolveSingleLessonOutcome`); class name is best-effort context, assignments panel stays an honest unavailable notice (S-LESSON-3/4 ⛔). Verify: API **198/198 across 32 suites** (10 new ownership-matrix e2e) · tracked web tests **155/155** (11 new) · web build 42/42 · check-docs 9/9. Branch `feat/student-lesson-detail`. Filed `WEB-022` (eyebrow off-by-one, kept as-is) + `BUILD-005` (`node --import tsx` broken on Node 25; ran suite via `tsx --test`).
 - ✅ (claude · 2026-09-09) **FE batch — `/student/mistakes` + `/student/exams` honesty pass:
   prod-return-after-hooks across 17 pages, correct Sprint 4 copy, visible demo banners.**
