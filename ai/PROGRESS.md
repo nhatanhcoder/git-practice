@@ -235,6 +235,11 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
 - ⬜ F5.4 Manual grading for Writing
 - ⬜ Gemini AI Suggest for Writing (`AiRateLimiterGuard`, store `aiSuggestedScore`/`aiFeedback`)
 - ⬜ F5.5 View submitted attempt results
+- 🔶 (claude · 2026-09-13) **Task C — exams×3 + placement.** Exam lobby/detail/result rebuilt on
+  `mock_test` assignments + the live attempt lifecycle (no F13 papers — DOC-011, none invented);
+  placement gets a new module spec + endpoints (MCQ sampled from the existing question bank,
+  server-side grading per ADR-005, level saved to `User.hskLevelGoal` — no schema change).
+  Branch `feat/student-exams-placement`.
 - **DoD**: Student runs out of time and attempt auto-submits → Teacher uses AI Suggest to grade Writing → enters final score → Student views the result
 
 ## Sprint 5 — SRS Flashcards & Analytics
