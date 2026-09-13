@@ -77,6 +77,12 @@ nothing (`outstandingAmount` is server-derived, INV-BILLING-16).
 
 `/student/mistakes` (Sổ tay lỗi sai) and `/student/mistakes/review` are dedicated to diagnostic error review for questions answered incorrectly during homework assignments and CBT mock exams. They are separate from vocabulary flashcards (`/student/flashcards`). Backend error-collection endpoints will be defined in Sprint 4 (Assignments & Attempts); in the interim, `/student/mistakes` remains in prototype/demo mode without being conflated with flashcard SRS.
 
+**2026-09-09 note (applies to every backend-less route)**: all production `UnavailableState`
+branches now run **after** the page's hooks (the A05 placement; `WEB-023` fixed + regression
+test `student-prod-return.test.mjs`), and `/student/exams/*` production copy cites the correct
+backend dependency — the **Sprint 4** exam engine (`AttemptsModule`), previously mis-cited as
+"Sprint 5". A new screen added to this area must keep the same hook ordering.
+
 ## Transition table
 
 | # | From | Action | To | API | Errors |

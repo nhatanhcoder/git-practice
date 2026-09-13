@@ -45,14 +45,6 @@ function formatMoment(iso: string): string {
 }
 
 export default function AttemptResultPage() {
-  if (process.env.NODE_ENV === "production") {
-    return (
-      <UnavailableState
-        title="Kết quả bài tập"
-        description="Kết quả bài tập chưa được kết nối máy chủ dữ liệu trong phiên bản hiện tại (Sprint 4). Vui lòng quay lại sau."
-      />
-    );
-  }
   const params = useParams<{ attemptId: string }>();
   const attemptId = decodeURIComponent(params?.attemptId ?? "");
   const [demo, setDemo] = useState<DemoState>("ready");
@@ -88,6 +80,18 @@ export default function AttemptResultPage() {
     ? gradedMaxScore(result, attempt?.questions ?? [])
     : result.maxScore;
   const pending = result.questions.filter((q) => q.score === null).length;
+
+  // Production renders the unavailable state, but only AFTER every hook has run —
+  // an early return above them would make the component conditionally hooked, which
+  // React forbids (A05 fixed this for /mistakes/review; this file follows the same rule).
+  if (process.env.NODE_ENV === "production") {
+    return (
+      <UnavailableState
+        title="Kết quả bài tập"
+        description="Kết quả bài tập chưa được kết nối máy chủ dữ liệu trong phiên bản hiện tại (Sprint 4). Vui lòng quay lại sau."
+      />
+    );
+  }
 
   return (
     <div className="stack gap-6">
