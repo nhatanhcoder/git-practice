@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { Moon, Sun } from "lucide-react";
 import { useStudentPreferences } from "@/lib/student/preferences";
 
 /**
@@ -26,10 +27,23 @@ export function AuthShell({
   children: React.ReactNode;
 }) {
   const theme = useStudentPreferences((s) => s.theme);
+  const toggleTheme = useStudentPreferences((s) => s.toggleTheme);
   const [mounted, setMounted] = useState(false);
   useEffect(() => {
     setMounted(true);
   }, []);
+  // The auth screens had no way to switch theme of their own — a visitor who
+  // wanted light had to sign in first. Same toggle semantics as the app shell.
+  const themeBtn = (
+    <button
+      type="button"
+      className="auth-theme-toggle"
+      onClick={toggleTheme}
+      aria-label={mounted && theme === "dark" ? "Chuyển sang giao diện sáng" : "Chuyển sang giao diện tối"}
+    >
+      {mounted && theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
+    </button>
+  );
   return (
     <div className="auth-root student-root" data-theme={mounted ? theme : "dark"}>
       <aside className="auth-art">
@@ -71,6 +85,7 @@ export function AuthShell({
       </aside>
 
       <main className="auth-panel">
+        <div className="auth-theme-slot">{themeBtn}</div>
         <div className="auth-card">{children}</div>
       </main>
     </div>
