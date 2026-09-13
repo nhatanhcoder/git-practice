@@ -69,7 +69,7 @@ export default function PlacementPage() {
     void load();
   }, [load]);
 
-  const questions = paper?.questions ?? [];
+  const questions = useMemo(() => paper?.questions ?? [], [paper]);
   const current = questions[idx] ?? null;
   const answeredCount = useMemo(
     () => questions.filter((q) => picked[q.questionId]).length,

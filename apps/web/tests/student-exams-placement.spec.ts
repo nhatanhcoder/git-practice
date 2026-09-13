@@ -1,4 +1,4 @@
-import { test, expect, type Page } from "@playwright/test";
+import { test, expect, type APIRequestContext, type Page } from "@playwright/test";
 
 /**
  * Task C DoD — the real-exam path through the rebuilt rooms:
@@ -17,14 +17,18 @@ const STAMP = Date.now();
 
 type Token = string;
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- heterogeneous endpoint envelopes, same as the API e2e helpers
+type Envelope = { status: number; body: any };
+
 async function api(
-  page: Page,
+  ctx: APIRequestContext | Page,
   method: "GET" | "POST" | "PATCH" | "DELETE",
   path: string,
   token?: Token,
   data?: unknown,
-): Promise<{ status: number; body: any }> {
-  const res = await page.request.fetch(`${API_BASE}${path}`, {
+): Promise<Envelope> {
+  const req = "request" in ctx ? ctx.request : ctx;
+  const res = await req.fetch(`${API_BASE}${path}`, {
     method,
     headers: {
       ...(data ? { "content-type": "application/json" } : {}),
@@ -35,8 +39,8 @@ async function api(
   return { status: res.status(), body: await res.json().catch(() => null) };
 }
 
-async function login(page: Page, email: string): Promise<Token> {
-  const res = await api(page, "POST", "/auth/login", undefined, {
+async function login(ctx: APIRequestContext | Page, email: string): Promise<Token> {
+  const res = await api(ctx, "POST", "/auth/login", undefined, {
     email,
     password: "Password123!",
   });
@@ -203,7 +207,7 @@ test.describe("Task C — placement", () => {
         await submit.click();
         break;
       }
-      await page.locator("main input[type='radio']").first().check();
+      await page.locator("main [role='radio']").first().click();
       await page.getByRole("button", { name: "Câu sau" }).click();
     }
     await expect(page.locator("main h1").first()).toHaveText(/Kết quả xếp cấp/i, {

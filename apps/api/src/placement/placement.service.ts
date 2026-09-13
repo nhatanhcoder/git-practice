@@ -51,7 +51,6 @@ export class PlacementService {
       );
     }
 
-    const onPaper = new Map(paper.map((q) => [q.questionId, q]));
     const correctByBand = new Map<number, number>();
     let total = 0;
     for (const q of paper) {
