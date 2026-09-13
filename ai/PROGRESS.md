@@ -379,12 +379,42 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
       reversal was found; flagged for the owner.** Covered by new `srs-pagination.test.mjs` (11)
       + `flashcards-interactive.spec.ts`. (3) Landed the sibling routes slice: 3 static student
       routes registered + header unified; added `/student/invoices` + `[invoiceId]` with a
-      `studentInvoice` resolver for the PR #72 screens. Verified: web build exit 0 (57 routes) ·
-      web unit **193/193** · check-docs 9/9 · lint clean · live run (API dist :3001, prod web
-      :3000) `flashcards-interactive` **6/6** desktop+375, screenshot read. Env notes: API boots
-      from `dist`, not `tsx` (`CannotDetermineTypeError`); orphan `check-dashboard-live.mjs`
-      moved aside, not committed. Session:
+      `studentInvoice` resolver for the PR #72 screens. Later the same morning main gained
+      #73 attempt-lifecycle + #68 word bank; re-merged, reconciled the word-bank UI into the
+      paginated flashcards screen (bank tab, Lưu từ buttons, bank review panel — all kept).
+      Verified after the reconcile: build + unit + interactive spec re-run (below). Env notes:
+      API boots from `dist`, not `tsx` (`CannotDetermineTypeError`); orphan
+      `check-dashboard-live.mjs` moved aside, not committed. Session:
       `ai/context/sessions/2026-09-13-zcode-merge-srs-routes.md`.
+- ✅ (opencode · 2026-09-12) **Sprint 4 attempt lifecycle (S-ASGN-2..7): spec + BE + FE + DoD e2e.**
+  Spec `03-attempt-lifecycle.md` (11 invariants) + `AttemptAnswer` migration (applied, DB current);
+  student BE (start idempotent/re-entry, autosave upsert, server-side MCQ auto-grade unit scale,
+  server-enforced deadline, key hidden until graded) + teacher BE (queue/detail/grade + `graded`
+  notification, AI columns untouched) + AI-suggest unparked per approval (suggestion-only,
+  writes 2 AI fields; no-key → 401). FE take/result/grading-drawer live (no mocks; submit
+  flushes pending autosaves — race caught on screenshot; result `Đã chấm` precedence fixed) +
+  `Làm bài` entry on assignments list. Contracts take/result + flow §2c/rows 10–13.
+  Verify: api build · API **268/268 (46 suites, 16 new)** · web build 43/43 · web unit **171/171
+  tracked (16 new)** · check-docs 9/9 · Playwright DoD **6/6** (take→submit→grade→result,
+  desktop + 375px, screenshots read). Filed `DOC-017` (ADR-005 0-byte stub). Branch
+  `feat/s4-attempt-lifecycle`.
+- ✅ (zcode · 2026-09-12) **Student completion wave — slice 2: Word bank S-SRS-6/7
+  (S-SRS-6/7 closed for the flashcard_browser surface).** Spec
+  `docs/api/modules/student/02-word-bank.md` written and pinned in the wave (transport
+  was the open blocker 01-srs §16 named), then built to it: Mongoose `user_saved_words`
+  per ENTITY_USER_SAVED_WORD verbatim (unique `(userId, hanzi)`; upsert IS the duplicate
+  rule), 4 student endpoints (save/list/delete/review-session), `WORD_BANK_NOT_FOUND`
+  registered. Review-session hydrates banked words into module-01 card payloads — the
+  existing SM-2 endpoint/screen serve the bank with no second review path; unmatched
+  hanzi → `id: null`, listed but unreviewable. FE: `Lưu từ` on every browse tile (saved
+  state only after the server confirms) + `Kho từ` tab (list, `Bỏ lưu`, `Ôn các từ trong
+  kho`; refetch on entry). Two real defects the Playwright cut caught were fixed before
+  commit (browse grid stacked under the bank tab; heading-locator vs EmptyState's `<p>`).
+  **Verified**: word-bank e2e 10/10 · full API 198/198 (34 suites; main baseline 190) ·
+  web unit 150/150 (3 pre-existing fails live in the parallel lane's untracked
+  `srs-pagination.test.mjs`, not this slice's) · check-docs 9/9 · Playwright 4/4
+  production build. Branch `feat/student-word-bank`. Still open per spec §16: lesson/
+  passage save surfaces arrive with the content screens (wave slices 5–6).
 - ✅ (opencode · 2026-09-12) **Student lesson detail (S-LESSON-2): Page Contract + GET /student/classes/:classId/lessons/:lessonId + FE wiring.** RBAC-gated read: service verifies active enrollment (`CLASS_ACCESS_DENIED` 403), lesson must belong to the class (`LESSON_NOT_FOUND` 404); only registry codes, no migration. Contract `student-lesson-detail.md` = `built`, `_INDEX` + `student-flow.md` + `API_STUDENT.md` updated. FE page reads the dedicated endpoint (`fetchEnrolledLessonDetail` + `resolveSingleLessonOutcome`); class name is best-effort context, assignments panel stays an honest unavailable notice (S-LESSON-3/4 ⛔). Verify: API **198/198 across 32 suites** (10 new ownership-matrix e2e) · tracked web tests **155/155** (11 new) · web build 42/42 · check-docs 9/9. Branch `feat/student-lesson-detail`. Filed `WEB-022` (eyebrow off-by-one, kept as-is) + `BUILD-005` (`node --import tsx` broken on Node 25; ran suite via `tsx --test`).
 - ✅ (claude · 2026-09-09) **FE batch — `/student/mistakes` + `/student/exams` honesty pass:
   prod-return-after-hooks across 17 pages, correct Sprint 4 copy, visible demo banners.**

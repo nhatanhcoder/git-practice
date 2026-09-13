@@ -3,14 +3,15 @@
 ---
 module: teacher-attempts-grading
 status: proposed
-blocked_by: AI-suggest implementation pending owner decision (2026-09-03) · per-question max score not modeled
+blocked_by: per-question max score not modeled (2026-09-03) · AI-suggest unparked 2026-09-12 by Sprint-4 wave approval (was: pending owner decision)
 owner: BE owner (unset)
 last_updated: 2026-09-03
 ---
 
-> The AI-suggest endpoint is **specced but deliberately parked** (owner decision 2026-09-03:
-> "pending"). Its contract is written so it can be built later without touching the rest of
-> the module. Everything else is implementable now.
+> The AI-suggest endpoint was specced but deliberately parked (owner decision 2026-09-03:
+> "pending"). **Unparked 2026-09-12 by the Sprint-4 wave approval** (the "explicit re-open"
+> §16-Q1 required) — implemented exactly as contracted, suggestion-only. Everything else was
+> already implementable.
 
 ## 0. Summary
 
@@ -85,9 +86,10 @@ them).
 ### 3.3 POST `/teacher/attempts/:id/ai-suggest` — parked
 
 Request: `{ "questionIds": ["68a1…"] }` — the Writing questions to suggest for (default: all
-Writing answers of the attempt). Response: the answer rows with `aiSuggestedScore` +
-`aiFeedback` filled. Behavior, status and error surface are specced in §4 INV-TGRD-06 and
-§9, but **the implementation is parked** pending the owner's Gemini decision (§16-Q1).
+Writing answers of the attempt). Response: `{ answers: [{ questionId, aiSuggestedScore,
+aiFeedback }] }`. Behavior, status and error surface are specced in §4 INV-TGRD-06 and
+§9; implemented 2026-09-12 (suggestion-only — the grade service copies the two fields
+and nothing else).
 
 ### 3.4 PATCH `/teacher/attempts/:id/grade` — request
 
@@ -163,9 +165,9 @@ offered** — §16-Q4. The teacher cannot create, start or submit attempts.
 | Grade a non-`submitted` attempt | 409 | `ATTEMPT_NOT_SUBMITTED` | agreed (added 2026-09-03, owner-approved) |
 | `grades[].questionId` not an answer of this attempt | 400 | `VALIDATION_ERROR` | agreed (fallback family) |
 | `teacherScore < 0` / non-numeric | 400 | `VALIDATION_ERROR` | agreed |
-| AI quota exhausted | 429 | `AI_QUOTA_EXCEEDED` | **proposed, not agreed** |
-| AI key rejected | 401 | `AI_KEY_INVALID` | **proposed, not agreed** |
-| Gemini unusable response | 502 | `AI_GRADING_FAILED` | **proposed, not agreed** |
+| AI quota exhausted | 429 | `AI_QUOTA_EXCEEDED` | agreed 2026-09-12 (wave approval) |
+| AI key rejected | 401 | `AI_KEY_INVALID` | agreed 2026-09-12 (wave approval) |
+| Gemini unusable response | 502 | `AI_GRADING_FAILED` | agreed 2026-09-12 (wave approval) |
 
 ## 10. Side effects & notifications
 
@@ -223,7 +225,7 @@ homework — 3 attempts (`submitted` with 2 MCQ answers auto-scored + 1 writing 
 
 | Question | What it blocks | Owner | Decide by |
 |---|---|---|---|
-| Q1. **AI-suggest implementation parked** (owner, 2026-09-03). Gemini key handling + ADR-014 still open. The endpoint ships as a contract only. | §3.3 | PO | explicit re-open |
+| Q1. ~~AI-suggest implementation parked~~ **RESOLVED 2026-09-12 — unparked by Sprint-4 wave approval; implemented per INV-TGRD-06.** | §3.3 | PO | done |
 | Q2. **Per-question max score is not modeled** — `Attempt.maxScore` is assignment-level; `AttemptAnswer` has no max. So `teacherScore` has no upper bound. Add a field or accept. | INV-TGRD-04, FE validation parity (FE clamps to a question max it derives itself) | BE lead + PO | before coding |
 | Q3. ~~No clean code for "grade a non-submitted attempt"~~ **RESOLVED 2026-09-03 — `ATTEMPT_NOT_SUBMITTED` (409) added to the registry, owner-approved.** | — | BE owner | done |
 | Q4. Re-grading a `graded` attempt: allowed (idempotent re-commit) or 409? And the double-notification of a repeated grade. | §8, §6 | PO | before coding |

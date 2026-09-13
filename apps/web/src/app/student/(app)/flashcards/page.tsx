@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { BookOpen, Brain, CheckCircle2, Layers3, RotateCcw } from "lucide-react";
+import { BookOpen, BookmarkPlus, Brain, CheckCircle2, Layers3, RotateCcw } from "lucide-react";
 import {
   EmptyState,
   ErrorState,
@@ -26,6 +26,14 @@ import {
   type SrsRating,
   type SrsStats,
 } from "@/lib/student/flashcards-service";
+import {
+  deleteSavedWord,
+  fetchBankReviewCards,
+  fetchWordBank,
+  saveWord,
+  type BankReviewCard,
+  type SavedWord,
+} from "@/lib/student/word-bank-service";
 
 /**
  * /student/flashcards — vocabulary SRS, the one learner screen backed by a real endpoint.
@@ -52,7 +60,7 @@ import {
  * 1–9 range, the payloads, or the schema.
  */
 
-type Mode = "browse" | "due";
+type Mode = "browse" | "due" | "bank";
 
 /**
  * The four ratings the API accepts. Kept as 0/3/4/5 — the SM-2 values — and NOT collapsed to a
@@ -86,6 +94,16 @@ export default function MistakesPage() {
   const [submitting, setSubmitting] = useState(false);
   const [reviewError, setReviewError] = useState<string | null>(null);
   const [reviewedInSession, setReviewedInSession] = useState(0);
+
+  // Word bank (S-SRS-6/7, 02-word-bank.md): a bookmark list on the same screen. Banked
+  // words are a separate fact from the card list — separate state, separate errors — so a
+  // failed bank load never blanks the browse tab and vice versa.
+  const [bank, setBank] = useState<SavedWord[]>([]);
+  const [bankLoading, setBankLoading] = useState(false);
+  const [bankError, setBankError] = useState(false);
+  const [bankTotal, setBankTotal] = useState(0);
+  const [savedHanzi, setSavedHanzi] = useState<Set<string>>(new Set());
+  const [saveBusy, setSaveBusy] = useState<string | null>(null);
 
   // A04: two guards the component owns, because React state cannot provide either.
   //
@@ -137,14 +155,108 @@ export default function MistakesPage() {
     void loadCards();
   }, [loadCards]);
 
+  // The bank loads when the learner opens its tab (and once at mount to know which tiles
+  // are already bookmarked). Loading it eagerly alongside the card list would couple the
+  // two tabs' error states together.
+  const loadBank = useCallback(async () => {
+    setBankLoading(true);
+    setBankError(false);
+    try {
+      const res = await fetchWordBank();
+      setBank(res.data);
+      setBankTotal(res.meta.total);
+      setSavedHanzi(new Set(res.data.map((word) => word.hanzi)));
+    } catch {
+      setBankError(true);
+    } finally {
+      setBankLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadBank();
+  }, [loadBank]);
+
+  // The bank must refetch whenever the learner ENTERS the tab: the mount-time fetch
+  // cannot know about a save made moments ago, and showing a stale empty list after a
+  // save is exactly the "invented data" family this screen refuses elsewhere.
+  useEffect(() => {
+    if (mode === "bank") void loadBank();
+  }, [mode, loadBank]);
+
+  const saveLock = useRef(false);
+
+  async function saveToBank(card: Flashcard) {
+    if (saveLock.current) return;
+    saveLock.current = true;
+    setSaveBusy(card.id);
+    try {
+      await saveWord({
+        hanzi: card.hanzi,
+        pinyin: card.pinyin,
+        meaning: card.meaning,
+        sourceType: "flashcard_browser",
+      });
+      // Only past this line did the server confirm. The tile turns saved-state from the
+      // server's row, never from an optimistic guess.
+      setSavedHanzi((prev) => new Set(prev).add(card.hanzi));
+    } catch {
+      // The word stays unsaved; the button's state does not change. A failed save painted
+      // as saved is the WEB-011 defect class in miniature.
+    } finally {
+      saveLock.current = false;
+      setSaveBusy(null);
+    }
+  }
+
+  async function removeFromBank(word: SavedWord) {
+    if (saveLock.current) return;
+    saveLock.current = true;
+    setSaveBusy(word.id);
+    try {
+      await deleteSavedWord(word.id);
+      setBank((prev) => prev.filter((row) => row.id !== word.id));
+      setBankTotal((n) => Math.max(0, n - 1));
+      setSavedHanzi((prev) => {
+        const next = new Set(prev);
+        next.delete(word.hanzi);
+        return next;
+      });
+    } catch {
+      // Nothing is removed on failure — the list stays as the server last said it was.
+    } finally {
+      saveLock.current = false;
+      setSaveBusy(null);
+    }
+  }
+
+  const [bankSession, setBankSession] = useState<BankReviewCard[] | null>(null);
+  const [bankSessionIndex, setBankSessionIndex] = useState<number | null>(null);
+
+  async function startBankReview() {
+    if (saveLock.current) return;
+    saveLock.current = true;
+    try {
+      const sessionCards = await fetchBankReviewCards();
+      setBankSession(sessionCards);
+      setBankSessionIndex(sessionCards.length > 0 ? 0 : null);
+    } catch {
+      setBankSession(null);
+    } finally {
+      saveLock.current = false;
+    }
+  }
+
   const activeCard = activeIndex === null ? null : (cards[activeIndex] ?? null);
 
+  // The bank tab renders its own tree below; the card-list outcome only applies to the
+  // two SRS modes, so the "bank" mode is narrowed away here.
   const outcome = resolveListOutcome({
     loading,
     error: mainError,
     cardCount: cards.length,
     reviewedInSession,
-    mode,
+    mode: mode === "bank" ? "browse" : mode,
   });
 
   const statTiles = useMemo(
@@ -269,6 +381,7 @@ export default function MistakesPage() {
             tabs={[
               { id: "browse", label: "Duyệt từ vựng" },
               { id: "due", label: "Thẻ đến hạn" },
+              { id: "bank", label: `Kho từ${bankTotal > 0 ? ` (${bankTotal})` : ""}` },
             ]}
           />
         </div>
@@ -383,7 +496,66 @@ export default function MistakesPage() {
         />
       ) : null}
 
-      {!activeCard && outcome === "has-cards" ? (
+      {/* The word bank tab (S-SRS-7): list, remove, and start a review session over the
+          banked words. Bank state never touches the browse/due tabs above. */}
+      {mode === "bank" ? (
+        bankLoading ? (
+          <SkeletonPanel rows={4} />
+        ) : bankError ? (
+          <ErrorState onRetry={() => void loadBank()} />
+        ) : bankSession && bankSessionIndex !== null ? (
+          <BankReviewCardPanel
+            cards={bankSession}
+            index={bankSessionIndex}
+            onFinish={(nextCards) => {
+              setBankSession(nextCards);
+              setBankSessionIndex(null);
+            }}
+          />
+        ) : bank.length === 0 ? (
+          <EmptyState
+            icon={<BookOpen size={22} />}
+            title="Kho từ còn trống"
+            text="Nhấn “Lưu từ” trên bất kỳ thẻ nào trong Duyệt từ vựng để bắt đầu sưu tập từ của riêng bạn."
+          />
+        ) : (
+          <div className="stack gap-4">
+            <button type="button" className="btn btn--outline" onClick={() => void startBankReview()}>
+              Ôn các từ trong kho
+            </button>
+            <section className="srs-vocab-grid" aria-label="Kho từ đã lưu">
+              {bank.map((word) => (
+                <Panel key={word.id} className="srs-tile">
+                  <div className="srs-tile__header">
+                    <div className="srs-tile__headings">
+                      <p lang="zh" className="srs-tile__hanzi han">
+                        {word.hanzi}
+                      </p>
+                      <p className="srs-tile__pinyin pinyin">{word.pinyin}</p>
+                    </div>
+                  </div>
+                  <p className="srs-tile__meaning">{word.meaning}</p>
+                  {word.note ? <p className="srs-tile__note">{word.note}</p> : null}
+                  <div className="srs-tile__actions srs-tile__actions--row">
+                    <button
+                      type="button"
+                      className="btn btn--outline"
+                      disabled={saveBusy === word.id}
+                      onClick={() => void removeFromBank(word)}
+                    >
+                      Bỏ lưu
+                    </button>
+                  </div>
+                </Panel>
+              ))}
+            </section>
+          </div>
+        )
+      ) : null}
+
+      {/* The browse grid belongs to the two SRS modes only — the bank tab renders its own
+          tree above, and stacking both made the bank's click targets unreachable. */}
+      {!activeCard && mode !== "bank" && outcome === "has-cards" ? (
         <div className="stack gap-6">
           <section className="srs-vocab-grid" aria-label="Danh sách từ vựng">
             {cards
@@ -404,6 +576,22 @@ export default function MistakesPage() {
                   </div>
                   <p className="srs-tile__meaning">{card.meaning}</p>
                   <div className="srs-tile__actions">
+                    <div className="srs-tile__actions--row">
+                      <button
+                        type="button"
+                        className="btn btn--outline srs-tile__save"
+                        disabled={saveBusy === card.id || savedHanzi.has(card.hanzi)}
+                        onClick={() => void saveToBank(card)}
+                        title={
+                          savedHanzi.has(card.hanzi)
+                            ? "Đã có trong kho từ của bạn"
+                            : "Lưu vào kho từ cá nhân"
+                        }
+                      >
+                        <BookmarkPlus size={16} />
+                        {savedHanzi.has(card.hanzi) ? "Đã lưu" : "Lưu từ"}
+                      </button>
+                    </div>
                     <button
                       type="button"
                       className="btn btn--primary btn--block srs-tile__btn"
@@ -430,5 +618,124 @@ export default function MistakesPage() {
         </div>
       ) : null}
     </div>
+  );
+}
+
+/**
+ * The bank review session (S-SRS-7): banked words shown one at a time in the same review
+ * card as module 01's, and rated through the SAME endpoint — POST /student/flashcards/:id/review.
+ * The backend hydrated each banked word into a real catalog card payload (id: the flashcard
+ * id) precisely so no separate review path exists here.
+ *
+ * A banked word with id null has no catalog row (INV-WB-07) — it displays as a plain
+ * dictionary tile with no rating buttons, because sending it to the review endpoint would
+ * be a guaranteed 404.
+ */
+function BankReviewCardPanel({
+  cards,
+  index,
+  onFinish,
+}: {
+  cards: BankReviewCard[];
+  index: number;
+  onFinish: (remaining: BankReviewCard[]) => void;
+}) {
+  const [current, setCurrent] = useState(index);
+  const [revealed, setRevealed] = useState(false);
+  const [ratingBusy, setRatingBusy] = useState(false);
+  const [ratingError, setRatingError] = useState<string | null>(null);
+  const [reviewedCount, setReviewedCount] = useState(0);
+  const ratingLock = useRef(false);
+
+  const card = cards[current];
+
+  async function rateBanked(rating: SrsRating) {
+    if (!card?.id || ratingLock.current) return;
+    ratingLock.current = true;
+    setRatingBusy(true);
+    setRatingError(null);
+    try {
+      await reviewFlashcard(card.id, rating);
+      setReviewedCount((n) => n + 1);
+      const next = current + 1;
+      if (next >= cards.length) {
+        onFinish(cards.slice(0, 0)); // session complete — back to the bank list
+      } else {
+        setCurrent(next);
+        setRevealed(false);
+      }
+    } catch {
+      setRatingError("Chưa lưu được kết quả. Thẻ vẫn giữ nguyên — bạn có thể chấm lại.");
+    } finally {
+      ratingLock.current = false;
+      setRatingBusy(false);
+    }
+  }
+
+  if (!card) {
+    return (
+      <EmptyState
+        icon={<CheckCircle2 size={22} />}
+        title="Hoàn thành phiên ôn kho từ"
+        text={`Bạn đã chấm ${reviewedCount} thẻ trong phiên này.`}
+      />
+    );
+  }
+
+  return (
+    <Panel className="srs-card">
+      <p className="srs-card__counter">
+        Từ {current + 1} / {cards.length}
+      </p>
+      <p lang="zh" className="srs-card__hanzi han">
+        {card.hanzi}
+      </p>
+      <p className="srs-card__pinyin">{card.pinyin}</p>
+
+      {card.id === null ? (
+        <p className="srs-note" role="status">
+          Từ này chưa có trong danh mục thẻ, nên chưa xếp được lịch SM-2. Bạn vẫn có thể lưu
+          lại để tra cứu.
+        </p>
+      ) : !revealed ? (
+        <button type="button" className="btn btn--primary btn--lg" onClick={() => setRevealed(true)}>
+          <RotateCcw size={16} /> Lật thẻ
+        </button>
+      ) : (
+        <div className="stack gap-5" aria-live="polite">
+          <div className="srs-card__back">
+            <p className="srs-card__meaning">{card.meaning}</p>
+            {card.exampleSentence ? (
+              <p lang="zh" className="srs-card__example han">
+                {card.exampleSentence}
+              </p>
+            ) : null}
+            {card.exampleMeaning ? (
+              <p className="srs-card__exampleVi">{card.exampleMeaning}</p>
+            ) : null}
+          </div>
+          {ratingError ? (
+            <p role="alert" className="srs-reviewError">
+              {ratingError}
+            </p>
+          ) : null}
+          <div className="srs-ratings" aria-label="Đánh giá mức độ nhớ">
+            {RATINGS.map((rating) => (
+              <button
+                key={rating.value}
+                type="button"
+                className="srs-rating"
+                style={{ "--srs-rating": rating.token } as React.CSSProperties}
+                disabled={ratingBusy}
+                onClick={() => void rateBanked(rating.value)}
+              >
+                <strong>{rating.label}</strong>
+                <span>{rating.hint}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </Panel>
   );
 }

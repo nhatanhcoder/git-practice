@@ -1853,6 +1853,18 @@ that does not widen the page. Verify with `PW_ROUTES=/admin/payroll` on both vie
 
 ---
 
+### [DOC-017] ADR-005 (`005-server-authoritative-exam.md`) is a 0-byte stub cited as authority
+
+**Severity**: Low
+**Status**: Open — found 2026-09-12 during the Sprint-4 attempt-lifecycle slice
+
+**Description**: `docs/shared/decisions/005-server-authoritative-exam.md` exists (0 bytes) and
+is cited by `016-combined-student-learning-domain.md` and the exam-engine narrative for
+server-authoritative scoring — but it contains no decision text. The Sprint-4 slice proceeded
+on `ENTITY_ATTEMPT.md` / `ENTITY_ATTEMPT_ANSWER.md` + module `04-attempts-grading.md` instead.
+
+**Fix Plan**: write the ADR content from the implemented behavior, or reroute its citations
+to the entity/module specs. Do not cite it as settled until then.
 ### [WEB-022] Lesson eyebrow shows `orderIndex + 1` while `orderIndex` is 1-based
 
 **Severity**: Low

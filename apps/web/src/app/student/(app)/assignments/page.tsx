@@ -5,17 +5,18 @@
  *
  * Contract: docs/front-end-design-docs/pages/student-pages/student-assignments-list.md
  * Feature: S-ASGN-1 — live against GET /api/v1/student/assignments (S3 backend).
- *
- * Attempt status is deliberately not invented: without the Sprint 4 attempts
- * endpoints every row renders without a status badge, and the note below says
- * why — rather than faking "Chưa làm / Đang làm" states locally.
+ * Starting/resuming (S-ASGN-2) posts to the attempt endpoints (Sprint 4) and lands
+ * on the take screen; a 409 means one official attempt already exists and is
+ * submitted — the list carries no per-row attempt status yet, so it says so
+ * instead of guessing which (follow-up: list DTO gains myAttempt status).
  *
  * Nothing from the self-study library appears here. Only an Assignment produces an
  * official Attempt — the boundary the agreed Student scope draws explicitly.
  */
 
 import { useEffect, useMemo, useState } from "react";
-import { ClipboardList } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { ClipboardList, PenLine } from "lucide-react";
 import {
   Chip,
   EmptyState,
@@ -24,8 +25,10 @@ import {
   Panel,
   SkeletonPanel,
 } from "@/components/student/primitives";
+import { useToast } from "@/components/student/toast";
 import { fetchMyEnrolledClasses } from "@/lib/student/classes-service";
-import { apiRequest } from "@/lib/api-client";
+import { ApiError, apiRequest } from "@/lib/api-client";
+import { startAttempt } from "@/lib/student/attempts-service";
 
 /** One published assignment row from GET /student/assignments (spec S-ASGN-1). */
 interface ApiStudentAssignment {
@@ -59,11 +62,14 @@ function dueTone(iso: string | null): "warn" | "neutral" {
 }
 
 export default function AssignmentsPage() {
+  const router = useRouter();
+  const pushToast = useToast();
   const [rows, setRows] = useState<ApiStudentAssignment[]>([]);
   const [classes, setClasses] = useState<EnrolledClassLite[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [classFilter, setClassFilter] = useState<string>("all");
+  const [startingId, setStartingId] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -99,6 +105,27 @@ export default function AssignmentsPage() {
   const overdue = rows.filter(
     (a) => a.dueDate && new Date(a.dueDate).getTime() < Date.now(),
   ).length;
+
+  // S-ASGN-2: start creates the official attempt, resume re-enters it — the
+  // endpoint answers both with the take route's id. A 409 means the one
+  // attempt already exists and is submitted; without a per-row attempt status
+  // the list cannot link its result, so it says so honestly.
+  async function beginAssignment(assignmentId: string) {
+    if (startingId) return;
+    setStartingId(assignmentId);
+    try {
+      const payload = await startAttempt(assignmentId);
+      router.push(`/student/attempts/${payload.attempt.id}`);
+    } catch (err) {
+      if (err instanceof ApiError && err.code === "ATTEMPT_ALREADY_SUBMITTED") {
+        pushToast("Bài này đã được nộp — xem kết quả ở màn làm bài.", "warn");
+      } else {
+        pushToast("Không mở được bài làm — thử lại.", "danger");
+      }
+    } finally {
+      setStartingId(null);
+    }
+  }
 
   return (
     <div className="stack gap-6">
@@ -168,6 +195,14 @@ export default function AssignmentsPage() {
                 {a.timeLimitMinutes ? <Chip tone="info">{a.timeLimitMinutes} phút</Chip> : null}
                 <Chip tone="neutral">{a.questionCount} câu hỏi</Chip>
               </span>
+              <button
+                type="button"
+                className="btn btn--primary btn--sm"
+                disabled={startingId !== null}
+                onClick={() => void beginAssignment(a.id)}
+              >
+                <PenLine size={15} /> {startingId === a.id ? "Đang mở…" : "Làm bài"}
+              </button>
             </Panel>
           ))}
         </div>
@@ -175,9 +210,8 @@ export default function AssignmentsPage() {
 
       <Panel className="panel--pad">
         <p style={{ color: "var(--text-2)", margin: 0, maxWidth: "68ch" }}>
-          Làm bài và nộp bài cần máy chấm phía máy chủ (Attempts — Sprint 4) và sẽ khả dụng
-          khi endpoint đó ra mắt. Danh sách trên là các bài tập đã được giáo viên phát hành
-          thật sự cho lớp của bạn.
+          Nhấn “Làm bài” để bắt đầu hoặc tiếp tục — bài nộp sẽ khoá lại, trắc nghiệm
+          được chấm ngay, tự luận chờ giáo viên chấm rồi mới có điểm cuối cùng.
         </p>
       </Panel>
     </div>

@@ -49,11 +49,22 @@ export const ErrorCode = {
   ASSIGNMENT_PAST_DUE: 'ASSIGNMENT_PAST_DUE',
   ASSIGNMENT_ALREADY_SUBMITTED: 'ASSIGNMENT_ALREADY_SUBMITTED',
 
+  // Attempt (registry § Attempt Errors) — student take/submit/result + teacher grading.
+  ATTEMPT_NOT_FOUND: 'ATTEMPT_NOT_FOUND',
+  ATTEMPT_ALREADY_SUBMITTED: 'ATTEMPT_ALREADY_SUBMITTED',
+  ATTEMPT_NOT_IN_PROGRESS: 'ATTEMPT_NOT_IN_PROGRESS',
+  ATTEMPT_NOT_OWNER: 'ATTEMPT_NOT_OWNER',
+  ATTEMPT_TIME_EXCEEDED: 'ATTEMPT_TIME_EXCEEDED',
+  ATTEMPT_NOT_SUBMITTED: 'ATTEMPT_NOT_SUBMITTED',
+
   // Flashcards / SRS (registry § Flashcard Errors). MongoDB-backed.
   FLASHCARD_NOT_FOUND: 'FLASHCARD_NOT_FOUND',
   FLASHCARD_ALREADY_IN_REVIEW: 'FLASHCARD_ALREADY_IN_REVIEW',
   FLASHCARD_INVALID_RATING: 'FLASHCARD_INVALID_RATING',
 
+  // Word bank (registry § Word Bank Errors) — "not found OR not mine" deliberately share
+  // one code so a caller cannot probe for another student's bookmark ids (02-word-bank §5).
+  WORD_BANK_NOT_FOUND: 'WORD_BANK_NOT_FOUND',
   // Notifications (registry § Notification Errors) — the mailbox read side.
   // The only branch this module needs: "not found OR not mine" deliberately share one
   // code so a caller cannot probe for the existence of other users' notifications
@@ -142,9 +153,16 @@ export const ERROR_STATUS: Record<ErrorCodeValue, number> = {
   ASSIGNMENT_NO_QUESTIONS: 400,
   ASSIGNMENT_PAST_DUE: 400,
   ASSIGNMENT_ALREADY_SUBMITTED: 409,
+  ATTEMPT_NOT_FOUND: 404,
+  ATTEMPT_ALREADY_SUBMITTED: 409,
+  ATTEMPT_NOT_IN_PROGRESS: 400,
+  ATTEMPT_NOT_OWNER: 403,
+  ATTEMPT_TIME_EXCEEDED: 400,
+  ATTEMPT_NOT_SUBMITTED: 409,
   FLASHCARD_NOT_FOUND: 404,
   FLASHCARD_ALREADY_IN_REVIEW: 409,
   FLASHCARD_INVALID_RATING: 400,
+  WORD_BANK_NOT_FOUND: 404,
   NOTIFICATION_NOT_FOUND: 404,
   SESSION_NOT_FOUND: 404,
   SESSION_ALREADY_REVIEWED: 409,

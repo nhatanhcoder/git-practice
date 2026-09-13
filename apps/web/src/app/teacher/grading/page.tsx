@@ -1,148 +1,201 @@
 "use client";
 
-// MOCK(T-GRADE-*): grading queue + per-question scoring in-memory until
-// /api/v1/teacher/attempts exists. AI suggest is the Gemini mock from
-// grading-data.ts — a suggestion the teacher may override (FLOW_GRADING.md).
+/**
+ * /teacher/grading — the grading queue and per-question scoring drawer.
+ *
+ * Live against /api/v1/teacher/attempts (04-attempts-grading.md, T-GRADE-1..5):
+ * queue, detail, grade commit and AI suggest. No mock data anywhere.
+ *
+ * WEB-006/A2 is load-bearing here: the AI's suggestion and the teacher's draft
+ * are two separate states (`aiSuggestions` vs `scores`/`feedbacks`). A suggestion
+ * NEVER writes the draft — the teacher applies it with an explicit click, and
+ * that click is the teacher's action, recorded as such. The server enforces the
+ * same boundary (grade writes teacherScore/teacherFeedback only).
+ */
 
-import { useMemo, useState } from "react";
-import {
-  Check,
-  CircleCheck,
-  Inbox,
-  Sparkles,
-  X,
-} from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Check, CircleCheck, Inbox, Sparkles, X } from "lucide-react";
 import { TeacherShell } from "@/components/teacher/teacher-shell";
+import { StatusPill, Toast } from "@/components/teacher/teacher-widgets";
 import {
-  ReviewSwitcher,
-  StatusPill,
-  Toast,
-  type ReviewState,
-} from "@/components/teacher/teacher-widgets";
-import {
-  attemptStatusLabels,
-  mockAiSuggest,
-  mockAttempts,
-  type Attempt,
-} from "@/lib/teacher/grading-data";
-import { skillLabels } from "@/lib/teacher/question-data";
+  fetchGradingDetail,
+  fetchGradingQueue,
+  gradeAttempt,
+  suggestScores,
+  type GradingAnswer,
+  type GradingDetail,
+  type GradingQueueRow,
+} from "@/lib/teacher/teacher-attempts-service";
 import { useOverlay } from "@/hooks/use-overlay";
-import { clampScore, finalizeGradedQuestion, isValidScore } from "@/lib/teacher/teacher-rules.js";
 import { formatDateTime } from "@/lib/formatters";
 import styles from "./grading.module.css";
 
 interface GradingDraft {
-  // What the teacher will actually save.
   scores: Record<string, number | null>;
   feedbacks: Record<string, string>;
-  // A2: the AI's ORIGINAL suggestion, kept verbatim and never written by the teacher's edits.
-  // Overwriting this with the edited score destroys the audit trail — the whole point of
-  // storing aiSuggestion alongside the final score is to compare the two later.
-  aiOriginal: Record<string, { score: number; reasoning: string } | null>;
 }
 
+type QueueStatus = "submitted" | "graded";
+
+const attemptStatusLabels: Record<string, string> = {
+  submitted: "Chờ chấm",
+  graded: "Đã chấm",
+  in_progress: "Đang làm",
+};
 
 export default function TeacherGradingPage() {
-  const [attempts, setAttempts] = useState<Attempt[]>(mockAttempts);
+  const [rows, setRows] = useState<GradingQueueRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [classFilter, setClassFilter] = useState("all");
-  const [statusFilter, setStatusFilter] = useState<"all" | "submitted" | "graded">("all");
-  const [reviewState, setReviewState] = useState<ReviewState>("ready");
-  const [open, setOpen] = useState<Attempt | null>(null);
-  const [draft, setDraft] = useState<GradingDraft>({ scores: {}, feedbacks: {}, aiOriginal: {} });
+  const [statusFilter, setStatusFilter] = useState<QueueStatus>("submitted");
+
+  const [open, setOpen] = useState<GradingDetail | null>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [draft, setDraft] = useState<GradingDraft>({ scores: {}, feedbacks: {} });
+  // A2: the AI's suggestions, kept apart from the draft and never edited.
+  const [aiSuggestions, setAiSuggestions] = useState<
+    Record<string, { score: number; feedback: string | null }>
+  >({});
+  const [aiBusy, setAiBusy] = useState<string | null>(null);
+  const [finishing, setFinishing] = useState(false);
   const [toast, setToast] = useState("");
-  // C3: Escape / focus trap / focus restore for the grading drawer.
   const drawerRef = useOverlay<HTMLDivElement>(() => setOpen(null), open !== null);
-
-  const classOptions = useMemo(() => {
-    const ids = new Map<string, string>();
-    attempts.forEach((a) => ids.set(a.classId, a.className));
-    return Array.from(ids.entries());
-  }, [attempts]);
-
-  const filtered = useMemo(
-    () =>
-      attempts
-        .filter((a) => classFilter === "all" || a.classId === classFilter)
-        .filter((a) => statusFilter === "all" || a.status === statusFilter),
-    [attempts, classFilter, statusFilter],
-  );
-
-  const pendingCount = attempts.filter((a) => a.status === "submitted").length;
-  const display = reviewState === "empty" ? [] : filtered;
 
   function flash(message: string) {
     setToast(message);
-    window.setTimeout(() => setToast(""), 2600);
   }
 
-  function openAttempt(a: Attempt) {
-    setOpen(a);
-    const scores: Record<string, number | null> = {};
-    const feedbacks: Record<string, string> = {};
-    const aiOriginal: Record<string, { score: number; reasoning: string } | null> = {};
-    a.questions.forEach((q) => {
-      scores[q.id] = q.score;
-      feedbacks[q.id] = q.feedback ?? "";
-      // Carry any previously stored suggestion through unchanged.
-      aiOriginal[q.id] = q.aiSuggestion;
-    });
-    setDraft({ scores, feedbacks, aiOriginal });
+  const loadQueue = useCallback(async () => {
+    setLoading(true);
+    setLoadError(false);
+    try {
+      const res = await fetchGradingQueue({ status: statusFilter });
+      setRows(res.data);
+    } catch {
+      setLoadError(true);
+    } finally {
+      setLoading(false);
+    }
+  }, [statusFilter]);
+
+  useEffect(() => {
+    loadQueue();
+  }, [loadQueue]);
+
+  const classOptions = useMemo(() => {
+    const ids = new Map<string, string>();
+    rows.forEach((a) => ids.set(a.classId, a.className ?? "Lớp"));
+    return Array.from(ids.entries());
+  }, [rows]);
+
+  const display = useMemo(
+    () => rows.filter((a) => classFilter === "all" || a.classId === classFilter),
+    [rows, classFilter],
+  );
+  const pendingCount = useMemo(() => rows.filter((a) => a.status === "submitted").length, [rows]);
+
+  async function openAttempt(id: string) {
+    setDetailLoading(true);
+    try {
+      const detail = await fetchGradingDetail(id);
+      const scores: Record<string, number | null> = {};
+      const feedbacks: Record<string, string> = {};
+      const suggestions: Record<string, { score: number; feedback: string | null }> = {};
+      for (const a of detail.answers) {
+        scores[a.questionId] = a.teacherScore;
+        feedbacks[a.questionId] = a.teacherFeedback ?? "";
+        // Server truth, read-only: what the AI said vs what the teacher saves.
+        if (a.aiSuggestedScore !== null && a.aiSuggestedScore !== undefined) {
+          suggestions[a.questionId] = { score: a.aiSuggestedScore, feedback: a.aiFeedback };
+        }
+      }
+      setDraft({ scores, feedbacks });
+      setAiSuggestions(suggestions);
+      setOpen(detail);
+    } catch {
+      flash("Không tải được bài làm — thử lại.");
+    } finally {
+      setDetailLoading(false);
+    }
   }
 
-  function runAiSuggest(questionId: string) {
-    if (!open) return;
-    const question = open.questions.find((q) => q.id === questionId);
-    if (!question || question.skill !== "writing") return;
-    // MOCK: POST /api/v1/teacher/attempts/:id/ai-suggest — Gemini suggestion
-    const suggestion = mockAiSuggest(question);
+  async function runAiSuggest(questionId?: string) {
+    if (!open || aiBusy) return;
+    setAiBusy(questionId ?? "all");
+    try {
+      const res = await suggestScores(open.attempt.id, questionId ? [questionId] : undefined);
+      setAiSuggestions((prev) => {
+        const next = { ...prev };
+        for (const s of res.answers) {
+          if (s.aiSuggestedScore !== null) {
+            next[s.questionId] = { score: s.aiSuggestedScore, feedback: s.aiFeedback };
+          }
+        }
+        return next;
+      });
+      flash("Đã nhận gợi ý AI — xem và áp dụng từng câu nếu đồng ý");
+    } catch (err) {
+      const code = (err as { code?: string })?.code;
+      flash(
+        code === "AI_KEY_INVALID"
+          ? "Chưa cấu hình khóa Gemini — liên hệ admin."
+          : code === "AI_QUOTA_EXCEEDED"
+            ? "Đã hết quota Gemini — thử lại sau."
+            : "Gợi ý AI thất bại — thử lại sau.",
+      );
+    } finally {
+      setAiBusy(null);
+    }
+  }
+
+  function applySuggestion(questionId: string) {
+    const s = aiSuggestions[questionId];
+    if (!s) return;
+    // Explicit teacher action: copying the suggestion into the draft is the
+    // teacher adopting it, and the original above stays intact for comparison.
     setDraft((d) => ({
-      // Prefill the teacher's fields so they can accept or override…
-      scores: { ...d.scores, [questionId]: suggestion.score },
-      feedbacks: { ...d.feedbacks, [questionId]: suggestion.reasoning },
-      // …while the original is stored separately and never touched again.
-      aiOriginal: { ...d.aiOriginal, [questionId]: { score: suggestion.score, reasoning: suggestion.reasoning } },
+      scores: { ...d.scores, [questionId]: s.score },
+      feedbacks: { ...d.feedbacks, [questionId]: s.feedback ?? d.feedbacks[questionId] ?? "" },
     }));
-    flash("Đã nhận gợi ý AI — bạn có thể ghi đè trước khi chốt");
   }
 
-  function finishGrading() {
-    if (!open) return;
-    // A2: re-check the range here, not just via the disabled button — a disabled attribute is
-    // a UI affordance, not a guard.
-    const allScored = open.questions.every((q) => isValidScore(draft.scores[q.id], q.maxScore));
-    if (!allScored) return;
-    // MOCK: PATCH /api/v1/teacher/attempts/:id/grade — status -> graded
-    setAttempts((current) =>
-      current.map((a) =>
-        a.id === open.id
-          ? {
-              ...a,
-              status: "graded",
-              questions: a.questions.map((q) => ({
-                ...q,
-                ...finalizeGradedQuestion({
-                  draftScore: draft.scores[q.id],
-                  draftFeedback: draft.feedbacks[q.id],
-                  aiOriginal: draft.aiOriginal[q.id] ?? null,
-                  storedScore: q.score,
-                  maxScore: q.maxScore,
-                }),
-              })),
-            }
-          : a,
-      ),
-    );
-    flash("Đã hoàn thành chấm — học sinh sẽ nhận thông báo");
-    setOpen(null);
+  function draftScoreValid(value: number | null | undefined): value is number {
+    return typeof value === "number" && !Number.isNaN(value) && value >= 0;
   }
 
-  const allScored = open
-    ? open.questions.every((q) => isValidScore(draft.scores[q.id], q.maxScore))
-    : false;
-  const totalScore = open
-    ? open.questions.reduce((s, q) => s + (isValidScore(draft.scores[q.id], q.maxScore) ? draft.scores[q.id]! : 0), 0)
-    : 0;
-  const maxTotal = open ? open.questions.reduce((s, q) => s + q.maxScore, 0) : 0;
+  const questions: GradingAnswer[] = open?.answers ?? [];
+  const allScored =
+    open !== null &&
+    open.attempt.status === "submitted" &&
+    questions.length > 0 &&
+    questions.every((q) => draftScoreValid(draft.scores[q.questionId]));
+  const draftTotal = questions.reduce(
+    (s, q) => s + (draftScoreValid(draft.scores[q.questionId]) ? (draft.scores[q.questionId] as number) : 0),
+    0,
+  );
+
+  async function finishGrading() {
+    if (!open || !allScored || finishing) return;
+    // Re-check the range here, not just via the disabled button — a disabled
+    // attribute is a UI affordance, not a guard (A2 follow-up).
+    const grades = questions.map((q) => ({
+      questionId: q.questionId,
+      teacherScore: draft.scores[q.questionId] as number,
+      teacherFeedback: draft.feedbacks[q.questionId] ?? "",
+    }));
+    setFinishing(true);
+    try {
+      await gradeAttempt(open.attempt.id, grades);
+      flash("Đã hoàn thành chấm — học sinh sẽ nhận thông báo");
+      setOpen(null);
+      loadQueue();
+    } catch {
+      flash("Chấm bài thất bại — thử lại.");
+    } finally {
+      setFinishing(false);
+    }
+  }
 
   return (
     <TeacherShell crumbs={[{ label: "Giáo viên" }, { label: "Chấm bài" }]}>
@@ -164,8 +217,7 @@ export default function TeacherGradingPage() {
         </label>
         <label className={styles.selectField}>
           <span className={styles.fieldLabel}>Trạng thái</span>
-          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}>
-            <option value="all">Tất cả</option>
+          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as QueueStatus)}>
             <option value="submitted">Chờ chấm</option>
             <option value="graded">Đã chấm</option>
           </select>
@@ -175,21 +227,21 @@ export default function TeacherGradingPage() {
         </div>
       </section>
 
-      {reviewState === "error" && (
+      {loadError && (
         <div className={styles.errorBanner} role="alert">
           <strong>Không tải được hàng chờ chấm bài.</strong>
-          <button onClick={() => setReviewState("ready")}>Thử lại</button>
+          <button onClick={loadQueue}>Thử lại</button>
         </div>
       )}
 
       <section className={styles.tableCard} aria-label="Hàng chờ chấm bài">
-        {reviewState === "loading" ? (
+        {loading ? (
           <div className={styles.loading} aria-busy="true" aria-label="Đang tải">
             {[1, 2, 3, 4].map((r) => <div key={r} className={styles.skeletonRow}><span /><span /><span /></div>)}
           </div>
         ) : display.length === 0 ? (
           <div className={styles.emptyState}>
-            {reviewState === "empty" || pendingCount === 0 ? (
+            {pendingCount === 0 ? (
               <>
                 <CircleCheck size={38} className={styles.emptyOk} />
                 <h2>Không có bài chờ chấm</h2>
@@ -218,33 +270,32 @@ export default function TeacherGradingPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {display.map((a) => {
-                    const graded = a.status === "graded";
-                    const score = a.questions.reduce((s, q) => s + (q.score ?? 0), 0);
-                    const max = a.questions.reduce((s, q) => s + q.maxScore, 0);
-                    return (
-                      <tr key={a.id} tabIndex={0} onClick={() => openAttempt(a)} onKeyDown={(e) => e.key === "Enter" && openAttempt(a)}>
-                        <td><strong className={styles.studentName}>{a.studentNickname}</strong></td>
-                        <td><div className={styles.nameCell}><strong>{a.assignmentTitle}</strong><small>HSK {a.hskLevel} · {a.questions.length} câu</small></div></td>
-                        <td className={styles.classCol}>{a.className}</td>
-                        <td className={styles.numeric}>{formatDateTime(a.submittedAt)}</td>
-                        <td><StatusPill status={a.status} label={attemptStatusLabels[a.status]} /></td>
-                        <td className={styles.numeric}>{graded ? score + "/" + max : "—"}</td>
-                      </tr>
-                    );
-                  })}
+                  {display.map((a) => (
+                    <tr key={a.id} tabIndex={0} onClick={() => openAttempt(a.id)} onKeyDown={(e) => e.key === "Enter" && openAttempt(a.id)}>
+                      <td><strong className={styles.studentName}>{a.studentName ?? "—"}</strong></td>
+                      <td><div className={styles.nameCell}><strong>{a.assignmentTitle}</strong></div></td>
+                      <td className={styles.classCol}>{a.className ?? "—"}</td>
+                      <td className={styles.numeric}>{a.submittedAt ? formatDateTime(a.submittedAt) : "—"}</td>
+                      <td><StatusPill status={a.status} label={attemptStatusLabels[a.status]} /></td>
+                      <td className={styles.numeric}>
+                        {a.status === "graded" ? `${a.totalScore ?? "—"}/${a.maxScore ?? "—"}` : "—"}
+                      </td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>
             <div className={styles.mobileList}>
               {display.map((a) => (
-                <article key={a.id} className={styles.mobileCard} onClick={() => openAttempt(a)}>
+                <article key={a.id} className={styles.mobileCard} onClick={() => openAttempt(a.id)}>
                   <div className={styles.mobileCardHead}>
                     <StatusPill status={a.status} label={attemptStatusLabels[a.status]} />
-                    <span className={styles.numeric}>{a.status === "graded" ? "x/10" : ""}</span>
+                    <span className={styles.numeric}>
+                      {a.status === "graded" ? `${a.totalScore ?? "—"}/${a.maxScore ?? "—"}` : ""}
+                    </span>
                   </div>
-                  <p className={styles.mobileStudent}>{a.studentNickname}</p>
-                  <p className={styles.mobileMeta}>{a.assignmentTitle} · nộp {formatDateTime(a.submittedAt)}</p>
+                  <p className={styles.mobileStudent}>{a.studentName ?? "—"}</p>
+                  <p className={styles.mobileMeta}>{a.assignmentTitle} · nộp {a.submittedAt ? formatDateTime(a.submittedAt) : "—"}</p>
                 </article>
               ))}
             </div>
@@ -252,65 +303,94 @@ export default function TeacherGradingPage() {
         )}
       </section>
 
-      <ReviewSwitcher value={reviewState} onChange={setReviewState} />
+      {detailLoading && (
+        <div className={styles.errorBanner} role="status">
+          <strong>Đang tải bài làm…</strong>
+        </div>
+      )}
       {toast && <Toast message={toast} />}
 
       {open && (
-        <div className={styles.drawerBackdrop} role="dialog" aria-modal="true" aria-label={"Chấm bài của " + open.studentNickname}>
-          {/* The scrim is already a real button, so backdrop-close is covered; the ref below
-              adds Escape, focus trap and focus restore (C3). */}
+        <div className={styles.drawerBackdrop} role="dialog" aria-modal="true" aria-label={"Chấm bài của " + (open.attempt.studentName ?? "")}>
           <button className={styles.drawerScrim} onClick={() => setOpen(null)} aria-label="Đóng" />
           <div ref={drawerRef} className={styles.drawer}>
             <div className={styles.drawerHead}>
               <div>
-                <h2>{open.studentNickname}</h2>
-                <p>{open.assignmentTitle} · {open.className} · nộp {formatDateTime(open.submittedAt)}</p>
+                <h2>{open.attempt.studentName ?? "—"}</h2>
+                <p>{open.attempt.assignmentTitle} · nộp {open.attempt.submittedAt ? formatDateTime(open.attempt.submittedAt) : "—"}</p>
               </div>
               <button className={styles.drawerClose} onClick={() => setOpen(null)} aria-label="Đóng"><X size={18} /></button>
             </div>
 
             <div className={styles.drawerBody}>
-              {open.status === "graded" && (
+              {open.attempt.status === "graded" && (
                 <div className={styles.gradedNote}>
-                  <Check size={15} /> Bài này đã chấm — chỉ xem lại (chấm lại lần 2 là T-GRADE-6, chưa hợp đồng).
+                  <Check size={15} /> Bài này đã chấm — chỉ xem lại.
                 </div>
               )}
-              {open.questions.map((q, i) => {
-                const score = draft.scores[q.id];
-                const feedback = draft.feedbacks[q.id] ?? "";
-                const readOnly = open.status === "graded";
+              {questions.map((q, i) => {
+                const score = draft.scores[q.questionId] ?? null;
+                const feedback = draft.feedbacks[q.questionId] ?? "";
+                const readOnly = open.attempt.status !== "submitted";
+                const suggestion = aiSuggestions[q.questionId];
+                const answerText =
+                  q.skill === "writing"
+                    ? (q.writtenAnswer ?? "(trống)")
+                    : (q.selectedOptions ?? []).join(", ") || "(trống)";
                 return (
-                  <fieldset key={q.id} className={styles.qCard}>
+                  <fieldset key={q.questionId} className={styles.qCard}>
                     <legend className={styles.qLegend}>
                       <span className={styles.qIndex}>Câu {i + 1}</span>
-                      <StatusPill status={q.skill === "writing" ? "info" : q.skill === "listening" ? "warning" : "neutral"} label={skillLabels[q.skill]} />
-                      <span className={styles.qMax}>tối đa {q.maxScore} điểm</span>
+                      <span className={styles.qMax}>{q.subType ?? q.skill ?? ""}</span>
                     </legend>
-                    <p className={styles.qContent}>{q.content}</p>
+                    <p className={styles.qContent}>{q.prompt ?? ""}</p>
                     <div className={styles.answerRow}>
                       <div>
                         <small>Bài làm</small>
-                        <p>{q.studentAnswer}</p>
+                        <p>{answerText}</p>
                       </div>
                       <div>
-                        <small>Đáp án tham chiếu</small>
-                        <p>{q.referenceAnswer}</p>
+                        <small>Chấm tự động</small>
+                        <p>{q.autoScore !== null && q.autoScore !== undefined ? `${q.autoScore} điểm` : "Chờ chấm tay"}</p>
                       </div>
                     </div>
+                    {suggestion ? (
+                      <div className={styles.gradedNote} role="status">
+                        <Sparkles size={15} /> AI gợi ý {suggestion.score} điểm
+                        {suggestion.feedback ? ` — ${suggestion.feedback}` : ""} (gợi ý gốc,
+                        không chỉnh sửa được)
+                      </div>
+                    ) : null}
                     {q.skill === "writing" && !readOnly && (
-                      <button type="button" className={styles.aiButton} onClick={() => runAiSuggest(q.id)}>
+                      <button
+                        type="button"
+                        className={styles.aiButton}
+                        disabled={aiBusy !== null}
+                        onClick={() => runAiSuggest(q.questionId)}
+                      >
                         <Sparkles size={15} />
-                        {draft.aiOriginal[q.id] ? "Gợi ý AI đã áp dụng — ghi đè tự do" : "AI gợi ý điểm"}
+                        {aiBusy === q.questionId ? "Đang hỏi AI…" : suggestion ? "Hỏi AI lại" : "AI gợi ý điểm"}
                       </button>
                     )}
                     <div className={styles.scoreRow}>
                       <label className={styles.scoreField}>
-                        <span>Điểm (0–{q.maxScore})</span>
+                        <span>Điểm (≥ 0)</span>
                         <input
-                          type="number" min={0} max={q.maxScore}
+                          type="number"
+                          min={0}
+                          step="any"
                           value={score ?? ""}
                           disabled={readOnly}
-                          onChange={(e) => setDraft((d) => ({ ...d, scores: { ...d.scores, [q.id]: clampScore(e.target.value, q.maxScore) } }))}
+                          onChange={(e) => {
+                            const v = e.target.value === "" ? null : Number(e.target.value);
+                            setDraft((d) => ({
+                              ...d,
+                              scores: {
+                                ...d.scores,
+                                [q.questionId]: v === null || Number.isNaN(v) || v < 0 ? null : v,
+                              },
+                            }));
+                          }}
                         />
                       </label>
                       <label className={styles.feedbackField}>
@@ -320,10 +400,24 @@ export default function TeacherGradingPage() {
                           value={feedback}
                           disabled={readOnly}
                           placeholder="Phản hồi cho học sinh…"
-                          onChange={(e) => setDraft((d) => ({ ...d, feedbacks: { ...d.feedbacks, [q.id]: e.target.value } }))}
+                          onChange={(e) =>
+                            setDraft((d) => ({
+                              ...d,
+                              feedbacks: { ...d.feedbacks, [q.questionId]: e.target.value },
+                            }))
+                          }
                         />
                       </label>
                     </div>
+                    {!readOnly && suggestion ? (
+                      <button
+                        type="button"
+                        className={styles.aiButton}
+                        onClick={() => applySuggestion(q.questionId)}
+                      >
+                        <Check size={15} /> Dùng điểm gợi ý ({suggestion.score})
+                      </button>
+                    ) : null}
                   </fieldset>
                 );
               })}
@@ -332,10 +426,10 @@ export default function TeacherGradingPage() {
             <div className={styles.drawerFoot}>
               <div className={styles.totalBox}>
                 <span>Tổng</span>
-                <strong>{totalScore} / {maxTotal}</strong>
+                <strong>{draftTotal} / {open.attempt.maxScore ?? "—"}</strong>
               </div>
-              {open.status === "submitted" ? (
-                <button className={styles.finishButton} onClick={finishGrading} disabled={!allScored}>
+              {open.attempt.status === "submitted" ? (
+                <button className={styles.finishButton} onClick={finishGrading} disabled={!allScored || finishing}>
                   <Check size={16} />
                   {allScored ? "Hoàn thành chấm" : "Nhập đủ điểm từng câu"}
                 </button>
