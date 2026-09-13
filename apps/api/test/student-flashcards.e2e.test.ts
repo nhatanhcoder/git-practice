@@ -115,6 +115,7 @@ before(async () => {
   await mongo
     .collection('user_flashcard_states')
     .deleteMany({ flashcardId: { $in: leftovers.map((row) => row._id) } });
+  await mongo.collection('user_mistakes').deleteMany({ sourceType: 'flashcard', sourceId: { $in: leftovers.map((row) => String(row._id)) } });
   await mongo.collection('flashcards').deleteMany({ tags: TEST_TAG });
 
   const inserted = await mongo.collection('flashcards').insertOne({
@@ -139,6 +140,7 @@ after(async () => {
     where: { email: { in: OWNED_EMAILS } },
     select: { id: true },
   });
+  await mongo.collection('user_mistakes').deleteMany({ userId: { $in: users.map((u) => u.id) } });
   await prisma.refreshToken.deleteMany({ where: { userId: { in: users.map((u) => u.id) } } });
   await prisma.user.deleteMany({ where: { email: { in: OWNED_EMAILS } } });
   await app.close();

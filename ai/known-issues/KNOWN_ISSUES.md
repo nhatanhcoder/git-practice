@@ -1922,3 +1922,10 @@ tsx past the Node 25 loader incompatibility, then re-run `pnpm --filter api test
 ### 2026-09-13 migration-only review note
 
 No new issue ID assigned. The AttemptAnswer migration was split from PR #73 so it can be verified and merged before dependent API/FE code.
+
+### 2026-09-14 S-MSTK Task B verification note
+
+**Status**: implemented; verification/PR record in the Task B session. No new issue ID assigned.
+BUILD-005 remains applicable: use the tsx CLI to run real DB suites on Node 25.
+Mistake history has no reconstructable historical SRS ratings; the approved rollout begins
+capturing real rating-0 events now and reconciles already-graded wrong question answers.

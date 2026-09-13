@@ -1,6 +1,6 @@
 ---
 status: active
-last_updated: 2026-09-10
+last_updated: 2026-09-14
 ---
 
 # Student Flow Map — SRS & Classes
@@ -291,3 +291,6 @@ the server owns XP). Boss clears at ≥80% practice score. No Student catalog
 create/delete/publish path (permissions forbid it); no XP/badge server event; no
 Assignment-grade transition. Missing contracts: catalog path read, curriculum read,
 self-study progress read/write — all under API_STUDENT §83.
+
+### Task B — live mistake notebook
+Student sidebar -> /student/mistakes (GET list) -> /student/mistakes/review (GET pending session) -> POST /student/mistakes/:id/review -> server feedback -> next/finish. No local progress or XP writes.
