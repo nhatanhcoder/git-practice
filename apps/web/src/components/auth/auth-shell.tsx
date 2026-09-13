@@ -1,4 +1,9 @@
+"use client";
+
 import Link from "next/link";
+import { useEffect, useState } from "react";
+import { Moon, Sun } from "lucide-react";
+import { useStudentPreferences } from "@/lib/student/preferences";
 
 /**
  * The split layout both /login and /register sit in.
@@ -7,6 +12,14 @@ import Link from "next/link";
  * twice: the brand, palette and the drifting ink motif are what carry one product
  * across both auth screens. Keeping it in one place also means the reduced-motion
  * handling is written once.
+ *
+ * Theme (2026-09-12): this shell used to hardcode data-theme="dark", so the saved
+ * light preference never reached the auth screens and the two halves of the product
+ * disagreed. It now reads the same `useStudentPreferences` store the student shell
+ * toggles and renders the matching toggle. Hydration guard: server and first
+ * client render say "dark" (the store default) and the saved theme is applied
+ * after mount — trusting the store before the first client render is what
+ * causes a React hydration mismatch when the saved theme is light.
  */
 export function AuthShell({
   title,
@@ -17,15 +30,32 @@ export function AuthShell({
   lead: string;
   children: React.ReactNode;
 }) {
+  const theme = useStudentPreferences((s) => s.theme);
+  const toggleTheme = useStudentPreferences((s) => s.toggleTheme);
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  const themeAttr = mounted ? theme : "dark";
+
+  const themeBtn = (
+    <button
+      type="button"
+      className="auth-theme-toggle"
+      onClick={toggleTheme}
+      aria-label={themeAttr === "dark" ? "Chuyển sang giao diện sáng" : "Chuyển sang giao diện tối"}
+    >
+      {themeAttr === "dark" ? <Sun size={18} /> : <Moon size={18} />}
+    </button>
+  );
+
   return (
-    <div className="auth-root student-root" data-theme="dark">
+    <div className="auth-root student-root" data-theme={themeAttr}>
       <aside className="auth-art">
         {/* Decorative: announced to nobody, and it must not land in the tab order. */}
         <span className="auth-glyph" aria-hidden="true">
           汉
         </span>
 
-        <Link href="/" className="auth-brand">
+        <Link href="/landing" className="auth-brand">
           <span className="auth-brand__mark" aria-hidden="true">
             汉
           </span>
@@ -58,6 +88,7 @@ export function AuthShell({
       </aside>
 
       <main className="auth-panel">
+        <div className="auth-theme-slot">{themeBtn}</div>
         <div className="auth-card">{children}</div>
       </main>
     </div>

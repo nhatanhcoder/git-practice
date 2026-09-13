@@ -3,13 +3,12 @@ const nextConfig = {
   // Next 14's embedded ESLint integration predates ESLint 10. CI runs `pnpm lint`
   // as a required separate step before this build; type checking stays enabled.
   eslint: { ignoreDuringBuilds: true },
-  // WEB-017: the prototype landing page (invented teachers and student results)
-  // was removed on the owner's decision 2026-09-12. Temporary redirect so old
-  // links and the `new_invoice`-adjacent bookmarks land on the login gate
-  // instead of a 404; restore as `permanent: false` until a real landing page
-  // with approved content exists.
+  // WEB-017 follow-up (owner direction 2026-09-12): the landing was first removed
+  // for its invented people content, then re-created at /landing with factual
+  // content only. The old /student path redirects there for backward
+  // compatibility; temporary until every known link has moved over.
   async redirects() {
-    return [{ source: '/student/landing', destination: '/login', permanent: false }];
+    return [{ source: '/student/landing', destination: '/landing', permanent: false }];
   },
 };
 
