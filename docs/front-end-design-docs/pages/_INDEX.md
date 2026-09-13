@@ -74,6 +74,7 @@ Analytics (T-ANL-1…4): _not yet mapped._ Every other Teacher area has a contra
 | `/student/flashcards` | S-SRS-1..5 | [student-srs](./student-pages/student-srs.md) | built | v1 | vocabulary seed; streak timezone |
 | `/student/classes` | S-CLS-1,2 | [student-classes-list](./student-pages/student-classes-list.md) | built | v1 | — |
 | `/student/classes/[classId]` | S-CLS-3,4, S-LESSON-1 | [student-class-detail](./student-pages/student-class-detail.md) | built | v1 | — |
+| `/student/classes/[classId]/lessons/[lessonId]` | S-LESSON-2,3,4 | [student-lesson-detail](./student-pages/student-lesson-detail.md) | built | v1 | assignments (S-LESSON-3) + supplements (S-LESSON-4) render as unavailable |
 | `/student/assignments` | S-ASGN-1 | [student-assignments-list](./student-pages/student-assignments-list.md) | built (live) | v1 | GET list live; ⛔ detail endpoint unimplemented; attempt status badges need PR #73 |
 | `/student/attempts/[attemptId]` | S-ASGN-2..6 | [student-attempt-take](./student-pages/student-attempt-take.md) | built (live) | v1 | **LIVE on attempt endpoints (Sprint 4)** — autosave debounce + server-enforced deadline; attempt status needs no mock |
 | `/student/attempts/[attemptId]/result` | S-ASGN-7,8 | [student-attempt-result](./student-pages/student-attempt-result.md) | built (live) | v1 | **LIVE on GET result (Sprint 4)** — partial (submitted) never presented as final; keys only at graded |
