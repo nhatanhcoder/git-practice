@@ -52,3 +52,7 @@ back healthy; nothing in the DB was lost.
 save-rate limit value unapproved (same open item as module 01 §13).
 
 **Next**: merge window over the open PRs, then wave slices 3–7 resume.
+
+## 2026-09-13 merge review
+
+Removed a stale conflict marker in the error-code registry; merged main records; replaced loose types in the word-bank service/test and removed unused import. Lint, API type-check after Prisma generate, check-docs 9/9 passed. CI and database e2e pending.

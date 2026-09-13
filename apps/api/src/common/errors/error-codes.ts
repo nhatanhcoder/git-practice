@@ -62,7 +62,6 @@ export const ErrorCode = {
   // code so a caller cannot probe for the existence of other users' notifications
   // (07-notifications.md §5).
   NOTIFICATION_NOT_FOUND: 'NOTIFICATION_NOT_FOUND',
->>>>>>> origin/main
 
   // Session review & teacher sessions (registry § Session Review Errors)
   SESSION_NOT_FOUND: 'SESSION_NOT_FOUND',

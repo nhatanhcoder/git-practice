@@ -44,12 +44,14 @@ function toDetails(errors: ValidationError[], prefix = ''): Record<string, strin
   return out;
 }
 
+// Test responses have different envelope shapes, asserted per case.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Res = { status: number; body: any };
 
 async function req(
   method: 'GET' | 'POST' | 'PATCH' | 'DELETE',
   path: string,
-  body?: any,
+  body?: unknown,
   token?: string,
 ): Promise<Res> {
   const headers: Record<string, string> = {};
@@ -172,7 +174,7 @@ describe('Word bank — save (S-SRS-6)', () => {
     assert.equal(second.status, 201, JSON.stringify(second.body));
 
     const list = await req('GET', '/student/word-bank', undefined, aToken);
-    const rows = list.body.data.filter((r: any) => r.hanzi === CATALOG_HANZI);
+    const rows = list.body.data.filter((r: { hanzi: string; id: string }) => r.hanzi === CATALOG_HANZI);
     assert.equal(rows.length, 1, 'the unique (userId, hanzi) index must keep one row');
     assert.equal(rows[0].meaning, 'nghĩa cập nhật lần 2');
     assert.equal(rows[0].note, 'ghi chú cá nhân');
@@ -213,14 +215,14 @@ describe('Word bank — list & ownership (S-SRS-7, INV-WB-03)', () => {
   it("B's list shows none of A's words", async () => {
     const bList = await req('GET', '/student/word-bank', undefined, bToken);
     assert.equal(bList.status, 200);
-    const leaked = bList.body.data.filter((r: any) => r.hanzi === CATALOG_HANZI);
+    const leaked = bList.body.data.filter((r: { hanzi: string; id: string }) => r.hanzi === CATALOG_HANZI);
     assert.equal(leaked.length, 0, "A's bookmark must never appear in B's bank");
     assert.equal(bList.body.meta.total, bList.body.data.length);
   });
 
   it("B deleting A's row id is a bare 404 and A's row survives (INV-WB-03)", async () => {
     const aList = await req('GET', '/student/word-bank', undefined, aToken);
-    const aRow = aList.body.data.find((r: any) => r.hanzi === CATALOG_HANZI);
+    const aRow = aList.body.data.find((r: { hanzi: string; id: string }) => r.hanzi === CATALOG_HANZI);
     assert.ok(aRow, 'A has the saved word from the previous tests');
 
     const res = await req('DELETE', `/student/word-bank/${aRow.id}`, undefined, bToken);
@@ -229,7 +231,7 @@ describe('Word bank — list & ownership (S-SRS-7, INV-WB-03)', () => {
 
     const stillThere = await req('GET', '/student/word-bank', undefined, aToken);
     assert.ok(
-      stillThere.body.data.some((r: any) => r.id === aRow.id),
+      stillThere.body.data.some((r: { hanzi: string; id: string }) => r.id === aRow.id),
       "B's delete attempt must not touch A's row",
     );
   });
@@ -250,7 +252,7 @@ describe('Word bank — review session (S-SRS-7)', () => {
 
     const res = await req('GET', '/student/word-bank/review', undefined, aToken);
     assert.equal(res.status, 200);
-    const byHanzi = new Map(res.body.data.map((c: any) => [c.hanzi, c]));
+    const byHanzi = new Map(res.body.data.map((c: { hanzi: string; id: string | null; state: unknown }) => [c.hanzi, c]));
 
     const matched = byHanzi.get(CATALOG_HANZI);
     assert.ok(matched, 'the catalog-backed bookmark is in the session');
@@ -274,7 +276,7 @@ describe('Word bank — review session (S-SRS-7)', () => {
     assert.ok([200, 201].includes(review.status), JSON.stringify(review.body));
 
     const list = await req('GET', '/student/word-bank', undefined, aToken);
-    const row = list.body.data.find((r: any) => r.hanzi === CATALOG_HANZI);
+    const row = list.body.data.find((r: { hanzi: string; id: string }) => r.hanzi === CATALOG_HANZI);
     assert.ok(row);
 
     const del = await req('DELETE', `/student/word-bank/${row.id}`, undefined, aToken);

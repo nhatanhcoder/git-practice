@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { isValidObjectId, Model } from 'mongoose';
 import { AppException } from '../common/errors/app.exception';
@@ -120,7 +120,7 @@ export class WordBankService {
     const matches = await this.flashcards
       .find({ hanzi: { $in: words.map((word) => word.hanzi) } })
       .lean();
-    const byHanzi = new Map<string, Record<string, any>>(matches.map((card) => [card.hanzi, card]));
+    const byHanzi = new Map(matches.map((card) => [card.hanzi, card]));
 
     const states = await this.states
       .find({
@@ -184,7 +184,7 @@ export class WordBankService {
     return this.toDtoLean(row.toObject());
   }
 
-  private toDtoLean(row: Record<string, any>) {
+  private toDtoLean(row: Pick<UserSavedWord, 'hanzi' | 'pinyin' | 'meaning' | 'sourceType' | 'sourceId' | 'note' | 'savedAt'> & { _id: unknown }) {
     return {
       id: String(row._id),
       hanzi: row.hanzi,

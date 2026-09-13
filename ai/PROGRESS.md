@@ -260,6 +260,26 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
       but request/response contracts are not approved; no payload was invented
       *(if F9–F16 ever land, `SkillScore.skill` widens 3 → 7 values — `PROJECT_KNOWLEDGE.md` §8. Blocked, see Sprint 5b)*
 - ⬜ F6.3 Class dashboard (Teacher) · ⬜ F6.4 API Quota Monitoring (Admin)
+- ✅ (zcode · 2026-09-12) **S-BILL-1/2 Student invoice read path — SCOPE-BILL-01 closed.**
+      `GET /student/invoices` + `GET /student/invoices/:id` (both defined in `API_STUDENT.md`
+      § Billing, mandated by accepted `06-billing.md` §5: dedicated handler, `studentId` from
+      the token in the WHERE, `status <> 'void'` hidden from students, INV-BILLING-33/34).
+      `?studentId=` is not in the query DTO, so `forbidNonWhitelisted` rejects it with
+      `VALIDATION_ERROR`; another student's invoice, a voided one and a malformed id all answer
+      `INVOICE_NOT_FOUND` — indistinguishable by design. Responses carry no
+      studentId/studentName/studentEmail; `outstandingAmount` server-derived (INV-BILLING-16);
+      payments[] in the admin detail's deterministic order. FE `/student/invoices`(+detail) in
+      the Hán Lộ design: money renders from envelope decimal strings (no parsing, no
+      arithmetic), sidebar "Học phí" entry, 7 states per contract. The suite caught a real
+      first-cut bug: `?status=void` fell through to the unfiltered branch — void now answers an
+      explicit empty set. No endpoint, field or error code invented.
+      **Verified**: invoice e2e **10/10** · full API suite **262/262 across 45 suites** (tsx CLI
+      per BUILD-005) · web build 44/44 with both routes · web script tests **170/170** (15 new)
+      · check-docs 9/9 · live browser: login → list (2 real invoices, correct grouping) →
+      detail (3 amount tiles + payment history, recorder shows display name) desktop
+      screenshots read; one display bug (due date as a doubled range) caught on screen and
+      fixed. Contracts → `built`. Branch `feat/student-invoices` (rebased onto origin/main
+      after the notifications wave landed; developed in worktree `Real-invoices` — see GIT-004).
 - **DoD**: Rating a card reschedules it correctly per SM-2. Teacher sees red alerts for weak students.
 
 ## Sprint 6 — Attendance, Payroll, Tuition ⚠️
@@ -365,6 +385,31 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
   `srs-pagination.test.mjs`, not this slice's) · check-docs 9/9 · Playwright 4/4
   production build. Branch `feat/student-word-bank`. Still open per spec §16: lesson/
   passage save surfaces arrive with the content screens (wave slices 5–6).
+- ✅ (zcode · 2026-09-12) **Page Contracts for remaining student routes (DOCS).** 10
+      contracts on `docs/student-page-contracts`: notifications (matches merged module 07 BE exactly — role-agnostic
+      paths, 11-type enum, no API display text) are live; nine ⛔ prototype contracts carry
+      their real blockers (ADR-005 stub/DOC-017, reserved-but-undescribed analytics paths,
+      DOC-011 corpus, aggregation/privacy rules, collection endpoints). No endpoint invented,
+      no `apps/` change. `student-flow.md` gains the blocked-branch table; four new entries in
+      § Needs from the other lane are the student lane's FE↔BE contract backlog. Flagged for
+      the notifications lane: its invoice deep-link still returns null while PR #72 builds the
+      target screens. check-docs 9/9.
+- ✅ (opencode · 2026-09-12) **Student assignments list contract (S-ASGN-1) + cross-student isolation e2e.**
+  FE/BE already live from S3 (no mocks) — filled the recorded contract gap with
+  `student-assignments-list.md` (`built`), `_INDEX` row + `student-flow` §2b/rows 10–11.
+  `GET /student/assignments/:id` marked ⛔ (in `API_STUDENT.md`, unimplemented — not invented).
+  New `student-assignments-isolation.e2e.test.ts`: 2 students × 2 classes (own-published only,
+  own-draft hidden, cross-class hidden, shape + no `enrollmentCode` leak, anonymous 401).
+  Verify: api build clean · API **256/256 across 45 suites** (4 new) · web build 43/43 ·
+  check-docs 9/9. Branch `feat/student-assignments-list`.
+- ✅ (opencode · 2026-09-12) **PW screen sweep: all dynamic routes registered + PW_ALL=1 green 101/102.**
+  `routes.ts` gains 4 mock-id routes (exam-detail/result, workplace-scenario, writing-char) and
+  9 resolved routes (`resolve-ids.ts`: seed-first ids; timestamped sweep fixtures only for
+  attempt/lesson, public API only, no seed writes); `screens.spec.ts` runs the same
+  heading/gate/not-found/overflow/console checks on resolved paths and SKIPs with reason when
+  unresolvable. Sweep on prod build: **101/102** (desktop + 375px, 0 skips — every resolver
+  hit). Sole failure: `/admin/payroll` 591px overflow at 375px → filed `WEB-021` (pre-existing,
+  admin lane; no screenshot — the check asserts before shooting). Branch `feat/pw-sweep-routes`.
 
 - ✅ (zcode · 2026-09-12) **Student completion wave — slice 1: Notifications module 07
   (mailbox) + producers (closes API-013, S-BILL-3's visibility side).** Built to the
@@ -690,6 +735,23 @@ _(discovered while mapping the Admin UI — 2026-08-13)_
 - [x] (be) ~~Missing endpoints~~ — 2026-09-05: all endpoints implemented in live NestJS modules.
 - [ ] (be) **`packages/types` does not exist** — no shared contract between the two lanes.
       This is the most important unlock; it must be the first commit of a parallel session
+- [ ] (fe → be) **Student analytics module spec** — `GET /student/progress` and
+      `/student/progress/chart` are reserved paths in `API_STUDENT.md`, but no module spec
+      defines their request/response DTOs (F6.1/F6.2 blocked in Sprint 5). Found writing the
+      `student-progress` Page Contract 2026-09-12. Streak/XP figures on the same screen are
+      gamification (below), not analytics.
+- [ ] (fe → be) **S-MSTK mistake-notebook collection endpoints** — the source data now exists
+      (Sprint 4 attempts, PR #73), but no contract collects wrongly-answered questions from it.
+      `student-mistakes.md` contract written; the screen renders an honest empty state.
+- [ ] (fe → be) **Placement + platform mock-exam transport contract** — ADR-005
+      (server-authoritative exam) is a 0-byte stub (`DOC-017`); placement decision rule never
+      settled. Blocks `student-exams` / `student-placement` contracts.
+- [ ] (fe → be) **Gamification contracts** — XP sources, rank/level curve, streak
+      calendar/timezone rule (also blocks the SRS stats `streak: null`), badge unlock
+      conditions (server-authoritative), leaderboard aggregation + privacy/visibility.
+      Blocks `student-badges` / `student-leaderboard` / progress mock figures.
+      (Self-study content contracts for foundation/grammar/writing/lego/workplace are already
+      covered by the Foundation/Grammar proposal D1–D5 + `DOC-011` — not duplicated here.)
 
 ## Business decisions
 

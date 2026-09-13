@@ -74,15 +74,27 @@ Analytics (T-ANL-1…4): _not yet mapped._ Every other Teacher area has a contra
 | `/student/flashcards` | S-SRS-1..5 | [student-srs](./student-pages/student-srs.md) | built | v1 | vocabulary seed; streak timezone |
 | `/student/classes` | S-CLS-1,2 | [student-classes-list](./student-pages/student-classes-list.md) | built | v1 | — |
 | `/student/classes/[classId]` | S-CLS-3,4, S-LESSON-1 | [student-class-detail](./student-pages/student-class-detail.md) | built | v1 | — |
-| `/student/assignments` | S-ASGN-1 | *(inline in page doc — wired without a separate contract file, same gap as the register screens)* | built (live) | v1 | **LIVE on GET /student/assignments (S3, 2026-09-11)** — published-only, active-enrollment-only enforced server-side; attempt status badges need Sprint 4 |
+| `/student/assignments` | S-ASGN-1 | [student-assignments-list](./student-pages/student-assignments-list.md) | built (live) | v1 | GET list live; ⛔ detail endpoint unimplemented; attempt status badges need PR #73 |
+| `/student/notifications` | S-BILL-3 + Notifications table | [student-notifications](./student-pages/student-notifications.md) | built | v1 | — (module 07 live; role-agnostic `/api/v1/notifications` per 07-notifications.md) |
+| `/student/mistakes` | S-MSTK | [student-mistakes](./student-pages/student-mistakes.md) | built (mock) | v1 | ⛔ mistake-collection endpoints (Needs lane) |
+| `/student/exams` | S-SELF-7 | [student-exams](./student-pages/student-exams.md) | built (mock) | v1 | ⛔ ADR-005 is a 0-byte stub (DOC-017); exam transport contract |
+| `/student/placement` | S-SELF-7 | [student-placement](./student-pages/student-placement.md) | built (mock) | v1 | ⛔ ADR-005 stub (DOC-017); placement contract |
+| `/student/progress` | S-ANL-1,2 | [student-progress](./student-pages/student-progress.md) | built (mock) | v1 | ⛔ paths reserved, response shape unapproved (analytics module spec) |
+| `/student/leaderboard` | S-ANL-4, S-GAME-5 | [student-leaderboard](./student-pages/student-leaderboard.md) | built (mock) | v1 | ⛔ aggregation + privacy rules |
+| `/student/badges` | S-GAME-4 | [student-badges](./student-pages/student-badges.md) | built (mock) | v1 | ⛔ server-authoritative unlock contract |
+| `/student/writing` | S-SELF-4 | [student-writing](./student-pages/student-writing.md) | built (mock) | v1 | ⛔ DOC-011 corpus + progress contract |
+| `/student/lego` | S-SELF-5 | [student-lego](./student-pages/student-lego.md) | built (mock) | v1 | ⛔ DOC-011 corpus + progress contract |
+| `/student/workplace` | S-SELF-6 | [student-workplace](./student-pages/student-workplace.md) | built (mock) | v1 | ⛔ DOC-011 corpus + scorer contract |
 | `/student/foundation` | S-SELF-2,9 | [student-foundation](./student-pages/student-foundation.md) | contracted (proposed) | — | ⛔ source, schema, API and media approval |
 | `/student/grammar` | S-SELF-3,9 | [student-grammar](./student-pages/student-grammar.md) | contracted (proposed) | — | ⛔ source, schema, API and exercise approval |
+| `/student/invoices` | S-BILL-1 | [student-invoices](./student-pages/student-invoices.md) | built | v1 | — (endpoints defined in [API_STUDENT.md](../../api/API_STUDENT.md) § Billing; dedicated handler per SCOPE-BILL-01) |
+| `/student/invoices/[invoiceId]` | S-BILL-2 | [student-invoice-detail](./student-pages/student-invoice-detail.md) | built | v1 | — (embedded `payments[]`; `new_invoice` notification deep-link target) |
 | `/student/learning-path` | S-SELF-1,9 | [student-learning-path](./student-pages/student-learning-path.md) | contracted (proposed) | — | ⛔ catalog paths, progress reads/writes |
 | `/student/learning-path/[nodeId]` | S-SELF-1,9 | [student-learning-path-node](./student-pages/student-learning-path-node.md) | contracted (proposed) | — | ⛔ catalog read, progress write |
 
 Foundation/Grammar contracts describe a blocked production proposal; their current UI is still mock-backed.
 
-The other built `/student/**` screens remain mockups produced outside this contract pipeline. `/student/mistakes` (S-MSTK) is deferred pending Sprint 4 Assignment/Attempts backend.
+Every built `/student/**` route now has a contract. The `built (mock)` rows are prototype screens with **no approved backend** — their contracts carry the ⛔ blockers and the corresponding entries in `ai/PROGRESS.md` § "Needs from the other lane"; they must not be wired to invented endpoints.
 
 ---
 
