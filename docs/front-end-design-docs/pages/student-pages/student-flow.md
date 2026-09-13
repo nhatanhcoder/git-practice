@@ -41,6 +41,38 @@ last_updated: 2026-09-10
         └── Rời lớp → Modal xác nhận          DELETE /api/v1/student/classes/:id/leave
 ```
 
+## 2b. Assignments branch
+
+```text
+/student  Dashboard
+│
+└── Sidebar: Bài tập
+    ▼
+    /student/assignments  Bài tập đã phát hành  GET /api/v1/student/assignments
+    ├── Lọc theo lớp → same screen              local filter (options from GET /student/classes)
+    └── Mở chi tiết → ⛔                         GET /student/assignments/:id unimplemented —
+                                                rows deliberately have no navigation
+```
+
+## 3. Billing branch (S-BILL-1/2 — read-only)
+
+```text
+/student  Dashboard
+│
+└── Sidebar: Học phí
+    ▼
+    /student/invoices  Hóa đơn học phí           GET /api/v1/student/invoices
+    ├── Chọn hóa đơn → chi tiết
+    │   ▼
+    │   /student/invoices/[invoiceId]            GET /api/v1/student/invoices/:id
+    │   └── Back → danh sách
+    └── (no mutating action — creation/payment/void are Admin-side, A-INV-2/5)
+```
+
+Ownership is in the query WHERE (`studentId` from the token, `status <> 'void'`), never a
+`?studentId=` parameter — INV-BILLING-33. Money renders from the envelope; the FE subtracts
+nothing (`outstandingAmount` is server-derived, INV-BILLING-16).
+
 ## 2c. Attempt take & result branch
 
 ```text
@@ -56,7 +88,7 @@ last_updated: 2026-09-10
         /student/attempts/[attemptId]/result    GET /api/v1/student/attempts/:id/result
 ```
 
-## 3. Note on Sổ tay lỗi sai (`S-MSTK`)
+## 4. Note on Sổ tay lỗi sai (`S-MSTK`)
 
 `/student/mistakes` (Sổ tay lỗi sai) and `/student/mistakes/review` are dedicated to diagnostic error review for questions answered incorrectly during homework assignments and CBT mock exams. They are separate from vocabulary flashcards (`/student/flashcards`). Backend error-collection endpoints will be defined in Sprint 4 (Assignments & Attempts); in the interim, `/student/mistakes` remains in prototype/demo mode without being conflated with flashcard SRS.
 
@@ -73,10 +105,14 @@ last_updated: 2026-09-10
 | 7 | `/student/classes` | Tham gia lớp | same / modal | POST join | `CLASS_ENROLL_CODE_INVALID`, `CLASS_ALREADY_ARCHIVED`, `CLASS_ALREADY_ENROLLED`, `VALIDATION_ERROR` |
 | 8 | `/student/classes` | Chọn lớp | `/student/classes/[classId]` | GET class detail | `CLASS_ACCESS_DENIED`, `CLASS_NOT_FOUND`, `VALIDATION_ERROR` |
 | 9 | `/student/classes/[classId]` | Rời lớp | `/student/classes` | DELETE leave | `CLASS_NOT_ENROLLED`, `CLASS_ACCESS_DENIED`, `CLASS_NOT_FOUND`, `VALIDATION_ERROR` |
-| 10 | `/student/assignments` | Bắt đầu / Tiếp tục | `/student/attempts/[attemptId]` | POST attempts (create or resume) | `ASSIGNMENT_NOT_FOUND`, `ASSIGNMENT_PAST_DUE`, `ATTEMPT_ALREADY_SUBMITTED` |
-| 11 | `/student/attempts/[attemptId]` | Trả lời | same | PATCH answers (2s debounce) | `VALIDATION_ERROR`, `ATTEMPT_TIME_EXCEEDED`, `ATTEMPT_ALREADY_SUBMITTED` |
-| 12 | `/student/attempts/[attemptId]` | Nộp bài / Hết giờ | `/student/attempts/[attemptId]/result` | POST submit | `ATTEMPT_ALREADY_SUBMITTED`, `ATTEMPT_NOT_OWNER` |
-| 13 | `/student/attempts/[attemptId]/result` | Xem kết quả | same | GET result | `ATTEMPT_NOT_FOUND`, `ATTEMPT_NOT_OWNER` |
+| 10 | `/student` | Bài tập | `/student/assignments` | GET published list | auth errors |
+| 11 | `/student/assignments` | Lọc theo lớp | same | local (options: GET classes) | — |
+| 12 | `/student` | Học phí | `/student/invoices` | GET own invoices | auth errors |
+| 13 | `/student/invoices` | Chọn hóa đơn | `/student/invoices/[invoiceId]` | GET invoice detail | `INVOICE_NOT_FOUND`, `VALIDATION_ERROR` |
+| 14 | `/student/assignments` | Bắt đầu / Tiếp tục | `/student/attempts/[attemptId]` | POST attempts (create or resume) | `ASSIGNMENT_NOT_FOUND`, `ASSIGNMENT_PAST_DUE`, `ATTEMPT_ALREADY_SUBMITTED` |
+| 15 | `/student/attempts/[attemptId]` | Trả lời | same | PATCH answers (2s debounce) | `VALIDATION_ERROR`, `ATTEMPT_TIME_EXCEEDED`, `ATTEMPT_ALREADY_SUBMITTED` |
+| 16 | `/student/attempts/[attemptId]` | Nộp bài / Hết giờ | `/student/attempts/[attemptId]/result` | POST submit | `ATTEMPT_ALREADY_SUBMITTED`, `ATTEMPT_NOT_OWNER` |
+| 17 | `/student/attempts/[attemptId]/result` | Xem kết quả | same | GET result | `ATTEMPT_NOT_FOUND`, `ATTEMPT_NOT_OWNER` |
 
 ## Entity state transitions
 
@@ -88,7 +124,34 @@ last_updated: 2026-09-10
 
 - ⛔ Save a word from content (S-SRS-6).
 - ⛔ Manage/review the saved-word bank (S-SRS-7).
-- ⛔ Assignment/Attempt mistake collection (S-MSTK, Sprint 4).
+- ⛔ Assignment/Attempt mistake collection (S-MSTK) — the source data exists (Sprint 4 attempts), no collection contract.
+- ⛔ Exam room / result + placement transport (S-SELF-7) — ADR-005 is a 0-byte stub (DOC-017).
+- ⛔ Analytics response shapes — `GET /student/progress`(+`/chart`) paths are reserved in `API_STUDENT.md` but no module spec defines the payloads (F6.1/F6.2).
+- ⛔ Gamification — XP, rank/level, streak calendar, badge unlocks, leaderboard aggregation/privacy (S-GAME-1..5, S-ANL-4).
+
+## Blocked prototype branches — mapped 2026-09-12
+
+Every route below exists in `apps/web` as a prototype and now has a Page Contract; none has an
+approved backend, so no branch carries a live edge. Trees are omitted deliberately — with all
+edges ⛔ there is no traversal to document beyond list → detail inside each feature.
+
+| Branch | Contracts | Backend blocker |
+|---|---|---|
+| Sổ tay lỗi sai | [student-mistakes](./student-mistakes.md) | mistake collection (source data live via Sprint 4) |
+| Phòng thi + kết quả | [student-exams](./student-exams.md) | ADR-005 stub (DOC-017) |
+| Kiểm tra xếp cấp | [student-placement](./student-placement.md) | ADR-005 stub (DOC-017) |
+| Tiến độ học tập | [student-progress](./student-progress.md) | analytics response shapes unapproved |
+| Bảng xếp hạng | [student-leaderboard](./student-leaderboard.md) | aggregation + privacy rules |
+| Kho huy hiệu | [student-badges](./student-badges.md) | server-authoritative unlocks |
+| Luyện viết chữ | [student-writing](./student-writing.md) | DOC-011 corpus + progress contract |
+| Ghép câu Lego | [student-lego](./student-lego.md) | DOC-011 corpus + progress contract |
+| Mô phỏng công sở | [student-workplace](./student-workplace.md) | DOC-011 corpus + scorer unspecified |
+
+Live branches with contracts: SRS (`student-srs`), Classes (`student-classes-list`,
+`student-class-detail`), Assignments (`student-assignments-list`), Attempts
+(`student-attempt-take`, `student-attempt-result`, PR #73), Invoices
+(`student-invoices`, `student-invoice-detail`, PR #72), Notifications
+(`student-notifications` — module 07 merged via PR #67).
 
 
 ## Foundation and Grammar proposal — 2026-09-10

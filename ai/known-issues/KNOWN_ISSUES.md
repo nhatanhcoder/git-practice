@@ -1592,6 +1592,45 @@ approved, repository-owned source and import/seed strategy. The same audit confi
 S-SRS-6/7 and Student analytics still have no approved transport contracts; they are recorded as
 `NOT IMPLEMENTED`, not counted as passing scope.
 
+---
+
+### [GIT-004] Two agent sessions shared one working tree — branch switches destroyed each other's state
+
+**Severity**: High
+**Status**: Open — process rule violated; the mechanism to prevent it already exists
+
+**Description**: found 2026-09-12 while building the student invoice read path
+(`feat/student-invoices`). A second session was working in `D:\PersonalProject\Real` at the
+same time as this one. Consequences observed in one afternoon, in order:
+
+1. This session's **branch refs vanished** mid-task (`git status` reported "No commits yet";
+   40+ loose refs were zeroed). Every commit survived as dangling objects and was recovered
+   via `git fsck --lost-found` + `git update-ref` — the branch's own reflog
+   (`0000… → 89183f3`) was the pointer that made recovery deterministic.
+2. A **stale API process** kept serving a pre-rebase build: `GET /student/invoices` answered
+   404 "Cannot GET" while the code believed the route existed. The screen showed a load error
+   that looked like a feature bug.
+3. Mid-browser-test, the other session **checked out a different branch in the shared tree**,
+   replacing the source (and served build) under the running web server. The invoice detail
+   page went **blank** — not a code defect; the environment mutated under test.
+4. Untracked scratch from both sessions accumulated in one `git status`, making it
+   non-obvious which files belonged to whom.
+
+**Impact**: every verification run in a shared checkout is unreliable when another session
+can switch branches or restart servers at any moment. A blank screen, a 404 route, and
+disappearing refs were all environment, not code — but each cost a debugging loop and could
+have been "fixed" wrongly.
+
+**Fix Plan**: enforce `multi-agent-workflow.md` §5 — one **worktree per active session**
+(`git worktree add ../Real-<name> <branch>`), never two agents in one checkout. This session
+finished in `D:\PersonalProject\Real-invoices` after the collision. Note: a fresh worktree
+needs `.env` copied from the main checkout (gitignored, absent after `worktree add`), and on
+pnpm 11 the BUILD-002 prisma-engine corruption did not reproduce.
+
+**Recovery recipe that worked** (for the next occurrence): `git fsck --lost-found` → identify
+dangling commits by subject → `git update-ref refs/heads/<branch> <sha>` → verify with
+`git log`. Do not re-run agents before refs are restored.
+
 ## Resolved Issues
 
 ### [BUILD-003] Application quality gates missing from CI
@@ -1766,6 +1805,22 @@ batch. Merge review removed four notification e2e lint failures and retained mai
 grid while integrating notification styles. No issue ID is closed by lint/build checks alone;
 the real database notification suite is NOT RUN locally and current-head CI is required before
 merge.
+
+### [WEB-021] `/admin/payroll` scrolls horizontally at 375px (591px content)
+
+**Severity**: Low
+**Status**: Open — found 2026-09-12 by the PW_ALL screen sweep (101/102 green)
+
+**Description**: the payroll periods ledger table has no mobile-card fallback, so at
+375px the page renders 591px wide. Every other admin table screen passed the same
+overflow assertion. No screenshot was captured — `screens.spec.ts` asserts overflow
+before shooting, so failing screens leave only the trace.zip.
+
+**Fix Plan**: render the existing period rows as mobile cards under 640px (the pattern
+`admin-invoices` already uses), or gate the wide table behind horizontal scroll containment
+that does not widen the page. Verify with `PW_ROUTES=/admin/payroll` on both viewports.
+
+---
 
 ### [DOC-017] ADR-005 (`005-server-authoritative-exam.md`) is a 0-byte stub cited as authority
 
