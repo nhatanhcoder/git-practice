@@ -11,15 +11,16 @@
  * near-invisible headings.
  */
 
-/* Stats row keeps its responsive spacing — it is a dashboard element, not the word list. */
-.srs-grid-4 {
+/* ---------- grid layouts ---------- */
+
+.student-root .srs-stat-grid {
   display: grid;
   gap: var(--sp-3);
   grid-template-columns: 1fr;
 }
 
-@media (min-width: 640px) {
-  .srs-grid-4 {
+@media (min-width: 540px) {
+  .student-root .srs-stat-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
@@ -30,13 +31,23 @@
   }
 }
 
-/* Browse word grid, per owner request 2026-09-10: exactly 4 words per row at
-   every viewport, zero gap, zero padding — a dense glossary, not airy cards.
-   Separation comes from a hairline right/bottom border on each cell. */
-.srs-grid-3 {
+/* 4-column vocabulary grid on desktop */
+.student-root .srs-vocab-grid {
   display: grid;
-  gap: 0;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--sp-4);
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 540px) {
+  .student-root .srs-vocab-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 860px) {
+  .student-root .srs-vocab-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }
 
 @media (min-width: 1080px) {
@@ -290,16 +301,21 @@
 
 /* ---------- browse tiles ---------- */
 
-/* Dense cell: no padding, no margin, no card chrome (the owner asked for a
-   flush 4-per-row word list). Hairlines separate cells; content sits flush. */
-.srs-tile {
+.student-root .srs-tile {
+  padding: var(--sp-5);
+  border-radius: 16px;
+  background: var(--surface);
+  border: 1px solid var(--line-soft);
+  box-shadow: none;
   display: flex;
   flex-direction: column;
-  gap: 0;
-  padding: 0;
-  border-right: 1px solid var(--line-soft);
-  border-bottom: 1px solid var(--line-soft);
-  min-width: 0;
+  gap: var(--sp-3);
+  height: 100%;
+  min-height: 190px;
+  transition:
+    border-color var(--dur-2) var(--ease),
+    box-shadow var(--dur-2) var(--ease),
+    transform var(--dur-2) var(--ease);
 }
 
 .student-root .srs-tile:hover {
