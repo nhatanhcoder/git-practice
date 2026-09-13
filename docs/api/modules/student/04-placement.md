@@ -38,8 +38,11 @@ this slice).
 ## 3. DTO
 
 **GET** — `200 { data: { questions[], savedLevel } }`.
-`questions[]`: `{ questionId, hskLevel, skill, content: { prompt } , options: [{id, text}] }` —
-`correctAnswer`/`explanation` are **never** included (ADR-005, same rule as INV-ATLP-07).
+`questions[]`: `{ questionId, hskLevel, skill, content, options: [{id, text}] }` — `content` is
+the question's own content object (prompt / audioUrl / transcript / passage as present — the
+same shape the attempt take payload carries; single-answer MCQs are listening sub-types, so
+`audioUrl` is the norm). `correctAnswer`/`explanation` are **never** included (ADR-005, same
+rule as INV-ATLP-07).
 `savedLevel`: the student's current `hskLevelGoal`, or `null` when never placed.
 An empty paper (`questions: []`) is a `200` — the bank having no eligible question is a content
 state, not an error; the screen shows an honest empty state.

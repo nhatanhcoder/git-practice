@@ -60,12 +60,13 @@ scored, `totalScore` per INV-ATLP-06).
 
 List query: none. Pagination: none (one attempt per assignment).
 
-**My-attempt resolve (INV-ATLP-12)** — `200 { data: { attemptId, status } | null }`: the
-caller's own attempt for this assignment, `null` when none was ever started. It returns
-ids, never content — the take/result views stay `/student/attempts/:id` and
-`/student/attempts/:id/result`, which re-check ownership per read (§5). This is what lets
-`/student/exams/[examId]/result` deep-link without guessing ids and without a second
-result-rendering path to drift.
+**My-attempt resolve (INV-ATLP-12)** — `200 { data: { attemptId, status } }` where both
+fields are `null` when the caller never started one. (A handler result of literal `null`
+passes through the envelope interceptor unwrapped — its 204 rule — so the sentinel object
+is the only way to say "none" on this wire.) It returns ids, never content — the
+take/result views stay `/student/attempts/:id` and `/student/attempts/:id/result`, which
+re-check ownership per read (§5). This is what lets `/student/exams/[examId]/result`
+deep-link without guessing ids and without a second result-rendering path to drift.
 
 ## 4. Business rules (invariants)
 
@@ -82,7 +83,7 @@ result-rendering path to drift.
 | INV-ATLP-09 | `submitted` locks everything: autosave → `409 ATTEMPT_ALREADY_SUBMITTED`; re-submit (submitted or graded) → `409 ATTEMPT_ALREADY_SUBMITTED` |
 | INV-ATLP-10 | Autosave accepts the payload shape only — `{questionId, selectedOptions?, writtenAnswer?}`; unknown fields rejected by the global whitelist pipe |
 | INV-ATLP-11 | AI writes nothing in this module. `aiSuggestedScore`/`aiFeedback` are written exclusively by teacher `04-attempts-grading.md` INV-TGRD-06 (suggestion-only, writing answers, attempt stays `submitted`) |
-| INV-ATLP-12 | `GET /student/assignments/:id/attempt` is a pure own-attempt lookup on `(assignmentId, studentId)`: no attempt row → `200` with `data: null` (a random/foreign assignment id is indistinguishable from one never started — no existence probing); a lapsed enrollment does NOT hide past attempts (§5). Response carries `attemptId` + `status` only — never answers, never `correctAnswer`. |
+| INV-ATLP-12 | `GET /student/assignments/:id/attempt` is a pure own-attempt lookup on `(assignmentId, studentId)`: no attempt row → `200` with `{ attemptId: null, status: null }` (a random/foreign assignment id is indistinguishable from one never started — no existence probing); a lapsed enrollment does NOT hide past attempts (§5). Response carries `attemptId` + `status` only — never answers, never `correctAnswer`. |
 
 ## 5. Ownership / RBAC
 
@@ -182,7 +183,7 @@ timeout-finalized submits, MCQ auto-score distribution. Do not log answer conten
 | INV-ATLP-06 | e2e | submit scores exact-match MCQ (share/0), writing null; MCQ-only sets `totalScore`; mixed stays null |
 | INV-ATLP-07 | e2e | take payload has no `correctAnswer`; pre-grade result hides it; graded result shows it |
 | INV-ATLP-08 | e2e | B reads A's attempt → 403 `ATTEMPT_NOT_OWNER`; random uuid → 404 |
-| INV-ATLP-12 | e2e | resolve before start → `data: null`; after start → own `attemptId`+`status`; student B resolving A's assignment → `null` (indistinguishable); teacher token → 403 |
+| INV-ATLP-12 | e2e | resolve before start → null sentinel; after start → own `attemptId`+`status`; student B resolving A's assignment → same null sentinel (indistinguishable); teacher token → 403 |
 | INV-ATLP-09 | e2e | autosave/re-submit after submit → 409; answers immutable in DB |
 | INV-ATLP-10 | unit | whitelist rejects unknown fields |
 | INV-ATLP-11 | e2e | full lifecycle writes zero AI columns (all null until module 04 acts) |
