@@ -120,6 +120,12 @@
   --text-3: #77839a;
   --text-inverse: #0a0d13;
 
+  /* Aliases consumed by auth.css and lms.css. They were never defined, so
+     `var(--fg)` fell back to inheritance (dark text on the dark ground in dark
+     mode) and every muted line was stuck on the dark slate in both themes. */
+  --fg: var(--text);
+  --fg-muted: var(--text-2);
+
   --accent: var(--cinnabar-400);
   --accent-strong: var(--cinnabar-500);
   --accent-soft: rgba(240, 83, 47, 0.14);
@@ -166,6 +172,10 @@
   --text-2: #58524a;
   --text-3: #857d72;
   --text-inverse: #ffffff;
+
+  /* Same aliases as dark (see above) — light values come from this block. */
+  --fg: var(--text);
+  --fg-muted: var(--text-2);
 
   --accent: var(--cinnabar-600);
   --accent-strong: var(--cinnabar-700);
