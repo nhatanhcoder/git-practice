@@ -48,6 +48,7 @@ function toDetails(errors: ValidationError[], prefix = ''): Record<string, strin
   return out;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- This test helper accepts heterogeneous endpoint envelopes.
 type Res = { status: number; body: any };
 
 async function req(

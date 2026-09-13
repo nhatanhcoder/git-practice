@@ -133,7 +133,7 @@ export default function AttemptPage() {
     );
   }
 
-  async function flushOne(questionId: string, local: LocalAnswer): Promise<boolean> {
+  const flushOne = useCallback(async (questionId: string, local: LocalAnswer): Promise<boolean> => {
     if (!payload) return false;
     try {
       await saveAnswer(payload.attempt.id, { questionId, ...local });
@@ -142,7 +142,7 @@ export default function AttemptPage() {
     } catch {
       return false;
     }
-  }
+  }, [payload]);
 
   const submit = useCallback(
     async (reason: "manual" | "timeout") => {
@@ -208,15 +208,16 @@ export default function AttemptPage() {
         setSubmitting(false);
       }
     },
-    [payload, answers, pushToast, router, submitting],
+    [payload, answers, pushToast, router, submitting, flushOne],
   );
 
   // One ticking clock for the whole screen, derived from `startedAt`.
+  const hasCountdown = remaining !== null;
   useEffect(() => {
-    if (remaining === null) return;
+    if (!hasCountdown) return;
     const id = window.setInterval(() => setNow(Date.now()), 1000);
     return () => window.clearInterval(id);
-  }, [remaining === null]);
+  }, [hasCountdown]);
 
   useEffect(() => {
     if (remaining === 0 && !submitted.current) void submit("timeout");
