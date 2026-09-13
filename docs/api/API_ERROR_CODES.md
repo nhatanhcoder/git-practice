@@ -165,6 +165,12 @@ one code so a caller cannot probe for another student's bookmark ids.
 |------|------|-------|
 | `WORD_BANK_NOT_FOUND` | 404 | Saved word does not exist or belongs to another student |
 
+### Placement Errors (PLACEMENT_*) — added 2026-09-13, Task C (`modules/student/04-placement.md`)
+
+| Code | HTTP | Description |
+|------|------|-------|
+| `PLACEMENT_NO_QUESTIONS` | 409 | The question bank has no eligible band-1 question, so a paper cannot be served or graded |
+
 ### Notification Errors (NOTIFICATION_*)
 
 Registered 2026-09-12 with module 07's implementation (branch `feat/student-notifications`).

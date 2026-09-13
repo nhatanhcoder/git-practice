@@ -40,6 +40,7 @@ All routes require: `Authorization: Bearer <token>` + `role=student`
 | PATCH | `/api/v1/student/attempts/:id/answers` | Auto-save answers |
 | POST | `/api/v1/student/attempts/:id/submit` | Submit attempt |
 | GET | `/api/v1/student/attempts/:id/result` | View graded result + feedback |
+| GET | `/api/v1/student/assignments/:id/attempt` | Resolve my attempt for an assignment (id + status) |
 
 ---
 
@@ -97,7 +98,9 @@ mistaken for API contracts:
 - learning catalog and curriculum paths;
 - teacher-selected supplemental practice and completion visibility;
 - foundation, grammar, character writing, Lego and workplace progress;
-- placement attempts and platform mock exams;
+- platform mock exams (F13 papers — `/student/exams` is served from `mock_test` assignments +
+  the attempt lifecycle meanwhile); placement moved to its own module on 2026-09-13
+  (`modules/student/04-placement.md`: `GET/POST /student/placement`);
 - XP, rank, streak, badges and leaderboard;
 - display preferences and cross-device progress sync.
 
