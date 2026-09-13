@@ -368,6 +368,18 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
 
 ## Off-sprint / spike
 
+- ✅ (opencode · 2026-09-12) **Sprint 4 attempt lifecycle (S-ASGN-2..7): spec + BE + FE + DoD e2e.**
+  Spec `03-attempt-lifecycle.md` (11 invariants) + `AttemptAnswer` migration (applied, DB current);
+  student BE (start idempotent/re-entry, autosave upsert, server-side MCQ auto-grade unit scale,
+  server-enforced deadline, key hidden until graded) + teacher BE (queue/detail/grade + `graded`
+  notification, AI columns untouched) + AI-suggest unparked per approval (suggestion-only,
+  writes 2 AI fields; no-key → 401). FE take/result/grading-drawer live (no mocks; submit
+  flushes pending autosaves — race caught on screenshot; result `Đã chấm` precedence fixed) +
+  `Làm bài` entry on assignments list. Contracts take/result + flow §2c/rows 10–13.
+  Verify: api build · API **268/268 (46 suites, 16 new)** · web build 43/43 · web unit **171/171
+  tracked (16 new)** · check-docs 9/9 · Playwright DoD **6/6** (take→submit→grade→result,
+  desktop + 375px, screenshots read). Filed `DOC-017` (ADR-005 0-byte stub). Branch
+  `feat/s4-attempt-lifecycle`.
 - ✅ (zcode · 2026-09-12) **Student completion wave — slice 2: Word bank S-SRS-6/7
   (S-SRS-6/7 closed for the flashcard_browser surface).** Spec
   `docs/api/modules/student/02-word-bank.md` written and pinned in the wave (transport

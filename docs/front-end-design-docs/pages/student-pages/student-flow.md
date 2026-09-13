@@ -75,6 +75,21 @@ Ownership is in the query WHERE (`studentId` from the token, `status <> 'void'`)
 `?studentId=` parameter — INV-BILLING-33. Money renders from the envelope; the FE subtracts
 nothing (`outstandingAmount` is server-derived, INV-BILLING-16).
 
+## 2c. Attempt take & result branch
+
+```text
+/student/assignments  Bài tập đã phát hành
+│
+└── Bắt đầu / Tiếp tục → attempt (POST creates or resumes)
+    ▼
+    /student/attempts/[attemptId]  Làm bài      GET /api/v1/student/attempts/:id
+    ├── Trả lời → autosave (2s debounce)        PATCH /api/v1/student/attempts/:id/answers
+    ├── Hết giờ → auto-submit (once)            POST /api/v1/student/attempts/:id/submit
+    └── Nộp bài → confirm → result              POST /api/v1/student/attempts/:id/submit
+        ▼
+        /student/attempts/[attemptId]/result    GET /api/v1/student/attempts/:id/result
+```
+
 ## 4. Note on Sổ tay lỗi sai (`S-MSTK`)
 
 `/student/mistakes` (Sổ tay lỗi sai) and `/student/mistakes/review` are dedicated to diagnostic error review for questions answered incorrectly during homework assignments and CBT mock exams. They are separate from vocabulary flashcards (`/student/flashcards`). Backend error-collection endpoints will be defined in Sprint 4 (Assignments & Attempts); in the interim, `/student/mistakes` remains in prototype/demo mode without being conflated with flashcard SRS.
@@ -103,9 +118,14 @@ backend dependency — the **Sprint 4** exam engine (`AttemptsModule`), previous
 | 12 | `/student` | Học phí | `/student/invoices` | GET own invoices | auth errors |
 | 13 | `/student/invoices` | Chọn hóa đơn | `/student/invoices/[invoiceId]` | GET invoice detail | `INVOICE_NOT_FOUND`, `VALIDATION_ERROR` |
 | 14 | `/student/classes/[classId]` | Xem bài học | `/student/classes/[classId]/lessons/[lessonId]` | GET lesson detail | `CLASS_ACCESS_DENIED`, `CLASS_NOT_FOUND`, `LESSON_NOT_FOUND`, `VALIDATION_ERROR` |
+| 15 | `/student/assignments` | Bắt đầu / Tiếp tục | `/student/attempts/[attemptId]` | POST attempts (create or resume) | `ASSIGNMENT_NOT_FOUND`, `ASSIGNMENT_PAST_DUE`, `ATTEMPT_ALREADY_SUBMITTED` |
+| 16 | `/student/attempts/[attemptId]` | Trả lời | same | PATCH answers (2s debounce) | `VALIDATION_ERROR`, `ATTEMPT_TIME_EXCEEDED`, `ATTEMPT_ALREADY_SUBMITTED` |
+| 17 | `/student/attempts/[attemptId]` | Nộp bài / Hết giờ | `/student/attempts/[attemptId]/result` | POST submit | `ATTEMPT_ALREADY_SUBMITTED`, `ATTEMPT_NOT_OWNER` |
+| 18 | `/student/attempts/[attemptId]/result` | Xem kết quả | same | GET result | `ATTEMPT_NOT_FOUND`, `ATTEMPT_NOT_OWNER` |
 
 ## Entity state transitions
 
+- **Attempt**: `(none) → in_progress → submitted → graded`. Submit locks answers; grading is teacher-only; `graded` is terminal.
 - **SRS**: `unseen → reviewed → scheduled → due → reviewed`. Again resets repetitions/interval; successful ratings advance them using canonical SM-2.
 - **Enrollment**: `not_enrolled → active ⇄ dropped`. Leaving flips status to `dropped` (INV-CLASS-06); re-joining with valid code reactivates existing row to `active` and sets `rejoinedAt`.
 

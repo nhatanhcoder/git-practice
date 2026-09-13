@@ -216,11 +216,6 @@
       "count": 2
     }
   },
-  "apps/web/src/app/student/(app)/attempts/[attemptId]/page.tsx": {
-    "react-hooks/exhaustive-deps": {
-      "count": 2
-    }
-  },
   "apps/web/src/app/student/(app)/grammar/page.tsx": {
     "@typescript-eslint/no-unused-vars": {
       "count": 1
