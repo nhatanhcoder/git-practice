@@ -1229,7 +1229,18 @@ results ("Bảng vàng thành tích", testimonials)**, so the invented-data stat
 is live again at the new path. A parallel branch (`PR #82`, superseded) had removed the page per
 the owner's earlier same-day "gỡ trang + redirect" decision. The content question — full
 prototype vs people-free landing — is **pending the owner's explicit choice**; both variants
-exist in git history and either is a small follow-up PR. Separately, the login-page contrast
+exist in git history and either is a small follow-up PR.
+
+**Final resolution (2026-09-14)**: the owner re-issued the landing task with the hard
+constraint intact ("Không để trang public nào còn dữ liệu bịa"); the earlier owner-answered
+decision ("Gỡ trang + redirect") governs, as no approved real content ever existed.
+`/landing` and the restored site components, teacher PNGs and the `three` dependency are
+removed again; `/landing`, `/student/landing` and its sub-paths answer **temporary redirects
+to `/login`**. A signed-in visitor following an old link is delivered to their role home by
+the login gate's existing logic. `landing-routes.test.mjs` + `landing-route.spec.ts` pin the
+removal (no landing files, both paths → /login, no invented-content data anywhere in src,
+no `three`). Restoring a real landing: rebuild at /landing from owner-approved sources listed
+in that PR, replace the redirects, and flip these tests back to route-existence assertions. Separately, the login-page contrast
 root cause (`--fg`/`--fg-muted` tokens that tokens.css never defines) and the missing theme
 toggle were fixed with independent route/theme tests (see the contrast fix PR).
 
@@ -1266,6 +1277,9 @@ page asserting things that are not true; do not fix it in isolation from that de
 five-box copy back on the public page** — "năm hộp" in the method step and "5 hộp thẻ" in a
 student testimonial. Still advertising a scheduler ADR-016 replaced. Fold any fix into the
 WEB-017 content decision.
+
+**Final resolution (2026-09-14)**: resolved by the WEB-017 removal — the page carrying the
+five-box copy no longer exists.
 
 ---
 
@@ -1491,6 +1505,9 @@ which has to be settled first anyway.
 **Update (2026-09-12, evening)**: PR #83 restored the images and the `three` dependency with the
 landing at `/landing` — the ~8.5 MB first-paint cost is live again. Compress/WebP remains the
 fix whenever the content decision (WEB-017) lands.
+
+**Final resolution (2026-09-14)**: resolved by the WEB-017 removal — the four PNGs and the
+`three` dependency are deleted again with their only consumer.
 
 ---
 

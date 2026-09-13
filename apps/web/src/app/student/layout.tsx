@@ -3,8 +3,8 @@
  *
  * Deliberately does nothing. The guard, the learner shell and student.css all moved down
  * into the `(app)` route group, because they must not apply to every child of this
- * segment. (The public landing page used to be the reason — it has since moved to
- * `/landing`, outside this segment entirely.) A child layout cannot escape its parent,
+ * segment. (The prototype landing page was the reason once — it has since been
+ * removed entirely, WEB-017.) A child layout cannot escape its parent,
  * so guarded routes live in the group.
  *
  * `(app)` contributes nothing to the URL, so /student and /student/grammar are unchanged.
