@@ -1115,3 +1115,5 @@ are accepted and implemented; 02 is implemented but its spec status is in confli
   before merge; the database-backed notification suite remains NOT RUN in this review worktree.
 
 - ✅ (codex · 2026-09-13) **AttemptAnswer migration integration.** Schema and migration only, split from PR #73 so the database change reaches main before attempt lifecycle code. Prisma schema valid; check-docs 9/9; DB apply NOT RUN locally.
+
+- 🔶 (codex · 2026-09-13) **S-MSTK Task B — live mistake notebook/review.** Owner approved schema and student-owned API; branch codex/student-mistakes-live. Sources: real failed flashcard review and graded wrong attempt answers. Contract, implementation and lifecycle verification in progress.
