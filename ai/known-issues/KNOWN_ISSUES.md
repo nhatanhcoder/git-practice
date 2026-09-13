@@ -1365,6 +1365,37 @@ highest web id is also `WEB-017`. Per `DOC-014`, reconcile by hand if another br
 
 ---
 
+### [WEB-023] Seventeen student pages early-returned the prod branch before their hooks
+
+**Severity**: Medium (latent — build-time constant masked the crash risk; still an illegal component shape)
+**Status**: ✅ Resolved 2026-09-09 — branch `feat/student-prod-return-hooks`; regression test added
+
+**Description**: while planning `/student/mistakes` + `/student/exams` work (2026-09-09), a
+scan of all 20 `student/(app)` pages found **17 of them** rendering their production
+`UnavailableState` via an `if (NODE_ENV === "production") return …` placed **before** the
+component's hooks — a Rules-of-Hooks violation: the component is conditionally hooked. A05
+had already fixed exactly this for `/mistakes/review` (comment in the file explains the
+placement) but the pattern was copied 17 more times by the mockup-era screens without the fix.
+`/exams/*` prod copy also cited the wrong sprint ("Sprint 5"; the exam engine is **Sprint 4**
+per `SPRINT_PLAN.md`).
+
+**Impact**: `NODE_ENV` is a build-time constant, so the dev and prod builds each saw a
+consistent hook order — React did not crash in practice. The violation becomes live the day
+someone introduces any runtime-dependent early return nearby, or a lint rule / React strict
+mode flags the shape. The wrong sprint number also sent readers of the prod page to the wrong
+place in the plan.
+
+**Resolution**: the prod branch now runs after all hooks in every affected page (the A05
+placement, with the same explanatory comment), the three `/exams` messages name Sprint 4 and
+say what the screen is waiting for, and `apps/web/scripts/student-prod-return.test.mjs`
+enforces the invariant: any student page whose prod early-return is followed by a hook fails
+the suite. The test was proven to fire by reverting one file to the violating shape (red)
+and restoring it (green).
+
+**Numbering note**: assigned on a tree where `docs/module-status-sync` (PR #51) added
+API-017/DEBT-006 and `feat/a11-vocab-importer` (PR #53) touched no WEB ids; highest WEB id
+in use is WEB-018 (`feat/a05-srs-routes`).
+
 ### [API-017] Monitoring telemetry is hardcoded — `/admin/monitoring` shows fiction for Redis and Gemini
 
 **Severity**: High — the screen presents invented health data as live platform status
@@ -1855,3 +1886,6 @@ imports fine on Node 25: `node --env-file ../../.env ./node_modules/tsx/dist/cli
 
 **Fix Plan**: pin a Node version for local dev (`.nvmrc`/volta, matching CI's 24) or upgrade
 tsx past the Node 25 loader incompatibility, then re-run `pnpm --filter api test` verbatim.
+### 2026-09-13 migration-only review note
+
+No new issue ID assigned. The AttemptAnswer migration was split from PR #73 so it can be verified and merged before dependent API/FE code.

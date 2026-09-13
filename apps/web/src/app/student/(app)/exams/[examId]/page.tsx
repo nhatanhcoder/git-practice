@@ -21,6 +21,7 @@ import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, ArrowRight, Check, Clock, Flag, Send } from "lucide-react";
 import { EmptyState, PageHead, Panel, SectionHeader } from "@/components/student/primitives";
 import { UnavailableState } from "@/components/student/unavailable-state";
+import { DemoBanner } from "@/components/student/demo-banner";
 import { AudioButton } from "@/components/student/controls";
 import { Modal } from "@/components/student/overlay";
 import { useStudentStore } from "@/lib/student/store";
@@ -34,15 +35,6 @@ function mmss(total: number) {
 }
 
 export default function ExamRoomPage() {
-  if (process.env.NODE_ENV === "production") {
-    return (
-      <UnavailableState
-        title="Làm bài thi thử"
-        description="Chức năng làm bài thi thử chưa được kết nối máy chủ dữ liệu trong phiên bản hiện tại (Sprint 5). Vui lòng quay lại sau."
-      />
-    );
-  }
-
   const params = useParams<{ examId: string }>();
   const examId = decodeURIComponent(params?.examId ?? "");
   const router = useRouter();
@@ -113,12 +105,25 @@ export default function ExamRoomPage() {
     router.push(`/student/exams/${exam!.id}/result`);
   }
 
+  // Production renders the unavailable state, but only AFTER every hook has run —
+  // an early return above them would make the component conditionally hooked, which
+  // React forbids (A05 fixed this for /mistakes/review; this file follows the same rule).
+  if (process.env.NODE_ENV === "production") {
+    return (
+      <UnavailableState
+        title="Làm bài thi thử"
+        description="Làm bài thi thử cần máy chấm điểm phía máy chủ (Attempts — Sprint 4 theo SPRINT_PLAN.md) chưa được xây dựng. Trang này sẽ hoạt động khi endpoint đó ra mắt."
+      />
+    );
+  }
+
   return (
     <>
       <PageHead
         title={exam.title}
         sub={`${SECTION_LABEL[q.section]} · câu ${idx + 1}/${flat.length}`}
       />
+      <DemoBanner text="Bài thi này là bản mô phỏng: đồng hồ và kết quả chạy cục bộ trên trình duyệt, không gửi lên máy chủ." />
 
       {/* ---------- Sticky exam bar ---------- */}
       <div className="examtop">

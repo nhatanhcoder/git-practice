@@ -25,6 +25,7 @@ import {
   SectionHeader,
 } from "@/components/student/primitives";
 import { UnavailableState } from "@/components/student/unavailable-state";
+import { DemoBanner } from "@/components/student/demo-banner";
 import { Segmented } from "@/components/student/controls";
 import { Modal } from "@/components/student/overlay";
 import { useStudentProfile, useStudentStore } from "@/lib/student/store";
@@ -34,14 +35,6 @@ import { SECTION_LABEL, exams, getPaper } from "@/lib/student/content";
 const SECTION_PASS_RATE = 0.6;
 
 export default function ExamResultPage() {
-  if (process.env.NODE_ENV === "production") {
-    return (
-      <UnavailableState
-        title="Kết quả thi thử"
-        description="Chức năng kết quả thi thử chưa được kết nối máy chủ dữ liệu trong phiên bản hiện tại (Sprint 5). Vui lòng quay lại sau."
-      />
-    );
-  }
   const params = useParams<{ examId: string }>();
   const examId = decodeURIComponent(params?.examId ?? "");
   const attempts = useStudentStore((s) => s.attempts);
@@ -77,6 +70,18 @@ export default function ExamResultPage() {
   const pct = Math.round((attempt.score / Math.max(attempt.maxScore, 1)) * 100);
   const review = flat.filter((q) => (filter === "wrong" ? attempt.answers[q.id] !== q.answer : true));
 
+  // Production renders the unavailable state, but only AFTER every hook has run —
+  // an early return above them would make the component conditionally hooked, which
+  // React forbids (A05 fixed this for /mistakes/review; this file follows the same rule).
+  if (process.env.NODE_ENV === "production") {
+    return (
+      <UnavailableState
+        title="Kết quả thi thử"
+        description="Kết quả thi thử lấy dữ liệu từ bài nộp đã chấm phía máy chủ (Attempts — Sprint 4 theo SPRINT_PLAN.md) chưa được xây dựng. Trang này sẽ hoạt động khi endpoint đó ra mắt."
+      />
+    );
+  }
+
   return (
     <>
       <Link href="/student/exams" className="backlink">
@@ -87,6 +92,7 @@ export default function ExamResultPage() {
         title={`Phiếu điểm · ${attempt.title}`}
         sub={new Date(attempt.at).toLocaleString("vi-VN")}
       />
+      <DemoBanner text="Phiếu điểm này do trình duyệt tự chấm trên dữ liệu mô phỏng — không phải kết quả chính thức." />
 
       {/* ---------- Total ---------- */}
       <section className={`result-hero ${attempt.passed ? "" : "is-fail"}`}>
