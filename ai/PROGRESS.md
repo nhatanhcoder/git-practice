@@ -348,6 +348,14 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
 
 ## Off-sprint / spike
 
+- ✅ (opencode · 2026-09-12) **Student assignments list contract (S-ASGN-1) + cross-student isolation e2e.**
+  FE/BE already live from S3 (no mocks) — filled the recorded contract gap with
+  `student-assignments-list.md` (`built`), `_INDEX` row + `student-flow` §2b/rows 10–11.
+  `GET /student/assignments/:id` marked ⛔ (in `API_STUDENT.md`, unimplemented — not invented).
+  New `student-assignments-isolation.e2e.test.ts`: 2 students × 2 classes (own-published only,
+  own-draft hidden, cross-class hidden, shape + no `enrollmentCode` leak, anonymous 401).
+  Verify: api build clean · API **256/256 across 45 suites** (4 new) · web build 43/43 ·
+  check-docs 9/9. Branch `feat/student-assignments-list`.
 - ✅ (opencode · 2026-09-12) **PW screen sweep: all dynamic routes registered + PW_ALL=1 green 101/102.**
   `routes.ts` gains 4 mock-id routes (exam-detail/result, workplace-scenario, writing-char) and
   9 resolved routes (`resolve-ids.ts`: seed-first ids; timestamped sweep fixtures only for
