@@ -5,12 +5,11 @@ import { BookOpen, Brain, CheckCircle2, Layers3, RotateCcw } from "lucide-react"
 import {
   EmptyState,
   ErrorState,
-  Metric,
   PageHead,
   Panel,
   SkeletonPanel,
 } from "@/components/student/primitives";
-import { LevelSelector, Tabs } from "@/components/student/controls";
+import { LevelSelector, Pagination, Tabs } from "@/components/student/controls";
 import "@/styles/hanlu/srs.css";
 import {
   canSubmitRating,
@@ -71,10 +70,12 @@ const RATINGS: Array<{ value: SrsRating; label: string; hint: string; token: str
 ];
 
 const LEVELS = Array.from({ length: 9 }, (_, index) => ({ id: index + 1 }));
+const PAGE_SIZE = 16;
 
 export default function MistakesPage() {
   const [level, setLevel] = useState(1);
   const [mode, setMode] = useState<Mode>("browse");
+  const [page, setPage] = useState(1);
   const [cards, setCards] = useState<Flashcard[]>([]);
   const [stats, setStats] = useState<SrsStats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -113,6 +114,7 @@ export default function MistakesPage() {
     setRevealed(false);
     setReviewError(null);
     setReviewedInSession(0);
+    setPage(1);
     try {
       const next = mode === "due" ? await fetchDueFlashcards() : await fetchFlashcards(level);
       // Dropped rather than applied: this response is for a level or mode the person has
@@ -149,10 +151,34 @@ export default function MistakesPage() {
     () => [
       // formatStat, not `?? 0`: a missing value must read as "—". Showing 0 for "nothing came
       // back" is how a failed stats call turns into a confident wrong number.
-      { label: "Đến hạn", value: formatStat(stats?.dueToday), icon: <RotateCcw size={18} /> },
-      { label: "Đã học", value: formatStat(stats?.totalCards), icon: <Layers3 size={18} /> },
-      { label: "Ghi nhớ", value: formatStat(stats?.retentionRate, "%"), icon: <Brain size={18} /> },
-      { label: "Lượt ôn", value: formatStat(stats?.totalReviews), icon: <CheckCircle2 size={18} /> },
+      {
+        id: "due",
+        label: "Đến hạn",
+        value: formatStat(stats?.dueToday),
+        icon: <RotateCcw size={16} />,
+        className: "srs-stat--due",
+      },
+      {
+        id: "learned",
+        label: "Đã học",
+        value: formatStat(stats?.totalCards),
+        icon: <Layers3 size={16} />,
+        className: "srs-stat--learned",
+      },
+      {
+        id: "retention",
+        label: "Ghi nhớ",
+        value: formatStat(stats?.retentionRate, "%"),
+        icon: <Brain size={16} />,
+        className: "srs-stat--retention",
+      },
+      {
+        id: "reviews",
+        label: "Lượt ôn",
+        value: formatStat(stats?.totalReviews),
+        icon: <CheckCircle2 size={16} />,
+        className: "srs-stat--reviews",
+      },
     ],
     [stats],
   );
@@ -207,17 +233,6 @@ export default function MistakesPage() {
         eyebrow="SM-2 · HSK 1–9"
         title="Ôn tập SRS"
         sub="Ôn đúng lúc theo lịch cá nhân. Kết quả này không phải điểm chính thức của lớp."
-        action={
-          <Tabs
-            label="Chế độ ôn tập"
-            active={mode}
-            onChange={(id) => setMode(id as Mode)}
-            tabs={[
-              { id: "browse", label: "Duyệt từ vựng" },
-              { id: "due", label: "Thẻ đến hạn" },
-            ]}
-          />
-        }
       />
 
       {/* Stats failing must not take the card list down with it — they are two independent
@@ -227,16 +242,50 @@ export default function MistakesPage() {
           Không tải được thống kê; danh sách thẻ vẫn có thể sử dụng.
         </div>
       ) : (
-        <section className="srs-grid-4" aria-label="Thống kê SRS">
+        <section className="srs-stat-grid" aria-label="Thống kê SRS">
           {statTiles.map((tile) => (
-            <Metric key={tile.label} label={tile.label} value={tile.value} icon={tile.icon} />
+            <div key={tile.id} className={`srs-stat ${tile.className}`}>
+              <div className="srs-stat__top">
+                <span className="srs-stat__icon" aria-hidden="true">
+                  {tile.icon}
+                </span>
+                <span className="srs-stat__label">{tile.label}</span>
+              </div>
+              <span className="srs-stat__value num">{tile.value}</span>
+            </div>
           ))}
         </section>
       )}
 
-      {mode === "browse" && activeIndex === null ? (
-        <LevelSelector levels={LEVELS} value={level} onChange={setLevel} label="Chọn cấp HSK" />
-      ) : null}
+      <div className="srs-controls">
+        <div className="srs-controls__bar">
+          <Tabs
+            label="Chế độ ôn tập"
+            active={mode}
+            onChange={(id) => {
+              setMode(id as Mode);
+              setPage(1);
+            }}
+            tabs={[
+              { id: "browse", label: "Duyệt từ vựng" },
+              { id: "due", label: "Thẻ đến hạn" },
+            ]}
+          />
+        </div>
+        {mode === "browse" && activeIndex === null ? (
+          <div className="srs-controls__levels">
+            <LevelSelector
+              levels={LEVELS}
+              value={level}
+              onChange={(lvl) => {
+                setLevel(lvl);
+                setPage(1);
+              }}
+              label="Chọn cấp HSK"
+            />
+          </div>
+        ) : null}
+      </div>
 
       {outcome === "loading" ? <SkeletonPanel rows={4} /> : null}
 
@@ -335,24 +384,50 @@ export default function MistakesPage() {
       ) : null}
 
       {!activeCard && outcome === "has-cards" ? (
-        <section className="srs-grid-3" aria-label="Danh sách từ vựng">
-          {cards.map((card, index) => (
-            <div key={card.id} className="srs-tile">
-              <p lang="zh" className="srs-tile__hanzi han">
-                {card.hanzi}
-              </p>
-              <p className="srs-tile__pinyin">{card.pinyin}</p>
-              <p className="srs-tile__meaning">{card.meaning}</p>
-              <button
-                type="button"
-                className="btn btn--sm btn--block"
-                onClick={() => setActiveIndex(index)}
-              >
-                Ôn thẻ này
-              </button>
+        <div className="stack gap-6">
+          <section className="srs-vocab-grid" aria-label="Danh sách từ vựng">
+            {cards
+              .slice(
+                (Math.min(Math.max(1, page), Math.max(1, Math.ceil(cards.length / PAGE_SIZE))) - 1) * PAGE_SIZE,
+                Math.min(Math.max(1, page), Math.max(1, Math.ceil(cards.length / PAGE_SIZE))) * PAGE_SIZE,
+              )
+              .map((card) => (
+                <Panel key={card.id} className="srs-tile">
+                  <div className="srs-tile__header">
+                    <div className="srs-tile__headings">
+                      <p lang="zh" className="srs-tile__hanzi han">
+                        {card.hanzi}
+                      </p>
+                      <p className="srs-tile__pinyin pinyin">{card.pinyin}</p>
+                    </div>
+                    <span className="srs-tile__badge">HSK {card.hskLevel}</span>
+                  </div>
+                  <p className="srs-tile__meaning">{card.meaning}</p>
+                  <div className="srs-tile__actions">
+                    <button
+                      type="button"
+                      className="btn btn--primary btn--block srs-tile__btn"
+                      onClick={() => setActiveIndex(cards.findIndex((c) => c.id === card.id))}
+                    >
+                      Ôn thẻ này
+                    </button>
+                  </div>
+                </Panel>
+              ))}
+          </section>
+
+          {Math.ceil(cards.length / PAGE_SIZE) > 1 ? (
+            <div className="srs-pagination">
+              <Pagination
+                page={Math.min(Math.max(1, page), Math.max(1, Math.ceil(cards.length / PAGE_SIZE)))}
+                totalItems={cards.length}
+                pageSize={PAGE_SIZE}
+                onPageChange={setPage}
+                unit="từ"
+              />
             </div>
-          ))}
-        </section>
+          ) : null}
+        </div>
       ) : null}
     </div>
   );
