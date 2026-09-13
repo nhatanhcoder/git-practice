@@ -1,6 +1,6 @@
 ---
 status: active
-last_updated: 2026-09-10
+last_updated: 2026-09-14
 ---
 
 # 🗃️ Entities Index
@@ -97,3 +97,5 @@ The proposed SQL tables in `PROJECT_KNOWLEDGE.md` §8.9 are inputs, not accepted
 The [module proposal](../api/modules/student/02-foundation-grammar.md) maps audited source fields
 and proposes catalog/progress aggregate boundaries. It is **not an accepted entity specification**;
 the blocked rows above remain blocked. Physical schema, columns, indexes and transport need approval.
+
+- [UserMistake](mongodb/ENTITY_USER_MISTAKE.md) — MongoDB; approved Task B, private notebook state.

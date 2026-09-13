@@ -1,6 +1,6 @@
 ---
 status: active
-last_updated: 2026-09-10
+last_updated: 2026-09-14
 ---
 
 # 🔌 API Student
@@ -110,3 +110,7 @@ prototype's `/api/progress` routes into production by default.
 [source audit](modules/student/foundation-grammar-source-audit.md), 2026-09-10:
 proposed only. All eight required operation groups remain ⛔ with no approved path, DTO or
 error mapping. The endpoint tables above do not gain any executable Foundation/Grammar route.
+
+## Mistake notebook — approved Task B
+
+GET /api/v1/student/mistakes; GET /api/v1/student/mistakes/review; POST /api/v1/student/mistakes/:id/review. Full DTO, ownership and lifecycle: [04-mistakes](modules/student/04-mistakes.md).

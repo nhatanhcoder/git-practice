@@ -1,3 +1,4 @@
+import { MistakesService } from '../mistakes/mistakes.service';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types, isValidObjectId } from 'mongoose';
@@ -15,6 +16,7 @@ import { calculateSm2 } from './sm2';
 @Injectable()
 export class FlashcardsService {
   constructor(
+    private readonly mistakes: MistakesService,
     @InjectModel(Flashcard.name) private readonly flashcards: Model<FlashcardDocument>,
     @InjectModel(UserFlashcardState.name)
     private readonly states: Model<UserFlashcardStateDocument>,
@@ -62,6 +64,8 @@ export class FlashcardsService {
     const flashcardId = new Types.ObjectId(id);
     const card = await this.flashcards.findById(flashcardId).lean();
     if (!card) throw new AppException(ErrorCode.FLASHCARD_NOT_FOUND, 'Không tìm thấy thẻ từ vựng');
+
+    if (rating === 0) await this.mistakes.capture(userId, 'flashcard', id, new Date());
 
     const current = await this.states.findOneAndUpdate(
       { userId, flashcardId },

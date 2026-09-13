@@ -1,7 +1,7 @@
 ---
 title: Backend Module Specs — Student
 status: active
-last_updated: 2026-09-10
+last_updated: 2026-09-14
 ---
 
 # Backend Module Specs — Student
@@ -24,3 +24,5 @@ scope under ADR-016 but do not yet have transport contracts. Add modules here be
 ## Source audits
 
 - [Foundation and Grammar source audit](foundation-grammar-source-audit.md) — audited 2026-09-10; content adoption and media remain blocked.
+
+- [04-mistakes](04-mistakes.md) — S-MSTK, implemented; Task B owner approval 2026-09-13; 8 invariants.

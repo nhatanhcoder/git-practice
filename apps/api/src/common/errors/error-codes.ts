@@ -65,6 +65,10 @@ export const ErrorCode = {
   // Word bank (registry § Word Bank Errors) — "not found OR not mine" deliberately share
   // one code so a caller cannot probe for another student's bookmark ids (02-word-bank §5).
   WORD_BANK_NOT_FOUND: 'WORD_BANK_NOT_FOUND',
+
+  // Mistake notebook (student module 04).
+  MISTAKE_NOT_FOUND: 'MISTAKE_NOT_FOUND',
+  MISTAKE_REVIEW_STALE: 'MISTAKE_REVIEW_STALE',
   // Notifications (registry § Notification Errors) — the mailbox read side.
   // The only branch this module needs: "not found OR not mine" deliberately share one
   // code so a caller cannot probe for the existence of other users' notifications
@@ -163,6 +167,8 @@ export const ERROR_STATUS: Record<ErrorCodeValue, number> = {
   FLASHCARD_ALREADY_IN_REVIEW: 409,
   FLASHCARD_INVALID_RATING: 400,
   WORD_BANK_NOT_FOUND: 404,
+  MISTAKE_NOT_FOUND: 404,
+  MISTAKE_REVIEW_STALE: 409,
   NOTIFICATION_NOT_FOUND: 404,
   SESSION_NOT_FOUND: 404,
   SESSION_ALREADY_REVIEWED: 409,

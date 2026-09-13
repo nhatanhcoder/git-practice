@@ -1,3 +1,8 @@
+---
+status: active
+last_updated: 2026-09-14
+---
+
 # ⚠️ API_ERROR_CODES.md — Standardised Error Responses
 
 > **In effect from**: Sprint 1  
@@ -383,3 +388,10 @@ export function handleApiError(error: AxiosError) {
   }
 }
 ```
+
+## Mistake notebook — approved Task B 2026-09-13
+
+| Code | HTTP | Meaning |
+|---|---|---|
+| MISTAKE_NOT_FOUND | 404 | Missing, foreign or unavailable mistake |
+| MISTAKE_REVIEW_STALE | 409 | Version changed or already resolved; reload session |
