@@ -15,7 +15,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { ChevronRight, ReceiptText, TriangleAlert } from "lucide-react";
+import { ChevronRight, ReceiptText } from "lucide-react";
 import {
   Chip,
   EmptyState,

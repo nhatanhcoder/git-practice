@@ -10,7 +10,7 @@ import { EnvelopeInterceptor } from '../dist/src/common/interceptors/envelope.in
 import { AppException } from '../dist/src/common/errors/app.exception';
 import { ErrorCode } from '../dist/src/common/errors/error-codes';
 import { PrismaService } from '../dist/src/prisma/prisma.service';
-import { InvoiceStatus, NotificationType, TuitionBillingCycle } from '@prisma/client';
+import { InvoiceStatus, TuitionBillingCycle } from '@prisma/client';
 
 const PREFIX = 'api/v1';
 
@@ -28,13 +28,14 @@ function toDetails(errors: ValidationError[], prefix = ''): Record<string, strin
 type Res = {
   status: number;
   headers: Headers;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- These e2e calls cover distinct response envelopes.
   body: any;
 };
 
 async function req(
   method: 'GET' | 'POST' | 'PATCH' | 'DELETE',
   path: string,
-  body?: any,
+  body?: unknown,
   token?: string,
   rawQuery?: string,
 ): Promise<Res> {
@@ -61,7 +62,6 @@ let prisma: PrismaService;
 
 let adminToken: string;
 let studentAToken: string;
-let studentBToken: string;
 let studentAId: string;
 let studentBId: string;
 const createdUserIds: string[] = [];
@@ -121,7 +121,6 @@ describe('Student Invoices (SCOPE-BILL-01, INV-BILLING-33/34)', () => {
     studentAToken = a.token;
     const b = await makeStudent('invoiceb');
     studentBId = b.id;
-    studentBToken = b.token;
 
     // Tuition rate rows exist only because INV-BILLING-08 requires one for a
     // student to be invoiceable; this suite reads, it does not create invoices
@@ -206,7 +205,7 @@ describe('Student Invoices (SCOPE-BILL-01, INV-BILLING-33/34)', () => {
   it('GET /student/invoices lists only own non-void invoices (INV-BILLING-33, S-BILL-1)', async () => {
     const res = await req('GET', '/student/invoices', undefined, studentAToken);
     assert.equal(res.status, 200);
-    const ids = res.body.data.map((i: any) => i.id);
+    const ids = res.body.data.map((i: { id: string }) => i.id);
     assert.ok(ids.includes(invoiceA1), 'own unpaid invoice is listed');
     assert.ok(ids.includes(invoiceA2), 'own partially paid invoice is listed');
     assert.ok(!ids.includes(invoiceAVoided), 'voided invoice is hidden from the student');
@@ -229,7 +228,7 @@ describe('Student Invoices (SCOPE-BILL-01, INV-BILLING-33/34)', () => {
 
   it('GET /student/invoices money fields are decimal strings and outstanding is server-derived (INV-BILLING-16, ADR-010)', async () => {
     const res = await req('GET', '/student/invoices', undefined, studentAToken);
-    const inv = res.body.data.find((i: any) => i.id === invoiceA2);
+    const inv = res.body.data.find((i: { id: string }) => i.id === invoiceA2);
     assert.equal(inv.totalAmount, '1500000.00');
     assert.equal(inv.paidAmount, '500000.00');
     assert.equal(inv.outstandingAmount, '1000000.00', 'total − paid, computed by the server');

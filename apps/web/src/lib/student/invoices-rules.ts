@@ -143,7 +143,6 @@ export function resolveInvoiceDetailOutcome(
   validId: boolean,
   error: unknown,
   detail: StudentInvoiceDetail | null,
-  apiErrorCode?: string,
 ): InvoiceDetailOutcome {
   if (loading) return "loading";
   if (!validId) return "invalid_id";
