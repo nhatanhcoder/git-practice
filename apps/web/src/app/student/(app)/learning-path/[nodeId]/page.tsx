@@ -8,6 +8,9 @@
  * point of the boss nodes, so it is enforced here rather than implied.
  *
  * MOCK(student): nothing is submitted anywhere; completion writes to the store.
+ * Contract: docs/front-end-design-docs/pages/student-pages/student-learning-path-node.md
+ * (S-SELF-1, status contracted). The ⛔ progress write fires here when the backend
+ * exists; until then the local store is the record.
  */
 
 import { useMemo, useState } from "react";
@@ -54,6 +57,19 @@ function levelFromNodeId(nodeId: string): { curriculum: Curriculum; level: numbe
 }
 
 export default function LessonPage() {
+  if (process.env.NODE_ENV === "production") {
+    return (
+      <UnavailableState
+        title="Nội dung bài học"
+        description="Nội dung bài học theo chặng chưa được kết nối máy chủ dữ liệu trong phiên bản hiện tại. Vui lòng quay lại sau."
+      />
+    );
+  }
+
+  return <LessonInner />;
+}
+
+function LessonInner() {
   const params = useParams<{ nodeId: string }>();
   const nodeId = decodeURIComponent(params?.nodeId ?? "");
   const router = useRouter();
@@ -144,28 +160,24 @@ export default function LessonPage() {
       toast(`Ải trùm cần đúng từ ${Math.round(BOSS_PASS_RATE * 100)}% — thử lại nhé`, "warn");
       return;
     }
+    // MOCK(S-SELF-1): local store until the ⛔ progress write exists.
     completeLesson(lesson.id, lesson.xp);
     toast(`Hoàn thành «${lesson.title}» — +${lesson.xp} XP`, "success");
     router.push("/student/learning-path");
   }
 
-  // Production renders the unavailable state, but only AFTER every hook has run —
-  // an early return above them would make the component conditionally hooked, which
-  // React forbids (A05 fixed this for /mistakes/review; this file follows the same rule).
-  if (process.env.NODE_ENV === "production") {
-    return (
-      <UnavailableState
-        title="Nội dung bài học"
-        description="Nội dung bài học theo chặng chưa được kết nối máy chủ dữ liệu trong phiên bản hiện tại. Vui lòng quay lại sau."
-      />
-    );
+  // Back keeps the map filters: history preserves the exact map URL (with query
+  // params); a direct deep link falls back to the unfiltered map.
+  function goBack() {
+    if (typeof window !== "undefined" && window.history.length > 1) router.back();
+    else router.push("/student/learning-path");
   }
 
   return (
     <>
-      <Link href="/student/learning-path" className="backlink">
+      <button type="button" className="backlink" onClick={goBack}>
         <ArrowLeft size={14} /> Bản đồ HSK {level}
-      </Link>
+      </button>
 
       <PageHead
         title={node.title}

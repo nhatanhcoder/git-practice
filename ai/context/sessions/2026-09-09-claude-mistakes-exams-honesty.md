@@ -7,7 +7,7 @@ invent endpoints or present mock data as live — so the meaningful code is an h
 legal React shape, correct dependency copy, and disclaimers the viewer can actually see.
 
 **Done**:
-1. **WEB-019 (fixed same batch)**: 17 of 20 `student/(app)` pages early-returned the
+1. **WEB-023 (fixed same batch)**: 17 of 20 `student/(app)` pages early-returned the
    production `UnavailableState` before their hooks (Rules-of-Hooks violation; A05 had fixed
    only `/mistakes/review`). All 17 now place the branch after the hooks with the same
    explanatory comment. Regression test `apps/web/scripts/student-prod-return.test.mjs`
@@ -22,7 +22,7 @@ legal React shape, correct dependency copy, and disclaimers the viewer can actua
    is that such disclaimers are never read. Each now renders a visible "dữ liệu mô phỏng"
    note in dev; it renders nothing in production (those routes already show `UnavailableState`).
 4. Docs: `student-flow.md` note (hook-ordering rule + correct sprint citation), KNOWN_ISSUES
-   WEB-019 entry, PROGRESS entry.
+   WEB-023 entry, PROGRESS entry.
 
 **Verification**: `pnpm --filter web build` clean · **111/111 web tests across 28 suites**
 (1 new) · `check-docs` 8/8 · browser: dev server shows all 4 banners (exams list, exam room
@@ -48,3 +48,7 @@ shows the new Sprint-4 `UnavailableState` message on exams; 375px no horizontal 
 **Next steps**:
 - Review/merge order: #49 → #50 → #52 → #51 → #53 → this PR (all doc-only or FE-only, no
   cross-conflicts expected except `student-flow.md` if #51 lands first — trivial).
+
+## 2026-09-13 merge review
+
+Kept newer live Assignments and current Grammar/Learning Path gate implementations on main; retained the other demo banner/hook corrections. Updated the regression test to inspect hooks only inside the gated function. Lint, web build 44/44, tracked web tests 171/171 and check-docs 9/9 passed. CI pending.

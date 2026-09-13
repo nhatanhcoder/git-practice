@@ -247,10 +247,39 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
       signed-in Student, covered by targeted e2e tests
 - 🔶 F7.4 Review stats — due/learned/retention/review count built; streak intentionally returns
       `null` until the calendar/timezone rule is approved
+- ✅ (opencode · 2026-09-11) **SRS flow integration tests** — study → feedback → reload-state
+      verification as new `apps/api/test/student-flashcards-flow.e2e.test.ts` with isolated
+      fixtures (branch `test/srs-flow-integration`; independent of Assignments).
+      New suite **9/9**, existing SRS suite regression **6/6** (empty page, concurrent-level
+      consistency, review→reload match, due ordering, SM-2 advance, double-POST documented,
+      A/B isolation, forged-token 401, absent-id 404). Fixtures cleaned (0 left).
+      Pre-existing red `pnpm --filter api build` on `origin/main` → **BUILD-004**
+      (not fixed, out of scope). Session:
+      `ai/context/sessions/2026-09-11-opencode-srs-flow-tests.md`.
 - ⛔ F6.1 Weekly skill heatmap · ⛔ F6.2 Progress chart — names exist in the actor document,
       but request/response contracts are not approved; no payload was invented
       *(if F9–F16 ever land, `SkillScore.skill` widens 3 → 7 values — `PROJECT_KNOWLEDGE.md` §8. Blocked, see Sprint 5b)*
 - ⬜ F6.3 Class dashboard (Teacher) · ⬜ F6.4 API Quota Monitoring (Admin)
+- ✅ (zcode · 2026-09-12) **S-BILL-1/2 Student invoice read path — SCOPE-BILL-01 closed.**
+      `GET /student/invoices` + `GET /student/invoices/:id` (both defined in `API_STUDENT.md`
+      § Billing, mandated by accepted `06-billing.md` §5: dedicated handler, `studentId` from
+      the token in the WHERE, `status <> 'void'` hidden from students, INV-BILLING-33/34).
+      `?studentId=` is not in the query DTO, so `forbidNonWhitelisted` rejects it with
+      `VALIDATION_ERROR`; another student's invoice, a voided one and a malformed id all answer
+      `INVOICE_NOT_FOUND` — indistinguishable by design. Responses carry no
+      studentId/studentName/studentEmail; `outstandingAmount` server-derived (INV-BILLING-16);
+      payments[] in the admin detail's deterministic order. FE `/student/invoices`(+detail) in
+      the Hán Lộ design: money renders from envelope decimal strings (no parsing, no
+      arithmetic), sidebar "Học phí" entry, 7 states per contract. The suite caught a real
+      first-cut bug: `?status=void` fell through to the unfiltered branch — void now answers an
+      explicit empty set. No endpoint, field or error code invented.
+      **Verified**: invoice e2e **10/10** · full API suite **262/262 across 45 suites** (tsx CLI
+      per BUILD-005) · web build 44/44 with both routes · web script tests **170/170** (15 new)
+      · check-docs 9/9 · live browser: login → list (2 real invoices, correct grouping) →
+      detail (3 amount tiles + payment history, recorder shows display name) desktop
+      screenshots read; one display bug (due date as a doubled range) caught on screen and
+      fixed. Contracts → `built`. Branch `feat/student-invoices` (rebased onto origin/main
+      after the notifications wave landed; developed in worktree `Real-invoices` — see GIT-004).
 - **DoD**: Rating a card reschedules it correctly per SM-2. Teacher sees red alerts for weak students.
 
 ## Sprint 6 — Attendance, Payroll, Tuition ⚠️
@@ -313,6 +342,10 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
 
 ## Tooling / guardrails
 
+- ✅ (codex · 2026-09-08) **CI quality gates** — implemented: lint, type checks, web/API builds,
+  frontend regression tests and API tests against disposable CI PostgreSQL/MongoDB services.
+  No application behavior or schema changes; PR #50 web-quality, api-quality and check-docs passed.
+
 - ✅ `.gitattributes` + `scripts/check-docs.mjs` + `.github/workflows/docs-check.yml`
       (2026-08-14) — 8 doc invariants enforced in CI, each verified to fire against a
       deliberately broken fixture and to clear afterwards. `pnpm check:docs` runs it locally.
@@ -339,7 +372,7 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
   prod-return-after-hooks across 17 pages, correct Sprint 4 copy, visible demo banners.**
   While planning the two routes the user asked for, measured the whole area: **17 student
   pages early-returned the production `UnavailableState` before their hooks** — the
-  Rules-of-Hooks violation A05 had fixed for `/mistakes/review` only (WEB-019, fixed here).
+  Rules-of-Hooks violation A05 had fixed for `/mistakes/review` only (WEB-023, fixed here).
   All 17 now use the A05 placement (hooks first, branch after, with the explanatory comment);
   a scan-based regression test (`student-prod-return.test.mjs`) enforces the invariant and was
   **proven to fire** (revert one file → red, restore → green). Exams' prod copy no longer cites
@@ -352,6 +385,129 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
   no schema/auth/RBAC. Verified: build clean, **111/111 web tests (28 suites, +1 new)**,
   check-docs 8/8, browser-checked dev (all 4 banners render) and prod (`next start`: exams
   shows the new Sprint-4 message), 375px no overflow. Branch `feat/student-prod-return-hooks`.
+- ✅ (zcode · 2026-09-12) **Page Contracts for remaining student routes (DOCS).** 10
+      contracts on `docs/student-page-contracts`: notifications (matches merged module 07 BE exactly — role-agnostic
+      paths, 11-type enum, no API display text) are live; nine ⛔ prototype contracts carry
+      their real blockers (ADR-005 stub/DOC-017, reserved-but-undescribed analytics paths,
+      DOC-011 corpus, aggregation/privacy rules, collection endpoints). No endpoint invented,
+      no `apps/` change. `student-flow.md` gains the blocked-branch table; four new entries in
+      § Needs from the other lane are the student lane's FE↔BE contract backlog. Flagged for
+      the notifications lane: its invoice deep-link still returns null while PR #72 builds the
+      target screens. check-docs 9/9.
+- ✅ (opencode · 2026-09-12) **Student assignments list contract (S-ASGN-1) + cross-student isolation e2e.**
+  FE/BE already live from S3 (no mocks) — filled the recorded contract gap with
+  `student-assignments-list.md` (`built`), `_INDEX` row + `student-flow` §2b/rows 10–11.
+  `GET /student/assignments/:id` marked ⛔ (in `API_STUDENT.md`, unimplemented — not invented).
+  New `student-assignments-isolation.e2e.test.ts`: 2 students × 2 classes (own-published only,
+  own-draft hidden, cross-class hidden, shape + no `enrollmentCode` leak, anonymous 401).
+  Verify: api build clean · API **256/256 across 45 suites** (4 new) · web build 43/43 ·
+  check-docs 9/9. Branch `feat/student-assignments-list`.
+- ✅ (opencode · 2026-09-12) **PW screen sweep: all dynamic routes registered + PW_ALL=1 green 101/102.**
+  `routes.ts` gains 4 mock-id routes (exam-detail/result, workplace-scenario, writing-char) and
+  9 resolved routes (`resolve-ids.ts`: seed-first ids; timestamped sweep fixtures only for
+  attempt/lesson, public API only, no seed writes); `screens.spec.ts` runs the same
+  heading/gate/not-found/overflow/console checks on resolved paths and SKIPs with reason when
+  unresolvable. Sweep on prod build: **101/102** (desktop + 375px, 0 skips — every resolver
+  hit). Sole failure: `/admin/payroll` 591px overflow at 375px → filed `WEB-021` (pre-existing,
+  admin lane; no screenshot — the check asserts before shooting). Branch `feat/pw-sweep-routes`.
+
+- ✅ (zcode · 2026-09-12) **Student completion wave — slice 1: Notifications module 07
+  (mailbox) + producers (closes API-013, S-BILL-3's visibility side).** Built to the
+  module's own spec (§2/§3/§5/§7/§8; the §16 defaults picked in the owner-approved wave:
+  FE builds sentences from type+payload, no senderId, fan-out to every active admin,
+  `{updated}`/`{unreadCount}` shapes, PATCH→200-with-record):
+  **BE** — `apps/api/src/notifications/` (repository with a structurally-required `userId`
+  on every query · service with the only creation path, transaction-handle passed in ·
+  4 endpoints, no POST/DELETE ever · `NOTIFICATION_NOT_FOUND` 404 registered). Producers
+  wired in-transaction: register fan-out, approve→`account_approved`, suspend→
+  `account_suspended`; billing `new_invoice` single-create moved onto the service and the
+  **batch path restructured from per-row loop writes to ONE transaction + multi-row
+  inserts** (INV-NOTIF-13 fix), referenceId now the invoice id (was the code).
+  **FE** — `lib/student/notifications-service.ts` (Vietnamese sentences per enum type,
+  deep-links only where referenceType allows) + `/student/notifications` (distinct
+  empty vs all-read vs ready states, mark-read only after server confirms) + shell bell
+  (desktop HUD + mobilebar) polling every 60s per DEBT-002, badge shows only what the
+  server last confirmed.
+  **Verified**: notifications e2e **20/20** (ownership vs DB, one-way read gate + readAt
+  immutability, no POST/DELETE routes, producer fan-out counts, 404-not-403 on foreign
+  rows, envelope + ISO-8601) · **full API suite 208/208 (35 suites)** · web build clean ·
+  web tests 156/156 · check-docs 9/9 · Playwright 4/4 (real login, production build) ·
+  screenshot forensics PASS (badge 1→0 honest across states, unread dot vs dimmed read
+  rows, no 375px overflow). Still open per spec frontmatter: 4 of 11 types' producers
+  wait on their lanes; partial-unique + composite/partial indexes deferred until the
+  table has load. Branch `feat/student-notifications`.
+- 🔶 (codex · 2026-09-10) **Grammar production gate G** — implemented wrapper outside hooks, 147/147 web regressions, targeted lint and web build 42/42 passed. Production API remains NOT IMPLEMENTED; publication pending. Isolated from the uncommitted broad student hooks worktree.
+- ✅ (opencode · 2026-09-11) **Student CSS+Tailwind collaboration** — defined dead
+  `sp-press`/`sp-font-head` once via Tailwind plugin; deduped byte-identical
+  `student/{tokens,base,components}.css` forks onto hanlu canonicals
+  (branch `fix/student-css-collab`). Build green, 4 screenshots read, guard intact.
+  Session: `ai/context/sessions/2026-09-11-opencode-css-collab.md`.
+- ✅ (zcode · 2026-09-11) **WEB-020 — Mobile "More" sheet: nav labels compact by tile
+  width.** The 2-column sheet grid wrapped 3 long labels ("Bài tập được giao", "Từ vựng
+  Flashcard", "Mô phỏng công sở") to two lines, making those rows ~20px taller than the
+  rest. Fixed: each tile renders both `label` and existing `short`, and a per-tile CSS
+  container query (`container-type: inline-size`) swaps them — narrow tile → short
+  one-line label, wide tile → full label — so every row returns to one uniform height.
+  `student-shell.tsx` + both `components.css` copies (kept identical; PR #62 will delete
+  the `app/student/` fork — trivial resolution). Shared component → FULL LANE: new spec
+  `student-sheet-labels.spec.ts` **6/6** (375/520/640px × 2 projects, real login,
+  production build), screenshot forensics PASS at all three widths (round 1 caught a
+  real specificity bug the first test cut missed: @container adds no specificity, both
+  labels went hidden at 375px; fixed + test asserts both swap directions now), unit
+  156/156, check-docs 9/9, demo-isolation 9/9. 2 pre-existing identity-spec failures
+  (missing DB fixture + 429 rate limit) proven unrelated by stash. Branch
+  `fix/student-sheet-labels`.
+  Merge review 2026-09-12: replaced six Set spread expressions in the Playwright spec with
+  `Array.from(new Set(...))`, preserving assertions while satisfying the web test compiler;
+  web type-check, workspace lint and check-docs pass on current main.
+- ✅ (opencode · 2026-09-11) **Student learning-path contract + rebuild (S-SELF-1)** —
+  Page Contracts + Tier-0 specs (all reads ⛔, no backend), rebuilt 2 mock-honest routes
+  with URL-synced filters (branch `feat/student-learning-path`). Build 42/42, 4
+  screenshots read, check-docs 9/9. Session:
+  `ai/context/sessions/2026-09-11-opencode-learning-path.md`.
+  Merge review 2026-09-12: moved the node page's production gate into the default wrapper
+  and all hooks into `LessonInner`, then removed the two obsolete learning-path hook
+  suppressions. Workspace lint and web type-check pass on current main.
+- ✅ (opencode · 2026-09-11) **Admin/teacher CSS hex → vars sweep** — wired ~1,700 hardcoded
+  literals in 25 CSS Modules to `globals.css` vars (existing 8 + doc-table status 5 +
+  verbatim palette scales), exact values only, zero-visual-diff
+  (branch `fix/admin-css-tokens`). Verified live as admin+teacher: 5 routes 200,
+  computed token rgb exact, 7 screenshots read. Session:
+  `ai/context/sessions/2026-09-11-opencode-css-tokens.md`.
+- 🔶 (codex · 2026-09-10) **API bootstrap hardening B+C+D** — implemented locally: Helmet, development-only Swagger and HTTP drain; 3/3 tests, API build/type-check passed on base 8050cba. Public publication blocked; DB/Linux signal checks NOT RUN. User authorized this backend lane for Codex; A1+A2 remain separate pending completed-work location.
+- 🔶 (codex · 2026-09-10) **A1+A2 review of PR 55** — user explicitly authorized review and corrections after Antigravity completed. Cleanup retained; unsafe default proxy trust and 19 test lint errors corrected locally; 9/9 isolated tests pass. API build blocked by A11 importer on main; real DB suites NOT RUN. Backend lane assigned to Codex for this named Auth scope. Resumed 2026-09-11: reviewed new PR55 head 9128ae8; three local code packages remain unpublished pending explicit public push permission (session 2026-09-11-security-checklist-review).
+
+- ✅ (codex · 2026-09-12) **`docs/README.md` refreshed to the current repo structure.**
+  The repo's only README is the documentation index at `docs/README.md`; it was last updated
+  2026-09-03 and had fallen behind by whole directories. Rewritten: added `api/modules/`
+  (8 Admin + 6 Teacher + Student specs — the specs the backend was coded from), `content/`
+  (VOCAB_SOURCE_AUDIT, cross-linked to `DOC-011`), the 4 missing `testing/` files, a
+  "Root-level docs" section, and a "Start here" table pointing at `AGENTS.md` /
+  `PROJECT_KNOWLEDGE.md` §9 / `ai/context/sessions/`. ADRs expanded from 1 link to a full
+  table — **and ADR-009 is recorded as non-existent** (numbering jumps 008 → 010).
+  Corrected the stale "Student screens are not yet mapped" line: `pages/student-pages/`
+  now has 6 files, 3 `built` and 2 ⛔ blocked. The duplicated agent rules at the bottom now
+  point at `init-promt.md` as the single source so the copies do not drift.
+  **Deliberately not linked**: `api/modules/student/02-word-bank.md` — never committed,
+  exists only on `feat/student-word-bank`, so linking it from a README built on `origin/main`
+  would have shipped the file's first broken link.
+  Verified: 0 broken links (every relative link checked against disk) · `check-docs` 9/9.
+  ⚠️ **The repo still has no root `README.md`** — verified absent from the working tree, from
+  `origin/main`, and from all history (`git log --all --diff-filter=A -- "README*"` is empty).
+  Adding one is a separate call, not done here. Branch `readme-index-2026-09-12`.
+
+- ✅ (claude · 2026-09-09) **Docs batch — sync module-status records with the implemented
+  backend + record two QC findings.** Verified an external Modules 01→08 audit first, then:
+  `_INDEX.md` — removed the obsolete "Only Auth is ready to code" line (7/8 implemented);
+  **recorded the 02-users status conflict** (table says `accepted` since `41f3ff1`, spec
+  frontmatter says `proposed` — marked ⚠️, no side chosen, owner decides); added an
+  implementation-status paragraph (module 07 is the only uncoded module). This file's own
+  § Backend table synced to the same reality (02 implemented + conflict, 03 accepted, 07 not
+  coded). KNOWN_ISSUES gained **API-017** (`/admin/monitoring` shows fiction: Redis probe is
+  a hardcoded literal, Gemini latency/quota are constants — only the SQL probe is real) and
+  **DEBT-006** (A09 test suite asserts file strings, not behavior — live QC covered it this
+  time; not repeatable). A08+A09 branch pushed with PR opened (QC 7/7 pass, report in session
+  file). Branch `docs/module-status-sync`.
 
 - ✅ (claude · 2026-09-06) **A05 — SRS về đúng route chính.** Màn SRS nối API thật đang nằm ở
   `/student/mistakes`, còn `/student/flashcards` phục vụ một bản Leitner mock — nên mục sidebar
@@ -579,6 +735,23 @@ _(discovered while mapping the Admin UI — 2026-08-13)_
 - [x] (be) ~~Missing endpoints~~ — 2026-09-05: all endpoints implemented in live NestJS modules.
 - [ ] (be) **`packages/types` does not exist** — no shared contract between the two lanes.
       This is the most important unlock; it must be the first commit of a parallel session
+- [ ] (fe → be) **Student analytics module spec** — `GET /student/progress` and
+      `/student/progress/chart` are reserved paths in `API_STUDENT.md`, but no module spec
+      defines their request/response DTOs (F6.1/F6.2 blocked in Sprint 5). Found writing the
+      `student-progress` Page Contract 2026-09-12. Streak/XP figures on the same screen are
+      gamification (below), not analytics.
+- [ ] (fe → be) **S-MSTK mistake-notebook collection endpoints** — the source data now exists
+      (Sprint 4 attempts, PR #73), but no contract collects wrongly-answered questions from it.
+      `student-mistakes.md` contract written; the screen renders an honest empty state.
+- [ ] (fe → be) **Placement + platform mock-exam transport contract** — ADR-005
+      (server-authoritative exam) is a 0-byte stub (`DOC-017`); placement decision rule never
+      settled. Blocks `student-exams` / `student-placement` contracts.
+- [ ] (fe → be) **Gamification contracts** — XP sources, rank/level curve, streak
+      calendar/timezone rule (also blocks the SRS stats `streak: null`), badge unlock
+      conditions (server-authoritative), leaderboard aggregation + privacy/visibility.
+      Blocks `student-badges` / `student-leaderboard` / progress mock figures.
+      (Self-study content contracts for foundation/grammar/writing/lego/workplace are already
+      covered by the Foundation/Grammar proposal D1–D5 + `DOC-011` — not duplicated here.)
 
 ## Business decisions
 
@@ -611,8 +784,10 @@ _(discovered while mapping the Admin UI — 2026-08-13)_
 
 ## Backend — module spec
 
-_(specs written 2026-08-19, `docs/api/modules/`. **Updated 2026-09-01**: `apps/api` now exists
-(PR #12 scaffold + `User` migration) but implements no module; `packages/` does not exist at all.)_
+_(specs written 2026-08-19, `docs/api/modules/`. **Re-verified 2026-09-09**: `apps/api` now
+implements modules 01–06 + 08 plus Teacher lessons/questions/sessions and Student
+flashcards/SRS — 13 e2e suites against live databases, last recorded full run 170/170.
+`packages/` still does not exist at all.)_
 
 > ⚠️ **These 8 modules are the Admin area only.** The Teacher backend has **no module spec at
 > all** — the FE is 9 built (mocked) screens with every endpoint listed in `API_TEACHER.md`, but
@@ -621,18 +796,55 @@ _(specs written 2026-08-19, `docs/api/modules/`. **Updated 2026-09-01**: `apps/a
 
 | # | Module | Spec | Status | INV | Blocked by |
 |---|---|---|---|---|---|
-| 1 | Auth | `01-auth.md` | ✅ accepted | 24 | — |
-| 2 | Users | `02-users.md` | 🔶 proposed | 18 | C1 · C3 (needs `rejected` migration) |
-| 3 | Classes+Enrollment | `03-classes-enrollment.md` | ⛔ deferred | 8 | **SCOPE-01** |
-| 4 | Sessions+Attendance | `04-sessions-attendance.md` | ✅ accepted | 16 | — |
-| 5 | Payroll+PayRates | `05-payroll.md` | ✅ accepted | 33 | — |
-| 6 | Billing | `06-billing.md` | ✅ accepted | 34 | — |
-| 7 | Notifications | `07-notifications.md` | 🔶 proposed | 21 | no endpoint defined yet |
-| 8 | Dashboard | `08-dashboard.md` | ✅ accepted | 14 | — |
+| 1 | Auth | `01-auth.md` | ✅ accepted · implemented | 24 | — |
+| 2 | Users | `02-users.md` | ⚠️ conflict: `_INDEX` table says accepted (since `41f3ff1`), spec frontmatter says `proposed` — owner decides · implemented | 18 | DOC-005 (`rejected` state, ADR-011 Proposed) |
+| 3 | Classes+Enrollment | `03-classes-enrollment.md` | ✅ accepted · implemented | 8 | — |
+| 4 | Sessions+Attendance | `04-sessions-attendance.md` | ✅ accepted · implemented | 16 | — |
+| 5 | Payroll+PayRates | `05-payroll.md` | ✅ accepted · implemented | 33 | — |
+| 6 | Billing | `06-billing.md` | ✅ accepted · implemented | 34 | — |
+| 7 | Notifications | `07-notifications.md` | 🔶 proposed · **not implemented** | 21 | no endpoint defined yet (Sprint 6 scope, `DEBT-002`) |
+| 8 | Dashboard | `08-dashboard.md` | ✅ accepted · implemented (⚠️ monitoring probes are stubs — see KNOWN_ISSUES) | 14 | — |
 
-**168 invariants**, each with a matching test line in module section 15. Modules 01, 04, 05, 06, 08 are accepted and implemented.
+**168 invariants**, each with a matching test line in module section 15. Modules 01, 03–06, 08
+are accepted and implemented; 02 is implemented but its spec status is in conflict (see
+`_INDEX.md` §1 note); 07 is the only module with no code.
 
 ### Backend — Teacher module specs
+
+- ✅ (claude · 2026-09-11) **CODE S3 — AssignmentsModule BUILT end to end** (teacher spec
+  `03-assignments.md` (17 sections), `ENTITY_ASSIGNMENT.md`, `ENTITY_LESSON_ASSIGNMENT.md`,
+  agreed endpoints in `API_TEACHER.md`, agreed `ASSIGNMENT_*` error codes — no endpoint, field
+  or code invented). Delivered:
+  **DB** — 3 migrations: `assignments` + `lesson_assignments` (per entity specs, snake_case
+  fix included), `attempts` (per `ENTITY_ATTEMPT.md` — S3 only READS it for INV-TASG-04/07;
+  the official-attempt partial unique index added by hand; writing attempts belongs to S4),
+  + column-name fix migration.
+  **BE** — `apps/api/src/assignments/`: 6 teacher endpoints + student
+  `GET /student/assignments` (S-ASGN-1, published-only, active-enrollment-only — server-side).
+  All 8 invariants enforced (ownership 404-not-403 · mock_test/homework timeLimit cross-rule
+  both directions · Mongo existence check BEFORE the Postgres write (DEBT-001-safe order) ·
+  Attempt freeze 409 · no un-publish · publish→`new_assignment` Notification per
+  active-enrolled student — the `notifications` table already existed from the earlier
+  migration · read-time stats · questionIds order preserved). Three real bugs found by the
+  suite and fixed: INV-TASG-02 was silently stripping instead of rejecting (the test was
+  right, the code was wrong); every service return was double-wrapped by the envelope
+  interceptor; `computeStats` groupBy 500'd → plain findMany.
+  **FE** — `/teacher/assignments` live (real list/classes/question-bank, real
+  create/update/delete with single-flight lock, stats drawer showing server-derived counts,
+  honest note that per-student names need S4; MOCK markers gone) and `/student/assignments`
+  rewritten onto `GET /student/assignments` (no more mock lms-data, no attempt-status
+  fiction — a note says S4 will unlock làm-bài).
+  **Verified**: assignments e2e **22/22** (invariants, ownership, publish fan-out, student
+  visibility, dropped-student isolation) · FULL API suite **210/210 across 35 suites**
+  · web build clean · web tests **145/145** · check-docs 9/9 · browser production check on
+  live API: teacher sees both fixtures, drawer shows "1 học viên active / 0 nộp" real counts,
+  student sees the published mock_test but NOT the draft, 375px no overflow.
+  WEB-013 (usageCount) NOT closed here — needs the question-list response change, tracked.
+  Branch `feat/s3-assignments` (grew through a worktree migration mid-task — see session file).
+  Merge review 2026-09-12: removed six explicit `any` uses from the Assignments e2e helper,
+  removed two unused student icons, fixed the teacher question-picker memo dependency, and
+  pruned the now-obsolete Assignments hook suppression. Lint, API type-check/build, web build
+  and check-docs pass on the current main base; DB e2e remains delegated to isolated CI.
 
 - 🔶 (claude · 2026-09-01) **API surface gaps closed, module specs not started.**
   `API_TEACHER.md` § Lessons written (8 endpoints, `API-007` closed) + `LESSON_*` error family
@@ -672,10 +884,88 @@ _(specs written 2026-08-19, `docs/api/modules/`. **Updated 2026-09-01**: `apps/a
 ---
 
 ## Active work — student identity slice
+- ✅ (opencode · 2026-09-08) **A12 — Dọn UI cũ sau tích hợp** (branch `chore/a12-dead-code`,
+      base `f656d71` = A09).
+      Audit grep toàn cây (kể cả dynamic) chứng minh dead: `vocabBox`/`rateVocab` trong
+      store (Leitner mock SRS của A05, 0 consumer — có test A05 cũ đã cấm chúng quay lại
+      flashcards page) và `vocabTopics` trong content (0 consumer). ĐÃ XÓA kèm **persist
+      migration v1→v2** strip key `vocabBox` thừa khỏi localStorage cũ — không có nó,
+      partialize `...rest` + default merge sẽ gắn lại key lạ thành state rác vĩnh viễn.
+      Giữ nguyên mọi thứ còn consumer: `vocabCards` (quiz learning-path), `advanceBox`
+      (reviewMistake), `boxInterval` (dashboard + notebook), `mistakeSeed` (seed state
+      mistakes — audit bằng tay bắt được chính script audit suýt báo sai là dead vì đã loại
+      store.ts khỏi danh sách tìm).
+      Verification: test A12 mới **8/8** (red→green: 5 fail trước khi xóa) · full web suite
+      **153/153** (145 cũ + 8 mới, `srs-routes.test.mjs` của A05 pass nguyên vẹn) ·
+      `pnpm --filter web build` sạch · `check-docs` 8/8. Diff chỉ chạm store.ts + content.ts
+      (−11/+10 dòng), không đụng baseline/Admin/Teacher/mock corpus/route/business logic.
+
+
+- ✅ (opencode · 2026-09-08) **A11 — Importer từ vựng** (branch `feat/a11-vocab-importer`,
+      stack trên `docs/a10-vocab-audit`; 3 commits: claim → source copy + decisions → importer).
+      Owner đã duyệt 3 điều kiện mở khóa A10 (provenance, `words[]`, copy nguồn vào repo) —
+      nguồn giờ ở `apps/api/content/writing.json`, quyết định import trong
+      `docs/content/VOCAB_SOURCE_AUDIT.md` §6.
+      Importer theo đủ 8 rule của prompt A11: **dry-run mặc định** (CLI không có `--apply`
+      thì không ghi gì), báo cáo valid/invalid/duplicate/conflict từng record (29 conflict
+      hiện ra đầy đủ, winner = level thấp nhất + source order, loser được liệt kê không bỏ
+      âm thầm), apply tường minh in rõ DB+collection đích, **idempotent** — upsert theo
+      `hanzi` (bất kể level) giữ nguyên `_id` nên rerun không trùng lặp và level-change không
+      tạo row thứ hai, **không đụng `user_flashcard_states`** (test riêng chứng minh state
+      sống sót qua import), không drop collection/reset DB, failure giữa chừng → 1 retry/op
+      + rerun là recovery (đã gặp thật: 1 monitor-timeout Atlas, retry chữa, exit 0).
+      Không đổi schema/index.
+      Verification: pure tests **11/11** (counts khớp audit độc lập: 1.228 → 1.119, per-level
+      922/50/40/32/25/16/12/11/11) · e2e sandbox trên Atlas thật **7/7** (dry-run không ghi,
+      apply-idempotent, `_id` ổn định, state-guard, partial-failure recovery) · CLI dry-run
+      thật trên `hsk_dev.flashcards`: **errors 0, would create 1.118 + update 1** ·
+      `nest build` + `tsc --noEmit` sạch · `check-docs` 8/8.
+      ⚠️ Full API suite NOT RUN (Docker tắt, không Postgres) — chỉ 2 file test mới chạy
+      standalone.
+      **APPLY THẬT đã chạy (owner "làm luôn", 2026-09-08) vào `hsk_dev.flashcards`:**
+      lần 1 created 1.118 + updated 1 · lần 2 (chứng minh idempotent) created 0, updated
+      1.119 · **errors 0 cả hai lần**. Verify DB trực tiếp sau import: tổng 1.120 thẻ
+      (1.119 `hanlo` + 1 thẻ `学习` HSK3 fixture seed cũ `hsk3-core` đã có sẵn trong dev) ·
+      per-level 922/50/41/32/25/16/12/11/11 (level-3 có 41 vì fixture cũ đếm thêm) · thẻ
+      `学习` tồn tại 2 row (HSK1 hanlo + HSK3 fixture) — importer đã báo đúng "1
+      pre-existing same-hanzi duplicate", theo thiết kế không tự gộp ·
+      `user_flashcard_states` = 0 docs trong dev, không state nào bị ảnh hưởng. **Lưu ý
+      deploy:** seed `prisma/seed.ts` hiện có thể vẫn chèn fixture `学习` — cần rà trước khi
+      đưa lên môi trường khác để tránh trùng lặp tương tự; DB production chưa được import
+      (việc này thuộc deploy pipeline, chạy `vocab:import` tường minh).
+
+- ✅ (opencode · 2026-09-08) **A10 — Kiểm kê nguồn từ vựng** (branch `docs/a10-vocab-audit`).
+      READ-ONLY audit xong, docs đã duyệt. **Kết quả chính: corpus ngoài KHÔNG có file
+      vocabulary riêng** (11 file, không file nào là danh sách từ HSK). `writing.json` là bộ
+      dữ liệu CHỮ (587 entries: 500/27/17/12/10/6/5/5/5 theo level 1–9); ứng viên từ vựng tốt
+      nhất là 1.228 `words[]` nhúng (không có level/id riêng). `levels.json` khai báo 10.110
+      `newWords` chỉ là con số trang trí — không có word list tương ứng. 3 lỗi dữ liệu:
+      `喜欢` (2 chữ) lẫn trong list chữ, `strokes.json` phủ 59/586 chữ, level-1=500 chữ trùng
+      số TỪ HSK 3.0 (file dựng từ word list). Mapping vào `Flashcard` đủ 4 field bắt buộc
+      (level→hskLevel, char/word→hanzi, pinyin, vi→meaning) nhưng map thẳng sẽ mất 8 field
+      chữ-specific. **Import BLOCKED**: provenance/license không rõ + owner chưa quyết
+      words-vs-characters + nguồn chưa repo-owned. Audit + unlock conditions +
+      review-state protection: `docs/content/VOCAB_SOURCE_AUDIT.md`. Không copy data, không
+      ghi DB, không đổi schema. A11 chỉ bắt đầu khi 3 điều kiện mở khóa được duyệt.
 
 - 🔶 (opencode · 2026-09-07) **A07 — Form tham gia lớp thật** (commit `abf6def`, branch
       `codex/a07-student-join-class`, base `codex/a06-student-classes-list` @ `2f12310`
       — A06 chưa có PR/merge, stack có báo theo tiền lệ A05).
+- ✅ (opencode · 2026-09-08) **A09 — Rời lớp Student theo server thật**
+  Reused the existing A08 `DELETE /student/classes/:id/leave` wiring and completed the A09
+  acceptance surface: cancel sends zero DELETE requests, confirm is ref-locked and disabled while
+  pending, server failures stay inline without removing the class or redirecting, and success
+  redirects only after the server confirms `status=dropped`. Leave errors map the documented
+  registry codes (`CLASS_NOT_ENROLLED`, `CLASS_ACCESS_DENIED`, `CLASS_NOT_FOUND`,
+  `VALIDATION_ERROR`) without guessing causes. The class list no longer contains the stale A07
+  unavailable placeholder. Rejoin remains server-owned and uses the accepted existing-row
+  reactivation rule; no backend/schema/RBAC change was made.
+  Verification: 35/35 A08/A09 detail tests · full web script suite **145/145** (serial) ·
+  `pnpm --filter web build` clean 42/42 routes, zero warnings · `check-docs` 8/8. Live leave →
+  reload → deep-link denial → rejoin was **NOT RUN** because Docker's Postgres/API engine was
+  unavailable.
+
+- ✅ (opencode · 2026-09-07) **A07 — Form tham gia lớp thật** (PR #48, commit `abf6def`).
       Join modal trên `/student/classes` nối `POST /student/classes/join`, payload đúng
       `{ enrollmentCode }` qua `apiRequest`. Shape check client mirror JoinClassDto
       (trim+uppercase+8 ký tự, message tiếng Việt của DTO); tồn tại mã là việc server —
@@ -688,9 +978,21 @@ _(specs written 2026-08-19, `docs/api/modules/`. **Updated 2026-09-01**: `apps/a
       empty-state.
       Verification: 101/101 `node --test apps/web/scripts/*.test.mjs` (17 test mới
       `student-join.test.mjs`), `check-docs` 8/8, `pnpm --filter web build` sạch.
-      ⚠️ **Live self-test BLOCKED** (Docker engine down → không Postgres → không API):
-      enrollment-tồn-tại-sau-reload và teacher-roster thấy fixture student CHƯA chạy —
-      không tính PASS; cần chạy lại khi có API.
+       ⚠️ **Live self-test was BLOCKED** (Docker engine unavailable → no Postgres/API):
+       enrollment-tồn-tại-sau-reload và teacher-roster thấy fixture student CHƯA chạy —
+       không tính PASS; cần chạy lại khi có API.
+
+- ✅ (antigravity · 2026-09-07) **A08 — Chi tiết lớp Student từ API thật**
+  Nối /student/classes/[classId] và /student/classes/[classId]/lessons/[lessonId] vào endpoint thật GET /student/classes/:id qua classes-service.ts và rules classes-rules.ts.
+  Loại bỏ hoàn toàn fixtures lms-data.ts và DemoStateSwitcher.
+  Xử lý đủ 7 trạng thái UI theo contract: loading (SkeletonPanel), invalid_id (UUID validation), not_found (404), forbidden (403), error (ErrorState kèm thử lại), empty (0 lessons), ready (chi tiết lớp và danh sách bài học thật).
+  Bảo mật & RBAC: không để lộ enrollmentCode (INV-CLASS-07), không lộ danh sách học viên cùng lớp, không tự chế số bài tập.
+  Hiển thị thông báo "Chưa khả dụng" cho chi tiết bài học / bài tập chưa có endpoint approved theo API_STUDENT.md.
+  Leave class now calls DELETE /student/classes/:id/leave, uses a submit lock, keeps the modal open on
+  server failure, and redirects only after the server confirms status=dropped.
+  Verification: 31/31 tests trong student-class-detail.test.mjs, full web script suite passed serially,
+  check-docs 8/8 passed, production build web 42/42 pages passed sạch sẽ.
+  ⚠️ Live API/browser self-test NOT RUN: Docker Desktop engine unavailable in this environment.
 
 - ✅ (antigravity · 2026-09-07) **A06 — Danh sách lớp Student từ API thật**
   Nối màn hình /student/classes vào endpoint thật GET /student/classes qua service
@@ -735,3 +1037,31 @@ _(specs written 2026-08-19, `docs/api/modules/`. **Updated 2026-09-01**: `apps/a
   local mistakes store in production — both are the recorded A00/DOC-016 presentation-rewire
   scope (Sprint 4 backend for mistake collection does not exist yet); gating them would remove
   the only live learning feature, rewiring them is A03/A05's task.
+
+## Foundation / Grammar design work — 2026-09-10
+
+- ✅ (codex) DOCS deliverables only, `codex/foundation-grammar-contracts`: source audit and proposed
+  Foundation/Grammar contracts prepared after explicit approval of step 1.
+  No application, schema, Auth, RBAC, money or production-content changes are authorized.
+  Production remains NOT IMPLEMENTED; source rights/media and transport approval are blockers.
+
+- ⛔ Foundation/Grammar production: content/progress/assessment/media operation contracts remain
+  missing; see docs/api/modules/student/02-foundation-grammar.md decisions D1–D5. The proposal
+  adds no endpoint, physical schema, permission or runtime behavior.
+
+- Foundation/Grammar docs publication: **BLOCKED by automatic approval review**. Local audit/design
+  commits are ready, but publishing this payload to public `nhatanhcoder/git-practice` requires
+  explicit owner confirmation. No push/PR/merge/deploy occurred for this documentation task.
+
+- Foundation/Grammar documentation publication approved by the owner; branch pushed and
+  PR #54 opened: https://github.com/nhatanhcoder/git-practice/pull/54. The publication blocker
+  above is cleared. D1–D5 still block implementation; no merge or deployment.
+
+## Merge review — notifications PR #67 — 2026-09-12
+
+- 🔶 Integrated the latest security/bootstrap/dead-code main changes into
+  `feat/student-notifications`, preserving the dense flashcard grid while retaining the
+  notification styles outside the overlapping SRS blocks.
+- Removed four lint failures in the notification e2e suite by typing response envelopes and
+  deleting an unused admin-mailbox query. Local verification and current-head CI are required
+  before merge; the database-backed notification suite remains NOT RUN in this review worktree.

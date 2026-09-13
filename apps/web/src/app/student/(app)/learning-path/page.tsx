@@ -8,10 +8,17 @@
  * open for 100 XP, which is where the store's `unlockNode` guard matters — it
  * refuses rather than letting the balance go negative.
  *
- * MOCK(student): content from `lib/student/learning-path-data.ts`; no API call.
+ * Contract: docs/front-end-design-docs/pages/student-pages/student-learning-path.md
+ * (S-SELF-1, status contracted). Filters live in the URL
+ * (?curriculum=&level=&view=) so back/forward and deep links restore the view.
+ *
+ * MOCK(student): content from `lib/student/learning-path-data.ts`; catalog and
+ * progress reads are ⛔ (API_STUDENT §83) — no API call. XP spend is a local
+ * mock rule; the server must own XP when the backend exists.
  */
 
-import { useMemo, useState } from "react";
+import { Suspense, useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Check, Compass, Crown, List, Lock, Map as MapIcon, Play, Star, Swords, Zap } from "lucide-react";
 import {
@@ -48,12 +55,52 @@ const CURRICULUM_HANZI: Record<Curriculum, string> = {
 };
 
 export default function LearningPathPage() {
+  if (process.env.NODE_ENV === "production") {
+    return (
+      <UnavailableState
+        title="Lộ trình HSK"
+        description="Lộ trình học tập chưa được kết nối máy chủ dữ liệu trong phiên bản hiện tại. Vui lòng quay lại sau."
+      />
+    );
+  }
+  return (
+    <Suspense>
+      <LearningPathInner />
+    </Suspense>
+  );
+}
+
+const VALID_CURRICULA: Curriculum[] = ["hsk_standard_course", "han_yu_jiao_cheng"];
+
+function LearningPathInner() {
   const [demo, setDemo] = useState<DemoState>("ready");
   const profile = useStudentProfile();
-  const [curriculum, setCurriculum] = useState<Curriculum>("hsk_standard_course");
-  const [level, setLevel] = useState(profile.currentLevel);
-  const [view, setView] = useState<"map" | "list">("map");
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
+  // Filters are URL state (contract §Actions): back/forward and deep links
+  // restore the exact view. Invalid values fall back to safe defaults.
+  const rawLevel = Number(searchParams.get("level") ?? profile.currentLevel);
+  const level =
+    Number.isInteger(rawLevel) && rawLevel >= 1 && rawLevel <= 9 ? rawLevel : profile.currentLevel;
+  const rawCurriculum = searchParams.get("curriculum");
+  const curriculum: Curriculum = VALID_CURRICULA.includes(rawCurriculum as Curriculum)
+    ? (rawCurriculum as Curriculum)
+    : "hsk_standard_course";
+  const view: "map" | "list" = searchParams.get("view") === "list" ? "list" : "map";
+
+  function setParam(patch: Record<string, string>) {
+    const q = new URLSearchParams(searchParams.toString());
+    for (const [key, value] of Object.entries(patch)) q.set(key, value);
+    router.replace(`?${q.toString()}`, { scroll: false });
+  }
+
   const [active, setActive] = useState<PathNode | null>(null);
+
+  // Partial state (contract §States): the map renders from the catalog fixture
+  // while the personal XP balance may still be unresolved — unlock then stays
+  // disabled with a reason instead of spending blindly.
+  const xpKnown = typeof profile.xp === "number";
 
   const unlockedNodes = useStudentStore((s) => s.unlockedNodes);
   const completedLessons = useStudentStore((s) => s.completedLessons);
@@ -88,18 +135,6 @@ export default function LearningPathPage() {
     }
   }
 
-  // Production renders the unavailable state, but only AFTER every hook has run —
-  // an early return above them would make the component conditionally hooked, which
-  // React forbids (A05 fixed this for /mistakes/review; this file follows the same rule).
-  if (process.env.NODE_ENV === "production") {
-    return (
-      <UnavailableState
-        title="Lộ trình HSK"
-        description="Lộ trình học tập chưa được kết nối máy chủ dữ liệu trong phiên bản hiện tại. Vui lòng quay lại sau."
-      />
-    );
-  }
-
   return (
     <>
       <header className="pagehead">
@@ -125,7 +160,7 @@ export default function LearningPathPage() {
                   type="button"
                   className={`curriculum__btn ${curriculum === c.key ? "is-active" : ""}`}
                   aria-pressed={curriculum === c.key}
-                  onClick={() => setCurriculum(c.key)}
+                  onClick={() => setParam({ curriculum: c.key })}
                 >
                   <span className="curriculum__hanzi han" aria-hidden="true">
                     {CURRICULUM_HANZI[c.key]}
@@ -147,7 +182,7 @@ export default function LearningPathPage() {
                   { value: "list", label: "Danh sách", icon: <List size={14} /> },
                 ]}
                 value={view}
-                onChange={setView}
+                onChange={(v) => setParam({ view: v })}
                 label="Kiểu hiển thị lộ trình"
               />
             </div>
@@ -162,7 +197,7 @@ export default function LearningPathPage() {
                 locked: id > profile.currentLevel,
               }))}
               value={level}
-              onChange={setLevel}
+              onChange={(v) => setParam({ level: String(v) })}
             />
           </div>
 
@@ -198,7 +233,7 @@ export default function LearningPathPage() {
               <button
                 type="button"
                 className="btn btn--outline"
-                onClick={() => setCurriculum("hsk_standard_course")}
+                onClick={() => setParam({ curriculum: "hsk_standard_course" })}
               >
                 Chuyển sang HSK Standard Course
               </button>
@@ -334,13 +369,20 @@ export default function LearningPathPage() {
         footer={
           active ? (
             active.state === "locked" ? (
-              <button
-                type="button"
-                className="btn btn--outline btn--block"
-                onClick={() => tryUnlock(active)}
-              >
-                <Lock size={16} /> Mở khoá bằng {FORCE_UNLOCK_COST} XP
-              </button>
+              xpKnown ? (
+                <button
+                  type="button"
+                  className="btn btn--outline btn--block"
+                  onClick={() => tryUnlock(active)}
+                >
+                  <Lock size={16} /> Mở khoá bằng {FORCE_UNLOCK_COST} XP
+                </button>
+              ) : (
+                <div className="notice">
+                  <Lock size={16} />
+                  <span>Chưa tải được số dư XP nên chưa thể mở khoá. Thử lại sau.</span>
+                </div>
+              )
             ) : (
               <Link
                 href={`/student/learning-path/${active.id}`}

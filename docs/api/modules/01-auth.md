@@ -3,7 +3,7 @@ module: Auth
 status: accepted
 blocked_by: - (no business decision blocks the core; open points recorded in §16 — C1 blocks DTO field names, not flows)
 owner: -
-last_updated: 2026-08-19
+last_updated: 2026-09-10
 ---
 
 ## 0. Summary
@@ -406,7 +406,7 @@ alarm, and enough false alarms make real ones ignored.
 | login: wrong password (any `status`) | 401 | `AUTH_INVALID_CREDENTIALS` | exists — **must be identical to the row above** (INV-AUTH-06) |
 | login: correct password, `status=pending` | 403 | `AUTH_ACCOUNT_PENDING` | exists |
 | login: correct password, `status=suspended` | 403 | `AUTH_ACCOUNT_SUSPENDED` | exists |
-| login: over 5 failures/15 min | 429 | ⚠️ **no code** | API_ERROR_CODES.md lists HTTP 429 in the status table but has **no code** for rate limiting (`AI_QUOTA_EXCEEDED` is 429 but belongs to the AI group and is *proposed*). **Don't invent** → §16 |
+| login: over 5 failures/15 min | 429 | `AUTH_TOO_MANY_REQUESTS` | ✅ in the registry (API_ERROR_CODES.md § Auth Errors) and emitted by `error-codes.ts` since 2026-09-02 — the earlier "no code" note is closed. Counter storage is **instance-local memory**, so the limit holds per API instance, not per deployment — see API_CONVENTIONS.md § Rate Limiting and KNOWN_ISSUES `API-016` |
 | refresh: no cookie / token doesn't exist / revoked / **replay** | 401 | `AUTH_REFRESH_INVALID` | exists |
 | refresh: token still in DB but past `expiresAt` | 401 | `AUTH_TOKEN_EXPIRED` | exists |
 | protected endpoint: missing/broken signature/malformed token | 401 | `AUTH_TOKEN_INVALID` | ⚠️ in API_ERROR_CODES.md but **not** in `_FACTS.md`'s "Existing error codes" list → §16 |
@@ -532,6 +532,14 @@ this spec states them as mandatory technical requirements, and approving the `Re
 
 ## 13. Security & rate limit
 
+**Implementation verification (2026-09-10; status remains accepted):** bootstrap now uses
+Helmet, exposes Swagger only outside production, and drains HTTP before resource teardown.
+The limiter remains custom in-process code, not @nestjs/throttler. The two-counter requirement
+below differs from the implemented composite IP + normalized-email key; this mismatch is
+recorded under API-016, not silently resolved by bootstrap hardening. A1/A2 cleanup/proxy work
+is reviewed separately and this change makes no claim that it has landed.
+
+
 **Data that must never leave**
 
 | Thing | Rule |
@@ -552,9 +560,14 @@ this spec states them as mandatory technical requirements, and approving the `Re
   counted (or counted differently), an attacker distinguishes real accounts by the rate-limit
   behavior itself. This is a subtle variant of the account-enumeration vulnerability.
 - Over threshold → HTTP 429, **no** bcrypt comparison (CPU protection), **no** per-account
-  remaining-time disclosure. ⚠️ No `code` for 429 yet → §16.
+  remaining-time disclosure. Code: `AUTH_TOO_MANY_REQUESTS` (registry + `error-codes.ts`,
+  resolved 2026-09-08 — previously "no code"). ⚠️ The implemented counter is **in-process
+  memory**, i.e. per-instance: with N instances the effective limit is 5×N and the block does
+  not follow the user across instances. See API_CONVENTIONS.md § Rate Limiting and KNOWN_ISSUES
+  `API-016` — shared storage is required **before scaling past one instance**.
 - Proposal to apply broader rate limits (no doc, leaving for §16): `register` (blocks mass
   junk-signup flooding the admin approval queue) and `change-password`/`refresh` (blocks abuse).
+  Still proposals only — no thresholds or codes exist for these.
 
 **Anti user-enumeration — mandatory**
 1. **Wrong email and wrong password return the SAME error code**: `401 AUTH_INVALID_CREDENTIALS`,
@@ -661,8 +674,8 @@ upload failure → 500 `USER_AVATAR_UPLOAD_FAILED` and `avatarUrl` in the DB unc
 |---|---|---|---|
 | **C1 — `nickname` or `fullName`?** ENTITY_USER.md + `_FACTS.md` define the field as `nickname` (`varchar(100)`, nullable, "Display name (student); full name (teacher/admin)"). API_AUTH.md uses `fullName` in **both** the `POST /auth/register` body **and** the `PATCH /auth/me` body. API_ERROR_CODES.md's validation example also uses the `fullName` key. But FE spec `admin-profile.spec.md` section 6 returns sample data with the `nickname` key. Three documents, two names, one field | Blocks **the DTO keys of 3 of 7 endpoints** (register, PATCH /me, and GET /me's response) — i.e. the FE–BE contract on the signup and profile screens. If `fullName` is locked, a **column rename** migration `nickname → fullName` is needed and ripples to every module reading `nickname` (spec 02 §3 user list, spec 04 §11 teacher include). If `nickname` is locked, API_AUTH.md and the FE form must change. **No side chosen here** — both are cited by currently-valid documents | - | before coding `POST /auth/register` (the first endpoint of Sprint 1) |
 | **The `RefreshToken` table isn't approved.** No `ENTITY_REFRESH_TOKEN.md`; the only definition is PROJECT_KNOWLEDGE.md #16 with 5 columns. The three columns `familyId`, `replacedById`, `revokedReason` are **mandatory** for §6/§8 but exist nowhere | Blocks the whole module's migration; blocks INV-AUTH-11/12/22 (no `familyId` → families can't be revoked; no `revokedReason` → every password change creates a false replay alarm) | - | before Sprint 1 |
-| **Grace window G value, and option A or B in §8?** Proposal A + G = 30s | Blocks INV-AUTH-22's behavior and its test row; A requires Redis (infrastructure dependency), B requires loosening how INV-AUTH-10 is stated | - | before coding `/auth/refresh` |
-| **No error code for HTTP 429.** API_ERROR_CODES.md lists 429 in the HTTP-status table but the registry has no rate-limit code (`AI_QUOTA_EXCEEDED` is 429 but in the AI group and *proposed, not agreed*) | Blocks §9 and the INV-AUTH-21 test row (currently only HTTP 429 can be locked, not `code`); FE has no handling branch | - | before coding rate limiting |
+| ~~**Grace window G value, and option A or B in §8?**~~ ✅ Coded (2026-09-08 note): **Option A** with **G = 15 seconds** (not the 30s proposal) — an in-memory `rotationCache` keyed by parent `tokenHash` returns the identical child cookie within the window. ⚠️ The cache is **instance-local**; a retry landing on a different instance misses it and falls into the grace check against `replacedById` in the DB — and beyond that window the DB path cannot return the raw child cookie, so multi-instance operation forces shared storage (`API-016`). Still open: G was picked in code, never owner-ratified; Redis was assumed and never decided | Blocks nothing for the implemented single-instance behavior; blocks horizontal scaling and final INV-AUTH-22 wording | - | before scaling / before writing the INV-AUTH-22 test row against a shared store |
+| ~~**No error code for HTTP 429.**~~ ✅ Resolved 2026-09-08: `AUTH_TOO_MANY_REQUESTS` (429) is in the registry's Auth Errors table and in `error-codes.ts`; the login limiter emits it. What is **still open**: `register`/`refresh`/`change-password` limits (proposals only, no thresholds) and multi-instance counter storage (`API-016`) | Blocks nothing for the implemented login limiter; blocks broader throttling and horizontal scaling | - | before adding new limits / before scaling |
 | **Is `AUTH_TOKEN_INVALID` approved?** In API_ERROR_CODES.md but **not** in `_FACTS.md`'s "Existing error codes" list | Blocks asserting `code` for every non-refresh 401 branch (§9) | - | together with the row above |
 | **Token of a `suspended` user rejected with 401 or 403?** ENTITY_USER.md: "status = suspended → all JWT tokens rejected (401)". API_ERROR_CODES.md: `AUTH_ACCOUNT_SUSPENDED = 403` | Blocks §5, §9 and the INV-AUTH-15 test. Not a small difference: FE usually treats 401 as "try refresh then log out" and 403 as "show a message" — the wrong choice makes FE loop refreshes forever | - | before coding the guard |
 | **`SameSite` of the `refresh_token` cookie and CSRF defense for `/auth/refresh`.** No document specifies it. Depends on whether FE (`:3000`) and API (`:3001`) are same-site in production | Blocks cookie configuration; if cross-site, `SameSite=None; Secure` is forced ⇒ default CSRF defense lost ⇒ an `Origin` check or CSRF token must be added — i.e. more FE–BE contract surface | - | before going to an environment with a real domain |

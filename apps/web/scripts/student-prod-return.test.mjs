@@ -40,8 +40,8 @@ function listPages(dir) {
 
 const HOOK_RE = /\buse[A-Z]\w*\s*\(|\buse[A-Z]\w*"(?!\w)/; // useState( / useStudentStore( / useRouter( ...
 
-function firstHookLineAfter(lines, fromIdx) {
-  for (let i = fromIdx; i < lines.length; i++) {
+function firstHookLineAfter(lines, fromIdx, untilIdx) {
+  for (let i = fromIdx; i < untilIdx; i++) {
     if (HOOK_RE.test(lines[i])) return i;
   }
   return -1;
@@ -63,14 +63,18 @@ test("no student page early-returns the prod branch before its hooks", () => {
     // Find the end of the conditional block (first "  }" after the if).
     let end = -1;
     for (let i = start + 1; i < lines.length; i++) {
-      if (/^  \}$/.test(lines[i])) {
+      if (/^ {2}\}$/.test(lines[i])) {
         end = i;
         break;
       }
     }
     assert.notEqual(end, -1, `unterminated prod branch in ${page}`);
 
-    const hookAfter = firstHookLineAfter(lines, end + 1);
+    // A gated default export may call a separate Inner component with hooks.
+    // Only inspect hooks in the same function as the production return.
+    const functionEnd = lines.findIndex((line, index) => index > end && /^}$/.test(line));
+    assert.notEqual(functionEnd, -1, `unterminated page component in ${page}`);
+    const hookAfter = firstHookLineAfter(lines, end + 1, functionEnd);
     if (hookAfter !== -1) {
       offenders.push(
         `${page}: hook at line ${hookAfter + 1} runs after the prod early-return at line ${start + 1}`,

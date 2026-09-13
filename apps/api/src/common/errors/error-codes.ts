@@ -43,10 +43,22 @@ export const ErrorCode = {
   QUESTION_NOT_OWNER: 'QUESTION_NOT_OWNER',
   QUESTION_AUDIO_REQUIRED: 'QUESTION_AUDIO_REQUIRED',
 
+  // Assignment (registry § Assignment Errors)
+  ASSIGNMENT_NOT_FOUND: 'ASSIGNMENT_NOT_FOUND',
+  ASSIGNMENT_NO_QUESTIONS: 'ASSIGNMENT_NO_QUESTIONS',
+  ASSIGNMENT_PAST_DUE: 'ASSIGNMENT_PAST_DUE',
+  ASSIGNMENT_ALREADY_SUBMITTED: 'ASSIGNMENT_ALREADY_SUBMITTED',
+
   // Flashcards / SRS (registry § Flashcard Errors). MongoDB-backed.
   FLASHCARD_NOT_FOUND: 'FLASHCARD_NOT_FOUND',
   FLASHCARD_ALREADY_IN_REVIEW: 'FLASHCARD_ALREADY_IN_REVIEW',
   FLASHCARD_INVALID_RATING: 'FLASHCARD_INVALID_RATING',
+
+  // Notifications (registry § Notification Errors) — the mailbox read side.
+  // The only branch this module needs: "not found OR not mine" deliberately share one
+  // code so a caller cannot probe for the existence of other users' notifications
+  // (07-notifications.md §5).
+  NOTIFICATION_NOT_FOUND: 'NOTIFICATION_NOT_FOUND',
 
   // Session review & teacher sessions (registry § Session Review Errors)
   SESSION_NOT_FOUND: 'SESSION_NOT_FOUND',
@@ -126,9 +138,14 @@ export const ERROR_STATUS: Record<ErrorCodeValue, number> = {
   QUESTION_NOT_FOUND: 404,
   QUESTION_NOT_OWNER: 403,
   QUESTION_AUDIO_REQUIRED: 400,
+  ASSIGNMENT_NOT_FOUND: 404,
+  ASSIGNMENT_NO_QUESTIONS: 400,
+  ASSIGNMENT_PAST_DUE: 400,
+  ASSIGNMENT_ALREADY_SUBMITTED: 409,
   FLASHCARD_NOT_FOUND: 404,
   FLASHCARD_ALREADY_IN_REVIEW: 409,
   FLASHCARD_INVALID_RATING: 400,
+  NOTIFICATION_NOT_FOUND: 404,
   SESSION_NOT_FOUND: 404,
   SESSION_ALREADY_REVIEWED: 409,
   SESSION_REJECT_REASON_REQUIRED: 400,

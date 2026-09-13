@@ -32,18 +32,35 @@ machine, so they share one module.
 | # | Module | File | Status | Invariants | Blocked by |
 |---|---|---|---|---|---|
 | 1 | Auth | `01-auth.md` | ✅ `accepted` | 24 | — |
-| 2 | Users / Admin Users | `02-users.md` | ✅ `accepted` | 18 | — |
+| 2 | Users / Admin Users | `02-users.md` | ⚠️ **conflict** — `✅ accepted` here vs `status: proposed` in the spec's own frontmatter (see note under the table) | 18 | owner decision on the discrepancy |
 | 3 | Classes + Enrollment | `03-classes-enrollment.md` | ✅ `accepted` | 8 | — |
 | 4 | Sessions + Attendance | `04-sessions-attendance.md` | ✅ `accepted` | 16 | — |
 | 5 | Payroll + Pay Rates | `05-payroll.md` | ✅ `accepted` | 33 | — |
 | 6 | Billing (rate+invoice+payment) | `06-billing.md` | ✅ `accepted` | 34 | — |
-| 7 | Notifications | `07-notifications.md` | 🔶 `proposed` | 21 | no endpoint defined yet |
+| 7 | Notifications | `07-notifications.md` | 🔶 `implemented 2026-09-12` — 4 mailbox endpoints + register/approve/suspend/new_invoice producers live; `deadline_reminder`/`graded`/`session_submitted_for_review` producers + partial-unique migration still open (spec frontmatter) | 21 | DEBT-002 (60s polling) · 4 of 11 types wait on other lanes |
 | 8 | Dashboard / Reporting | `08-dashboard.md` | ✅ `accepted` | 14 | — |
 
 **168 invariants total.** Each invariant has at least one line in the test matrix (section 15)
 of its module — this is the **invariant gate** replacing coverage %.
 
-Only **Auth** is ready to code right now. The other 7 modules await decisions.
+> **⚠️ Module 02 status conflict (recorded 2026-09-09, not resolved).** This table has shown
+> `02-users.md` as `accepted` since commit `41f3ff1` ("docs(api): accept modules 04, 05, 06, 08
+> following ADRs"), whose diff **also flipped rows 02 and 03 without being named in its message**.
+> The spec's own frontmatter still reads `status: proposed`. Both readings are currently-valid
+> documents, so no side has been chosen: the row above marks the conflict instead. The owner
+> either signs `02-users.md` off as accepted (one frontmatter edit) or restores this row to
+> `proposed`. Until then, treat the **spec frontmatter as authoritative** for what is
+> contract-locked, and this row as stale.
+
+**Implementation status (re-verified 2026-09-09 against `apps/api/src`; module 07 updated
+2026-09-12):** Modules 01–08 are now all implemented and wired to the frontend (Auth, Users
+approval, Classes/Enrollment, Lessons, Sessions+Attendance, Payroll, Billing, Dashboard+
+Monitoring, Question Bank, Flashcards/SRS, Notifications — 14 e2e suites, last full run
+208/208 on 2026-09-12, branch `feat/student-notifications`). Module 07's read side and the
+register/approve/suspend/new_invoice producers went live 2026-09-12 per its spec §16 defaults
+(owner-approved student completion wave); its scheduler/grading producers remain open with
+their lanes. The module-spec status table above is the authority for what is *accepted*, not
+for what is *built*.
 
 ## 2. Dependency order
 

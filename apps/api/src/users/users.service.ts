@@ -3,6 +3,7 @@ import type { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { AppException } from '../common/errors/app.exception';
 import { ErrorCode } from '../common/errors/error-codes';
+import { NotificationsService } from '../notifications/notifications.service';
 import {
   DETAIL_SELECT,
   LIST_SELECT,
@@ -23,7 +24,10 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-
 
 @Injectable()
 export class UsersService {
-  constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
+  constructor(
+    @Inject(PrismaService) private readonly prisma: PrismaService,
+    @Inject(NotificationsService) private readonly notifications: NotificationsService,
+  ) {}
 
   /**
    * `02-users.md` §3 / INV-USERS-03, 05, 06, 07.
@@ -76,10 +80,28 @@ export class UsersService {
     if (!UUID.test(id)) {
       throw new AppException(ErrorCode.VALIDATION_ERROR, 'id không đúng định dạng uuid');
     }
-    // Atomic conditional update: only pending accounts can be approved to active
-    const result = await this.prisma.user.updateMany({
-      where: { id, status: 'pending' },
-      data: { status: 'active' },
+    // Atomic conditional update + the account_approved notification, in ONE transaction
+    // (INV-USERS-13 → INV-NOTIF-13): the guarded updateMany is still the transition's only
+    // defence — a second concurrent approve matches 0 rows, so the notification fan-out
+    // (one row, recipient = the approved account) cannot double-fire (INV-NOTIF-12).
+    const result = await this.prisma.$transaction(async (tx) => {
+      const res = await tx.user.updateMany({
+        where: { id, status: 'pending' },
+        data: { status: 'active' },
+      });
+      if (res.count === 1) {
+        await this.notifications.createManyWithinTx(tx, [
+          {
+            userId: id,
+            type: 'account_approved',
+            // Account-level event: the referenceType enum has no `user` value (INV-NOTIF-10).
+            referenceId: id,
+            referenceType: null,
+            payload: null,
+          },
+        ]);
+      }
+      return res;
     });
     if (result.count === 0) {
       const user = await this.prisma.user.findUnique({ where: { id } });
@@ -105,10 +127,26 @@ export class UsersService {
     if (!UUID.test(id)) {
       throw new AppException(ErrorCode.VALIDATION_ERROR, 'id không đúng định dạng uuid');
     }
-    // Atomic conditional update: only active accounts can be suspended
-    const result = await this.prisma.user.updateMany({
-      where: { id, status: 'active' },
-      data: { status: 'suspended' },
+    // Same shape as approve: one guarded transition + one account_suspended row, one
+    // transaction. The suspend flow takes no reason input today (no storage column —
+    // spec 02 §16), so the payload carries nothing rather than a placeholder.
+    const result = await this.prisma.$transaction(async (tx) => {
+      const res = await tx.user.updateMany({
+        where: { id, status: 'active' },
+        data: { status: 'suspended' },
+      });
+      if (res.count === 1) {
+        await this.notifications.createManyWithinTx(tx, [
+          {
+            userId: id,
+            type: 'account_suspended',
+            referenceId: id,
+            referenceType: null,
+            payload: null,
+          },
+        ]);
+      }
+      return res;
     });
     if (result.count === 0) {
       const user = await this.prisma.user.findUnique({ where: { id } });

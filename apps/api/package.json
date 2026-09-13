@@ -8,6 +8,8 @@
     "start": "node dist/src/main.js",
     "start:prod": "node dist/src/main.js",
     "type-check": "tsc --noEmit",
+    "lint": "pnpm --workspace-root lint",
+    "test:ci": "node ../../scripts/assert-ci-databases.mjs && node --import tsx --test --test-concurrency=1 test/*.test.ts",
     "test": "nest build && dotenv -e ../../.env -- node --import tsx --test --test-concurrency=1 test/*.test.ts",
     "db:generate": "prisma generate",
     "db:migrate": "dotenv -e ../../.env -- prisma migrate dev",
@@ -15,7 +17,9 @@
     "db:reset": "dotenv -e ../../.env -- prisma migrate reset",
     "db:studio": "dotenv -e ../../.env -- prisma studio",
     "db:seed": "dotenv -e ../../.env -- tsx prisma/seed.ts",
-    "db:check": "tsx scripts/check-db.ts"
+    "db:check": "tsx scripts/check-db.ts",
+    "vocab:dry-run": "nest build && dotenv -e ../../.env -- node dist/scripts/vocab-import.js",
+    "vocab:import": "nest build && dotenv -e ../../.env -- node dist/scripts/vocab-import.js --apply"
   },
   "prisma": {
     "seed": "dotenv -e ../../.env -- tsx prisma/seed.ts"
@@ -35,6 +39,7 @@
     "class-validator": "^0.14.1",
     "cookie-parser": "^1.4.7",
     "dotenv": "^16.4.7",
+    "helmet": "^8.3.0",
     "mongoose": "^8.9.5",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1"

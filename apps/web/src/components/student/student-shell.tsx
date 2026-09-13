@@ -20,6 +20,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   Blocks,
+  Bell,
   ClipboardList,
   BookOpen,
   Briefcase,
@@ -33,6 +34,7 @@ import {
   NotebookPen,
   PenTool,
   Puzzle,
+  ReceiptText,
   School,
   RotateCcw,
   Sparkles,
@@ -48,6 +50,7 @@ import { useStudentProfile, useStudentStore } from "@/lib/student/store";
 import { useDisplayIdentity } from "@/lib/student/identity";
 import { useStudentPreferences } from "@/lib/student/preferences";
 import { useAuthStore } from "@/lib/auth/auth-store";
+import { fetchUnreadCount } from "@/lib/student/notifications-service";
 import {
   MISTAKES_REVIEW_ROUTE,
   MISTAKES_ROUTE,
@@ -65,6 +68,7 @@ export const PRIMARY_NAV: NavItem[] = [
   { to: "/student", label: "Trang chủ", short: "Trang chủ", icon: <Home size={18} /> },
   { to: "/student/classes", label: "Lớp của tôi", short: "Lớp học", icon: <School size={18} /> },
   { to: "/student/assignments", label: "Bài tập được giao", short: "Bài tập", icon: <ClipboardList size={18} /> },
+  { to: "/student/invoices", label: "Hóa đơn học phí", short: "Học phí", icon: <ReceiptText size={18} /> },
   { to: "/student/learning-path", label: "Lộ trình HSK", short: "Lộ trình", icon: <Map size={18} /> },
   { to: SRS_ROUTE, label: "Từ vựng Flashcard", short: "Từ vựng", icon: <Sparkles size={18} /> },
   { to: "/student/grammar", label: "Ngữ pháp", short: "Ngữ pháp", icon: <BookOpen size={18} /> },
@@ -85,7 +89,19 @@ export const ACHIEVEMENT_NAV: NavItem[] = [
   { to: "/student/badges", label: "Kho huy hiệu", short: "Huy hiệu", icon: <Medal size={18} /> },
 ];
 
-const ALL_NAV_ITEMS = [...PRIMARY_NAV, ...SECONDARY_NAV, ...ACHIEVEMENT_NAV];
+// Module 07 mailbox — every role reads its own; the shell bell links here. Kept out of
+// the grouped nav lists above so the sheet grid (2 columns × 8 rows) stays stable while
+// the bell is already the primary affordance on every viewport.
+export const NOTIFICATIONS_NAV: NavItem[] = [
+  { to: "/student/notifications", label: "Thông báo", short: "Thông báo", icon: <Bell size={18} /> },
+];
+
+const ALL_NAV_ITEMS = [
+  ...PRIMARY_NAV,
+  ...SECONDARY_NAV,
+  ...ACHIEVEMENT_NAV,
+  ...NOTIFICATIONS_NAV,
+];
 
 /**
  * The bottom bar shows four destinations plus "Thêm", not the whole primary group.
@@ -105,6 +121,7 @@ const PAGE_TITLES: [string, string][] = [
   ["/student/attempts", "Bài làm"],
   ["/student/classes", "Lớp của tôi"],
   ["/student/assignments", "Bài tập được giao"],
+  ["/student/invoices", "Hóa đơn học phí"],
   ["/student/learning-path", "Lộ trình HSK"],
   [SRS_ROUTE, "Flashcard từ vựng"],
   ["/student/grammar", "Thư viện ngữ pháp"],
@@ -118,6 +135,7 @@ const PAGE_TITLES: [string, string][] = [
   ["/student/leaderboard", "Bảng xếp hạng"],
   ["/student/progress", "Tiến độ học tập"],
   ["/student/badges", "Kho huy hiệu"],
+  ["/student/notifications", "Thông báo"],
   ["/student/placement", "Kiểm tra xếp cấp"],
   ["/student", "Trang chủ"],
 ];
@@ -154,7 +172,46 @@ export function StudentShell({ children }: { children: ReactNode }) {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [navigatingTo, setNavigatingTo] = useState<string | null>(null);
+  const [unreadCount, setUnreadCount] = useState<number | null>(null);
   const title = titleFor(pathname);
+
+  // Module 07 bell: poll unread every 60s while the shell is mounted (DEBT-002 —
+  // polling is the acknowledged delivery channel until Sprint 6 realtime). A failed
+  // poll leaves the last known number rather than zeroing the badge: an unread
+  // count that silently drops to 0 looks exactly like "nothing new" (WEB-011's
+  // lesson — never paint a guess over a fact the server owns).
+  useEffect(() => {
+    let cancelled = false;
+    const poll = async () => {
+      try {
+        const count = await fetchUnreadCount();
+        if (!cancelled) setUnreadCount(count);
+      } catch {
+        /* keep the last known count */
+      }
+    };
+    void poll();
+    const timer = window.setInterval(poll, 60_000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+    };
+  }, []);
+
+  const bellBtn = (
+    <Link href="/student/notifications" className="btn btn--ghost btn--icon bell-btn" aria-label={
+      unreadCount && unreadCount > 0
+        ? `Thông báo — ${unreadCount} chưa đọc`
+        : "Thông báo"
+    }>
+      <Bell size={18} />
+      {unreadCount && unreadCount > 0 ? (
+        <span className="bell-btn__badge" aria-hidden="true">
+          {unreadCount > 9 ? "9+" : unreadCount}
+        </span>
+      ) : null}
+    </Link>
+  );
 
   // Read localStorage only after mount — see the note in store.ts.
   useEffect(() => {
@@ -412,6 +469,7 @@ export function StudentShell({ children }: { children: ReactNode }) {
                   <span className="num">{profile.xp.toLocaleString("vi-VN")}</span>
                   <span className="sr-only">điểm kinh nghiệm</span>
                 </span>
+                {bellBtn}
                 {themeBtn}
               </div>
             </header>
@@ -433,6 +491,7 @@ export function StudentShell({ children }: { children: ReactNode }) {
                 <Flame size={14} />
                 <span className="num">{profile.streakDays}</span>
               </span>
+              {bellBtn}
               {themeBtn}
             </header>
 
@@ -472,7 +531,7 @@ export function StudentShell({ children }: { children: ReactNode }) {
 
           <Sheet open={sheetOpen} onClose={() => setSheetOpen(false)} title="Tất cả khu vực học">
             <div className="sheet__grid">
-              {[...PRIMARY_NAV, ...SECONDARY_NAV, ...ACHIEVEMENT_NAV].map((item) => (
+              {ALL_NAV_ITEMS.map((item) => (
                 <Link
                   key={item.to}
                   href={item.to}
@@ -481,7 +540,11 @@ export function StudentShell({ children }: { children: ReactNode }) {
                   onFocus={() => router.prefetch(item.to)}
                 >
                   {item.icon}
-                  {item.label}
+                  {/* WEB-020: both spellings render; the per-tile container query in
+                      components.css shows whichever fits on one line, so a narrow tile
+                      reads the short label instead of wrapping and stretching its row. */}
+                  <span className="sheet__label">{item.label}</span>
+                  <span className="sheet__label--short">{item.short}</span>
                 </Link>
               ))}
             </div>

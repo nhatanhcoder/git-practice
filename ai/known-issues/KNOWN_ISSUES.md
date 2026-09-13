@@ -5,7 +5,9 @@
 > `DEBT-###`, `SCOPE-##`. **Never renumber and never reuse an ID** — check the list below before
 > assigning one. (A 2026-08-31 chat session, working from a stale copy, reissued `API-003`,
 > `DOC-006`, `DOC-007` and `SCOPE-01` for unrelated problems; those were renumbered on merge.)
-> Last reviewed: 2026-09-01 against the working tree at HEAD `d277ca1`.
+> Last reviewed: 2026-09-08 against `origin/main` at `99a511c` (API-015/API-016 added, API-005
+> resolved, DOC-006 narrowed against ADR-015; highest ids in use on active branches checked:
+> `API-014`/`DOC-015` on `docs/admin-api-test-plan`, `WEB-018` on `feat/a05-srs-routes`).
 
 ---
 
@@ -401,15 +403,37 @@ values for the `?status=` filter, state machine in `docs/api/modules/02-users.md
 
 **Severity**: Medium
 **Sprint**: Backend Phase 2
-**Status**: Open
+**Status**: Open — **narrowed 2026-09-08**: the DB column is settled (ADR-015, `nickname`);
+only the **wire format** of `POST /auth/register` remains inconsistent. Owner decision still
+required for the register key.
 
 **Description**: `ENTITY_USER.md` defines the field `nickname`. But `API_AUTH.md` uses
 `fullName` in both `POST /auth/register` and `PATCH /auth/me`.
 
-**Impact**: Blocks the DTO response for all 5 user endpoints, and also blocks determining
-which field is searched by the `?search=` query parameter.
+**Update 2026-09-08 (verified in code)**: **ADR-015** (Accepted 2026-08-24) settles the column:
+`User.nickname`, per `ENTITY_USER.md`. ADR-015 required `API_AUTH.md` to switch to `nickname` —
+that doc edit **was never made** (both its register and PATCH bodies still read `fullName`).
+The implementation split the difference in an undocumented way:
 
-**Fix Plan**: Lock one name. Choosing `fullName` requires a migration to rename the column.
+| Surface | Uses |
+|---|---|
+| DB column / `GET /auth/me` / `PATCH /auth/me` (BE `UpdateProfileDto` + FE store) | `nickname` ✅ per ADR-015 |
+| `POST /auth/register` (BE `RegisterDto`, `auth.service.ts:125` maps `dto.fullName → nickname`, FE register form) | `fullName` — contra ADR-015 |
+| `docs/api/API_AUTH.md` (both endpoints) | `fullName` — the doc edit ADR-015 mandated was never done |
+
+So the live contract is: register **sends** `fullName`, everything **returns** `nickname`.
+`PATCH /auth/me` already says `nickname` in the code and is fine; the remaining decision is the
+register key only.
+
+**Impact**: ~~Blocks the DTO response for all 5 user endpoints~~ — no longer; only the
+register **request** key and `API_AUTH.md`'s stale examples. `?search=` still has no defined
+target field.
+
+**Fix Plan**: owner picks the register wire key — either (a) rename `RegisterDto.fullName` →
+`nickname` + update the FE form + fix `API_AUTH.md` (consistent, matches ADR-015's direction),
+or (b) keep `fullName` as the register key and amend ADR-015 to record the exception. Either
+way `API_AUTH.md`'s PATCH body must switch to `nickname`. Do **not** do this silently — it
+changes a live wire contract (`/register` shipped 2026-09-05).
 
 ---
 
@@ -533,6 +557,27 @@ has exactly two apps, `apps/api` and `apps/web`.
 then bring it into a location available to CI/deploy. Do not make production depend on the
 developer-machine absolute path.
 
+**A10 audit update (2026-09-08, READ-ONLY — `docs/content/VOCAB_SOURCE_AUDIT.md`)**:
+- The external corpus has **no standalone vocabulary file at all** (11 files, none named
+  vocabulary/flashcards). The `Flashcard` feature has no ready-made seed source.
+- `writing.json` is a **character** dataset (587 entries, 586 single-char), not vocabulary:
+  per-level 500/27/17/12/10/6/5/5/5. Best vocabulary candidate is the 1,228 embedded
+  `words[]` entries, which lack per-word level and id.
+- `levels.json` `newWords` (10,110 total) is decorative: no word list corresponds to it.
+- Three data defects: `喜欢` (2 chars) misfiled in the character list; `strokes.json` covers
+  only 59/586 characters; level-1 = 500 characters matches the HSK 3.0 **word** count — the
+  file was likely built from a word list, not a character list.
+- Import stays **BLOCKED** on: corpus provenance/license unknown + owner's words-vs-characters
+  decision + source not repository-owned. Importer safety rules for review state are recorded
+  in the audit §5. No data copied, no DB written, no schema changed.
+
+**A11 unlock update (2026-09-08)**: owner approved all three conditions — provenance confirmed,
+`words[]` chosen as the Flashcard seed, and `writing.json` copied verbatim into the repo at
+`apps/api/content/writing.json`. The **vocabulary slice** of DOC-011 is therefore resolved
+for dev/import purposes; the other 10 corpus files (grammar, exams, lego, strokes, …) remain
+external and unavailable to CI/deploy, so DOC-011 stays **Open** for F9–F16 generally. See
+`docs/content/VOCAB_SOURCE_AUDIT.md` §6 for the import decisions carried into TASK A11.
+
 ---
 
 ### [DOC-008] `DECISIONS.md` is referenced but does not exist
@@ -614,7 +659,8 @@ changes item identity across three files and deserves its own reviewed commit.
 
 **Severity**: High
 **Sprint**: Sprint 1
-**Status**: Open — **needs the owner's decision**
+**Status**: ✅ Resolved 2026-09-08 — auth/API/Gemini/web blocks restored in `.env.example`,
+documenting **what the code actually reads**, not the deleted file's old list. See Resolution.
 
 **Description**: The `.env.example` that came in with PR #12 contains none of
 `JWT_ACCESS_SECRET`, `JWT_REFRESH_SECRET`, `JWT_ACCESS_TTL`, `JWT_REFRESH_TTL`, `BCRYPT_ROUNDS`,
@@ -631,7 +677,20 @@ deleted 2026-09-01 (untracked scratch, never committed, not recoverable from git
 and comments are gone. Reconstruct from `docs/api/modules/01-auth.md` (the accepted spec), not
 from memory of the deleted file.
 
-**Fix Plan**: do not touch auth until the block is agreed and restored.
+**Resolution (2026-09-08, branch `docs/config-auth-findings`)**: the block was rebuilt by reading
+every `config.get` / `process.env` consumer in `apps/api/src` + `apps/web/src/lib/api-client.ts`,
+then documented: `JWT_ACCESS_SECRET` (required, fail-fast boot), `JWT_ACCESS_TTL` (default 15m),
+`API_PREFIX` (default api/v1), `CORS_ORIGIN`, `GEMINI_API_KEY` (optional, ADR-014),
+`NEXT_PUBLIC_API_URL`. **Six vars from the old list are deliberately absent because the code
+never reads them** — `JWT_REFRESH_SECRET` (refresh tokens are opaque random strings; only the
+SHA-256 hash is stored), `JWT_REFRESH_TTL` (fixed 7d in code), `BCRYPT_ROUNDS` (fixed cost 12,
+INV-AUTH-01), `COOKIE_DOMAIN`/`COOKIE_SECURE` (`Secure` derives from `NODE_ENV`). The file now
+says so explicitly, so nobody "restores" a var that does nothing. Making any of these
+configurable is a code change first, not an env-file edit.
+
+**Fix Plan**: ~~do not touch auth until the block is agreed and restored~~ — done; the
+"owner decision" framing was resolved by documenting implemented behavior rather than the
+deleted file's guesses.
 
 ---
 
@@ -1191,12 +1250,122 @@ lives at `/student/flashcards`, so the link is also pointing at the wrong screen
 card until the notebook has a backend. Belongs with `WEB-017`, which already covers the landing
 page asserting things that are not true; do not fix it in isolation from that decision.
 
+---
+
+### [WEB-020] Mobile "More" sheet: three nav labels wrapped to two lines, stretching their rows
+
+**Severity**: Low
+**Status**: ✅ Resolved 2026-09-11 — branch `fix/student-sheet-labels`, per-tile CSS container
+query swaps the label.
+
+**Description**: the "Tất cả khu vực học" bottom sheet (mobile tab bar → "Thêm") renders a
+2-column grid of 15 navigation tiles using each item's **full** `label`. Three of them —
+"Bài tập được giao", "Từ vựng Flashcard", "Mô phỏng công sở" — exceeded the ~100px text box of
+a 375px tile and wrapped to two lines, making their rows ~20px taller than the other five
+(single-line) rows. `navlink`/`tabbar` had already adopted the `short` field for exactly this
+reason; the sheet was the one surface still rendering `label`.
+
+**Resolution**: each tile now renders both spellings (`sheet__label` + `sheet__label--short`),
+and each `.sheet__item` is a CSS container (`container-type: inline-size`) whose
+`@container (max-width: 189px)` query shows whichever spelling fits one line. Narrow tile →
+short label ("Bài tập", "Từ vựng", "Công sở"); wide tile → full label. Every row returns to one
+uniform height. Two lessons from verification, both kept as code comments: **@container adds no
+specificity** — a bare `.sheet__label--short` inside the query (0,1,0) lost to the outer
+`.student-root .sheet__label--short` (0,2,0) and hid BOTH labels at 375px; the query selectors
+must mirror the outer ones. And the first Playwright cut asserted only the hidden half of the
+swap, which let that icon-only regression pass green — the spec now asserts both directions
+(plus flex-item blockification: the computed display of a visible span is `block`, not the
+declared `inline`).
+
+**Verification**: `tests/student-sheet-labels.spec.ts` 6/6 (desktop + mobile-375 ×
+375/520/640px, real login, production build): uniform tile heights everywhere, short labels
+at 375px, full labels single-line at 520/640px. Screenshot forensics re-verified after the
+specificity fix (round 1 caught the icon-only bug). Unit suite 156/156, check-docs 9/9,
+demo-isolation spec 9/9. Pre-existing, unrelated: 2 `student-identity.spec.ts` cases fail with
+or without this change (proven by stashing it) — `a01.student@hsk.local` is not in the dev DB
+(fixture never created by the spec) and the failed attempts then trip the 5-per-15-min login
+rate limit (429); not counted against this fix.
+
+**Numbering note**: `WEB-019` is taken by the unmerged `feat/student-prod-return-hooks`; per
+`DOC-014` reconcile by hand on merge. `WEB-020` was verified free across all live remote
+branches before assignment.
+
+---
+
+### [API-015] No central env validation; the refresh-cookie path is hardcoded and can drift from `API_PREFIX`
+
+**Severity**: High
+**Status**: Open — docs half landed 2026-09-08 (`API-005` resolved, contract documented); the
+**code fix touches the auth/refresh-token path and is held for explicit owner approval**.
+
+**Description**: two related defects, verified 2026-09-08:
+
+1. **Config is validated ad-hoc in three places with three different behaviours.**
+   `main.ts:35` reads `API_PREFIX ?? 'api/v1'` with no validation or normalization;
+   `app.module.ts:47` throws on missing `JWT_ACCESS_SECRET`; `auth.service.ts:60` reads it again
+   with a `|| ''` fallback that then throws elsewhere. `GEMINI_API_KEY` is read in
+   `monitoring.service.ts` with a `process.env` fallback that bypasses ConfigService. Nothing
+   produces one fail-fast report at boot ("these 3 vars are missing") — each startup failure is
+   discovered one variable at a time.
+2. **The refresh-cookie `Path` is a hardcoded duplicate of the configurable prefix.**
+   `auth.controller.ts:26` sets `const COOKIE_PATH = '/api/v1/auth'` while `main.ts:35` mounts
+   routes at `process.env.API_PREFIX ?? 'api/v1'`. Change `API_PREFIX` (or move the API behind a
+   proxy/gateway that strips it) and the routes move but the cookie `Path` does not — the browser
+   stops sending the refresh cookie, `/auth/refresh` 401s with `AUTH_REFRESH_INVALID`, and
+   **every session dies 15 minutes after login with no visible error explaining why**. The
+   `clearCookie` on logout/refresh-failure shares the same constant, so cleanup breaks too.
+
+**Impact**: today the defaults agree, so nothing visibly breaks; the failure is latent until the
+first deployment that changes the prefix. `01-auth.md` §13 already demands the narrowest cookie
+path — deriving it from the prefix satisfies that invariant **and** keeps it correct.
+
+**Fix Plan** (one PR, all inside `apps/api`):
+- a single fail-fast env validation at bootstrap listing every missing/invalid variable at once;
+- `API_PREFIX` normalized in one place (strip leading/trailing slashes);
+- `COOKIE_PATH` derived from that same constant (`/${prefix}/auth`), replacing the literal in
+  `auth.controller.ts`;
+- full API suite + web build must stay green (auth-adjacent → not fast-lane).
+**Not in scope**: Redis/shared limiter storage (`API-016`), `packages/types`.
+
+---
+
+### [API-016] Login rate limiter and refresh-rotation grace cache are instance-local — wrong behavior under multi-instance deployments
+
+**Severity**: High — **required before scaling past a single API instance**
+**Status**: Open — contract documented 2026-09-08 (`API_CONVENTIONS.md` § Rate Limiting,
+`01-auth.md` §9/§13/§16); storage change not started.
+
+**Description**: both auth-protection mechanisms live in in-process `Map`s in
+`auth.service.ts` (`loginAttempts` line ~51, `rotationCache` line ~50):
+
+1. **Login limiter (INV-AUTH-21)** — 5 failures/15 min per `(ip, normalized email)`. With N
+   instances behind a load balancer each keeps its own counter, so the effective limit is
+   **5 × N**, and a blocked attacker just retries until they land on a fresh instance.
+2. **Refresh-rotation grace cache (Proposal A, G = 15s)** — a dropped `POST /auth/refresh`
+   response can be recovered by re-presenting the parent cookie within G. The raw child cookie
+   lives only in the instance-local cache. A retry that lands on a **different instance** misses
+   the cache, and once the 15s window passes the DB grace path cannot return the raw child
+   token — the same re-presentation looks exactly like a **replayed stolen token**, and the replay
+   defence revokes the whole token family: the real user is **force-logged-out** by their own
+   network retry. The FE's single-flight guard only protects within one tab; nothing protects
+   across tabs or instances.
+
+**Impact**: latent today (single instance); the finding's "required before scaling" priority is
+correct. This is not a code bug in the current topology — it is the boundary of the topology the
+code was written for, now recorded where the next agent will find it.
+
+**Fix Plan**: a shared store (Redis or equivalent) behind a small interface for both maps;
+provider and connection details are an infrastructure decision for the owner. Do **not** add
+Nest's `@nestjs/throttler` with its default in-memory storage as a "fix" — that changes the
+contract while keeping the same limitation. `API_CONVENTIONS.md` § Rate Limiting now states both
+limits in full.
+
 **Numbering note**: assigned against both `main` and the unmerged `codex/a02-isolate-demo`, whose
 highest web id is also `WEB-017`. Per `DOC-014`, reconcile by hand if another branch takes it.
 
 ---
 
-### [WEB-019] Seventeen student pages early-returned the prod branch before their hooks
+### [WEB-023] Seventeen student pages early-returned the prod branch before their hooks
 
 **Severity**: Medium (latent — build-time constant masked the crash risk; still an illegal component shape)
 **Status**: ✅ Resolved 2026-09-09 — branch `feat/student-prod-return-hooks`; regression test added
@@ -1227,6 +1396,62 @@ and restoring it (green).
 API-017/DEBT-006 and `feat/a11-vocab-importer` (PR #53) touched no WEB ids; highest WEB id
 in use is WEB-018 (`feat/a05-srs-routes`).
 
+### [API-017] Monitoring telemetry is hardcoded — `/admin/monitoring` shows fiction for Redis and Gemini
+
+**Severity**: High — the screen presents invented health data as live platform status
+**Status**: Open — found 2026-09-09 while verifying an external Modules 01→08 audit
+
+**Description**: `apps/api/src/dashboard/monitoring.service.ts` reports health that no probe
+measured:
+
+- **Redis**: `const redisStatus = 'healthy'; const redisLatency = '1ms';` (line ~43) — there is
+  no Redis client anywhere in the codebase; the value is a literal. `/admin/monitoring` renders
+  "Redis Cache — healthy 1ms" for a service that does not exist.
+- **Gemini** (`getGeminiStatus`, line ~13): the only real signal is whether `GEMINI_API_KEY` is
+  configured and non-placeholder. The `latency: '45ms'`, `quota: { used: 142000, limit:
+  1000000 }` and `keyType: 'Shared Org Key'` are **hardcoded constants** (ADR-014 names a shared
+  key, but the quota numbers are invented). DB latency is the only genuinely measured probe.
+
+**Impact**: same defect class as `WEB-011` — an admin screen presenting invented data, here as
+*platform monitoring*, which is the screen an operator would trust first during an incident. A
+real Gemini outage or quota exhaustion would show "healthy" as long as the key string exists.
+
+**Also mis-cited by the audit**: the audit's claim that `/admin/monitoring/health` does "live
+ping probes for PostgreSQL, MongoDB Atlas, Redis" is wrong for 2 of 3 services; only the SQL
+`SELECT 1` probe is real.
+
+**Fix Plan**: either implement real probes (Redis client ping; a minimal Gemini API call with
+measured latency, cached to respect quota — ADR-014) or relabel the stubs honestly
+("not configured" / "no probe") so the screen stops asserting what it did not measure. The
+Gemini quota figures should be removed, not faked.
+
+---
+
+### [BUILD-004] `pnpm --filter api build` is red on `origin/main` — TS2322 in `vocab-apply.ts`
+
+**Severity**: Medium
+**Status**: Open — found 2026-09-11 while verifying the SRS flow suite in a fresh worktree
+
+**Description**: `nest build` (tsc) fails with one error:
+`src/flashcards/import/vocab-apply.ts:56 — connection.model(...)` returns
+`Model<Flashcard, ...>` which is not assignable to `Model<ImportFlashcardDoc>`
+(`_id` required by the local interface, missing on `Flashcard`). Verified on pristine
+`origin/main@73bdd2c` after `db:generate`, so it is not caused by any worktree edit.
+(A fresh worktree additionally needs `db:generate` first — 254 `PrismaService`
+errors without it; that part is setup, see `BUILD-002`.)
+
+**Impact**: the typecheck/build gate is red; the API test suites are unaffected because
+they run via tsx (no typecheck) and tsc still emits `dist/` despite the error. Any CI
+step running `nest build` strictly fails.
+
+**Not fixed here**: out of scope (test-files-only slice). Note — the main checkout on
+`feat/s3-assignments` carries an uncommitted 1-line `as unknown as` cast on this exact
+line; that is another lane's in-flight work, not taken here to avoid a cross-lane edit.
+
+**Fix Plan**: type the import model honestly (or keep the cast, owned by whoever lands
+it first), then confirm `pnpm --filter api build` exits 0 on a clean worktree.
+
+---
 
 ## Technical Debt
 
@@ -1245,6 +1470,35 @@ the whole first impression.
 **Fix Plan**: compress and resize to the size the cylinder faces actually sample, or convert to
 WebP with a PNG fallback. Do this before the page is linked anywhere public — see `WEB-017`,
 which has to be settled first anyway.
+
+---
+
+### [DEBT-006] The A09 leave-class test suite asserts file content, not behavior
+
+**Severity**: Medium
+**Status**: Open — recorded 2026-09-09 by the independent A09 QC (7/7 live criteria passed;
+this debt did not block the pass)
+
+**Description**: `apps/web/scripts/student-class-detail.test.mjs` (28 tests, grew with A09)
+is largely **regex/structural**: it asserts the page source contains `await
+leaveEnrolledClass(classId)`, that the service file contains the string `DELETE`, that cancel
+and confirm are different code paths in the file text. It never executes the flow. A logic
+error that keeps the strings intact (dropping the `await`, swapping a callback, early-return
+before the fetch) would still pass the suite.
+
+**Why it still passed QC**: the A09 verification ran the real flow live — browser + fetch spy +
+DB row assertions + API-down failure path + double-click race — covering exactly what the suite
+does not. That work is not repeatable per-PR, which is the point of having a suite at all.
+
+**Impact**: the suite gives false confidence for future edits to the leave flow (A10+ touches
+nearby student screens). Pattern already flagged once in `WEB-006`: "fix the reported line" —
+structural tests are the same failure mode pointing the other way.
+
+**Fix Plan**: extract the leave-flow state machine into a pure module (the A04 pattern:
+`srs-session.ts` + 20 regression tests) and test it for real: cancel emits nothing, confirm
+emits one DELETE, failure keeps state, success redirects. Keep a couple of structural asserts
+only where wiring (not logic) is what could break. Do this when the next task touches the file,
+not as its own sprint.
 
 ---
 
@@ -1369,7 +1623,230 @@ approved, repository-owned source and import/seed strategy. The same audit confi
 S-SRS-6/7 and Student analytics still have no approved transport contracts; they are recorded as
 `NOT IMPLEMENTED`, not counted as passing scope.
 
+---
+
+### [GIT-004] Two agent sessions shared one working tree — branch switches destroyed each other's state
+
+**Severity**: High
+**Status**: Open — process rule violated; the mechanism to prevent it already exists
+
+**Description**: found 2026-09-12 while building the student invoice read path
+(`feat/student-invoices`). A second session was working in `D:\PersonalProject\Real` at the
+same time as this one. Consequences observed in one afternoon, in order:
+
+1. This session's **branch refs vanished** mid-task (`git status` reported "No commits yet";
+   40+ loose refs were zeroed). Every commit survived as dangling objects and was recovered
+   via `git fsck --lost-found` + `git update-ref` — the branch's own reflog
+   (`0000… → 89183f3`) was the pointer that made recovery deterministic.
+2. A **stale API process** kept serving a pre-rebase build: `GET /student/invoices` answered
+   404 "Cannot GET" while the code believed the route existed. The screen showed a load error
+   that looked like a feature bug.
+3. Mid-browser-test, the other session **checked out a different branch in the shared tree**,
+   replacing the source (and served build) under the running web server. The invoice detail
+   page went **blank** — not a code defect; the environment mutated under test.
+4. Untracked scratch from both sessions accumulated in one `git status`, making it
+   non-obvious which files belonged to whom.
+
+**Impact**: every verification run in a shared checkout is unreliable when another session
+can switch branches or restart servers at any moment. A blank screen, a 404 route, and
+disappearing refs were all environment, not code — but each cost a debugging loop and could
+have been "fixed" wrongly.
+
+**Fix Plan**: enforce `multi-agent-workflow.md` §5 — one **worktree per active session**
+(`git worktree add ../Real-<name> <branch>`), never two agents in one checkout. This session
+finished in `D:\PersonalProject\Real-invoices` after the collision. Note: a fresh worktree
+needs `.env` copied from the main checkout (gitignored, absent after `worktree add`), and on
+pnpm 11 the BUILD-002 prisma-engine corruption did not reproduce.
+
+**Recovery recipe that worked** (for the next occurrence): `git fsck --lost-found` → identify
+dangling commits by subject → `git update-ref refs/heads/<branch> <sha>` → verify with
+`git log`. Do not re-run agents before refs are restored.
+
 ## Resolved Issues
+
+### [BUILD-003] Application quality gates missing from CI
+
+**Severity**: High
+**Status**: In Progress — 2026-09-08, codex/ci-quality-gates; implementation ready, hosted verification pending.
+
+Only docs-check ran on pull requests. The new quality workflow runs standalone lint,
+web/API type checks and builds, frontend/tooling regressions, and API integration tests
+against fresh runner-local PostgreSQL/MongoDB services. Branch protection is not modified.
+Local Docker is unavailable; the database suite must be verified on GitHub Actions.
+See docs/testing/CI.md for commands and isolation limits.
+
+### [DEBT-006] Legacy lint findings need incremental remediation
+
+**Severity**: High
+**Status**: Open — 2026-09-08
+
+The initial ESLint baseline has 336 findings across 62 files, including 181 hook-order
+findings. These are not repaired by adding CI. eslint-suppressions.json stores existing
+file/rule/count allowances; new counts fail, but a replacement violation under an existing
+count can remain undetected. Do not increase the baseline to make changes pass. Review and
+fix application findings in named scopes, pruning resolved suppressions. No behavior was
+changed during CI setup.
 
 - **`GIT-002`** `.idea/` tracked in git — resolved, verified 2026-08-25 and 2026-09-01.
   (Entries stay in place above with a resolved status; this list is the index.)
+
+### 2026-09-10 source-audit note — DOC-011 and DEBT-003
+
+**Status**: Open — audit completed, production adoption remains blocked.
+The Foundation/Grammar source audit verifies 76 Grammar records (HSK 1–9: 9/9/10/9/7/9/8/8/7),
+not the historical 60/51 report. Seven repeated-name groups require editorial review, not
+automatic deletion. Foundation has 21 initials, 36 finals, 4 tones, 6 sandhi rules, 214 radicals,
+6 listening descriptors, 6 speaking prompts and 4 PDF descriptors. No accompanying media files
+in the searched formats or redistribution evidence were established. See
+`docs/api/modules/student/foundation-grammar-source-audit.md` for hashes, scope and limitations.
+No original issue entry, source corpus, private learner data or database was modified.
+
+### 2026-09-10 design note — DOC-011
+
+**Status**: Open — Foundation/Grammar review package written; implementation blocked.
+The proposed module, two Page Contracts and flow now document missing catalog/progress/assessment
+contracts, source-to-FE mapping conflicts, private-state boundaries, media choices and acceptance
+tests. Exact transport/schema and completion rules remain decisions D1–D5; no runtime capability
+is counted as implemented. Original issue entries and the existing RBAC matrix are unchanged.
+
+### Publication follow-up — DOC-011 Foundation/Grammar design
+
+**Status**: Open — content/implementation prerequisites unchanged. The owner approved public
+publication of the documentation; PR #54 is open. The automatic-review publication blocker
+was cleared by explicit approval. This does not approve source adoption, schema or API changes.
+### 2026-09-08 verification note — BUILD-003
+
+**Status**: Resolved — implementation verified in PR #50; merge remains pending.
+GitHub Actions run 34252312577 passed web-quality and api-quality, including migrations,
+seed and the API suite against disposable PostgreSQL/MongoDB services. Run 34252312622
+passed check-docs. Branch protection still requires owner configuration. DEBT-006 remains
+open: a passing baseline-aware lint gate does not mean the existing findings are fixed.
+
+---
+
+### [DEBT-007] Billing batch invoices wrote notifications per-row, outside any transaction
+
+**Severity**: Medium
+**Status**: ✅ Resolved 2026-09-12 — branch `feat/student-notifications`.
+
+**Description**: `BillingService.batchCreate()` looped over eligible students with one
+awaited `create()` per invoice and a separate `create()` per notification. Two contract
+violations against `07-notifications.md` §7/§10.3: the notification INSERT sat **outside**
+the invoice transaction (a crash mid-loop left notifications for invoices that never
+committed — and worse, billing side effects for a partially applied batch), and fan-out ran
+as N single-row inserts instead of one multi-row insert. The single-invoice path was
+in-transaction but duplicated its own inline notification write with `referenceId = code`
+(the human invoice code) where the spec's §10.1 says the reference is the **invoice id**.
+
+**Resolution**: both paths now go through `NotificationsService.createManyWithinTx` with the
+caller's transaction handle; the batch is one `$transaction` (invoice `createMany` + one
+notification `createMany` + a read-back by unique codes to patch in the real invoice ids),
+and both paths reference the invoice id. Covered by the notifications e2e suite (fan-out
+count, exactly-one row, referenceId assertions).
+
+**Lesson**: the producer existed since the Billing build and passed every suite — the tests
+asserted what it wrote, never *when* (which transaction) or *how many round-trips*.
+INV-NOTIF-13 is untestable without forcing a failure between the business write and the
+notification write; that negative-path test remains open with §15's INV-NOTIF-13 row.
+
+### 2026-09-10 — WEB-016 / DEBT-006 Grammar follow-up
+
+**Status**: corrected locally in codex/grammar-production-gate; production backend remains
+NOT IMPLEMENTED. GrammarPage selects UnavailableState before mounting GrammarInner, avoiding
+conditional hooks and production demo execution. Runtime regression: 2/2; full web scripts
+147/147. The uncommitted Real-fe-prod-hooks alternative incorrectly gates MatchExercise, not
+the page. Do not treat its whole-file scan as proof of production isolation. Only Grammar's
+obsolete hook suppression was removed; unrelated lint debt remains.
+
+### 2026-09-10 — API bootstrap hardening review (API-016 / BUILD-002 follow-up)
+
+**Status**: API-016 remains open. Helmet and development-only Swagger are implemented in
+codex/api-bootstrap-hardening. HTTP draining precedes database teardown (30-second grace).
+The custom limiter uses a composite IP/email key; 01-auth section 13 still specifies two
+independent counters. This conflict is recorded, not resolved by changing limiter policy.
+PR #49 was documentation only and does not implement shared storage. Request logging / request-id
+(F), shared storage, frontend debounce and token consolidation remain outside this change.
+BUILD-002 reproduced locally: the documented engines/dist/index.js copy workaround restored
+Prisma generation. Real database suite and real Linux SIGTERM verification require isolated CI;
+local handler tests alone do not establish Prisma/Mongoose disconnect behavior.
+
+### 2026-09-10 — Validation follow-up (DEBT-006 / WEB-016)
+
+**Status**: open. Latest main includes three unsuppressed lint errors from A08/A09 (two
+no-useless-escape at student-class-detail.test.mjs:163 and unused hasLessons at the class
+detail page:203), reproduced by the bootstrap branch's full lint. They are outside B+C+D.
+The uncommitted feat/student-prod-return-hooks Grammar diff moves its production gate into
+MatchExercise; GrammarPage would still render demo content. The whole-file hook scan does
+not establish the guard belongs to the page component. G needs a wrapper-specific regression.
+### 2026-09-10 — API-016 / PR 55 review correction
+
+**Status**: single-instance limitation remains open; A1+A2 corrections implemented locally
+in codex/auth-proxy-review. Original PR 55 defaulted TRUST_PROXY to one hop without proving
+all deployments cross a protected proxy; direct callers could vary XFF to evade the limiter.
+Default is now false; 1 hop or trusted address/CIDR lists require explicit deployment config.
+AuthController consumes req.ip only, with a shared neutral key if Express provides no IP.
+
+Preserved Antigravity's sweep/TTL/10,000-entry cache behavior. Nine isolated real-controller
+regressions pass; persistence is stubbed and these do not replace auth.e2e or refresh concurrency
+DB suites. Removed the 19 new lint findings instead of adding suppressions. The original
+PR's CI failed both lint and type-check, so its completion record was not proof of green CI.
+
+New main 73bdd2c includes an unrelated A11 Model<Flashcard>/ImportFlashcardDoc incompatibility
+at apps/api/src/flashcards/import/vocab-apply.ts:56; API build fails there. Its owner must fix
+that lane. Also, API_CONVENTIONS calls the limiter a sliding window while AuthService uses a
+first-failure-anchored window; the accepted auth spec describes independent counters while
+implementation uses a composite key. Both mismatches are recorded, not silently changed here.
+
+### 2026-09-11 — API-016 / WEB-016 review continuation
+
+**Status**: local corrections complete; public publication blocked. PR55 is now 9128ae8 and
+its Grammar wrapper is correct. Its production Swagger test only evaluates a local boolean;
+shutdown test only checks method existence. The isolated HTTP and child-process tests in
+codex/api-bootstrap-hardening are stronger but still do not verify real database teardown.
+PR55 still defaults proxy trust to one hop; codex/auth-proxy-review defaults it off.
+New Throttler thresholds and unrelated UI additions in PR55 are not covered by A1+A2 tests.
+See sessions/2026-09-11-security-checklist-review.md for branch commits, validation scope and
+publication blocker. Existing issue IDs retained; no issue was renumbered or closed broadly.
+
+### 2026-09-12 — WEB-020 merge review follow-up
+
+**Status**: remains resolved. Its Playwright assertions used Set spread syntax unsupported by
+the test compiler target, causing web-quality to fail after the visual fix itself passed.
+Replacing those spreads with `Array.from(new Set(...))` restores type-check without changing
+the tested label or uniform-height behavior.
+
+### 2026-09-12 — PR #65 merge review follow-up
+
+**Status**: resolved on `feat/student-learning-path`. The node route previously returned its
+production unavailable state before thirteen hooks, leaving a real Rules of Hooks violation
+hidden by the suppression baseline. The production gate now lives in the default wrapper and
+the hooks live in `LessonInner`; both learning-path suppressions are removed.
+
+### 2026-09-12 — PR #63 merge review follow-up (WEB-013)
+
+**Status**: WEB-013 remains open. The Assignments branch now passes lint after typing its e2e
+response helper and fixing frontend imports/memo dependencies. This merge repair does not add
+`usageCount` to the question list or change the server-side delete gate, so it does not close or
+partially claim WEB-013.
+
+### 2026-09-12 — PR #67 merge review follow-up
+
+**Status**: DEBT-007 remains resolved by the notification branch's single-transaction invoice
+batch. Merge review removed four notification e2e lint failures and retained main's dense SRS
+grid while integrating notification styles. No issue ID is closed by lint/build checks alone;
+the real database notification suite is NOT RUN locally and current-head CI is required before
+merge.
+
+### [WEB-021] `/admin/payroll` scrolls horizontally at 375px (591px content)
+
+**Severity**: Low
+**Status**: Open — found 2026-09-12 by the PW_ALL screen sweep (101/102 green)
+
+**Description**: the payroll periods ledger table has no mobile-card fallback, so at
+375px the page renders 591px wide. Every other admin table screen passed the same
+overflow assertion. No screenshot was captured — `screens.spec.ts` asserts overflow
+before shooting, so failing screens leave only the trace.zip.
+
+**Fix Plan**: render the existing period rows as mobile cards under 640px (the pattern
+`admin-invoices` already uses), or gate the wide table behind horizontal scroll containment
+that does not widen the page. Verify with `PW_ROUTES=/admin/payroll` on both viewports.

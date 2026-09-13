@@ -1,11 +1,13 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { InvoiceStatus, NotificationType, Prisma, TuitionBillingCycle } from '@prisma/client';
+import { InvoiceStatus, Prisma, TuitionBillingCycle } from '@prisma/client';
 import * as crypto from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { AppException } from '../common/errors/app.exception';
 import { ErrorCode } from '../common/errors/error-codes';
+import { NotificationsService } from '../notifications/notifications.service';
 import { CreateTuitionRateDto } from './dto/create-tuition-rate.dto';
 import { ListTuitionRatesQuery } from './dto/list-tuition-rates.query';
+import { ListMyInvoicesQuery } from './dto/list-my-invoices.query';
 import { CreateInvoiceDto } from './dto/create-invoice.dto';
 import { InvoiceSort, ListInvoicesQuery } from './dto/list-invoices.query';
 import { VoidInvoiceDto } from './dto/void-invoice.dto';
@@ -16,7 +18,10 @@ const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-
 
 @Injectable()
 export class BillingService {
-  constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
+  constructor(
+    @Inject(PrismaService) private readonly prisma: PrismaService,
+    @Inject(NotificationsService) private readonly notifications: NotificationsService,
+  ) {}
 
   // --------------------------------------------------------------------------
   // TUITION RATES (ADR-008, ADR-013)
@@ -244,8 +249,8 @@ export class BillingService {
     const randomSuffix = Math.floor(Math.random() * 9000 + 1000);
     const code = `INV-${y}${m}-${randomSuffix}`;
 
-    const [created] = await this.prisma.$transaction([
-      this.prisma.studentInvoice.create({
+    const created = await this.prisma.$transaction(async (tx) => {
+      const invoice = await tx.studentInvoice.create({
         data: {
           code,
           studentId: dto.studentId,
@@ -256,12 +261,14 @@ export class BillingService {
           paidAmount: new Prisma.Decimal(0),
           status: InvoiceStatus.unpaid,
         },
-      }),
-      this.prisma.notification.create({
-        data: {
+      });
+      await this.notifications.createManyWithinTx(tx, [
+        {
           userId: dto.studentId,
-          type: NotificationType.new_invoice,
-          referenceId: code,
+          type: 'new_invoice',
+          // referenceId is the invoice id (07-notifications §10.1) — the code is display
+          // data and belongs in the payload.
+          referenceId: invoice.id,
           referenceType: 'invoice',
           payload: {
             code,
@@ -269,8 +276,9 @@ export class BillingService {
             dueDate: dueDate.toISOString().slice(0, 10),
           },
         },
-      }),
-    ]);
+      ]);
+      return invoice;
+    });
 
     return {
       invoice: {
@@ -462,6 +470,126 @@ export class BillingService {
             id: p.recorder.id,
             name: p.recorder.nickname,
           },
+          createdAt: p.createdAt.toISOString(),
+        })),
+      },
+    };
+  }
+
+  // --------------------------------------------------------------------------
+  // STUDENT INVOICES (S-BILL-1/2, SCOPE-BILL-01, INV-BILLING-33/34)
+  //
+  // Dedicated student read path — never the admin handlers. Ownership is a
+  // WHERE condition on every query (`studentId = actorId AND status <> 'void'`),
+  // so another student's invoice is indistinguishable from a nonexistent one
+  // and a voided invoice is invisible to the student entirely (06-billing.md
+  // §5). Responses carry no email, no bio, no other user's data (INV-BILLING-34):
+  // the student is reading their own invoice, so `studentName`/`studentEmail`
+  // (admin-facing fields) are simply omitted.
+  // --------------------------------------------------------------------------
+
+  async listMyInvoices(actorId: string, query: ListMyInvoicesQuery) {
+    const page = query.page ?? 1;
+    const limit = query.limit ?? 20;
+
+    // INV-BILLING-33: the ownership filter lives in the WHERE, not in an `if`
+    // after reading — every Prisma query below carries `studentId = actorId`.
+    // `void` is not a value this route can produce rows for: the base
+    // condition already excludes voided invoices, so a `?status=void` request
+    // answers an explicit empty set rather than either exposing void or
+    // silently ignoring the filter.
+    if (query.status === InvoiceStatus.void) {
+      return {
+        data: [] as unknown[],
+        meta: { total: 0, page, limit, totalPages: 0 },
+      };
+    }
+
+    // Prisma takes ONE filter key per status object — `equals` and `not`
+    // together on the same object is not a merge it honors.
+    const statusFilter: Prisma.EnumInvoiceStatusFilter = query.status
+      ? { equals: query.status }
+      : { not: InvoiceStatus.void };
+
+    const where: Prisma.StudentInvoiceWhereInput = {
+      studentId: actorId,
+      status: statusFilter,
+    };
+
+    const [total, rows] = await this.prisma.$transaction([
+      this.prisma.studentInvoice.count({ where }),
+      this.prisma.studentInvoice.findMany({
+        where,
+        orderBy: { periodStart: 'desc' },
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+    ]);
+
+    // Money is serialized as decimal strings (ADR-010). `outstandingAmount` is
+    // derived here at read time — INV-BILLING-16 — so the FE never subtracts.
+    const data = rows.map((r) => ({
+      id: r.id,
+      code: r.code,
+      periodStart: r.periodStart.toISOString().slice(0, 10),
+      periodEnd: r.periodEnd.toISOString().slice(0, 10),
+      dueDate: r.dueDate.toISOString().slice(0, 10),
+      totalAmount: r.totalAmount,
+      paidAmount: r.paidAmount,
+      outstandingAmount: r.totalAmount.minus(r.paidAmount),
+      status: r.status,
+      createdAt: r.createdAt.toISOString(),
+    }));
+
+    return {
+      data,
+      meta: { total, page, limit, totalPages: Math.ceil(total / limit) },
+    };
+  }
+
+  async getMyInvoiceDetail(actorId: string, id: string) {
+    if (!UUID_REGEX.test(id)) {
+      throw new AppException(ErrorCode.INVOICE_NOT_FOUND, 'Hóa đơn không tồn tại');
+    }
+
+    // INV-BILLING-33 again, as one query: id + owner + non-void together. A
+    // valid invoice owned by someone else resolves to null and answers 404 —
+    // "not yours" and "does not exist" are deliberately the same answer.
+    const invoice = await this.prisma.studentInvoice.findFirst({
+      where: { id, studentId: actorId, status: { not: InvoiceStatus.void } },
+      include: {
+        payments: {
+          include: { recorder: { select: { id: true, nickname: true } } },
+          orderBy: [{ paidAt: 'asc' }, { id: 'asc' }],
+        },
+      },
+    });
+
+    if (!invoice) {
+      throw new AppException(ErrorCode.INVOICE_NOT_FOUND, 'Hóa đơn không tồn tại');
+    }
+
+    return {
+      invoice: {
+        id: invoice.id,
+        code: invoice.code,
+        periodStart: invoice.periodStart.toISOString().slice(0, 10),
+        periodEnd: invoice.periodEnd.toISOString().slice(0, 10),
+        dueDate: invoice.dueDate.toISOString().slice(0, 10),
+        totalAmount: invoice.totalAmount,
+        paidAmount: invoice.paidAmount,
+        outstandingAmount: invoice.totalAmount.minus(invoice.paidAmount),
+        status: invoice.status,
+        createdAt: invoice.createdAt.toISOString(),
+        // Same deterministic order as the admin detail (06-billing.md §3.5);
+        // recordedBy exposes only id + display name (INV-BILLING-34).
+        payments: invoice.payments.map((p) => ({
+          id: p.id,
+          amount: p.amount,
+          paidAt: p.paidAt.toISOString(),
+          paymentMethod: p.paymentMethod,
+          transactionReference: p.transactionReference,
+          recordedBy: { id: p.recorder.id, name: p.recorder.nickname },
           createdAt: p.createdAt.toISOString(),
         })),
       },
@@ -734,15 +862,21 @@ export class BillingService {
     const y = start.getUTCFullYear();
     const m = String(start.getUTCMonth() + 1).padStart(2, '0');
 
-    const createdInvoices = [];
+    // One transaction for the whole batch (INV-NOTIF-13): previously each invoice and its
+    // notification were separate awaited writes, so a crash mid-loop left some students
+    // billed and others not, and the notifications sat OUTSIDE the invoice transactions
+    // entirely. Batch atomicity also matches the preview hash contract above: either the
+    // whole previewed batch lands or none of it does.
+    const createdInvoices = await this.prisma.$transaction(async (tx) => {
+      const invoiceRows: Prisma.StudentInvoiceCreateManyInput[] = [];
+      const notificationWrites: Parameters<NotificationsService['createManyWithinTx']>[1] = [];
 
-    for (const item of eligible) {
-      const randomSuffix = Math.floor(Math.random() * 9000 + 1000);
-      const code = `INV-${y}${m}-${randomSuffix}`;
-      const amount = new Prisma.Decimal(item.totalAmount!);
+      for (const item of eligible) {
+        const randomSuffix = Math.floor(Math.random() * 9000 + 1000);
+        const code = `INV-${y}${m}-${randomSuffix}`;
+        const amount = new Prisma.Decimal(item.totalAmount!);
 
-      const inv = await this.prisma.studentInvoice.create({
-        data: {
+        invoiceRows.push({
           code,
           studentId: item.studentId,
           periodStart: start,
@@ -751,31 +885,53 @@ export class BillingService {
           totalAmount: amount,
           paidAmount: new Prisma.Decimal(0),
           status: InvoiceStatus.unpaid,
-        },
-      });
-
-      await this.prisma.notification.create({
-        data: {
+        });
+        // The invoice id does not exist until createMany returns, so the notification
+        // references the id AFTER the insert below reads them back. One row per student,
+        // accumulated here and written as one multi-row insert (§10.3).
+        notificationWrites.push({
           userId: item.studentId,
-          type: NotificationType.new_invoice,
-          referenceId: code,
+          type: 'new_invoice',
+          referenceId: null, // patched with the real invoice id right after the insert
           referenceType: 'invoice',
           payload: {
             code,
             totalAmount: amount.toString(),
             dueDate: dueDate.toISOString().slice(0, 10),
           },
-        },
-      });
+        });
+      }
 
-      createdInvoices.push({
+      await tx.studentInvoice.createMany({ data: invoiceRows });
+
+      // createMany does not return rows; read the just-inserted invoices back by their
+      // unique codes to give each notification its invoice id (07-notifications §10.1).
+      const inserted = await tx.studentInvoice.findMany({
+        where: { code: { in: invoiceRows.map((row) => row.code) } },
+        select: { id: true, code: true },
+      });
+      const idByCode = new Map(inserted.map((inv) => [inv.code, inv.id]));
+      for (const write of notificationWrites) {
+        write.referenceId = idByCode.get((write.payload as { code: string }).code) ?? null;
+      }
+
+      await this.notifications.createManyWithinTx(tx, notificationWrites);
+
+      // The response keeps the original per-invoice shape: read totalAmount straight
+      // from the inserted rows and re-join the preview's studentName by studentId.
+      const details = await tx.studentInvoice.findMany({
+        where: { id: { in: inserted.map((inv) => inv.id) } },
+        select: { id: true, code: true, studentId: true, totalAmount: true },
+      });
+      return details.map((inv) => ({
         id: inv.id,
         code: inv.code,
         studentId: inv.studentId,
-        studentName: item.studentName,
+        studentName:
+          eligible.find((e) => e.studentId === inv.studentId)?.studentName ?? '',
         totalAmount: inv.totalAmount,
-      });
-    }
+      }));
+    });
 
     return {
       generatedCount: createdInvoices.length,
