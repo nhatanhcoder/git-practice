@@ -1175,3 +1175,5 @@ are accepted and implemented; 02 is implemented but its spec status is in confli
   before merge; the database-backed notification suite remains NOT RUN in this review worktree.
 
 - ✅ (codex · 2026-09-13) **AttemptAnswer migration integration.** Schema and migration only, split from PR #73 so the database change reaches main before attempt lifecycle code. Prisma schema valid; check-docs 9/9; DB apply NOT RUN locally.
+
+- 🔶 (codex · 2026-09-15) **S-SELF-1 live vocabulary learning path** — owner approved catalog/progress schema and student-owned API, then selected real vocabulary first. Branch `codex/student-learning-path-live`; Codex owns API, FE and task docs for this slice. Publish only approved Hán Lộ vocabulary; textbook curricula remain unavailable. Verify three independent lifecycle rounds.
