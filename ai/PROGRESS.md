@@ -368,6 +368,12 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
 
 ## Off-sprint / spike
 
+- ✅ (opencode · 2026-09-12) **Task A — `/student` dashboard live hóa (figures → API thật).**
+  Prod dashboard đọc `GET /student/classes` + `GET /student/flashcards/stats` (7 tiles =
+  API numbers, verified browser-side; streak "—" có chủ đích); figures thiếu endpoint ghi
+  "Chưa có số liệu" (Needs, không bịa); identity giữ `useDisplayIdentity`; dev mock branch
+  nguyên vẹn; contract `student-dashboard.md` mới (`built`). Verify: web build 43/43 ·
+  unit 7/7 · tracked suite xanh · check-docs 9/9. Branch `feat/student-dashboard-live`.
 - ✅ (zcode · 2026-09-12) **Landing contrast + theme toggle + route/theme tests (on top of PR
       #83's /landing move).** Two sessions executed the owner's landing task in parallel: #83
       (merged) moved the page to `/landing` with permanent redirects and restored the full
