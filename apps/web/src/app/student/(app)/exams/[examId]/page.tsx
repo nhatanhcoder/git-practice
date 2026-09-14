@@ -1,323 +1,230 @@
 "use client";
 
 /**
- * /student/exams/[examId] — the exam room.
+ * /student/exams/[examId] — the exam room door.
  *
- * Sticky bar with the clock, one question at a time, and a question grid that
- * shows answered / flagged / current at a glance. Running out of time submits
- * automatically, the way a real CBT room does.
+ * The old page ran the whole paper here with a client clock and browser scoring —
+ * both ADR-005 violations, both gone. The live take screen is
+ * `/student/attempts/[attemptId]` (03-attempt-lifecycle): server `startedAt` drives
+ * the countdown, autosave writes through, submit grades MCQ server-side. This page
+ * now does the one thing a CBT room door should do: show the paper's rules, then
+ * start (or re-enter) the official attempt and hand the learner to that screen.
  *
- * ⚠️ MOCK(student): the clock is client-side and the paper is scored in the
- * browser. **ADR-005 forbids both for the real product** — the attempt must be
- * scored server-side against a `questionSnapshot`, and the deadline must come
- * from a server `expiresAt`. Recorded in
- * docs/front-end-design-docs/HANLU_PROTOTYPE_DISTILLED.md §9. Replace
- * `scorePaper` and this timer when the Attempt API lands; do not build on them.
+ * Data comes from the student's own assignment list — an id that is not a mock_test
+ * of an enrolled class (fixture ids like `e-h1-1` included) renders the not-found
+ * branch. Nothing is invented for a paper the learner cannot see.
  */
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, ArrowRight, Check, Clock, Flag, Send } from "lucide-react";
-import { EmptyState, PageHead, Panel, SectionHeader } from "@/components/student/primitives";
-import { UnavailableState } from "@/components/student/unavailable-state";
-import { DemoBanner } from "@/components/student/demo-banner";
-import { AudioButton } from "@/components/student/controls";
-import { Modal } from "@/components/student/overlay";
-import { useStudentStore } from "@/lib/student/store";
-import { SECTION_HANZI, SECTION_LABEL, exams, getPaper } from "@/lib/student/content";
-import { scorePaper } from "@/lib/student/student-rules";
+import { ArrowLeft, Clock, FileText, ListChecks, Play } from "lucide-react";
+import {
+  Chip,
+  EmptyState,
+  ErrorState,
+  PageHead,
+  Panel,
+  SkeletonPanel,
+} from "@/components/student/primitives";
+import { useToast } from "@/components/student/toast";
+import { ApiError, apiRequest } from "@/lib/api-client";
+import { startAttempt } from "@/lib/student/attempts-service";
+import { fetchMyAttempt } from "@/lib/student/placement-service";
 
-function mmss(total: number) {
-  const m = Math.floor(Math.max(0, total) / 60);
-  const s = Math.max(0, total) % 60;
-  return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+/** One published assignment row from GET /student/assignments (spec S-ASGN-1). */
+interface ApiStudentAssignment {
+  id: string;
+  classId: string;
+  className: string;
+  title: string;
+  type: "homework" | "mock_test";
+  status: "draft" | "published";
+  dueDate: string | null;
+  timeLimitMinutes: number | null;
+  questionCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+type Phase = "loading" | "error" | "notfound" | "ready";
+
+function formatDue(iso: string | null): string {
+  if (!iso) return "Không hạn";
+  return new Date(iso).toLocaleDateString("vi-VN", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
 }
 
 export default function ExamRoomPage() {
   const params = useParams<{ examId: string }>();
   const examId = decodeURIComponent(params?.examId ?? "");
   const router = useRouter();
-  const saveAttempt = useStudentStore((s) => s.saveAttempt);
-  const awardXp = useStudentStore((s) => s.awardXp);
+  const pushToast = useToast();
 
-  const exam = exams.find((e) => e.id === examId) ?? null;
-  const paper = useMemo(() => getPaper(examId), [examId]);
-  const flat = useMemo(() => paper.flatMap((s) => s.questions), [paper]);
+  const [assignment, setAssignment] = useState<ApiStudentAssignment | null>(null);
+  const [attemptStatus, setAttemptStatus] = useState<string | null>(null);
+  const [attemptId, setAttemptId] = useState<string | null>(null);
+  const [phase, setPhase] = useState<Phase>("loading");
+  const [starting, setStarting] = useState(false);
 
-  const [idx, setIdx] = useState(0);
-  const [answers, setAnswers] = useState<Record<string, number>>({});
-  const [flagged, setFlagged] = useState<string[]>([]);
-  const [left, setLeft] = useState((exam?.durationMin ?? 30) * 60);
-  const [confirming, setConfirming] = useState(false);
-  const [timedOut, setTimedOut] = useState(false);
+  const load = useCallback(async () => {
+    setPhase("loading");
+    try {
+      // The list is the source of truth: it is published-only and
+      // active-enrollment-only server-side, so "not in my list" covers fixture ids,
+      // foreign assignments and drafts with one honest branch.
+      const res = await apiRequest<ApiStudentAssignment[]>("/student/assignments");
+      const found = res.data.find((a) => a.id === examId && a.type === "mock_test");
+      if (!found) {
+        setPhase("notfound");
+        return;
+      }
+      setAssignment(found);
+      // INV-ATLP-12: ids only. A resolve failure must not block the door —
+      // starting is idempotent-by-existence anyway.
+      try {
+        const mine = await fetchMyAttempt(examId);
+        setAttemptStatus(mine.attemptId ? mine.status ?? null : null);
+        setAttemptId(mine.attemptId);
+      } catch {
+        setAttemptStatus(null);
+        setAttemptId(null);
+      }
+      setPhase("ready");
+    } catch {
+      setPhase("error");
+    }
+  }, [examId]);
 
-  // One interval for the whole room; `left` hitting zero triggers the auto-submit
-  // in the effect below rather than inside the tick, so submit runs exactly once.
   useEffect(() => {
-    if (!exam || timedOut) return;
-    const t = window.setInterval(() => setLeft((n) => Math.max(0, n - 1)), 1000);
-    return () => window.clearInterval(t);
-  }, [exam, timedOut]);
+    void load();
+  }, [load]);
 
+  // Route-level guard: a non-uuid can never be a real assignment — skip the fetch.
+  const validId = useMemo(
+    () => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(examId),
+    [examId],
+  );
   useEffect(() => {
-    if (left === 0 && exam && !timedOut) setTimedOut(true);
-  }, [left, exam, timedOut]);
+    if (!validId && phase === "loading") setPhase("notfound");
+  }, [validId, phase]);
 
-  if (!exam || flat.length === 0) {
-    return (
-      <>
-        <PageHead title="Không tìm thấy đề thi" />
-        <Panel className="panel--pad">
-          <EmptyState
-            title="Đề này không tồn tại"
-            text="Đường dẫn có thể đã cũ. Quay lại phòng thi để chọn đề khác."
-            action={
-              <Link href="/student/exams" className="btn btn--primary">
-                Về phòng thi
-              </Link>
-            }
-          />
-        </Panel>
-      </>
-    );
-  }
-
-  const q = flat[idx];
-  const answered = Object.keys(answers).length;
-
-  function submit() {
-    const result = scorePaper(paper, answers, exam!.passScore);
-    const attempt = {
-      id: `att-${Date.now()}`,
-      examId: exam!.id,
-      title: exam!.title,
-      level: exam!.level,
-      score: result.score,
-      maxScore: result.max,
-      passed: result.passed,
-      at: new Date().toISOString(),
-      sections: result.sections,
-      answers,
-    };
-    saveAttempt(attempt);
-    awardXp(result.passed ? 300 : 80, exam!.durationMin);
-    router.push(`/student/exams/${exam!.id}/result`);
-  }
-
-  // Production renders the unavailable state, but only AFTER every hook has run —
-  // an early return above them would make the component conditionally hooked, which
-  // React forbids (A05 fixed this for /mistakes/review; this file follows the same rule).
-  if (process.env.NODE_ENV === "production") {
-    return (
-      <UnavailableState
-        title="Làm bài thi thử"
-        description="Làm bài thi thử cần máy chấm điểm phía máy chủ (Attempts — Sprint 4 theo SPRINT_PLAN.md) chưa được xây dựng. Trang này sẽ hoạt động khi endpoint đó ra mắt."
-      />
-    );
+  async function begin() {
+    if (starting || !assignment) return;
+    setStarting(true);
+    try {
+      const payload = await startAttempt(assignment.id);
+      router.push(`/student/attempts/${payload.attempt.id}`);
+    } catch (err) {
+      if (err instanceof ApiError && err.code === "ATTEMPT_ALREADY_SUBMITTED") {
+        // The attempt exists and is locked — the result resolver is the way back in.
+        pushToast("Bài này đã nộp rồi — mở kết quả.", "warn");
+        router.push(`/student/exams/${assignment.id}/result`);
+      } else if (err instanceof ApiError && err.code === "ASSIGNMENT_PAST_DUE") {
+        pushToast("Đã quá hạn nộp — không mở bài thi được nữa.", "danger");
+      } else {
+        pushToast("Không mở được phòng thi — thử lại.", "danger");
+      }
+      setStarting(false);
+    }
   }
 
   return (
-    <>
+    <div className="stack gap-6">
+      <Link href="/student/exams" className="backlink">
+        <ArrowLeft size={14} /> Phòng thi
+      </Link>
       <PageHead
-        title={exam.title}
-        sub={`${SECTION_LABEL[q.section]} · câu ${idx + 1}/${flat.length}`}
+        eyebrow="Phòng thi"
+        title={assignment?.title ?? "Đề thi thử"}
+        sub={assignment ? `${assignment.className} · chấm và giữ giờ trên server` : undefined}
       />
-      <DemoBanner text="Bài thi này là bản mô phỏng: đồng hồ và kết quả chạy cục bộ trên trình duyệt, không gửi lên máy chủ." />
 
-      {/* ---------- Sticky exam bar ---------- */}
-      <div className="examtop">
-        <span className={`examclock ${left <= 60 ? "is-low" : ""}`} role="timer" aria-live="off">
-          <Clock size={16} /> {mmss(left)}
-        </span>
-        <span style={{ color: "var(--text-3)", fontSize: "var(--step--1)" }}>
-          Đã trả lời <span className="num">{answered}</span>/
-          <span className="num">{flat.length}</span>
-        </span>
-        <div className="grow" />
-        {/* Review affordance: jump the clock so the timeout state is reachable. */}
-        <button
-          type="button"
-          className="btn btn--ghost btn--sm"
-          onClick={() => setLeft(10)}
-          title="Rút thời gian còn 10 giây để xem trạng thái hết giờ"
-        >
-          Còn 10 giây
-        </button>
-        <button type="button" className="btn btn--primary" onClick={() => setConfirming(true)}>
-          <Send size={16} /> Nộp bài
-        </button>
-      </div>
+      {phase === "loading" ? <SkeletonPanel rows={4} /> : null}
 
-      <div className="exam-layout">
-        {/* ---------- Question ---------- */}
+      {phase === "error" ? <ErrorState onRetry={() => void load()} /> : null}
+
+      {phase === "notfound" ? (
         <Panel className="panel--pad">
-          <SectionHeader
-            title={`Câu ${idx + 1}`}
-            sub={`${SECTION_LABEL[q.section]} ${SECTION_HANZI[q.section]}`}
-            action={
-              <button
-                type="button"
-                className={`btn btn--outline btn--sm ${flagged.includes(q.id) ? "is-active" : ""}`}
-                aria-pressed={flagged.includes(q.id)}
-                onClick={() =>
-                  setFlagged((f) =>
-                    f.includes(q.id) ? f.filter((x) => x !== q.id) : [...f, q.id],
-                  )
-                }
-              >
-                <Flag size={14} /> {flagged.includes(q.id) ? "Bỏ cờ" : "Gắn cờ"}
-              </button>
-            }
+          <EmptyState
+            icon={<FileText size={22} />}
+            title="Không tìm thấy đề thi"
+            text="Đề này không tồn tại hoặc không thuộc lớp bạn đang học. Xem các đề khả dụng ở phòng thi."
           />
+          <div className="row" style={{ justifyContent: "center" }}>
+            <Link href="/student/exams" className="btn btn--outline btn--sm">
+              Về phòng thi
+            </Link>
+          </div>
+        </Panel>
+      ) : null}
 
-          <div className="stack gap-5">
-            {q.passage ? (
-              <div className={q.section === "listening" ? "script" : "passage"}>
-                <div className="row gap-3">
-                  {q.section === "listening" ? (
-                    <AudioButton say={q.passage} label="đoạn nghe" />
-                  ) : null}
-                  <div className="stack gap-1 grow">
-                    <span
-                      className={q.section === "listening" ? "script__hanzi han" : "passage__hanzi han"}
-                    >
-                      {q.passage}
-                    </span>
-                    {q.passagePinyin ? (
-                      <span
-                        className={`pinyin ${q.section === "listening" ? "script__pinyin" : "passage__pinyin"}`}
-                      >
-                        {q.passagePinyin}
-                      </span>
-                    ) : null}
-                  </div>
-                </div>
+      {phase === "ready" && assignment ? (
+        <Panel className="panel--pad stack gap-5">
+          <div className="row gap-2 wrap" style={{ alignItems: "center" }}>
+            <Chip tone="info">{assignment.className}</Chip>
+            <Chip tone="neutral">
+              <ListChecks size={12} /> {assignment.questionCount} câu
+            </Chip>
+            {assignment.timeLimitMinutes ? (
+              <Chip tone="neutral">
+                <Clock size={12} /> {assignment.timeLimitMinutes} phút
+              </Chip>
+            ) : (
+              <Chip tone="neutral">Không giới hạn giờ</Chip>
+            )}
+            <Chip tone="neutral">Hạn {formatDue(assignment.dueDate)}</Chip>
+          </div>
+
+          <div className="stack gap-2">
+            <p className="section-sub">Luật phòng thi</p>
+            <ul className="stack gap-1" style={{ paddingLeft: "1.2em", color: "var(--text-2)" }}>
+              <li>• Giờ làm được tính từ lúc bạn vào bài — reload không cộng thêm thời gian.</li>
+              <li>• Đáp án tự lưu mỗi 2 giây; mất kết nối không mất bài làm.</li>
+              <li>• Hết giờ hệ thống tự nộp bài; trắc nghiệm được chấm ngay trên server.</li>
+              <li>• Chỉ một bài làm cho mỗi đề — đã nộp thì không làm lại.</li>
+            </ul>
+          </div>
+
+          {attemptStatus === "submitted" || attemptStatus === "graded" ? (
+            <div className="stack gap-3">
+              <p style={{ color: "var(--text-2)" }}>
+                Bạn đã nộp bài này rồi — kết quả nằm ở thẻ kết quả.
+              </p>
+              <div className="row gap-3">
+                <Link href={`/student/exams/${assignment.id}/result`} className="btn btn--primary">
+                  Xem kết quả
+                </Link>
               </div>
-            ) : null}
-
-            <p className="ex-prompt">{q.prompt}</p>
-
-            <div className="opt-list">
-              {q.options.map((opt, i) => (
-                <button
-                  key={opt}
-                  type="button"
-                  className={`opt ${answers[q.id] === i ? "is-picked" : ""}`}
-                  onClick={() => setAnswers((a) => ({ ...a, [q.id]: i }))}
-                >
-                  <span className="opt__key">{String.fromCharCode(65 + i)}</span>
-                  <span className="grow han">{opt}</span>
-                  {answers[q.id] === i ? <Check size={16} /> : null}
-                </button>
-              ))}
             </div>
-
+          ) : attemptStatus === "in_progress" && attemptId ? (
+            <div className="stack gap-3">
+              <p style={{ color: "var(--text-2)" }}>
+                Bạn có bài đang làm dở — đồng hồ vẫn chạy theo giờ đã bắt đầu.
+              </p>
+              <div className="row gap-3">
+                <Link href={`/student/attempts/${attemptId}`} className="btn btn--primary">
+                  <Play size={15} /> Tiếp tục bài làm
+                </Link>
+              </div>
+            </div>
+          ) : (
             <div className="row gap-3">
               <button
                 type="button"
-                className="btn btn--outline"
-                disabled={idx === 0}
-                onClick={() => setIdx((n) => n - 1)}
-              >
-                <ArrowLeft size={16} /> Câu trước
-              </button>
-              <div className="grow" />
-              <button
-                type="button"
                 className="btn btn--primary"
-                disabled={idx + 1 >= flat.length}
-                onClick={() => setIdx((n) => n + 1)}
+                disabled={starting}
+                onClick={() => void begin()}
               >
-                Câu sau <ArrowRight size={16} />
+                <Play size={15} /> {starting ? "Đang mở bài…" : "Vào bài thi"}
               </button>
             </div>
-          </div>
+          )}
         </Panel>
-
-        {/* ---------- Question navigator ---------- */}
-        <Panel className="panel--pad">
-          <SectionHeader title="Bảng câu hỏi" sub="Bấm số để nhảy tới câu" />
-          <div className="stack gap-4">
-            <div className="qgrid">
-              {flat.map((item, i) => (
-                <button
-                  key={item.id}
-                  type="button"
-                  className={`qdot ${i === idx ? "is-now" : ""} ${
-                    flagged.includes(item.id) ? "is-flag" : answers[item.id] !== undefined ? "is-done" : ""
-                  }`}
-                  onClick={() => setIdx(i)}
-                  aria-label={`Tới câu ${i + 1}`}
-                  aria-current={i === idx ? "true" : undefined}
-                >
-                  {i + 1}
-                </button>
-              ))}
-            </div>
-            <div className="qlegend">
-              <span>
-                <span className="qlegend__dot qlegend__dot--now" /> Đang làm
-              </span>
-              <span>
-                <span className="qlegend__dot qlegend__dot--done" /> Đã trả lời
-              </span>
-              <span>
-                <span className="qlegend__dot qlegend__dot--flag" /> Gắn cờ
-              </span>
-              <span>
-                <span className="qlegend__dot" /> Chưa làm
-              </span>
-            </div>
-          </div>
-        </Panel>
-      </div>
-
-      {/* ---------- Confirm submit ---------- */}
-      <Modal
-        open={confirming}
-        onClose={() => setConfirming(false)}
-        title="Nộp bài thi?"
-        subtitle={`Đã trả lời ${answered}/${flat.length} câu`}
-        footer={
-          <>
-            <button
-              type="button"
-              className="btn btn--outline grow"
-              onClick={() => setConfirming(false)}
-            >
-              Quay lại làm tiếp
-            </button>
-            <button type="button" className="btn btn--primary grow" onClick={submit}>
-              <Send size={16} /> Nộp bài
-            </button>
-          </>
-        }
-      >
-        <p style={{ color: "var(--text-2)" }}>
-          {answered < flat.length
-            ? `Còn ${flat.length - answered} câu chưa trả lời — những câu này sẽ tính là sai.`
-            : "Bạn đã trả lời hết. Nộp bài để xem phiếu điểm."}
-        </p>
-      </Modal>
-
-      {/* ---------- Timeout ---------- */}
-      <Modal
-        open={timedOut}
-        onClose={submit}
-        title="Đã hết giờ làm bài"
-        subtitle="Bài được nộp tự động, giống phòng thi CBT thật"
-        footer={
-          <button type="button" className="btn btn--primary btn--block" onClick={submit}>
-            Xem phiếu điểm
-          </button>
-        }
-      >
-        <p style={{ color: "var(--text-2)" }}>
-          Bạn đã trả lời <span className="num">{answered}</span>/
-          <span className="num">{flat.length}</span> câu trước khi hết giờ.
-        </p>
-      </Modal>
-    </>
+      ) : null}
+    </div>
   );
 }

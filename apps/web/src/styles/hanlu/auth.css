@@ -2,7 +2,7 @@
    Auth screens — /login and /register.
 
    Built on the Hán Lộ tokens (tokens.css) so someone arriving from
-   /student/landing does not walk into a different product. Every colour here is
+   /landing does not walk into a different product. Every colour here is
    a var(); nothing is hardcoded.
 
    Motion is deliberate rather than decorative: the art panel drifts slowly
@@ -18,7 +18,7 @@
   display: grid;
   grid-template-columns: 1.05fr 1fr;
   background: var(--bg);
-  color: var(--fg);
+  color: var(--text-1);
   font-family: var(--font-body, "Inter", system-ui, sans-serif);
 }
 
@@ -132,7 +132,7 @@
 }
 
 .auth-art__lead {
-  color: var(--fg-muted, #9aa4b2);
+  color: var(--text-2, #a9b4c6);
   font-size: 15px;
   line-height: 1.65;
   margin: 0;
@@ -155,7 +155,7 @@
 
 .auth-art__stat span {
   font-size: 12.5px;
-  color: var(--fg-muted, #9aa4b2);
+  color: var(--text-2, #a9b4c6);
 }
 
 /* ---------- form panel ---------- */
@@ -189,7 +189,7 @@
 }
 
 .auth-sub {
-  color: var(--fg-muted, #9aa4b2);
+  color: var(--text-2, #a9b4c6);
   font-size: 14px;
   margin: 0 0 26px;
 }
@@ -209,7 +209,7 @@
   font-weight: 600;
   letter-spacing: 0.03em;
   text-transform: uppercase;
-  color: var(--fg-muted, #9aa4b2);
+  color: var(--text-2, #a9b4c6);
   margin-bottom: 7px;
 }
 
@@ -220,7 +220,7 @@
   border-radius: 12px;
   border: 1px solid var(--line, #232a36);
   background: color-mix(in oklab, var(--bg) 55%, #fff 4%);
-  color: var(--fg);
+  color: var(--text-1);
   font: inherit;
   font-size: 15px;
   transition:
@@ -230,7 +230,7 @@
 }
 
 .auth-input::placeholder {
-  color: color-mix(in oklab, var(--fg-muted, #9aa4b2) 70%, transparent);
+  color: color-mix(in oklab, var(--text-2, #a9b4c6) 70%, transparent);
 }
 
 .auth-input:focus-visible,
@@ -247,7 +247,7 @@
 .auth-hint {
   margin: 6px 0 0;
   font-size: 12.5px;
-  color: var(--fg-muted, #9aa4b2);
+  color: var(--text-2, #a9b4c6);
 }
 
 /* ---------- role / choice chips ---------- */
@@ -298,7 +298,7 @@
 
 .auth-choice span {
   font-size: 12.5px;
-  color: var(--fg-muted, #9aa4b2);
+  color: var(--text-2, #a9b4c6);
 }
 
 /* ---------- consent ---------- */
@@ -327,7 +327,7 @@
 .auth-consent__text {
   font-size: 13px;
   line-height: 1.55;
-  color: var(--fg-muted, #9aa4b2);
+  color: var(--text-2, #a9b4c6);
 }
 
 .auth-channels {
@@ -352,7 +352,7 @@
 
 .auth-channel:has(input:checked) {
   border-color: var(--accent);
-  color: var(--fg);
+  color: var(--text-1);
 }
 
 .auth-channel input {
@@ -367,7 +367,10 @@
   border: 0;
   border-radius: 12px;
   background: var(--accent);
-  color: #fff;
+  /* Ink on cinnabar ("Mực & Chu Sa"): #fff on the dark theme's --accent
+     (#ff7454) measured ~2.6:1 — an AA failure on the one button that matters
+     most. --text-inverse flips per theme and passes both. */
+  color: var(--text-inverse);
   font: inherit;
   font-weight: 650;
   font-size: 15px;
@@ -390,6 +393,17 @@
 
 .auth-submit:active:not(:disabled) {
   transform: translateY(0) scale(0.985);
+}
+
+/* Dark mode: white text on the light cinnabar accent is 2.67:1 — unreadable.
+   Ink text on the same ground is 7.30:1. Light mode keeps white (4.62:1). */
+.student-root[data-theme="dark"] .auth-submit {
+  color: var(--text-inverse);
+}
+
+.student-root[data-theme="dark"] .auth-spinner {
+  border-color: color-mix(in oklab, var(--text-inverse) 45%, transparent);
+  border-top-color: var(--text-inverse);
 }
 
 .auth-submit:disabled {
@@ -420,7 +434,7 @@
   border-radius: 12px;
   border: 1px solid var(--line, #232a36);
   background: transparent;
-  color: var(--fg-muted, #9aa4b2);
+  color: var(--text-2, #a9b4c6);
   font: inherit;
   font-size: 14px;
   cursor: pointer;
@@ -431,7 +445,7 @@
 
 .auth-ghost:hover {
   border-color: var(--accent);
-  color: var(--fg);
+  color: var(--text-1);
 }
 
 /* ---------- messages ---------- */
@@ -512,14 +526,14 @@
 
 .auth-stepLabel {
   font-size: 12px;
-  color: var(--fg-muted, #9aa4b2);
+  color: var(--text-2, #a9b4c6);
   white-space: nowrap;
 }
 
 .auth-foot {
   margin-top: 22px;
   font-size: 13.5px;
-  color: var(--fg-muted, #9aa4b2);
+  color: var(--text-2, #a9b4c6);
   text-align: center;
 }
 
@@ -598,4 +612,37 @@
   .auth-spinner {
     animation-duration: 1.6s;
   }
+}
+
+
+/* ---------- theme toggle (2026-09-12) ---------- */
+
+/* Sits top-right of the form panel, outside the card's vertical rhythm. The
+   slot is absolute so the card's enter animation never shifts it. */
+.auth-theme-slot {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+}
+
+.auth-panel {
+  position: relative;
+}
+
+.auth-theme-toggle {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  border: 1px solid var(--line, #253044);
+  background: var(--surface);
+  color: var(--text-1);
+  cursor: pointer;
+  transition: border-color 160ms ease, color 160ms ease;
+}
+
+.auth-theme-toggle:hover {
+  border-color: var(--accent);
+  color: var(--accent);
 }

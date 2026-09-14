@@ -1,315 +1,188 @@
 "use client";
 
 /**
- * /student/exams — the exam room lobby.
+ * /student/exams — the exam room lobby, live against the student's real assignments.
  *
- * Lists full papers and single-skill drills, plus the learner's own history.
- * Exam status is the learner's, not the exam's, so it is derived here rather
- * than stored on the fixture.
+ * There are no F13 exam papers yet (the content corpus is outside the repo — DOC-011,
+ * and `API_STUDENT.md` keeps "platform mock exams" contract-less), so this room is
+ * served from what actually exists: `mock_test` assignments published to the learner's
+ * enrolled classes (S-ASGN-1), taken through the attempt lifecycle (03-attempt-lifecycle).
+ * Nothing is invented: an empty room says so.
  *
- * MOCK(student): content from `lib/student/content.ts`; no API call.
+ * Per-card attempt status comes from INV-ATLP-12 (`GET /student/assignments/:id/attempt`)
+ * — ids only, so the count of calls stays tiny and the card can link continue/result.
  */
 
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { Check, Clock, GraduationCap, ListChecks, Lock, Play, Target } from "lucide-react";
+import { Clock, FileText, ListChecks, Play, Target } from "lucide-react";
 import {
   Chip,
   EmptyState,
   ErrorState,
-  Metric,
   PageHead,
   Panel,
-  SectionHeader,
   SkeletonPanel,
 } from "@/components/student/primitives";
-import { UnavailableState } from "@/components/student/unavailable-state";
-import { DemoBanner } from "@/components/student/demo-banner";
-import { DemoStateSwitcher, LevelSelector, type DemoState } from "@/components/student/controls";
-import { Modal } from "@/components/student/overlay";
-import { useStudentProfile, useStudentStore } from "@/lib/student/store";
-import { SECTION_LABEL, exams } from "@/lib/student/content";
-import { examStatus } from "@/lib/student/student-rules";
-import type { Exam } from "@/lib/student/types";
+import { apiRequest } from "@/lib/api-client";
+import { fetchMyAttempt } from "@/lib/student/placement-service";
 
-const LEVELS = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+/** One published assignment row from GET /student/assignments (spec S-ASGN-1). */
+interface ApiStudentAssignment {
+  id: string;
+  classId: string;
+  className: string;
+  title: string;
+  type: "homework" | "mock_test";
+  status: "draft" | "published";
+  dueDate: string | null;
+  timeLimitMinutes: number | null;
+  questionCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+type AttemptLite = { attemptId: string; status: string } | null;
+
+function formatDue(iso: string | null): string {
+  if (!iso) return "Không hạn";
+  return new Date(iso).toLocaleDateString("vi-VN", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+}
 
 export default function ExamsPage() {
-  const [demo, setDemo] = useState<DemoState>("ready");
-  const [level, setLevel] = useState<number | "all">("all");
-  const [kind, setKind] = useState<"all" | "full" | "drill">("all");
-  const [gate, setGate] = useState<Exam | null>(null);
+  const [rows, setRows] = useState<ApiStudentAssignment[]>([]);
+  const [attempts, setAttempts] = useState<Record<string, AttemptLite>>({});
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
-  const profile = useStudentProfile();
-  const attempts = useStudentStore((s) => s.attempts);
-  const storedStatus = useStudentStore((s) => s.examStatus);
-  const router = useRouter();
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(false);
+    try {
+      // Server-side published-only / active-enrollment-only (INV-TASG-05, S-ASGN-1);
+      // the FE narrows to the mock_test half for this room.
+      const res = await apiRequest<ApiStudentAssignment[]>("/student/assignments");
+      const mocks = res.data.filter((a) => a.type === "mock_test");
+      setRows(mocks);
+      // INV-ATLP-12 resolve per card. Ids only; a failure here must not kill the
+      // lobby — a card without resolved status just renders without one.
+      const resolved: Record<string, AttemptLite> = {};
+      await Promise.all(
+        mocks.map(async (a) => {
+          try {
+            const mine = await fetchMyAttempt(a.id);
+            resolved[a.id] = mine.attemptId
+              ? { attemptId: mine.attemptId, status: mine.status ?? "" }
+              : null;
+          } catch {
+            resolved[a.id] = null;
+          }
+        }),
+      );
+      setAttempts(resolved);
+    } catch {
+      setError(true);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
 
   const withStatus = useMemo(
     () =>
-      exams.map((e) => ({
-        exam: e,
-        status: examStatus(e, {
-          examStatus: storedStatus,
-          currentLevel: profile.currentLevel,
-        }),
-      })),
-    [storedStatus, profile.currentLevel],
-  );
-
-  const results = useMemo(
-    () =>
-      withStatus.filter(({ exam }) => {
-        if (level !== "all" && exam.level !== level) return false;
-        if (kind !== "all" && exam.kind !== kind) return false;
-        return true;
+      rows.map((a) => {
+        const attempt = attempts[a.id] ?? null;
+        const status =
+          attempt?.status === "in_progress"
+            ? "in_progress"
+            : attempt?.status === "submitted" || attempt?.status === "graded"
+              ? "done"
+              : "not_started";
+        return { assignment: a, attempt, status };
       }),
-    [withStatus, level, kind],
+    [rows, attempts],
   );
-
-  const passedCount = withStatus.filter((x) => x.status === "passed").length;
-  const bestScore = attempts.reduce(
-    (best, a) => Math.max(best, Math.round((a.score / Math.max(a.maxScore, 1)) * 100)),
-    0,
-  );
-
-  // Production renders the unavailable state, but only AFTER every hook has run —
-  // an early return above them would make the component conditionally hooked, which
-  // React forbids (A05 fixed this for /mistakes/review; this file follows the same rule).
-  if (process.env.NODE_ENV === "production") {
-    return (
-      <UnavailableState
-        title="Thi thử HSK"
-        description="Phòng thi thử HSK cần máy chấm điểm phía máy chủ (Attempts — Sprint 4 theo SPRINT_PLAN.md) chưa được xây dựng. Trang này sẽ hoạt động khi endpoint đó ra mắt."
-      />
-    );
-  }
 
   return (
-    <>
+    <div className="stack gap-6">
       <PageHead
-        eyebrow="Luyện tập"
-        title="Phòng thi HSK"
-        sub="Thi thử trên máy theo định dạng CBT: đếm ngược, chuyển phần, bảng điều hướng câu hỏi và phiếu điểm chi tiết. Điểm và lịch sử thi được lưu lại; phần chấm vẫn chạy trên trình duyệt."
-        action={<DemoStateSwitcher value={demo} onChange={setDemo} />}
+        eyebrow="Phòng thi"
+        title="Đề thi thử"
+        sub={`${rows.length} đề từ các lớp đang học · chấm và giữ giờ trên server`}
       />
-      <DemoBanner text="Đề thi và kết quả trong trang này là dữ liệu mô phỏng, chạy cục bộ trong trình duyệt. Phòng thi thật cần máy chấm phía máy chủ (Sprint 4)." />
 
-      {demo === "loading" ? (
-        <SkeletonPanel rows={5} height={200} />
-      ) : demo === "error" ? (
+      <Panel className="panel--pad row gap-3 wrap" style={{ alignItems: "center" }}>
+        <Target size={18} />
+        <p className="section-sub grow">
+          Chưa biết trình độ của mình? Bài xếp cấp nhẹ sẽ đề xuất cấp HSK và lưu vào hồ sơ.
+        </p>
+        <Link href="/student/placement" className="btn btn--outline btn--sm">
+          Làm bài xếp cấp
+        </Link>
+      </Panel>
+
+      {loading ? <SkeletonPanel rows={4} /> : null}
+
+      {!loading && error ? <ErrorState onRetry={() => void load()} /> : null}
+
+      {!loading && !error && rows.length === 0 ? (
         <Panel className="panel--pad">
-          <ErrorState title="Không tải được danh mục đề thi" onRetry={() => setDemo("ready")} />
+          <EmptyState
+            icon={<FileText size={22} />}
+            title="Chưa có đề thi thử nào"
+            text="Đề thi thử xuất hiện khi giáo viên giao một mock_test cho lớp bạn đang học. Bộ đề thi chuẩn F13 chưa được nhập — hệ thống không tự bịa đề."
+          />
         </Panel>
-      ) : (
-        <>
-          {/* ---------- Overview ---------- */}
-          <Panel className="panel--pad">
-            <div className="grid grid--4">
-              <Metric label="Đề có sẵn" value={exams.length} icon={<ListChecks size={14} />} />
-              <Metric label="Đã qua" value={passedCount} icon={<Check size={14} />} />
-              <Metric label="Lần thi" value={attempts.length} />
-              <Metric label="Điểm cao nhất" value={bestScore ? `${bestScore}%` : "—"} />
-            </div>
-          </Panel>
+      ) : null}
 
-          {/* ---------- Filters ---------- */}
-          <Panel className="panel--pad">
-            <div className="stack gap-4">
-              <div className="row gap-2 wrap">
-                {(
-                  [
-                    ["all", "Tất cả"],
-                    ["full", "Đề đầy đủ"],
-                    ["drill", "Luyện từng kỹ năng"],
-                  ] as ["all" | "full" | "drill", string][]
-                ).map(([key, label]) => (
-                  <button
-                    key={key}
-                    type="button"
-                    className={`pill ${kind === key ? "is-active" : ""}`}
-                    aria-pressed={kind === key}
-                    onClick={() => setKind(key)}
-                  >
-                    {label}
-                  </button>
-                ))}
+      {!loading && !error && rows.length > 0 ? (
+        <div className="stack gap-4">
+          {withStatus.map(({ assignment: a, attempt, status }) => (
+            <Panel key={a.id} className="panel--pad stack gap-3">
+              <div className="row gap-2 wrap" style={{ alignItems: "center" }}>
+                <Chip tone="info">{a.className}</Chip>
+                <Chip tone="neutral">
+                  <ListChecks size={12} /> {a.questionCount} câu
+                </Chip>
+                {a.timeLimitMinutes ? (
+                  <Chip tone="neutral">
+                    <Clock size={12} /> {a.timeLimitMinutes} phút
+                  </Chip>
+                ) : null}
+                <Chip tone={a.dueDate && new Date(a.dueDate).getTime() < Date.now() ? "warn" : "neutral"}>
+                  Hạn {formatDue(a.dueDate)}
+                </Chip>
+                {status === "done" ? <Chip tone="success">Đã nộp</Chip> : null}
+                {status === "in_progress" ? <Chip tone="warn">Đang làm</Chip> : null}
               </div>
+
+              <h3 style={{ fontSize: "var(--step-2)", fontWeight: 700 }}>{a.title}</h3>
+
               <div className="row gap-3 wrap">
-                <button
-                  type="button"
-                  className={`pill ${level === "all" ? "is-active" : ""}`}
-                  aria-pressed={level === "all"}
-                  onClick={() => setLevel("all")}
-                >
-                  Mọi cấp
-                </button>
-                <LevelSelector
-                  levels={LEVELS.map((id) => ({ id }))}
-                  value={typeof level === "number" ? level : -1}
-                  onChange={setLevel}
-                />
-              </div>
-            </div>
-          </Panel>
-
-          {/* ---------- Exam list ---------- */}
-          <section>
-            <SectionHeader
-              title="Đề thi thử"
-              sub={`${results.length} đề khớp bộ lọc`}
-            />
-            {demo === "empty" || results.length === 0 ? (
-              <Panel className="panel--pad">
-                <EmptyState
-                  icon={<GraduationCap size={26} />}
-                  title="Không có đề nào khớp bộ lọc"
-                  text="Bỏ bớt bộ lọc để xem toàn bộ danh mục."
-                  action={
-                    <button
-                      type="button"
-                      className="btn btn--outline"
-                      onClick={() => {
-                        setKind("all");
-                        setLevel("all");
-                      }}
-                    >
-                      Xoá bộ lọc
-                    </button>
-                  }
-                />
-              </Panel>
-            ) : (
-              <div className="grid grid--3">
-                {results.map(({ exam, status }) => (
-                  <button
-                    key={exam.id}
-                    type="button"
-                    className={`examcard ${status === "locked" ? "is-locked" : ""}`}
-                    disabled={status === "locked"}
-                    onClick={() => setGate(exam)}
-                  >
-                    <div className="row gap-2 wrap">
-                      <Chip tone="accent">HSK {exam.level}</Chip>
-                      {exam.kind === "drill" && exam.section ? (
-                        <Chip tone="info">{SECTION_LABEL[exam.section]}</Chip>
-                      ) : (
-                        <Chip>Đề đầy đủ</Chip>
-                      )}
-                      {status === "passed" ? <Chip tone="success">Đã qua</Chip> : null}
-                      {status === "locked" ? (
-                        <Chip icon={<Lock size={12} />}>Khoá</Chip>
-                      ) : null}
-                    </div>
-                    <span className="examcard__title">{exam.title}</span>
-                    <span className="examcard__sub">{exam.blurb}</span>
-                    <div className="examcard__stats">
-                      <span>
-                        <Clock size={13} /> <span className="num">{exam.durationMin}</span> phút
-                      </span>
-                      <span>
-                        <ListChecks size={13} /> <span className="num">{exam.questionCount}</span> câu
-                      </span>
-                      <span>
-                        <Target size={13} /> qua ở <span className="num">{exam.passScore}</span>
-                      </span>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            )}
-          </section>
-
-          {/* ---------- History ---------- */}
-          {attempts.length > 0 ? (
-            <Panel>
-              <div className="panel__head">
-                <div>
-                  <h2 className="section-title" style={{ fontSize: "var(--step-2)" }}>
-                    Lần thi gần đây
-                  </h2>
-                  <p className="section-sub">Bấm để xem lại phiếu điểm</p>
-                </div>
-              </div>
-              <div className="panel__body panel__body--flush">
-                {attempts.map((a) => (
+                <Link href={`/student/exams/${a.id}`} className="btn btn--primary btn--sm">
+                  <Play size={14} />
+                  {status === "in_progress" ? "Vào phòng thi (tiếp tục)" : "Vào phòng thi"}
+                </Link>
+                {status === "done" && attempt ? (
                   <Link
-                    key={a.id}
-                    href={`/student/exams/${a.examId}/result`}
-                    className="rowitem"
+                    href={`/student/exams/${a.id}/result`}
+                    className="btn btn--outline btn--sm"
                   >
-                    <span
-                      className="rowitem__icon"
-                      style={{
-                        color: a.passed ? "var(--success)" : "var(--danger)",
-                        borderColor: a.passed ? "var(--success)" : "var(--danger)",
-                      }}
-                    >
-                      {a.passed ? <Check size={16} /> : <Target size={16} />}
-                    </span>
-                    <span className="grow stack gap-1">
-                      <span style={{ fontWeight: 600 }}>{a.title}</span>
-                      <span style={{ color: "var(--text-3)", fontSize: "var(--step--2)" }}>
-                        {new Date(a.at).toLocaleString("vi-VN")}
-                      </span>
-                    </span>
-                    <Chip tone={a.passed ? "success" : "danger"}>
-                      <span className="num">
-                        {a.score}/{a.maxScore}
-                      </span>
-                    </Chip>
+                    Xem kết quả
                   </Link>
-                ))}
+                ) : null}
               </div>
             </Panel>
-          ) : null}
-        </>
-      )}
-
-      {/* ---------- Start gate ---------- */}
-      <Modal
-        open={gate !== null}
-        onClose={() => setGate(null)}
-        title="Vào phòng thi?"
-        subtitle={gate ? `${gate.title} · ${gate.durationMin} phút` : undefined}
-        footer={
-          <>
-            <button type="button" className="btn btn--outline grow" onClick={() => setGate(null)}>
-              Để sau
-            </button>
-            <button
-              type="button"
-              className="btn btn--primary grow"
-              onClick={() => {
-                if (gate) router.push(`/student/exams/${gate.id}`);
-              }}
-            >
-              <Play size={16} /> Bắt đầu ngay
-            </button>
-          </>
-        }
-      >
-        {gate ? (
-          <div className="stack gap-4">
-            <p style={{ color: "var(--text-2)" }}>
-              Đồng hồ chạy ngay khi bạn bấm bắt đầu. Hết giờ, bài tự nộp — giống phòng thi CBT thật.
-            </p>
-            <div className="grid grid--3">
-              <Metric label="Thời gian" value={gate.durationMin} unit="phút" />
-              <Metric label="Số câu" value={gate.questionCount} />
-              <Metric label="Điểm qua" value={gate.passScore} />
-            </div>
-            <div className="notice">
-              <Target size={16} />
-              <span>
-                <strong>MOCK:</strong> bản mockup chấm điểm ngay trên trình duyệt. Bản thật sẽ chấm ở
-                máy chủ và lấy hạn nộp từ server (ADR-005).
-              </span>
-            </div>
-          </div>
-        ) : null}
-      </Modal>
-    </>
+          ))}
+        </div>
+      ) : null}
+    </div>
   );
 }

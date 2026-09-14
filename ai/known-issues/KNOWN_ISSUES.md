@@ -1174,6 +1174,31 @@ problem look intermittent.
 
 ---
 
+### [API-018] `teacher-sessions` e2e "sees the created session" fails on clean `origin/main`
+
+**Severity**: Low
+**Status**: Open — found 2026-09-13 (Task C baseline check), present on pristine `origin/main@ba827cb`
+
+**Description**: `apps/api/test/teacher-sessions.e2e.test.ts` test 2 ("Teacher A lists sessions
+via GET /teacher/sessions and sees the created session") fails on a clean main worktree —
+`Created session must be returned in teacher A sessions list` (assertion at :186). Reproduced
+twice in isolation on `origin/main` and once inside the Task C full-suite run (318/319 there).
+The suite shares the dev database with every other suite; the likely mechanism is list
+pollution (leftover sessions from other lanes/runs pushing the created row past the list
+window), the same family as `DEBT-004`'s shared-DB coupling and the PW sweep's documented
+fixture accumulation. **Not a Task C regression** — Task C touches no sessions code; proven by
+running the identical suite green-suite 5/6 on both the Task C branch and a fresh `origin/main`
+worktree with the same single failure.
+
+**Impact**: one red test makes the full-suite run noisy; the endpoint itself is believed fine
+(the other 5 assertions in the suite pass).
+
+**Fix Plan**: give the suite its own created-and-cleaned session fixtures verified to land on
+the first list page, or assert via a filtered query; longer term, per-suite schemas (DEBT-004's
+"not fixed" note) remove the whole class.
+
+---
+
 ### [WEB-014] Student enrollment has a working API and no screen — F2.3/F2.4/F2.6 unreachable
 
 **Severity**: High
@@ -1221,6 +1246,18 @@ sees.
 staff and real outcomes, or cut the sections that assert facts about people. Do not simply
 enlarge the disclaimer.
 
+**Update (2026-09-12, evening — route moved, content decision OPEN)**: two sessions executed the
+owner's landing task in parallel. PR #83 (merged) moved the page to **`/landing`** (with
+`/student/landing` → `/landing/:path*` permanent redirects) and **restored the full prototype
+content — including the invented teachers ("Đội ngũ chuyên gia") and the invented student
+results ("Bảng vàng thành tích", testimonials)**, so the invented-data state this entry describes
+is live again at the new path. A parallel branch (`PR #82`, superseded) had removed the page per
+the owner's earlier same-day "gỡ trang + redirect" decision. The content question — full
+prototype vs people-free landing — is **pending the owner's explicit choice**; both variants
+exist in git history and either is a small follow-up PR. Separately, the login-page contrast
+root cause (`--fg`/`--fg-muted` tokens that tokens.css never defines) and the missing theme
+toggle were fixed with independent route/theme tests (see the contrast fix PR).
+
 **Related**: the rest of `feat/student-hanlu-ui` is still unmerged — 24 commits, and `main` has
 moved 64 past it. Its PR #24 was closed 2026-09-05 04:06 UTC with `mergedAt: null` and **no
 comment recording why**. Only the landing route was ported here; the branch also rewrites the
@@ -1249,6 +1286,11 @@ lives at `/student/flashcards`, so the link is also pointing at the wrong screen
 **Fix Plan**: point that card at `/student/flashcards` and rewrite the copy for SM-2, or drop the
 card until the notebook has a backend. Belongs with `WEB-017`, which already covers the landing
 page asserting things that are not true; do not fix it in isolation from that decision.
+
+**Update (2026-09-12, evening)**: PR #83 restored the landing (now at `/landing`) **with the
+five-box copy back on the public page** — "năm hộp" in the method step and "5 hộp thẻ" in a
+student testimonial. Still advertising a scheduler ADR-016 replaced. Fold any fix into the
+WEB-017 content decision.
 
 ---
 
@@ -1470,6 +1512,10 @@ the whole first impression.
 **Fix Plan**: compress and resize to the size the cylinder faces actually sample, or convert to
 WebP with a PNG fallback. Do this before the page is linked anywhere public — see `WEB-017`,
 which has to be settled first anyway.
+
+**Update (2026-09-12, evening)**: PR #83 restored the images and the `three` dependency with the
+landing at `/landing` — the ~8.5 MB first-paint cost is live again. Compress/WebP remains the
+fix whenever the content decision (WEB-017) lands.
 
 ---
 

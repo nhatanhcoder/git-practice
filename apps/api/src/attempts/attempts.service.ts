@@ -305,6 +305,28 @@ export class AttemptsService {
     return Date.now() > attempt.startedAt.getTime() + timeLimitMinutes * 60_000;
   }
 
+  /**
+   * INV-ATLP-12: pure own-attempt lookup on (assignmentId, studentId). No assignment
+   * existence check on purpose — a random or foreign assignment id reads as "no
+   * attempt yet" (`data: null`), so the route cannot be used to probe which
+   * assignments exist; a lapsed enrollment does not hide past attempts (§5).
+   * Ids and status only — content stays behind the ownership-checked
+   * state/result endpoints.
+   */
+  async findMyAttempt(studentId: string, assignmentId: string) {
+    // Nulls, not a null object: the envelope interceptor passes a null handler
+    // result through UNWRAPPED (its 204 rule), so `data: null` cannot exist on
+    // this wire — the sentinel object is the honest "never started".
+    if (!UUID_REGEX.test(assignmentId)) return { attemptId: null, status: null };
+    const attempt = await this.prisma.attempt.findFirst({
+      where: { assignmentId, studentId },
+      select: { id: true, status: true },
+    });
+    return attempt
+      ? { attemptId: attempt.id, status: attempt.status }
+      : { attemptId: null, status: null };
+  }
+
   private async toTakePayload(attempt: AttemptRow) {
     const assignment = await this.prisma.assignment.findUniqueOrThrow({
       where: { id: attempt.assignmentId },

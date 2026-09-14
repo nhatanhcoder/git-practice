@@ -7,7 +7,7 @@
  *
  * Port notes for Next.js 14:
  * - loaded via `next/dynamic` with `ssr: false` — WebGL and `three` never run on
- *   the server (see `student/landing/landing-view.tsx`);
+ *   the server (see `app/landing/landing-view.tsx`);
  * - `three` is a client-only dependency (~600 KB) deliberately kept out of the
  *   server bundle.
  *

@@ -71,6 +71,7 @@ Analytics (T-ANL-1…4): _not yet mapped._ Every other Teacher area has a contra
 
 | Route | Feature | Contract | Status | Design | Blocked on |
 |---|---|---|---|---|---|
+| `/student` | S-CLS-2, S-SRS-5 | [student-dashboard](./student-pages/student-dashboard.md) | built (live) | v1 | **LIVE (Task A)** — classes + SRS stats real; XP/rank/minutes/progress/activity have no endpoint |
 | `/student/flashcards` | S-SRS-1..5 | [student-srs](./student-pages/student-srs.md) | built | v1 | vocabulary seed; streak timezone |
 | `/student/classes` | S-CLS-1,2 | [student-classes-list](./student-pages/student-classes-list.md) | built | v1 | — |
 | `/student/classes/[classId]` | S-CLS-3,4, S-LESSON-1 | [student-class-detail](./student-pages/student-class-detail.md) | built | v1 | — |

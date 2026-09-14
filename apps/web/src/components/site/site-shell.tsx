@@ -155,7 +155,7 @@ export function SiteShell({
 
       <header className={`sitebar ${isScrolled ? "sitebar--scrolled" : "sitebar--transparent"}`}>
         <div className="sitebar__inner">
-          <Link href="/student/landing" className="sitebrand" aria-label="Hán Lộ — trang giới thiệu">
+          <Link href="/landing" className="sitebrand" aria-label="Hán Lộ — trang giới thiệu">
             <span className="seal han" aria-hidden="true">
               汉
             </span>
