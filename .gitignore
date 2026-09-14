@@ -39,3 +39,6 @@ skills-lock.json
 PR_BODY.md
 push.txt
 ci-step-final.txt
+
+# AI-tool state dirs
+.workbuddy-ai/

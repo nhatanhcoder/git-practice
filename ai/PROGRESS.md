@@ -374,6 +374,48 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
   "Chưa có số liệu" (Needs, không bịa); identity giữ `useDisplayIdentity`; dev mock branch
   nguyên vẹn; contract `student-dashboard.md` mới (`built`). Verify: web build 43/43 ·
   unit 7/7 · tracked suite xanh · check-docs 9/9. Branch `feat/student-dashboard-live`.
+- ✅ (zcode · 2026-09-12) **Landing contrast + theme toggle + route/theme tests (on top of PR
+      #83's /landing move).** Two sessions executed the owner's landing task in parallel: #83
+      (merged) moved the page to `/landing` with permanent redirects and restored the full
+      prototype content; this slice delivers what it lacked — the login-page contrast root cause
+      (auth.css styled text through `--fg`/`--fg-muted` tokens tokens.css never defines → title
+      inherited the browser default and washed out on dark; 15 references fixed to real
+      `--text-1/--text-2`), an auth-screen theme toggle (the shell read the preference but had
+      no switch), and the ink-on-cinnabar submit button (#fff on #ff7454 measured ~2.6:1).
+      Tests: `landing-routes.test.mjs` (source: redirects, no live old-path links, brand href,
+      token guard, toggle wired) · `landing-route.spec.ts` (render, both redirects, brand,
+      375px — 3× 5/5) · `login-theme.spec.ts` (computed-style WCAG ≥4.5 for
+      title/sub/label/input/button in BOTH themes + toggle/persist — 3× 5/5). Full web scripts
+      **219/219** · check-docs **9/9** · build **44/44**. ⚠ The invented-people content question
+      (WEB-017) is reopened and left to the owner: #83's restored prototype is live at /landing
+      pending that choice. Branch `fix/landing-contrast-theme-tests`.
+
+- ✅ (opencode · 2026-09-13) **Landing `/student/landing` → `/landing` + login theme/contrast.**
+  `git mv` route công khai ra khỏi segment guarded (history kept); old URL redirect 308;
+  11 src refs updated (shell/chrome/comments/eslint path); auth theo persisted theme
+  (dark default, no flash); `--fg`/`--fg-muted` map vào tokens (was undefined → chữ chìm);
+  nút dark dùng `--text-inverse` (2.67→7.30:1). Verify browser: /landing 200, redirect,
+  theme + contrast + login cả 2 modes, 0 console errors, screenshots read. Branch
+  `feat/landing-root-move`.
+
+- ✅ (zcode · 2026-09-13) **Merged the stuck merge + landed two uncommitted sibling slices on
+      `feat/pw-sweep-routes`.** (1) Completed the day-old unresolved merge of `origin/main@198271f`
+      (PR #74; sole conflict `ai/PROGRESS.md` — kept both lanes' entries) and merged the 4 newer
+      main commits (#70 lesson-detail, #76 attempt answers, #56 prod-gated hooks, #72 student
+      invoices) — clean. (2) Landed the SRS slice found uncommitted: `/student/flashcards` browse
+      now paginated (16/page, page resets on level/mode change), stat row → 4 semantic accent
+      cards, tiles → padded cards reflowing 1/2/3/4 columns. ⚠️ **Supersedes the owner's
+      2026-09-10 "dense 4-per-row, zero-gap glossary" request — no session record of that
+      reversal was found; flagged for the owner.** Covered by new `srs-pagination.test.mjs` (11)
+      + `flashcards-interactive.spec.ts`. (3) Landed the sibling routes slice: 3 static student
+      routes registered + header unified; added `/student/invoices` + `[invoiceId]` with a
+      `studentInvoice` resolver for the PR #72 screens. Later the same morning main gained
+      #73 attempt-lifecycle + #68 word bank; re-merged, reconciled the word-bank UI into the
+      paginated flashcards screen (bank tab, Lưu từ buttons, bank review panel — all kept).
+      Verified after the reconcile: build + unit + interactive spec re-run (below). Env notes:
+      API boots from `dist`, not `tsx` (`CannotDetermineTypeError`); orphan
+      `check-dashboard-live.mjs` moved aside, not committed. Session:
+      `ai/context/sessions/2026-09-13-zcode-merge-srs-routes.md`.
 - ✅ (opencode · 2026-09-12) **Sprint 4 attempt lifecycle (S-ASGN-2..7): spec + BE + FE + DoD e2e.**
   Spec `03-attempt-lifecycle.md` (11 invariants) + `AttemptAnswer` migration (applied, DB current);
   student BE (start idempotent/re-entry, autosave upsert, server-side MCQ auto-grade unit scale,

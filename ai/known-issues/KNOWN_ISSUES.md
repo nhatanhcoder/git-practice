@@ -1221,6 +1221,18 @@ sees.
 staff and real outcomes, or cut the sections that assert facts about people. Do not simply
 enlarge the disclaimer.
 
+**Update (2026-09-12, evening — route moved, content decision OPEN)**: two sessions executed the
+owner's landing task in parallel. PR #83 (merged) moved the page to **`/landing`** (with
+`/student/landing` → `/landing/:path*` permanent redirects) and **restored the full prototype
+content — including the invented teachers ("Đội ngũ chuyên gia") and the invented student
+results ("Bảng vàng thành tích", testimonials)**, so the invented-data state this entry describes
+is live again at the new path. A parallel branch (`PR #82`, superseded) had removed the page per
+the owner's earlier same-day "gỡ trang + redirect" decision. The content question — full
+prototype vs people-free landing — is **pending the owner's explicit choice**; both variants
+exist in git history and either is a small follow-up PR. Separately, the login-page contrast
+root cause (`--fg`/`--fg-muted` tokens that tokens.css never defines) and the missing theme
+toggle were fixed with independent route/theme tests (see the contrast fix PR).
+
 **Related**: the rest of `feat/student-hanlu-ui` is still unmerged — 24 commits, and `main` has
 moved 64 past it. Its PR #24 was closed 2026-09-05 04:06 UTC with `mergedAt: null` and **no
 comment recording why**. Only the landing route was ported here; the branch also rewrites the
@@ -1249,6 +1261,11 @@ lives at `/student/flashcards`, so the link is also pointing at the wrong screen
 **Fix Plan**: point that card at `/student/flashcards` and rewrite the copy for SM-2, or drop the
 card until the notebook has a backend. Belongs with `WEB-017`, which already covers the landing
 page asserting things that are not true; do not fix it in isolation from that decision.
+
+**Update (2026-09-12, evening)**: PR #83 restored the landing (now at `/landing`) **with the
+five-box copy back on the public page** — "năm hộp" in the method step and "5 hộp thẻ" in a
+student testimonial. Still advertising a scheduler ADR-016 replaced. Fold any fix into the
+WEB-017 content decision.
 
 ---
 
@@ -1470,6 +1487,10 @@ the whole first impression.
 **Fix Plan**: compress and resize to the size the cylinder faces actually sample, or convert to
 WebP with a PNG fallback. Do this before the page is linked anywhere public — see `WEB-017`,
 which has to be settled first anyway.
+
+**Update (2026-09-12, evening)**: PR #83 restored the images and the `three` dependency with the
+landing at `/landing` — the ~8.5 MB first-paint cost is live again. Compress/WebP remains the
+fix whenever the content decision (WEB-017) lands.
 
 ---
 
