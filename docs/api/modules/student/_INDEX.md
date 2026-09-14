@@ -27,3 +27,5 @@ Placement left that list on 2026-09-13 (module 4). Platform mock exams (F13) sta
 ## Source audits
 
 - [Foundation and Grammar source audit](foundation-grammar-source-audit.md) — audited 2026-09-10; content adoption and media remain blocked.
+
+- [05-learning-path](05-learning-path.md) — approved vocabulary-first implementation; 12 invariants.

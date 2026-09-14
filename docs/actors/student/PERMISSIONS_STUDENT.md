@@ -64,3 +64,7 @@ own invoices. They cannot create platform catalog content or view anyone else's 
 
 - [RBAC_MATRIX.md](../../shared/RBAC_MATRIX.md)
 - [FEATURES_STUDENT.md](./FEATURES_STUDENT.md)
+
+## Learning path — approved 2026-09-15
+
+Read published vocabulary units and write own revision-checked study/practice progress. Cannot supply userId, scores, completion state, or unlock bypass.

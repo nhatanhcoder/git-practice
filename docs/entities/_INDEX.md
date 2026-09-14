@@ -97,3 +97,7 @@ The proposed SQL tables in `PROJECT_KNOWLEDGE.md` §8.9 are inputs, not accepted
 The [module proposal](../api/modules/student/02-foundation-grammar.md) maps audited source fields
 and proposes catalog/progress aggregate boundaries. It is **not an accepted entity specification**;
 the blocked rows above remain blocked. Physical schema, columns, indexes and transport need approval.
+
+## Vocabulary-first learning path — approved 2026-09-15
+
+[LearningUnit](mongodb/ENTITY_LEARNING_UNIT.md) and [UserLearningProgress](mongodb/ENTITY_USER_LEARNING_PROGRESS.md) implement the vocabulary slice of catalog/progress. Other domain concepts above remain unapproved.
