@@ -1,5 +1,5 @@
 ---
-status: approved-for-implementation
+status: implemented
 last_updated: 2026-09-15
 ---
 # S-SELF-1 — Vocabulary learning path
