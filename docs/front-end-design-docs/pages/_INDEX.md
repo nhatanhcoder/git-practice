@@ -1,7 +1,7 @@
 ---
 status: active
 owner: Nhật
-last_updated: 2026-09-10
+last_updated: 2026-09-15
 ---
 
 # Page Contracts — Index
@@ -93,8 +93,8 @@ Analytics (T-ANL-1…4): _not yet mapped._ Every other Teacher area has a contra
 | `/student/grammar` | S-SELF-3,9 | [student-grammar](./student-pages/student-grammar.md) | contracted (proposed) | — | ⛔ source, schema, API and exercise approval |
 | `/student/invoices` | S-BILL-1 | [student-invoices](./student-pages/student-invoices.md) | built | v1 | — (endpoints defined in [API_STUDENT.md](../../api/API_STUDENT.md) § Billing; dedicated handler per SCOPE-BILL-01) |
 | `/student/invoices/[invoiceId]` | S-BILL-2 | [student-invoice-detail](./student-pages/student-invoice-detail.md) | built | v1 | — (embedded `payments[]`; `new_invoice` notification deep-link target) |
-| `/student/learning-path` | S-SELF-1,9 | [student-learning-path](./student-pages/student-learning-path.md) | contracted (proposed) | — | ⛔ catalog paths, progress reads/writes |
-| `/student/learning-path/[nodeId]` | S-SELF-1,9 | [student-learning-path-node](./student-pages/student-learning-path-node.md) | contracted (proposed) | — | ⛔ catalog read, progress write |
+| `/student/learning-path` | S-SELF-1,9 | [student-learning-path](./student-pages/student-learning-path.md) | built | v1 | live approved Hán Lộ catalog + owned progress; textbook catalogs empty |
+| `/student/learning-path/[nodeId]` | S-SELF-1,9 | [student-learning-path-node](./student-pages/student-learning-path-node.md) | built | v1 | live study, quiz, server grade and prerequisite unlock |
 
 Foundation/Grammar contracts describe a blocked production proposal; their current UI is still mock-backed.
 

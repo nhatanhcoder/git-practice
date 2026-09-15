@@ -40,12 +40,12 @@ const passChoices = learningQuiz(unit).map(
   (q, i) => q.options.find((o) => o.text === unit.words[i].meaning)!.id,
 );
 // Each response shape is asserted in the lifecycle checks below.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function req(
   method: string,
   path: string,
   token?: string,
   body?: unknown,
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): Promise<{ status: number; data: any; body: any }> {
   const response = await fetch(base + path, {
     method,
