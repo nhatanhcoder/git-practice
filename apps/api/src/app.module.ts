@@ -19,6 +19,7 @@ import { BillingModule } from './billing/billing.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { FlashcardsModule } from './flashcards/flashcards.module';
 import { WordBankModule } from './word-bank/word-bank.module';
+import { LearningPathModule } from './learning-path/learning-path.module';
 import { PlacementModule } from './placement/placement.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
@@ -42,6 +43,7 @@ import { RolesGuard } from './common/guards/roles.guard';
     FlashcardsModule,
     WordBankModule,
     PlacementModule,
+    LearningPathModule,
     NotificationsModule,
 
     // Global so any guard can verify an access token without each feature module

@@ -1,448 +1,279 @@
 "use client";
-
-/**
- * /student/learning-path — the HSK map.
- *
- * Two views over one dataset: a zigzag trail (the default, and the reason the
- * screen exists) and a plain list for scanning. A locked node can be forced
- * open for 100 XP, which is where the store's `unlockNode` guard matters — it
- * refuses rather than letting the balance go negative.
- *
- * Contract: docs/front-end-design-docs/pages/student-pages/student-learning-path.md
- * (S-SELF-1, status contracted). Filters live in the URL
- * (?curriculum=&level=&view=) so back/forward and deep links restore the view.
- *
- * MOCK(student): content from `lib/student/learning-path-data.ts`; catalog and
- * progress reads are ⛔ (API_STUDENT §83) — no API call. XP spend is a local
- * mock rule; the server must own XP when the backend exists.
- */
-
-import { Suspense, useMemo, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { Check, Compass, Crown, List, Lock, Map as MapIcon, Play, Star, Swords, Zap } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { BookOpen, Check, Lock, Play } from "lucide-react";
 import {
   Bar,
   Chip,
   EmptyState,
   ErrorState,
-  Metric,
+  PageHead,
   Panel,
-  SectionHeader,
   SkeletonPanel,
 } from "@/components/student/primitives";
+import { useAuthStore } from "@/lib/auth/auth-store";
 import {
-  DemoStateSwitcher,
-  LevelSelector,
-  Segmented,
-  type DemoState,
-} from "@/components/student/controls";
-import { Drawer } from "@/components/student/overlay";
-import { useToast } from "@/components/student/toast";
-import { FORCE_UNLOCK_COST, useStudentProfile, useStudentStore } from "@/lib/student/store";
-import {
-  buildLevelMap,
-  curricula,
-  type Curriculum,
-  type PathNode,
-} from "@/lib/student/learning-path-data";
-import { UnavailableState } from "@/components/student/unavailable-state";
+  fetchLearningPath,
+  LEARNING_CURRICULA,
+  type LearningCatalog,
+  type LearningState,
+} from "@/lib/student/learning-path-service";
+import styles from "./learning-path.module.css";
 
-const LEVELS = [1, 2, 3, 4, 5, 6, 7, 8, 9];
-const CURRICULUM_HANZI: Record<Curriculum, string> = {
-  hsk_standard_course: "标",
-  han_yu_jiao_cheng: "汉",
+const labels: Record<LearningState, string> = {
+  locked: "Chưa mở",
+  available: "Sẵn sàng",
+  in_progress: "Đang học",
+  completed: "Hoàn thành",
 };
-
 export default function LearningPathPage() {
-  if (process.env.NODE_ENV === "production") {
-    return (
-      <UnavailableState
-        title="Lộ trình HSK"
-        description="Lộ trình học tập chưa được kết nối máy chủ dữ liệu trong phiên bản hiện tại. Vui lòng quay lại sau."
-      />
-    );
-  }
   return (
-    <Suspense>
+    <Suspense fallback={<SkeletonPanel />}>
       <LearningPathInner />
     </Suspense>
   );
 }
-
-const VALID_CURRICULA: Curriculum[] = ["hsk_standard_course", "han_yu_jiao_cheng"];
-
 function LearningPathInner() {
-  const [demo, setDemo] = useState<DemoState>("ready");
-  const profile = useStudentProfile();
-  const searchParams = useSearchParams();
-  const router = useRouter();
-
-  // Filters are URL state (contract §Actions): back/forward and deep links
-  // restore the exact view. Invalid values fall back to safe defaults.
-  const rawLevel = Number(searchParams.get("level") ?? profile.currentLevel);
+  const router = useRouter(),
+    params = useSearchParams();
+  const userId = useAuthStore((s) => s.user?.id);
+  const raw = params.get("curriculum");
+  const curriculum =
+    LEARNING_CURRICULA.find((c) => c.id === raw)?.id ?? "hanlo_vocabulary";
+  const rawLevel = Number(params.get("level") ?? 1),
+    rawPage = Number(params.get("page") ?? 1);
   const level =
-    Number.isInteger(rawLevel) && rawLevel >= 1 && rawLevel <= 9 ? rawLevel : profile.currentLevel;
-  const rawCurriculum = searchParams.get("curriculum");
-  const curriculum: Curriculum = VALID_CURRICULA.includes(rawCurriculum as Curriculum)
-    ? (rawCurriculum as Curriculum)
-    : "hsk_standard_course";
-  const view: "map" | "list" = searchParams.get("view") === "list" ? "list" : "map";
-
-  function setParam(patch: Record<string, string>) {
-    const q = new URLSearchParams(searchParams.toString());
-    for (const [key, value] of Object.entries(patch)) q.set(key, value);
-    router.replace(`?${q.toString()}`, { scroll: false });
-  }
-
-  const [active, setActive] = useState<PathNode | null>(null);
-
-  // Partial state (contract §States): the map renders from the catalog fixture
-  // while the personal XP balance may still be unresolved — unlock then stays
-  // disabled with a reason instead of spending blindly.
-  const xpKnown = typeof profile.xp === "number";
-
-  const unlockedNodes = useStudentStore((s) => s.unlockedNodes);
-  const completedLessons = useStudentStore((s) => s.completedLessons);
-  const unlockNode = useStudentStore((s) => s.unlockNode);
-  const toast = useToast();
-
-  const map = useMemo(() => buildLevelMap(curriculum, level), [curriculum, level]);
-
-  /** Store overrides win over the fixture — a forced unlock or a finished lesson. */
-  const nodes = useMemo(
-    () =>
-      map.nodes.map((n) => {
-        if (completedLessons.includes(n.id)) return { ...n, state: "completed" as const };
-        if (n.state === "locked" && unlockedNodes.includes(n.id))
-          return { ...n, state: "available" as const };
-        return n;
-      }),
-    [map.nodes, unlockedNodes, completedLessons],
-  );
-
-  const done = nodes.filter((n) => n.state === "completed").length;
-  const pct = nodes.length ? Math.round((done / nodes.length) * 100) : 0;
-  const totalXp = nodes.reduce((sum, node) => sum + node.xp, 0);
-
-  function tryUnlock(node: PathNode) {
-    const ok = unlockNode(node.id);
-    if (ok) {
-      toast(`Đã mở khoá «${node.title}» — trừ ${FORCE_UNLOCK_COST} XP`, "success");
-      setActive({ ...node, state: "available" });
-    } else {
-      toast(`Cần ${FORCE_UNLOCK_COST} XP để mở khoá, bạn chưa đủ`, "danger");
+    Number.isInteger(rawLevel) && rawLevel >= 1 && rawLevel <= 9 ? rawLevel : 1;
+  const page =
+    Number.isInteger(rawPage) && rawPage >= 1 && rawPage <= 10000 ? rawPage : 1;
+  const view = params.get("view") === "list" ? "list" : "map";
+  const [data, setData] = useState<LearningCatalog | null>(null);
+  const [loading, setLoading] = useState(true),
+    [error, setError] = useState(false);
+  const generation = useRef(0);
+  const load = useCallback(async () => {
+    const current = ++generation.current;
+    setLoading(true);
+    setError(false);
+    setData(null);
+    try {
+      const result = await fetchLearningPath(curriculum, level, page);
+      if (current === generation.current) setData(result);
+    } catch {
+      if (current === generation.current) setError(true);
+    } finally {
+      if (current === generation.current) setLoading(false);
     }
+  }, [curriculum, level, page]);
+  const invalidate = useCallback(() => {
+    generation.current += 1;
+  }, []);
+  useEffect(() => {
+    void load();
+    return invalidate;
+  }, [load, userId, invalidate]);
+  function filter(key: string, value: string) {
+    const next = new URLSearchParams(params.toString());
+    next.set(key, value);
+    if (key === "level" || key === "curriculum") next.delete("page");
+    router.push(`/student/learning-path?${next}`, { scroll: false });
   }
-
   return (
-    <>
-      <header className="pagehead">
-        <div>
-          <p className="eyebrow">Lộ trình học</p>
-          <h1 className="pagehead__title">Bản đồ HSK {level}</h1>
-          <p className="pagehead__sub">
-            Mỗi chương là một chặng đường: bài học nối tiếp nhau, xen kẽ nhiệm vụ phụ, khép lại bằng một Ải Trùm. Hoàn thành ải để mở chặng kế tiếp.
-          </p>
+    <div className={styles.page}>
+      <Link href="/student" className="backlink">
+        ← Quay lại Dashboard
+      </Link>
+      <PageHead
+        title="Lộ trình từ vựng"
+        sub="Học từng nhóm từ, luyện nghĩa và tiếp tục từ đúng chỗ bạn đã dừng."
+      />
+      <div className={styles.filters}>
+        <label>
+          Nguồn học
+          <select
+            value={curriculum}
+            onChange={(e) => filter("curriculum", e.target.value)}
+          >
+            {LEARNING_CURRICULA.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          Cấp độ
+          <select
+            value={level}
+            onChange={(e) => filter("level", e.target.value)}
+          >
+            {Array.from({ length: 9 }, (_, i) => (
+              <option value={i + 1} key={i}>
+                HSK {i + 1}
+              </option>
+            ))}
+          </select>
+        </label>
+        <div className={styles.toggle} role="group" aria-label="Kiểu hiển thị">
+          <button
+            className="btn btn--outline"
+            aria-pressed={view === "map"}
+            onClick={() => filter("view", "map")}
+          >
+            Lộ trình
+          </button>
+          <button
+            className="btn btn--outline"
+            aria-pressed={view === "list"}
+            onClick={() => filter("view", "list")}
+          >
+            Danh sách
+          </button>
         </div>
-        <DemoStateSwitcher value={demo} onChange={setDemo} />
-      </header>
-
-      {/* ---------- Toolbar ---------- */}
-      <Panel className="panel--pad stack gap-5" aria-label="Bộ lọc lộ trình">
-          <div className="path-tools">
-            <div className="stack gap-2 grow">
-            <span className="metric__label">Giáo trình</span>
-            <div className="curriculum">
-              {curricula.map((c) => (
-                <button
-                  key={c.key}
-                  type="button"
-                  className={`curriculum__btn ${curriculum === c.key ? "is-active" : ""}`}
-                  aria-pressed={curriculum === c.key}
-                  onClick={() => setParam({ curriculum: c.key })}
-                >
-                  <span className="curriculum__hanzi han" aria-hidden="true">
-                    {CURRICULUM_HANZI[c.key]}
+      </div>
+      {loading ? (
+        <SkeletonPanel rows={4} />
+      ) : error ? (
+        <ErrorState
+          text="Không tải được lộ trình. Kiểm tra kết nối rồi thử lại."
+          onRetry={() => void load()}
+        />
+      ) : (
+        data && (
+          <>
+            {data.total > 0 && (
+              <Panel className="panel--pad">
+                <div className={styles.summary}>
+                  <strong>HSK {level}</strong>
+                  <span>
+                    {data.completed}/{data.total} bài đã hoàn thành
                   </span>
-                  <span className="stack gap-1 grow" style={{ textAlign: "left", minWidth: 0 }}>
-                    <span className="curriculum__name">{c.name}</span>
-                    <span className="curriculum__pub truncate">{c.desc}</span>
-                  </span>
-                </button>
-              ))}
-            </div>
-          </div>
-
-            <div className="stack gap-2">
-              <span className="metric__label">Hiển thị</span>
-              <Segmented
-                options={[
-                  { value: "map", label: "Bản đồ", icon: <MapIcon size={14} /> },
-                  { value: "list", label: "Danh sách", icon: <List size={14} /> },
-                ]}
-                value={view}
-                onChange={(v) => setParam({ view: v })}
-                label="Kiểu hiển thị lộ trình"
-              />
-            </div>
-          </div>
-
-          <div className="stack gap-2">
-            <span className="metric__label">Cấp độ HSK</span>
-            <LevelSelector
-              levels={LEVELS.map((id) => ({
-                id,
-                done: id < profile.currentLevel,
-                locked: id > profile.currentLevel,
-              }))}
-              value={level}
-              onChange={(v) => setParam({ level: String(v) })}
-            />
-          </div>
-
-          <div className="divider" />
-
-          <div className="row gap-6 wrap">
-            <Metric label="Tiến độ chặng" value={`${done}/${nodes.length}`} icon={<Compass size={12} />} />
-            <Metric label="XP khả dụng" value={profile.xp.toLocaleString("vi-VN")} color="var(--gold-400)" icon={<Zap size={12} />} />
-            <Metric label="XP toàn chặng" value={totalXp.toLocaleString("vi-VN")} />
-            <div className="grow stack gap-2" style={{ minWidth: 220 }}>
-              <div className="row gap-2">
-                <span className="metric__label">{curricula.find((item) => item.key === curriculum)?.name}</span>
-                <span className="grow" />
-                <span className="num" style={{ fontWeight: 700 }}>{pct}%</span>
-              </div>
-              <Bar value={pct} tone={pct === 100 ? "success" : "accent"} label={`Tiến độ HSK ${level}`} />
-            </div>
-          </div>
-      </Panel>
-
-      {demo === "loading" ? (
-        <SkeletonPanel rows={6} height={240} />
-      ) : demo === "error" ? (
-        <Panel className="panel--pad">
-          <ErrorState title="Không tải được bản đồ lộ trình" onRetry={() => setDemo("ready")} />
-        </Panel>
-      ) : demo === "empty" || nodes.length === 0 ? (
-        <Panel className="panel--pad">
-          <EmptyState
-            title="Giáo trình này chưa có chặng cho cấp độ đã chọn"
-            text="Giáo trình Hán ngữ chỉ có nội dung tới HSK 6. Chọn HSK Standard Course để xem 7–9."
-            action={
-              <button
-                type="button"
-                className="btn btn--outline"
-                onClick={() => setParam({ curriculum: "hsk_standard_course" })}
-              >
-                Chuyển sang HSK Standard Course
-              </button>
-            }
-          />
-        </Panel>
-      ) : view === "map" ? (
-        <section aria-labelledby="map-title" className="stack gap-4">
-          <SectionHeader
-            id="map-title"
-            title={`Nhập môn · ${nodes.length} chặng`}
-            sub="Chạm vào một node để xem mục tiêu, phần thưởng và hành động."
-            action={
-              <div className="row gap-2 wrap map-legend" aria-hidden="true">
-                <span className="legend"><i className="legend__dot legend__dot--done" />Hoàn thành</span>
-                <span className="legend"><i className="legend__dot legend__dot--current" />Đang học</span>
-                <span className="legend"><i className="legend__dot legend__dot--open" />Có thể học</span>
-                <span className="legend"><i className="legend__dot legend__dot--locked" />Khoá</span>
-              </div>
-            }
-          />
-          <div className="trail">
-            {nodes.map((n, i) =>
-              n.kind === "boss" ? (
-                <div key={n.id} className="stack gap-3">
-                  <div className="trail__banner">
-                    <span className="trail__banner-text">Ải trùm</span>
-                  </div>
-                  <button
-                    type="button"
-                    className={`boss ${n.state === "locked" ? "boss--locked" : ""} ${
-                      n.state === "completed" ? "boss--completed" : ""
-                    }`}
-                    onClick={() => setActive(n)}
-                  >
-                    <span className="boss__glyph han" aria-hidden="true">
-                      {n.titleHanzi.slice(0, 1)}
-                    </span>
-                    <span className="stack gap-1 grow" style={{ textAlign: "left" }}>
-                      <span style={{ fontWeight: 700 }}>{n.title}</span>
-                      <span style={{ color: "var(--text-3)", fontSize: "var(--step--2)" }}>
-                        {n.minutes} phút · <span className="num">{n.xp}</span> XP
-                      </span>
-                    </span>
-                    {n.state === "locked" ? <Lock size={18} /> : <Crown size={18} />}
-                  </button>
                 </div>
-              ) : (
-                <div key={n.id} className={`trail__row ${i % 2 === 1 ? "is-right" : ""}`}>
+                <Bar
+                  value={(data.completed / data.total) * 100}
+                  label="Tiến độ cấp độ"
+                />
+                <p className={styles.note}>
+                  Từ vựng theo nguồn Hán Lộ; học bài trước để mở bài tiếp theo.
+                  Mỗi cấp độ bắt đầu độc lập.
+                </p>
+              </Panel>
+            )}
+            {!data.total ? (
+              <EmptyState
+                title={
+                  curriculum === "hanlo_vocabulary"
+                    ? "Chưa có bài học ở cấp độ này"
+                    : "Chưa có nội dung giáo trình"
+                }
+                text={
+                  curriculum === "hanlo_vocabulary"
+                    ? "Nội dung chưa được phát hành. Bạn có thể chọn cấp độ khác."
+                    : "Nội dung giáo trình đang chờ xác minh. Bạn có thể học từ vựng Hán Lộ ngay."
+                }
+                action={
+                  curriculum !== "hanlo_vocabulary" ? (
+                    <button
+                      className="btn btn--primary"
+                      onClick={() => filter("curriculum", "hanlo_vocabulary")}
+                    >
+                      Học từ vựng Hán Lộ
+                    </button>
+                  ) : undefined
+                }
+              />
+            ) : !data.units.length ? (
+              <EmptyState
+                title="Trang này không có bài học"
+                action={
                   <button
-                    type="button"
-                    className={`node node--${n.state} ${n.kind === "side-quest" ? "node--side" : ""}`}
-                    onClick={() => setActive(n)}
+                    className="btn btn--outline"
+                    onClick={() => filter("page", "1")}
                   >
-                    <span className="node__medal han" aria-hidden="true">
-                      {n.state === "completed" ? (
-                        <Check size={20} />
-                      ) : n.state === "locked" ? (
-                        <Lock size={16} />
+                    Về trang đầu
+                  </button>
+                }
+              />
+            ) : (
+              <ol className={view === "map" ? styles.trail : styles.list}>
+                {data.units.map((u) => (
+                  <li key={u.slug} className={styles.unit} data-state={u.state}>
+                    <span className={styles.marker} aria-hidden="true">
+                      {u.state === "completed" ? (
+                        <Check size={22} />
+                      ) : u.state === "locked" ? (
+                        <Lock size={20} />
                       ) : (
-                        n.titleHanzi.slice(0, 1)
+                        <BookOpen size={22} />
                       )}
                     </span>
-                    <span className="stack gap-1 grow" style={{ textAlign: "left" }}>
-                      <span className="node__title truncate">{n.title}</span>
-                      <span className="node__meta">
-                        {n.minutes} phút · <span className="num">{n.xp}</span> XP
-                        {n.kind === "side-quest" ? " · nhiệm vụ phụ" : ""}
-                      </span>
-                    </span>
-                  </button>
-                </div>
-              ),
+                    <Panel className="panel--pad">
+                      <div className={styles.summary}>
+                        <span className="eyebrow">Bài {u.order}</span>
+                        <Chip
+                          tone={
+                            u.state === "completed"
+                              ? "success"
+                              : u.state === "in_progress"
+                                ? "accent"
+                                : "neutral"
+                          }
+                        >
+                          {labels[u.state]}
+                        </Chip>
+                      </div>
+                      <h2>{u.title}</h2>
+                      <p>{u.wordCount} từ · Học và luyện nghĩa</p>
+                      {u.state === "locked" ? (
+                        <p className={styles.note}>
+                          Hoàn thành bài trước để mở khóa.
+                        </p>
+                      ) : (
+                        <Link
+                          className="btn btn--primary"
+                          href={`/student/learning-path/${u.slug}`}
+                        >
+                          <Play size={16} />
+                          {u.state === "completed"
+                            ? "Xem lại"
+                            : u.state === "in_progress"
+                              ? "Tiếp tục học"
+                              : "Học bài"}
+                        </Link>
+                      )}
+                    </Panel>
+                  </li>
+                ))}
+              </ol>
             )}
-          </div>
-        </section>
-      ) : (
-        <Panel>
-          <div className="panel__head">
-            <div>
-              <h2 className="section-title" style={{ fontSize: "var(--step-2)" }}>
-                Danh sách chặng
-              </h2>
-              <p className="section-sub">Cùng dữ liệu với bản đồ, trình bày để quét nhanh.</p>
-            </div>
-          </div>
-          <div className="panel__body panel__body--flush">
-            {nodes.map((n) => (
-              <button key={n.id} type="button" className="rowitem" onClick={() => setActive(n)}>
-                <span className="rowitem__icon han" aria-hidden="true">
-                  {n.state === "completed" ? (
-                    <Check size={16} />
-                  ) : n.state === "locked" ? (
-                    <Lock size={14} />
-                  ) : n.kind === "boss" ? (
-                    <Swords size={16} />
-                  ) : (
-                    n.titleHanzi.slice(0, 1)
-                  )}
-                </span>
-                <span className="grow stack gap-1">
-                  <span style={{ fontWeight: 600 }} className="truncate">
-                    {n.title}
-                  </span>
-                  <span style={{ color: "var(--text-3)", fontSize: "var(--step--2)" }}>
-                    {n.minutes} phút · <span className="num">{n.xp}</span> XP
-                  </span>
-                </span>
-                {n.state === "current" ? <Chip tone="accent">Đang học</Chip> : null}
-                {n.state === "completed" ? <Chip tone="success">Xong</Chip> : null}
-                {n.state === "locked" ? <Chip>Khoá</Chip> : null}
-              </button>
-            ))}
-          </div>
-        </Panel>
-      )}
-
-      {/* ---------- Node drawer ---------- */}
-      <Drawer
-        open={active !== null}
-        onClose={() => setActive(null)}
-        eyebrow={
-          active
-            ? active.kind === "boss"
-              ? "Ải trùm"
-              : active.kind === "side-quest"
-                ? "Nhiệm vụ phụ"
-                : `Bài ${active.lessonNo ?? ""}`
-            : ""
-        }
-        title={active?.title ?? ""}
-        subtitle={active ? `${active.minutes} phút · ${active.xp} XP` : ""}
-        footer={
-          active ? (
-            active.state === "locked" ? (
-              xpKnown ? (
-                <button
-                  type="button"
-                  className="btn btn--outline btn--block"
-                  onClick={() => tryUnlock(active)}
-                >
-                  <Lock size={16} /> Mở khoá bằng {FORCE_UNLOCK_COST} XP
-                </button>
-              ) : (
-                <div className="notice">
-                  <Lock size={16} />
-                  <span>Chưa tải được số dư XP nên chưa thể mở khoá. Thử lại sau.</span>
-                </div>
-              )
-            ) : (
-              <Link
-                href={`/student/learning-path/${active.id}`}
-                className="btn btn--primary btn--block"
+            {data.totalPages > 1 && (
+              <nav
+                className={styles.pagination}
+                aria-label="Phân trang bài học"
               >
-                <Play size={16} />
-                {active.state === "completed" ? "Học lại" : "Bắt đầu"}
-              </Link>
-            )
-          ) : null
-        }
-      >
-        {active ? (
-          <div className="stack gap-5">
-            <div className="row gap-3">
-              <span className="node__medal han" aria-hidden="true">
-                {active.titleHanzi.slice(0, 1)}
-              </span>
-              <div className="stack gap-1 grow">
-                <span className="han" style={{ fontSize: "var(--step-2)" }}>
-                  {active.titleHanzi}
-                </span>
-                <span style={{ color: "var(--text-3)", fontSize: "var(--step--1)" }}>
-                  {active.bookLabel ?? `HSK ${level}`}
-                </span>
-              </div>
-            </div>
-
-            <div className="grid grid--3">
-              <Metric label="Từ vựng" value={active.vocabCount ?? "—"} />
-              <Metric label="Ngữ pháp" value={active.grammarCount ?? "—"} />
-              <Metric label="Bài tập" value={active.exerciseCount ?? "—"} />
-            </div>
-
-            {active.state === "locked" ? (
-              <div className="notice">
-                <Lock size={16} />
+                <button
+                  className="btn btn--outline"
+                  disabled={page <= 1}
+                  onClick={() => filter("page", String(page - 1))}
+                >
+                  Trước
+                </button>
                 <span>
-                  Chặng này còn khoá. Hoàn thành chặng trước, hoặc mở khoá ngay bằng{" "}
-                  <strong className="num">{FORCE_UNLOCK_COST}</strong> XP (bạn đang có{" "}
-                  <strong className="num">{profile.xp.toLocaleString("vi-VN")}</strong>).
+                  {page}/{data.totalPages}
                 </span>
-              </div>
-            ) : null}
-
-            {active.state === "completed" ? (
-              <div className="row gap-2">
-                <Chip tone="success" icon={<Check size={12} />}>
-                  Đã hoàn thành
-                </Chip>
-                <span className="stars" aria-label="3 trên 3 sao">
-                  <Star size={14} fill="currentColor" />
-                  <Star size={14} fill="currentColor" />
-                  <Star size={14} fill="currentColor" />
-                </span>
-              </div>
-            ) : null}
-          </div>
-        ) : null}
-      </Drawer>
-    </>
+                <button
+                  className="btn btn--outline"
+                  disabled={page >= data.totalPages}
+                  onClick={() => filter("page", String(page + 1))}
+                >
+                  Sau
+                </button>
+              </nav>
+            )}
+          </>
+        )
+      )}
+    </div>
   );
 }

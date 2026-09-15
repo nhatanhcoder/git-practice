@@ -113,3 +113,13 @@ prototype's `/api/progress` routes into production by default.
 [source audit](modules/student/foundation-grammar-source-audit.md), 2026-09-10:
 proposed only. All eight required operation groups remain ⛔ with no approved path, DTO or
 error mapping. The endpoint tables above do not gain any executable Foundation/Grammar route.
+
+## Vocabulary learning path — approved 2026-09-15
+
+See [module contract](modules/student/05-learning-path.md). GET `/student/learning-path`, GET `/:slug`, POST `/:slug/start`, `/:slug/study`, `/:slug/answers`, `/:slug/complete`. Student-owned progress; no XP or official grades.
+
+GET /student/learning-path/:slug
+POST /student/learning-path/:slug/start
+POST /student/learning-path/:slug/study
+POST /student/learning-path/:slug/answers
+POST /student/learning-path/:slug/complete
