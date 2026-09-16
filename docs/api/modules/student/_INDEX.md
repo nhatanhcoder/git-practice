@@ -10,6 +10,7 @@ last_updated: 2026-09-13
 |---|---|---|---|---|:---|
 | 1 | SRS Flashcards | `01-srs-flashcards.md` | ✅ `accepted` | 12 | vocabulary source for production seed; streak timezone |
 | 2 | Foundation and Grammar | [02-foundation-grammar.md](02-foundation-grammar.md) | 🔶 proposed → owner-approved to code 2026-09-16 (D1–D5) | 12 proposed | G-practice deferred; media none |
+| 4 | Progress Analytics (S-ANL-1..3) | [04-progress-analytics.md](04-progress-analytics.md) | 🔶 proposed (code waits for PR #73) | 7 | PR #73 merge; streak rule; XP/badge/board decisions in §16 |
 | 3 | Attempt Lifecycle (S-ASGN-2..7) | [03-attempt-lifecycle.md](03-attempt-lifecycle.md) | 🔶 proposed → owner-approved to code 2026-09-12 | 12 | none — AI re-open recorded in §16-Q0 |
 | 3 | Word bank (S-SRS-6/7) | `02-word-bank.md` | ✅ `implemented 2026-09-12` | 8 | none for this slice — full click-to-save surface arrives with the content screens (§16) |
 | 4 | Placement (Task C) | [04-placement.md](04-placement.md) | 🔶 proposed → owner-directed to code 2026-09-13 | 8 | paper depth capped by the question bank (F13/DOC-011 adjacency in §16-Q3) |
@@ -22,6 +23,9 @@ The remaining self-study, drill, gamification and analytics capabilities are acc
 scope under ADR-016 but do not yet have transport contracts. Add modules here before coding them.
 Placement left that list on 2026-09-13 (module 4). Platform mock exams (F13) stay contract-less —
 `/student/exams` is served from `mock_test` assignments + the attempt lifecycle, not from F13 papers.
+
+Numbering note: row/file `03` is reserved for the attempt-lifecycle module (open PR #73);
+this slice takes `04` so the two never collide whatever merges first.
 
 
 ## Source audits
