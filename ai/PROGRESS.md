@@ -344,6 +344,16 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
   idempotency + 409 conflict, strip `tokens` from list/detail; wire grammar FE.
   zcode lane (`feat/student-grammar-live` worktree) untouched — superseded, owner
   to abandon after this lands.
+- ✅ (opencode · 2026-09-16) **F10 DONE, verified end to end.** `GET/POST
+  :id/practice` live (deterministic shuffle, server grading, idempotent replay,
+  409 conflict); e2e 13/13 (4 practice cases incl. no-answer-leak + derived
+  counts); FE grammar hub live (filters, drawer, reorder modal, 7 states, prod
+  gate removed); Playwright grammar spec 3×(desktop+375px) = 18/18 green,
+  screenshots read. Full API suite + web unit + check-docs re-verified at PR
+  time (pre-existing API-018 only). Two test-caught fixes same slice
+  (production-gate unit test rewritten for the live contract; NFD pinyin
+  folding replacing the lint-flagged char class). Session:
+  `ai/context/sessions/2026-09-16-opencode-grammar-port.md`.
 - ⛔ F11 Character writing (stroke-order animation, canvas practice, radical breakdown)
 - ⛔ F12 Lego sentence builder (7 stations, drag-drop with S/T/P/A/V/O/C/Q roles, endless mode)
 - ⛔ F13 HSK mock exams (11 exams / 161 questions, real timers, skill breakdown → `SkillScore`)
