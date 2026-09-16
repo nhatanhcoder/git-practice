@@ -293,3 +293,7 @@ the server owns XP). Boss clears at ≥80% practice score. No Student catalog
 create/delete/publish path (permissions forbid it); no XP/badge server event; no
 Assignment-grade transition. Missing contracts: catalog path read, curriculum read,
 self-study progress read/write — all under API_STUDENT §83.
+
+## Live vocabulary learning path — 2026-09-15
+
+`/student` → `/student/learning-path` (GET catalog) → `/:nodeId` (GET unit) → start (POST start) → acknowledge each word (POST study) → save choices (POST answers) → grade (POST complete) → next unit or retry. All progress belongs to token owner; no delete/reset/XP path.

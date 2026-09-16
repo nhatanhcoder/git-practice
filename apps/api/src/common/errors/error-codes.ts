@@ -7,6 +7,10 @@
  * which is why no rate limiting is wired up yet (01-auth.md §16).
  */
 export const ErrorCode = {
+  LEARNING_UNIT_NOT_FOUND: 'LEARNING_UNIT_NOT_FOUND',
+  LEARNING_UNIT_LOCKED: 'LEARNING_UNIT_LOCKED',
+  LEARNING_PROGRESS_CONFLICT: 'LEARNING_PROGRESS_CONFLICT',
+  LEARNING_STEP_INVALID: 'LEARNING_STEP_INVALID',
   // Auth (registry § Auth Errors)
   AUTH_EMAIL_EXISTS: 'AUTH_EMAIL_EXISTS',
   AUTH_INVALID_CREDENTIALS: 'AUTH_INVALID_CREDENTIALS',
@@ -130,6 +134,10 @@ export type ErrorCodeValue = (typeof ErrorCode)[keyof typeof ErrorCode];
  * HTTP status for each code, exactly as the registry tables state it.
  */
 export const ERROR_STATUS: Record<ErrorCodeValue, number> = {
+  LEARNING_UNIT_NOT_FOUND: 404,
+  LEARNING_UNIT_LOCKED: 403,
+  LEARNING_PROGRESS_CONFLICT: 409,
+  LEARNING_STEP_INVALID: 400,
   AUTH_EMAIL_EXISTS: 409,
   AUTH_INVALID_CREDENTIALS: 401,
   AUTH_ACCOUNT_PENDING: 403,

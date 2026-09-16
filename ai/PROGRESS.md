@@ -1197,3 +1197,5 @@ are accepted and implemented; 02 is implemented but its spec status is in confli
   before merge; the database-backed notification suite remains NOT RUN in this review worktree.
 
 - ✅ (codex · 2026-09-13) **AttemptAnswer migration integration.** Schema and migration only, split from PR #73 so the database change reaches main before attempt lifecycle code. Prisma schema valid; check-docs 9/9; DB apply NOT RUN locally.
+
+- ✅ (codex · 2026-09-15) **S-SELF-1 live vocabulary learning path** — published 1,119 approved Hán Lộ words as 143 immutable units across HSK 1–9; added student-owned, revision-safe study/quiz/completion progress and connected both production pages. Textbook curricula remain honestly empty pending verified content. API lifecycle passed three independent DB rounds; production browser lifecycle passed three rounds on desktop and 375px. Branch `codex/student-learning-path-live`.

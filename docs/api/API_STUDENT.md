@@ -141,3 +141,13 @@ prototype's `/api/progress` routes into production by default.
 transport/DTO/errors approved 2026-09-16 (D1–D5), implemented on
 `feat/student-foundation-be`. G-practice (exercises) and M-read (media) remain
 intentionally undefined — no endpoint, no code.
+
+## Vocabulary learning path — approved 2026-09-15
+
+See [module contract](modules/student/05-learning-path.md). GET `/student/learning-path`, GET `/:slug`, POST `/:slug/start`, `/:slug/study`, `/:slug/answers`, `/:slug/complete`. Student-owned progress; no XP or official grades.
+
+GET /student/learning-path/:slug
+POST /student/learning-path/:slug/start
+POST /student/learning-path/:slug/study
+POST /student/learning-path/:slug/answers
+POST /student/learning-path/:slug/complete
