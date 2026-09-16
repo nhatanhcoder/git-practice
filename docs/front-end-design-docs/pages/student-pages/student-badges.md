@@ -2,8 +2,8 @@
 feature: S-GAME-4
 role: student
 route: /student/badges
-status: built (mock — ⛔ backend)
-last_updated: 2026-09-12
+status: contracted (live API approved)
+last_updated: 2026-09-16
 ---
 
 # Page Contract — Student · Badge Collection (S-GAME-4)
@@ -13,7 +13,7 @@ Show the badges the learner has earned and the full badge catalog with unlock co
 
 ## Access
 - Allowed roles: `student`
-- Ownership rule: would be token-scoped; **no badge endpoints exist** (see Data)
+- Ownership rule: token-scoped; server reads only `studentId=currentUser.id`
 
 ## Entry points
 - From: Student sidebar → "Kho huy hiệu"; deep link `/student/badges`
@@ -21,21 +21,21 @@ Show the badges the learner has earned and the full badge catalog with unlock co
 ## Data
 | Need | Endpoint | Envelope field |
 |---|---|---|
-| ⛔ My badges + catalog | none defined | — |
+| My badges + fixed catalog | `GET /api/v1/student/badges` | `data.badges[]`, `data.earnedCount` |
 
-Blocked on: `API_STUDENT.md` § no-endpoint list ("XP, rank, streak, badges and leaderboard"). FEATURES_STUDENT's own condition: **unlock conditions must be server-authoritative** — a client-evaluated unlock is a cheat surface, so no FE-only badge state is a valid implementation. Recorded under "Needs from the other lane".
+The approved initial catalog has four server-authoritative conditions: 1, 5 and 10 official graded attempts, plus one 100% official graded attempt. No client unlock write exists.
 
 ## Regions
 1. Page Header: eyebrow "Cộng đồng", title "Kho huy hiệu"
-2. Earned-badges strip (mock)
-3. Full catalog grid ("Huy hiệu") with locked/unlocked states; empty-filter state "Không có huy hiệu nào khớp"
+2. Earned count and catalog progress
+3. Four-card catalog with locked/unlocked state and factual progress
 4. Badge detail (drawer/modal — no route change)
 
 ## States
 - [x] Loading — skeleton
-- [x] Ready — mock content (⛔ no live data)
-- [x] Empty — filtered catalog can be empty
-- [x] Partial — N/A (single dataset)
+- [x] Ready — live server-computed catalog
+- [x] Empty — all four catalog items locked with zero progress
+- [x] Partial — some badges earned, others locked
 - [x] Error — load failure wording
 - [x] Forbidden — handled by Student shell `RequireAuth`
 - [x] Offline / stale — network error wording; no fallback fixtures (WEB-011 family)
@@ -43,8 +43,8 @@ Blocked on: `API_STUDENT.md` § no-endpoint list ("XP, rank, streak, badges and 
 ## Actions
 | Action | Trigger | Result | Error code |
 |---|---|---|---|
-| Filter catalog | earned / locked filter | refilter mock view (⛔ no live source) | — |
+| Filter catalog | all / earned / locked | refilter the returned catalog locally | — |
 | Inspect badge | badge click | open detail with unlock condition | — |
 
 ## Out of scope
-XP totals and rank (separate gamification contracts, ⛔); badge awarding logic (server-side, undefined).
+XP totals/rewards, streak, vocabulary/community/content badges, notifications and persisted award rows.

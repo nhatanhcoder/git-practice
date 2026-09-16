@@ -1,7 +1,7 @@
 ---
 title: Backend Module Specs — Student
 status: active
-last_updated: 2026-09-13
+last_updated: 2026-09-16
 ---
 
 # Backend Module Specs — Student
@@ -14,6 +14,7 @@ last_updated: 2026-09-13
 | 3 | Attempt Lifecycle (S-ASGN-2..7) | [03-attempt-lifecycle.md](03-attempt-lifecycle.md) | 🔶 proposed → owner-approved to code 2026-09-12 | 12 | none — AI re-open recorded in §16-Q0 |
 | 3 | Word bank (S-SRS-6/7) | `02-word-bank.md` | ✅ `implemented 2026-09-12` | 8 | none for this slice — full click-to-save surface arrives with the content screens (§16) |
 | 4 | Placement (Task C) | [04-placement.md](04-placement.md) | 🔶 proposed → owner-directed to code 2026-09-13 | 8 | paper depth capped by the question bank (F13/DOC-011 adjacency in §16-Q3) |
+| 5 | Leaderboard + Attempt Badges | [05-gamification-analytics.md](05-gamification-analytics.md) | ✅ accepted — owner-approved 2026-09-16 | 8 | none for bounded slice |
 
 Numbering note: the Foundation/Grammar proposal holds `02` by publication order (2026-09-10);
 the word bank kept its own `02-` file name to avoid renaming a linked doc, so student

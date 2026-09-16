@@ -1,6 +1,6 @@
 ---
 status: active
-last_updated: 2026-09-10
+last_updated: 2026-09-16
 ---
 
 # 🔌 API Student
@@ -88,6 +88,8 @@ Practice exercises (G-practice) deferred — no reviewed exercise manifest.
 |--------|------|-------------|
 | GET | `/api/v1/student/progress` | Heatmap + skill breakdown |
 | GET | `/api/v1/student/progress/chart` | Score over time chart data |
+| GET | `/api/v1/student/leaderboard` | Anonymized official-grade ranking (top 20 + caller) |
+| GET | `/api/v1/student/badges` | Caller-owned server-computed attempt badge catalog |
 
 ---
 
@@ -128,7 +130,7 @@ mistaken for API contracts:
 - platform mock exams (F13 papers — `/student/exams` is served from `mock_test` assignments +
   the attempt lifecycle meanwhile); placement moved to its own module on 2026-09-13
   (`modules/student/04-placement.md`: `GET/POST /student/placement`);
-- XP, rank, streak, badges and leaderboard;
+- XP, named ranks and streaks; leaderboard and four attempt badges moved to module `05-gamification-analytics.md`;
 - display preferences and cross-device progress sync.
 
 ⛔ Define these in Student/Teacher module specs before adding endpoints. Do not copy the
