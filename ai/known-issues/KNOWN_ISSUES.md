@@ -1954,3 +1954,9 @@ No new issue ID assigned. The live progress slice removes the page's fabricated 
 rank, badge and HSK-ladder figures. Existing BUILD-005 still applies to the repository's Node 25
 test command; the focused progress e2e used explicit `.js` imports and passed without changing the
 global test runner.
+
+### 2026-09-16 leaderboard and attempt badges implementation review
+
+No new issue ID assigned. The implemented slice removes named rivals, XP, streak, retention and
+client-computed badge unlocks from both production routes. The wider F16 XP/rank/streak/catalog
+scope remains blocked and is not partially claimed by these four read-only attempt badges.

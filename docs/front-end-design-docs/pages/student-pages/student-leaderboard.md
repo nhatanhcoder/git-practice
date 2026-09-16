@@ -2,7 +2,7 @@
 feature: S-ANL-4, S-GAME-5
 role: student
 route: /student/leaderboard
-status: contracted (live API approved)
+status: built (live)
 last_updated: 2026-09-16
 ---
 

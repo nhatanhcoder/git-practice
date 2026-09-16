@@ -2,7 +2,7 @@
 feature: S-GAME-4
 role: student
 route: /student/badges
-status: contracted (live API approved)
+status: built (live)
 last_updated: 2026-09-16
 ---
 

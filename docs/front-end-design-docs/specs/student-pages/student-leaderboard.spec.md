@@ -1,5 +1,5 @@
 ---
-status: contracted
+status: built
 design_baseline: v1
 route: /student/leaderboard
 last_updated: 2026-09-16

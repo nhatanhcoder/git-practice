@@ -84,8 +84,8 @@ Analytics (T-ANL-1…4): _not yet mapped._ Every other Teacher area has a contra
 | `/student/exams` | S-SELF-7 | [student-exams](./student-pages/student-exams.md) | built (mock) | v1 | ⛔ ADR-005 is a 0-byte stub (DOC-017); exam transport contract |
 | `/student/placement` | S-SELF-7 | [student-placement](./student-pages/student-placement.md) | built (mock) | v1 | ⛔ ADR-005 stub (DOC-017); placement contract |
 | `/student/progress` | S-ANL-1,2 | [student-progress](./student-pages/student-progress.md) | built (live) | v1 | own graded attempts; 8/12 full UTC-week windows |
-| `/student/leaderboard` | S-ANL-4, S-GAME-5 | [student-leaderboard](./student-pages/student-leaderboard.md) | built (mock) | v1 | ⛔ aggregation + privacy rules |
-| `/student/badges` | S-GAME-4 | [student-badges](./student-pages/student-badges.md) | built (mock) | v1 | ⛔ server-authoritative unlock contract |
+| `/student/leaderboard` | S-ANL-4, S-GAME-5 | [student-leaderboard](./student-pages/student-leaderboard.md) | built (live) | v1 | anonymized official-grade aggregate; top 20 + caller |
+| `/student/badges` | S-GAME-4 | [student-badges](./student-pages/student-badges.md) | built (live) | v1 | four server-computed official-attempt badges |
 | `/student/writing` | S-SELF-4 | [student-writing](./student-pages/student-writing.md) | built (mock) | v1 | ⛔ DOC-011 corpus + progress contract |
 | `/student/lego` | S-SELF-5 | [student-lego](./student-pages/student-lego.md) | built (mock) | v1 | ⛔ DOC-011 corpus + progress contract |
 | `/student/workplace` | S-SELF-6 | [student-workplace](./student-pages/student-workplace.md) | built (mock) | v1 | ⛔ DOC-011 corpus + scorer contract |

@@ -1,6 +1,6 @@
 ---
 module: student-gamification-analytics
-status: accepted — owner-approved bounded slice 2026-09-16
+status: implemented 2026-09-16
 blocked_by: none for leaderboard and four attempt badges
 owner: project owner
 last_updated: 2026-09-16
