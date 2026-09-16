@@ -83,7 +83,9 @@ test.describe("foundation hub on the live catalog", () => {
     const sound = await targetCell.locator(".sound-cell__p").innerText();
     const isMarked = () =>
       page.evaluate((label) => {
-        const cells = [...document.querySelectorAll(".sound-cell")];
+        // Array.from, not spread: the web tsconfig lacks downlevelIteration,
+        // so [...querySelectorAll()] fails `tsc --noEmit` in CI (web-quality).
+        const cells = Array.from(document.querySelectorAll(".sound-cell"));
         const cell = cells.find(
           (el) => el.querySelector(".sound-cell__p")?.textContent?.trim() === label.trim(),
         );
@@ -101,7 +103,7 @@ test.describe("foundation hub on the live catalog", () => {
 
     // Restore: toggle back so the seeded account is untouched.
     await page.evaluate((label) => {
-      const cells = [...document.querySelectorAll<HTMLButtonElement>(".sound-cell")];
+      const cells = Array.from(document.querySelectorAll<HTMLButtonElement>(".sound-cell"));
       cells
         .find((el) => el.querySelector(".sound-cell__p")?.textContent?.trim() === label.trim())
         ?.click();

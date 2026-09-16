@@ -165,17 +165,6 @@ one code so a caller cannot probe for another student's bookmark ids.
 |------|------|-------|
 | `WORD_BANK_NOT_FOUND` | 404 | Saved word does not exist or belongs to another student |
 
-### Character Writing Errors (WRITING_*) — added 2026-09-15 (`feat/student-writing-live`)
-
-The F11 catalogue is read-only and backed by `apps/api/content/writing.json`, so the family
-is a single code: the only failure a caller can produce is asking for a character that is not
-in the corpus. A learner with no practice history is **not** an error — it is a valid empty
-progress record, and returning 404 for it would make "never practised" unrepresentable.
-
-| Code | HTTP | Description |
-|------|------|-------|
-| `WRITING_CHAR_NOT_FOUND` | 404 | No character with that id exists in the catalogue |
-
 ### Foundation/Grammar Errors (GRAMMAR_*) — added 2026-09-16 (`feat/student-foundation-be`)
 
 `02-foundation-grammar.md` §9 (D5-approved). The catalogues are read-only, so the
