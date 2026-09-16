@@ -2,14 +2,15 @@
 feature: S-SELF-2, S-SELF-9
 role: student
 route: /student/foundation
-status: contracted
+status: built
 approval: proposed
-last_updated: 2026-09-10
+last_updated: 2026-09-16
 ---
 # Page Contract — Student · Foundation
 ## Purpose
 Study pronunciation, tones and radicals, with honest media availability and private study state.
-This contract is proposed/blocked; production backend is NOT IMPLEMENTED.
+Backend live since 2026-09-16 (catalog + studied-state); audio/PDF intentionally have no
+backend (D4) and stay visibly unavailable.
 ## Access
 - Allowed roles: student; existing Student shell, no new Auth/RBAC behavior.
 - Ownership: only current learner's progress; catalog published/read-only per existing RBAC.
@@ -21,11 +22,11 @@ This contract is proposed/blocked; production backend is NOT IMPLEMENTED.
 ## Data
 | Need | Endpoint | Envelope field |
 |---|---|---|
-| Published groups/items | ⛔ F-read, path missing | ⛔ DTO missing |
-| Own study state | ⛔ F-progress, path missing | ⛔ DTO missing |
-| Save study state | ⛔ F-save, path/body missing | ⛔ DTO missing |
-| Audio/PDF | ⛔ M-read, delivery missing | ⛔ resource fields missing |
-Blocked on: [module decisions D1–D5](../../../api/modules/student/02-foundation-grammar.md); DOC-011/CR-3.
+| Published groups/items | `GET /student/foundation` (live 2026-09-16) | `data.revision` + `data.groups` (8 groups, §3) |
+| Own study state | `GET /student/foundation/progress` (live) | `data.studied[]` (`kind/key/studied/updatedAt`; readers filter `studied === true`) |
+| Save study state | `PUT /student/foundation/progress` (live) | body `kind/key/studied` → `data` saved record; `VALIDATION_ERROR` on unknown kind/key |
+| Audio/PDF | NONE (D4 — no licensed assets) | controls render unavailable with reason, never a fake download |
+Media/progress failures must not hide readable catalog content (separable reads).
 
 ## Regions
 1. Title, return-to-Dashboard action, clear study-state summary if available.
@@ -46,10 +47,10 @@ Blocked on: [module decisions D1–D5](../../../api/modules/student/02-foundatio
 ## Actions
 | Action | Trigger | Result | Error code |
 |---|---|---|---|
-| Choose tab/filter | tabs/search/strokes/page | F-read if needed; URL/back restore | ⛔ TODO(error-code) |
-| Inspect item | card | same-screen detail; F-read if needed | ⛔ TODO(error-code) |
-| Mark/unmark studied | explicit control | F-save; UI changes after confirmation | ⛔ TODO(error-code) |
-| Play/download | verified asset only | M-read/resource; failure shown | ⛔ TODO(error-code) |
+| Choose tab/filter | tabs/search/strokes/page | catalog already loaded; URL/back restore | — (local read) |
+| Inspect item | card | same-screen detail from loaded catalog | — |
+| Mark/unmark studied | explicit control | F-save; UI changes after confirmation | `VALIDATION_ERROR` |
+| Play/download | no verified asset exists | control unavailable with reason | — (no endpoint by design) |
 | Record/playback | explicit permission, after D4 | local session only, no assessment | permission/unavailable message |
 | Retry/return | retry or Dashboard link | retry failed read only / `/student` | existing handling |
 

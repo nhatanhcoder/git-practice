@@ -89,14 +89,14 @@ Analytics (T-ANL-1…4): _not yet mapped._ Every other Teacher area has a contra
 | `/student/writing` | S-SELF-4 | [student-writing](./student-pages/student-writing.md) | built (mock) | v1 | ⛔ DOC-011 corpus + progress contract |
 | `/student/lego` | S-SELF-5 | [student-lego](./student-pages/student-lego.md) | built (mock) | v1 | ⛔ DOC-011 corpus + progress contract |
 | `/student/workplace` | S-SELF-6 | [student-workplace](./student-pages/student-workplace.md) | built (mock) | v1 | ⛔ DOC-011 corpus + scorer contract |
-| `/student/foundation` | S-SELF-2,9 | [student-foundation](./student-pages/student-foundation.md) | contracted (proposed) | — | ⛔ source, schema, API and media approval |
+| `/student/foundation` | S-SELF-2,9 | [student-foundation](./student-pages/student-foundation.md) | built | v1 | live 2026-09-16 (catalog + studied-state); audio/PDF/record intentionally unavailable (D4) |
 | `/student/grammar` | S-SELF-3,9 | [student-grammar](./student-pages/student-grammar.md) | contracted (proposed) | — | ⛔ source, schema, API and exercise approval |
 | `/student/invoices` | S-BILL-1 | [student-invoices](./student-pages/student-invoices.md) | built | v1 | — (endpoints defined in [API_STUDENT.md](../../api/API_STUDENT.md) § Billing; dedicated handler per SCOPE-BILL-01) |
 | `/student/invoices/[invoiceId]` | S-BILL-2 | [student-invoice-detail](./student-pages/student-invoice-detail.md) | built | v1 | — (embedded `payments[]`; `new_invoice` notification deep-link target) |
 | `/student/learning-path` | S-SELF-1,9 | [student-learning-path](./student-pages/student-learning-path.md) | contracted (proposed) | — | ⛔ catalog paths, progress reads/writes |
 | `/student/learning-path/[nodeId]` | S-SELF-1,9 | [student-learning-path-node](./student-pages/student-learning-path-node.md) | contracted (proposed) | — | ⛔ catalog read, progress write |
 
-Foundation/Grammar contracts describe a blocked production proposal; their current UI is still mock-backed.
+Foundation live since 2026-09-16 (catalog + studied-state); Grammar endpoints live but its UI is still mock-backed. G-practice and media are intentionally absent (deferred / D4).
 
 Every built `/student/**` route now has a contract. The `built (mock)` rows are prototype screens with **no approved backend** — their contracts carry the ⛔ blockers and the corresponding entries in `ai/PROGRESS.md` § "Needs from the other lane"; they must not be wired to invented endpoints.
 

@@ -9,7 +9,8 @@ last_updated: 2026-09-10
 # Page Contract — Student · Grammar
 ## Purpose
 Find a grammar point, study its explanation and practise only reviewed exercise modes.
-This contract is proposed/blocked; production backend is NOT IMPLEMENTED.
+Backend live since 2026-09-16 (list/detail/progress/save, 02-foundation-grammar.md §2);
+FE still mock-backed (unwired). Practice needs a reviewed exercise manifest (deferred).
 ## Access
 - Allowed roles: student; existing Student shell, no new Auth/RBAC behavior.
 - Ownership: published catalog plus current learner's state; never another learner's progress.
@@ -22,11 +23,11 @@ This contract is proposed/blocked; production backend is NOT IMPLEMENTED.
 ## Data
 | Need | Endpoint | Envelope field |
 |---|---|---|
-| List/detail/filter choices | ⛔ G-read, path/query missing | ⛔ DTO missing |
-| Own study/practice state | ⛔ G-progress, path missing | ⛔ DTO missing |
-| Mark studied | ⛔ G-save, path/body missing | ⛔ DTO missing |
-| Reviewed exercise + submit | ⛔ G-practice, transport missing | ⛔ DTO missing |
-Blocked on: [module decisions D1–D5](../../../api/modules/student/02-foundation-grammar.md); reviewed exercise definitions.
+| List/detail/filter choices | `GET /student/grammar…` (BE live, FE unwired) | `data[]` + `meta`; §3 |
+| Own study/practice state | `GET /student/grammar/progress` (BE live, FE unwired) | `data.studied[]` |
+| Mark studied | `PUT /student/grammar/progress` (BE live, FE unwired) | `data` saved record; `GRAMMAR_NOT_FOUND` |
+| Reviewed exercise + submit | ⛔ G-practice, deferred (no manifest) | — (no endpoint) |
+BE per [module decisions D1–D5](../../../api/modules/student/02-foundation-grammar.md) (approved 2026-09-16); FE wiring is the remaining work.
 
 ## Regions
 1. Title, parent action, known private study summary; unknown state is not zero.
@@ -47,10 +48,10 @@ Blocked on: [module decisions D1–D5](../../../api/modules/student/02-foundatio
 ## Actions
 | Action | Trigger | Result | Error code |
 |---|---|---|---|
-| Filter/search/reset | controls | G-read if needed; latest response only; URL restored | ⛔ TODO(error-code) |
-| Open/close point | card/return to list | same hub and URL selection; G-read if needed | ⛔ TODO(error-code) |
-| Mark/unmark studied | explicit control | G-save confirmed before display changes | ⛔ TODO(error-code) |
-| Practise/submit | reviewed mode/answer | G-practice server result; one confirmed submission | ⛔ TODO(error-code) |
+| Filter/search/reset | controls | G-read (BE live); latest response only; URL restored | `VALIDATION_ERROR` |
+| Open/close point | card/return to list | same hub and URL selection; G-read (BE live) | `GRAMMAR_NOT_FOUND` |
+| Mark/unmark studied | explicit control | G-save (BE live) confirmed before display changes | `GRAMMAR_NOT_FOUND` |
+| Practise/submit | reviewed mode/answer | ⛔ deferred — no reviewed mode exists | — (no endpoint) |
 | Continue study | confirmed result | same point or list, no extra write | — |
 | Retry/return | retry or Dashboard link | failed read only / `/student` | existing handling |
 

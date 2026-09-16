@@ -9,9 +9,8 @@ last_updated: 2026-09-13
 | # | Module | File | Status | Invariants | Blocked by |
 |---|---|---|---|---|:---|
 | 1 | SRS Flashcards | `01-srs-flashcards.md` | ✅ `accepted` | 12 | vocabulary source for production seed; streak timezone |
-| 2 | Foundation and Grammar | [02-foundation-grammar.md](02-foundation-grammar.md) | 🔶 proposed / NOT IMPLEMENTED | 12 proposed | content, storage, transport, media and completion decisions |
+| 2 | Foundation and Grammar | [02-foundation-grammar.md](02-foundation-grammar.md) | 🔶 proposed → owner-approved to code 2026-09-16 (D1–D5) | 12 proposed | G-practice deferred; media none |
 | 4 | Progress Analytics (S-ANL-1..3) | [04-progress-analytics.md](04-progress-analytics.md) | 🔶 proposed (code waits for PR #73) | 7 | PR #73 merge; streak rule; XP/badge/board decisions in §16 |
-| 3 | Attempt Lifecycle (S-ASGN-2..7) | [03-attempt-lifecycle.md](03-attempt-lifecycle.md) | 🔶 proposed → owner-approved to code 2026-09-12 | 11 | none — AI re-open recorded in §16-Q0 |
 | 3 | Attempt Lifecycle (S-ASGN-2..7) | [03-attempt-lifecycle.md](03-attempt-lifecycle.md) | 🔶 proposed → owner-approved to code 2026-09-12 | 12 | none — AI re-open recorded in §16-Q0 |
 | 3 | Word bank (S-SRS-6/7) | `02-word-bank.md` | ✅ `implemented 2026-09-12` | 8 | none for this slice — full click-to-save surface arrives with the content screens (§16) |
 | 4 | Placement (Task C) | [04-placement.md](04-placement.md) | 🔶 proposed → owner-directed to code 2026-09-13 | 8 | paper depth capped by the question bank (F13/DOC-011 adjacency in §16-Q3) |
