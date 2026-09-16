@@ -81,13 +81,13 @@ test("auth styles still resolve real tokens (the --fg wash-out fix stays in plac
 });
 
 test("the teacher portraits and the three dependency are gone with the page", () => {
-  let found = [];
+  let portraits;
   try {
-    found = readdirSync(join(WEB, "public", "teachers"));
+    portraits = readdirSync(join(WEB, "public", "teachers"));
   } catch {
-    found = []; // directory removed — expected
+    portraits = null; // directory removed — expected
   }
-  assert.deepEqual(found, [], "teacher PNGs deleted");
+  assert.equal(portraits, null, "teacher portraits directory deleted");
   const pkg = readFileSync(join(WEB, "package.json"), "utf8");
   assert.ok(!pkg.includes('"three"'), "three dependency removed");
 });
