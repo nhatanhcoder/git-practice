@@ -10,6 +10,12 @@
 
 * text=auto eol=lf
 
+# Corpus JSON with hash-gated imports: byte-stability is the contract (D1).
+# Normalising their line endings would change their SHA-256 on the next clone
+# and trip the importer's provenance gate, so they are never converted.
+apps/api/content/foundation.json -text
+apps/api/content/grammar.json -text
+
 # Windows-only scripts must keep CRLF or cmd.exe mis-parses them
 *.bat  text eol=crlf
 *.cmd  text eol=crlf
