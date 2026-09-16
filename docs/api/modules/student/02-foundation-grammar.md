@@ -1,7 +1,7 @@
 ---
 module: student-foundation-grammar
-status: proposed → owner-approved to code 2026-09-16 (D1–D5)
-blocked_by: G-practice exercise manifest; nothing else for this slice
+status: proposed → owner-approved to code 2026-09-16 (D1–D5 + option-A practice port)
+blocked_by: throttling contract (D5 remainder); nothing else for this slice
 owner: project owner
 last_updated: 2026-09-16
 ---
@@ -62,11 +62,29 @@ studied: boolean · updatedAt
 @@unique([userId, contentKind, contentKey]) · @@index([userId])
 ```
 
+PostgreSQL (`GrammarPracticeAttempt`, option-A port 2026-09-16):
+
+```
+id uuid PK · userId FK → User.id ON DELETE CASCADE
+grammarId string (source grammar `id`) · submissionId string (client uuid v4)
+answer Json (submitted token order) · correct bool · createdAt
+@@unique([userId, grammarId, submissionId]) · @@index([userId, grammarId])
+```
+
+One row per submitted attempt; counts (`attemptCount`/`correctCount`) are derived
+by COUNT queries, never stored counters. A result row and its deduplication
+decision persist atomically; studied-state (`UserStudyProgress`) is a separate
+concept and is never written by practice. Same-submission replay returns the
+stored row; same-submission/different-answer is rejected (`GRAMMAR_PRACTICE_CONFLICT`).
+
 Deviation recorded: `PROJECT_KNOWLEDGE.md` §8.9's `UserGrammarProgress(userId,
 grammarPointId, status, attemptCount, lastPracticedAt)` is NOT used — this module
 §1 already records ADR-016 never approved that SQL shape. One table covers
-studied-state for both catalogs; `attemptCount`/practice results arrive with
-G-practice (deferred). No sample request body beyond §3.
+studied-state for both catalogs; practice results arrive as `GrammarPracticeAttempt`
+rows (option A, 2026-09-16), never as counters on the progress row. The parallel
+`feat/student-grammar-live` lane's `UserGrammarProgress` + file-backed catalog +
+`PUT :id/studied` + counter-increment submit are superseded by this design and must
+not be merged alongside it. No sample request body beyond §3.
 
 ### Source-derived field mapping
 
@@ -101,7 +119,8 @@ no `userId` on the wire). Flat envelopes per API_CONVENTIONS; DateTime UTC ISO 8
 | G-read-one | `GET /student/grammar/:id` | Single grammar record. Well-formed but absent id → `GRAMMAR_NOT_FOUND` 404 (sole new code, D5-approved). |
 | G-progress | `GET /student/grammar/progress` | `{ studied: [{ grammarId, updatedAt }] }` — own state only. |
 | G-save | `PUT /student/grammar/progress` | Body `{ grammarId, studied: boolean }` — idempotent set. Unknown id → `GRAMMAR_NOT_FOUND` 404. Returns the saved record. |
-| G-practice | DEFERRED — no reviewed exercise manifest exists (source has no distractors/cloze/match pairs, §6). Not built in this slice; FE grammar practice stays honestly unavailable. | — |
+| G-practice-read | `GET /student/grammar/:id/practice` | Reorder exercise: `{ id, prompt, hanziLength, tokens }` — tokens deterministically shuffled (same point ⇒ same scramble, reload-safe); correct order never served. Unknown id → `GRAMMAR_NOT_FOUND` 404. |
+| G-practice-submit | `POST /student/grammar/:id/practice` | Body `{ submissionId (uuid v4, client-generated), answer: string[1..20] }` — server grades exact token order (ADR-005). Returns `{ id, correct, expected, attemptCount, correctCount }` (counts derived, never trusted from the client). Same submission replayed ⇒ original result, no double count; same submissionId + different answer ⇒ `GRAMMAR_PRACTICE_CONFLICT` 409. |
 | M-read | NONE — no licensed audio/PDF assets exist (D4). Missing resources stay unavailable in the UI; no delivery contract is defined. | — |
 
 Do not reuse the SRS review endpoint: studying grammar is not an SM-2 flashcard rating.
@@ -140,14 +159,27 @@ PUT /student/foundation/progress   { kind, key, studied: boolean }
 
 GET /student/grammar?hskLevel=1&category=&search=&page=1&limit=20
 → { data: [{ id, level, category, name, formula, hanzi, pinyin, vi, note, key,
-             tokens, frequency }], meta: { total, page, limit, totalPages } }
+             frequency }], meta: { total, page, limit, totalPages } }
+  // `tokens` is the reorder answer: stored, never served by list/detail (it
+  // travels only inside the shuffled practice payload). `key`/`frequency` stay
+  // served (descriptive, not answers).
 
 GET /student/grammar/:id → { data: { ...same record } }   // absent: GRAMMAR_NOT_FOUND 404
 
-GET /student/grammar/progress → { data: { studied: [{ grammarId, studied, updatedAt }] } }
+GET /student/grammar/progress → { data: { studied: [{ grammarId, studied, updatedAt }],
+  practice: [{ grammarId, attempts, correct }] } }
 
 PUT /student/grammar/progress   { grammarId, studied: boolean }
 → { data: { grammarId, studied, updatedAt } }   // unknown id: GRAMMAR_NOT_FOUND 404
+
+GET /student/grammar/:id/practice → { data: { id, prompt, hanziLength, tokens } }
+  // prompt = source `vi` (rebuild the Chinese sentence from its meaning);
+  // tokens = deterministic shuffle of source `tokens` (stable per point id).
+
+POST /student/grammar/:id/practice   { submissionId, answer: string[] }
+→ { data: { id, correct, expected, attemptCount, correctCount } }
+  // correct = exact array equality vs source tokens (no alternates reviewed);
+  // expected = source order (practice reveal, not an exam key).
 ```
 
 Catalog filters support HSK 1–9 for Grammar; Foundation pinyin/radicals carry no
@@ -189,9 +221,13 @@ Study: not studied -> explicitly marked studied -> explicitly unmarked by the sa
 Repeated set-to-the-same-state should be idempotent; the UI must not use a toggle-only mutation.
 An item being opened, TTS ending, a file download, or microphone permission is not mastery.
 
-Practice: ready -> answering -> submitting -> confirmed result; failure keeps the answer and
-supports recovery without silently awarding progress. There must be a stable submission identity
-before retries can be safe. Same identity/different answer needs a defined conflict response (D5).
+Practice (reorder only, option-A port 2026-09-16): ready -> answering ->
+submitting -> confirmed result; failure keeps the answer and supports recovery
+without silently awarding progress. Submission identity = client-generated
+`submissionId` (uuid v4) per attempt: replaying it returns the stored result
+(rule 5 — at most one result row per submission, enforced by the unique
+`[userId, grammarId, submissionId]` index); same identity + different answer ⇒
+`GRAMMAR_PRACTICE_CONFLICT` 409. Practice never writes studied-state (§1).
 
 Recommendation D3: first expose studied-item counts and confirmed per-exercise feedback.
 Keep mastery percentage, pass threshold, streak and XP unavailable until pedagogical/event rules
@@ -208,18 +244,22 @@ and treat that as validated word tokenization.
 ## 7. Transaction boundary
 
 Use immutable reviewed catalog revisions so validation reads cannot change between answer
-validation and commit. Persist a practice result, its deduplication decision and progress update
-in one PG transaction. If content/DB lookup fails, write nothing and preserve the user's draft.
-No cross-database atomic publish/write is promised. Withdrawal/concurrent import policy is a
-D2 prerequisite; old result references must remain valid even after new content is published.
+validation and commit. A practice submit persists its result row atomically (single-row
+insert keyed by the submission identity — concurrent duplicates collapse on the unique
+index, the loser reads back the winner's row). If content/DB lookup fails, write nothing
+and preserve the user's draft. No cross-database atomic publish/write is promised.
+Withdrawal/concurrent import policy is a D2 prerequisite; old result references must
+remain valid even after new content is published (progress/practice rows keep their
+content keys even if the catalog revision moves on).
 
-## 8. Idempotency & concurrency
+## 8. Idempotency & concurrency — approved (option A, 2026-09-16)
 
-D5 must define a bounded retry identity and lifetime, uniqueness enforcement, same-identity/same-
-answer replay and same-identity/different-answer rejection. These are missing transport fields,
-not implicit headers to invent. Set studied/un-studied must also define ordering for competing
-writes; recommend optimistic revision checks instead of nondeterministic toggles. Do not
-implement or auto-replay either write until these cases have approved responses/error mappings.
+Retry identity = client `submissionId` (uuid v4), one per attempt, no expiry:
+same-identity/same-answer replays the stored result (no second row — rule 5);
+same-identity/different-answer is rejected (`GRAMMAR_PRACTICE_CONFLICT` 409).
+Concurrent duplicate submits collapse on the unique `[userId, grammarId,
+submissionId]` index. Set studied/un-studied stays last-write-wins on
+`updatedAt` (explicit set, never a toggle). No auto-replay anywhere.
 
 ## 9. Error mapping — approved (D5, 2026-09-16)
 
@@ -229,12 +269,12 @@ Content-specific mapping for this slice:
 | Case | Code | HTTP |
 |---|---|---|
 | F-save unknown `kind`/`key`; malformed bodies | `VALIDATION_ERROR` (existing) | 400 |
-| Grammar id well-formed but absent (detail + save) | `GRAMMAR_NOT_FOUND` (sole new code, D5-approved) | 404 |
+| Grammar id well-formed but absent (detail + save) | `GRAMMAR_NOT_FOUND` (sole catalog code, D5-approved) | 404 |
+| Practice retry with same submissionId but different answer | `GRAMMAR_PRACTICE_CONFLICT` (D5 retry/conflict scope + option-A port, 2026-09-16) | 409 |
 | Missing/invalid auth, wrong role | existing `AUTH_*` | 401/403 |
 
-No other new code is minted here. G-practice/M-read define no mapping because they
-define no endpoint. The FE distinguishes request/network failure from empty content
-without inventing a code.
+No other new code is minted here. M-read defines no endpoint. The FE distinguishes
+request/network failure from empty content without inventing a code.
 
 ## 10. Side effects & notifications
 
@@ -274,7 +314,8 @@ original text and distinguish canonical normalization from changing pedagogical 
    the catalog revision moves on).
 7. After contract/backend verification, wire the FE foundation route and remove its production
    unavailable gate only for implemented capabilities (catalog read + studied-state).
-   Grammar FE, G-practice and media stay gated. Deploy/import remains separate.
+   Grammar FE + reorder practice wire in the option-A slice; media stays gated. Deploy/import
+   remains separate.
 
 ## 13. Security, media & resource limits
 
@@ -318,6 +359,7 @@ prove any of the runtime behaviors above.
 | D3 Completion | Explicit self-reported study + confirmed practice results; mastery/XP/streak deferred until rules exist | Product/content owner; behavior and scope |
 | D4 Media | Source real licensed audio/PDF; record/playback locally without upload or scoring first | Product/content owner; CR-3 and asset/voice implementation |
 | D5 Transport | Define each operation in section 2 with exact path/method/DTO/errors, pagination, retry/conflict rules and limits | BE owner; all API implementation |
+| Option A | Keep #89 BE; port zcode reorder practice adapted (result rows, submissionId idempotency, strip `tokens`); supersede `feat/student-grammar-live` | Owner 2026-09-16; this slice |
 
 Deliverables in this task: audit, this proposal, two blocked Page Contracts, traversal and
 updated indexes/records. **This is a review package, not a ready-to-code or accepted contract.**
