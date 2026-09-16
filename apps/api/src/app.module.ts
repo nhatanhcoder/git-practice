@@ -21,6 +21,9 @@ import { FlashcardsModule } from './flashcards/flashcards.module';
 import { WordBankModule } from './word-bank/word-bank.module';
 import { PlacementModule } from './placement/placement.module';
 import { NotificationsModule } from './notifications/notifications.module';
+import { WritingModule } from './writing/writing.module';
+import { FoundationModule } from './foundation/foundation.module';
+import { GrammarModule } from './grammar/grammar.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
 
@@ -43,6 +46,9 @@ import { RolesGuard } from './common/guards/roles.guard';
     WordBankModule,
     PlacementModule,
     NotificationsModule,
+    WritingModule,
+    FoundationModule,
+    GrammarModule,
 
     // Global so any guard can verify an access token without each feature module
     // re-registering it. Only verification lives here — nothing issues tokens yet:
