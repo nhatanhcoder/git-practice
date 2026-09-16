@@ -324,6 +324,10 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
       the five-box Leitner behavior in the FE mockup
 - ⛔ Content loader: read + validate the JSON files, schema guards — import/seed strategy not approved
 - ⛔ F9 Pronunciation foundation (pinyin table, tones, tone sandhi, 214 radicals, 4 PDFs)
+- 🔶 (opencode · 2026-09-16) **F9 Foundation backend + FE wiring (scope B, D1–D5 owner-approved)** —
+  branch `feat/student-foundation-be`. Mongo versioned catalog + PG studied-state + 7 endpoints
+  (F-read/F-progress/F-save/G-read/G-progress/G-save + deferred G-practice, no M-read); FE
+  `/student/foundation` live. Grammar endpoints ride along per module 02; grammar FE untouched.
 - ⛔ F10 Grammar points (browse, auto-generate exercises from `tokens`, progress)
 - ⛔ F11 Character writing (stroke-order animation, canvas practice, radical breakdown)
 - ⛔ F12 Lego sentence builder (7 stations, drag-drop with S/T/P/A/V/O/C/Q roles, endless mode)
