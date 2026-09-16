@@ -1,19 +1,19 @@
 ---
-feature: S-ANL-1, S-ANL-2 (mock body also shows S-GAME-1..3 figures)
+feature: S-ANL-1, S-ANL-2
 role: student
 route: /student/progress
-status: built (mock — ⛔ response shape)
-last_updated: 2026-09-12
+status: built (live)
+last_updated: 2026-09-16
 ---
 
 # Page Contract — Student · Progress (S-ANL-1/2)
 
 ## Purpose
-Show the learner's own study progress: the skill×week heatmap, the average-score-over-time chart, and (mock today) streak/XP figures.
+Show the learner's own graded-attempt progress: the skill×week heatmap, skill breakdown and average-score-over-time chart.
 
 ## Access
 - Allowed roles: `student`
-- Ownership rule: would be token-scoped; the two reserved paths carry no approved response shape (see Data)
+- Ownership rule: token-scoped; every query filters `studentId === currentUser.id`
 
 ## Entry points
 - From: Student sidebar → "Tiến độ học tập"; deep link `/student/progress`
@@ -21,33 +21,22 @@ Show the learner's own study progress: the skill×week heatmap, the average-scor
 ## Data
 | Need | Endpoint | Envelope field |
 |---|---|---|
-| Heatmap + skill breakdown (S-ANL-1) | `GET /api/v1/student/progress` — shapes proposed in `04-progress-analytics.md` (unapproved, needs PR #73) | `data` (proposed) |
-| Score-over-time chart (S-ANL-2) | `GET /api/v1/student/progress/chart` — shapes proposed in `04-progress-analytics.md` (unapproved) | `data.points[]` (proposed) |
-| ⛔ Streak / XP figures (S-GAME-2/3) | none defined | — |
+| Heatmap + skill breakdown (S-ANL-1) | `GET /api/v1/student/progress` | `data` |
+| Score-over-time chart (S-ANL-2) | `GET /api/v1/student/progress/chart` | `data.points[]` |
 
-Conflict recorded, not picked: the two paths exist in `API_STUDENT.md` § Progress & Analytics, but `ai/PROGRESS.md`
-Sprint 5 marks F6.1/F6.2 ⛔ because **no module spec defines their request/response contracts**. Per the Conflict
-Rules this contract treats the paths as reserved and the payloads as unapproved; building against them needs the
-analytics module spec first (recorded under "Needs from the other lane"). Streak/XP/level blocks are gamification
-(`S-GAME-1..3`) with no contract at all — the dashboard already renders those as missing rather than invented
-(`WEB-011` family).
-
-Update 2026-09-12: the analytics module spec now exists as a proposal —
-`docs/api/modules/student/04-progress-analytics.md` (read-only aggregation, no new tables; code waits for
-PR #73). Payloads above stay unapproved until a BE owner signs the module; this contract's status and
-mock-fidelity sections are unchanged.
+The owner approved the analytics slice after PR #73 merged. Streak, XP, rank, badges and peer data remain outside this page because their contracts are separate.
 
 ## Regions
 1. Page Header: eyebrow "Cộng đồng", title "Tiến độ học tập"
-2. Study-streak block (mock; ⛔ S-GAME-3 calendar/timezone rule unsettled)
-3. "XP theo tháng" chart (mock; ⛔ S-GAME-1)
-4. "Bốn kỹ năng" skill breakdown (mock; ⛔ S-ANL-1 shape)
+2. Own graded-attempt metrics
+3. Eight-full-week skill heatmap
+4. Skill breakdown and twelve-full-week average-score chart with table alternative
 
 ## States
 - [x] Loading — skeleton
-- [x] Ready — mock content (⛔ no live data)
-- [x] Empty — N/A in the mock
-- [x] Partial — N/A (single dataset)
+- [x] Ready — live API data
+- [x] Empty — no graded attempts
+- [x] Partial — `null` cells and skills render as `—`
 - [x] Error — load failure wording
 - [x] Forbidden — handled by Student shell `RequireAuth`
 - [x] Offline / stale — network error wording; no fallback fixtures (WEB-011 family)
@@ -55,7 +44,7 @@ mock-fidelity sections are unchanged.
 ## Actions
 | Action | Trigger | Result | Error code |
 |---|---|---|---|
-| Change period/skill filter | chart controls | refilter mock view (⛔ no live source) | — |
+| Toggle chart/table | button | Show the same score points in an accessible table | — |
 
 ## Out of scope
-Per-assignment scores (S-ANL-3 — lives on attempt result, PR #73); class-average comparison (S-ANL-5, 🟢 Could); teacher dashboards.
+Per-assignment scores (S-ANL-3); class-average comparison (S-ANL-5); teacher dashboards; XP, streak, rank, badges and leaderboard.

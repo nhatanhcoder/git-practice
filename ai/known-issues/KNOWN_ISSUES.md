@@ -1947,3 +1947,10 @@ tsx past the Node 25 loader incompatibility, then re-run `pnpm --filter api test
 ### 2026-09-13 migration-only review note
 
 No new issue ID assigned. The AttemptAnswer migration was split from PR #73 so it can be verified and merged before dependent API/FE code.
+
+### 2026-09-16 student progress live implementation review
+
+No new issue ID assigned. The live progress slice removes the page's fabricated XP, streak,
+rank, badge and HSK-ladder figures. Existing BUILD-005 still applies to the repository's Node 25
+test command; the focused progress e2e used explicit `.js` imports and passed without changing the
+global test runner.
