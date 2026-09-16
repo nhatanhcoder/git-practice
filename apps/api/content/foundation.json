@@ -1,0 +1,2491 @@
+{
+  "initials": [
+    {
+      "id": "ini-0",
+      "sound": "b",
+      "ipa": "p",
+      "hanzi": "爸",
+      "pinyin": "bà",
+      "vi": "bố",
+      "group": "Âm môi"
+    },
+    {
+      "id": "ini-1",
+      "sound": "p",
+      "ipa": "pʰ",
+      "hanzi": "怕",
+      "pinyin": "pà",
+      "vi": "sợ",
+      "group": "Âm môi"
+    },
+    {
+      "id": "ini-2",
+      "sound": "m",
+      "ipa": "m",
+      "hanzi": "妈",
+      "pinyin": "mā",
+      "vi": "mẹ",
+      "group": "Âm môi"
+    },
+    {
+      "id": "ini-3",
+      "sound": "f",
+      "ipa": "f",
+      "hanzi": "飞",
+      "pinyin": "fēi",
+      "vi": "bay",
+      "group": "Âm môi"
+    },
+    {
+      "id": "ini-4",
+      "sound": "d",
+      "ipa": "t",
+      "hanzi": "大",
+      "pinyin": "dà",
+      "vi": "to",
+      "group": "Đầu lưỡi giữa"
+    },
+    {
+      "id": "ini-5",
+      "sound": "t",
+      "ipa": "tʰ",
+      "hanzi": "天",
+      "pinyin": "tiān",
+      "vi": "trời",
+      "group": "Đầu lưỡi giữa"
+    },
+    {
+      "id": "ini-6",
+      "sound": "n",
+      "ipa": "n",
+      "hanzi": "你",
+      "pinyin": "nǐ",
+      "vi": "bạn",
+      "group": "Đầu lưỡi giữa"
+    },
+    {
+      "id": "ini-7",
+      "sound": "l",
+      "ipa": "l",
+      "hanzi": "来",
+      "pinyin": "lái",
+      "vi": "đến",
+      "group": "Đầu lưỡi giữa"
+    },
+    {
+      "id": "ini-8",
+      "sound": "g",
+      "ipa": "k",
+      "hanzi": "高",
+      "pinyin": "gāo",
+      "vi": "cao",
+      "group": "Cuống lưỡi"
+    },
+    {
+      "id": "ini-9",
+      "sound": "k",
+      "ipa": "kʰ",
+      "hanzi": "看",
+      "pinyin": "kàn",
+      "vi": "xem",
+      "group": "Cuống lưỡi"
+    },
+    {
+      "id": "ini-10",
+      "sound": "h",
+      "ipa": "x",
+      "hanzi": "好",
+      "pinyin": "hǎo",
+      "vi": "tốt",
+      "group": "Cuống lưỡi"
+    },
+    {
+      "id": "ini-11",
+      "sound": "j",
+      "ipa": "tɕ",
+      "hanzi": "家",
+      "pinyin": "jiā",
+      "vi": "nhà",
+      "group": "Mặt lưỡi"
+    },
+    {
+      "id": "ini-12",
+      "sound": "q",
+      "ipa": "tɕʰ",
+      "hanzi": "去",
+      "pinyin": "qù",
+      "vi": "đi",
+      "group": "Mặt lưỡi"
+    },
+    {
+      "id": "ini-13",
+      "sound": "x",
+      "ipa": "ɕ",
+      "hanzi": "谢",
+      "pinyin": "xiè",
+      "vi": "cảm ơn",
+      "group": "Mặt lưỡi"
+    },
+    {
+      "id": "ini-14",
+      "sound": "zh",
+      "ipa": "ʈʂ",
+      "hanzi": "中",
+      "pinyin": "zhōng",
+      "vi": "giữa",
+      "group": "Đầu lưỡi sau"
+    },
+    {
+      "id": "ini-15",
+      "sound": "ch",
+      "ipa": "ʈʂʰ",
+      "hanzi": "吃",
+      "pinyin": "chī",
+      "vi": "ăn",
+      "group": "Đầu lưỡi sau"
+    },
+    {
+      "id": "ini-16",
+      "sound": "sh",
+      "ipa": "ʂ",
+      "hanzi": "是",
+      "pinyin": "shì",
+      "vi": "là",
+      "group": "Đầu lưỡi sau"
+    },
+    {
+      "id": "ini-17",
+      "sound": "r",
+      "ipa": "ʐ",
+      "hanzi": "人",
+      "pinyin": "rén",
+      "vi": "người",
+      "group": "Đầu lưỡi sau"
+    },
+    {
+      "id": "ini-18",
+      "sound": "z",
+      "ipa": "ts",
+      "hanzi": "早",
+      "pinyin": "zǎo",
+      "vi": "sớm",
+      "group": "Đầu lưỡi trước"
+    },
+    {
+      "id": "ini-19",
+      "sound": "c",
+      "ipa": "tsʰ",
+      "hanzi": "菜",
+      "pinyin": "cài",
+      "vi": "món ăn",
+      "group": "Đầu lưỡi trước"
+    },
+    {
+      "id": "ini-20",
+      "sound": "s",
+      "ipa": "s",
+      "hanzi": "三",
+      "pinyin": "sān",
+      "vi": "ba",
+      "group": "Đầu lưỡi trước"
+    }
+  ],
+  "finals": [
+    {
+      "id": "fin-0",
+      "sound": "a",
+      "ipa": "a",
+      "hanzi": "八",
+      "pinyin": "bā",
+      "vi": "tám",
+      "group": "Nguyên âm đơn"
+    },
+    {
+      "id": "fin-1",
+      "sound": "o",
+      "ipa": "o",
+      "hanzi": "我",
+      "pinyin": "wǒ",
+      "vi": "tôi",
+      "group": "Nguyên âm đơn"
+    },
+    {
+      "id": "fin-2",
+      "sound": "e",
+      "ipa": "ɤ",
+      "hanzi": "饿",
+      "pinyin": "è",
+      "vi": "đói",
+      "group": "Nguyên âm đơn"
+    },
+    {
+      "id": "fin-3",
+      "sound": "i",
+      "ipa": "i",
+      "hanzi": "一",
+      "pinyin": "yī",
+      "vi": "một",
+      "group": "Nguyên âm đơn"
+    },
+    {
+      "id": "fin-4",
+      "sound": "u",
+      "ipa": "u",
+      "hanzi": "五",
+      "pinyin": "wǔ",
+      "vi": "năm",
+      "group": "Nguyên âm đơn"
+    },
+    {
+      "id": "fin-5",
+      "sound": "ü",
+      "ipa": "y",
+      "hanzi": "绿",
+      "pinyin": "lǜ",
+      "vi": "xanh lá",
+      "group": "Nguyên âm đơn"
+    },
+    {
+      "id": "fin-6",
+      "sound": "ai",
+      "ipa": "ai̯",
+      "hanzi": "爱",
+      "pinyin": "ài",
+      "vi": "yêu",
+      "group": "Nguyên âm kép"
+    },
+    {
+      "id": "fin-7",
+      "sound": "ei",
+      "ipa": "ei̯",
+      "hanzi": "杯",
+      "pinyin": "bēi",
+      "vi": "cốc",
+      "group": "Nguyên âm kép"
+    },
+    {
+      "id": "fin-8",
+      "sound": "ao",
+      "ipa": "ɑu̯",
+      "hanzi": "好",
+      "pinyin": "hǎo",
+      "vi": "tốt",
+      "group": "Nguyên âm kép"
+    },
+    {
+      "id": "fin-9",
+      "sound": "ou",
+      "ipa": "ou̯",
+      "hanzi": "口",
+      "pinyin": "kǒu",
+      "vi": "miệng",
+      "group": "Nguyên âm kép"
+    },
+    {
+      "id": "fin-10",
+      "sound": "ia",
+      "ipa": "i̯a",
+      "hanzi": "家",
+      "pinyin": "jiā",
+      "vi": "nhà",
+      "group": "Nguyên âm kép"
+    },
+    {
+      "id": "fin-11",
+      "sound": "ie",
+      "ipa": "i̯ɛ",
+      "hanzi": "谢",
+      "pinyin": "xiè",
+      "vi": "cảm ơn",
+      "group": "Nguyên âm kép"
+    },
+    {
+      "id": "fin-12",
+      "sound": "ua",
+      "ipa": "u̯a",
+      "hanzi": "花",
+      "pinyin": "huā",
+      "vi": "hoa",
+      "group": "Nguyên âm kép"
+    },
+    {
+      "id": "fin-13",
+      "sound": "uo",
+      "ipa": "u̯o",
+      "hanzi": "说",
+      "pinyin": "shuō",
+      "vi": "nói",
+      "group": "Nguyên âm kép"
+    },
+    {
+      "id": "fin-14",
+      "sound": "üe",
+      "ipa": "y̯ɛ",
+      "hanzi": "月",
+      "pinyin": "yuè",
+      "vi": "tháng",
+      "group": "Nguyên âm kép"
+    },
+    {
+      "id": "fin-15",
+      "sound": "iao",
+      "ipa": "i̯ɑu̯",
+      "hanzi": "小",
+      "pinyin": "xiǎo",
+      "vi": "nhỏ",
+      "group": "Nguyên âm ba"
+    },
+    {
+      "id": "fin-16",
+      "sound": "iou (iu)",
+      "ipa": "i̯ou̯",
+      "hanzi": "六",
+      "pinyin": "liù",
+      "vi": "sáu",
+      "group": "Nguyên âm ba"
+    },
+    {
+      "id": "fin-17",
+      "sound": "uai",
+      "ipa": "u̯ai̯",
+      "hanzi": "快",
+      "pinyin": "kuài",
+      "vi": "nhanh",
+      "group": "Nguyên âm ba"
+    },
+    {
+      "id": "fin-18",
+      "sound": "uei (ui)",
+      "ipa": "u̯ei̯",
+      "hanzi": "水",
+      "pinyin": "shuǐ",
+      "vi": "nước",
+      "group": "Nguyên âm ba"
+    },
+    {
+      "id": "fin-19",
+      "sound": "an",
+      "ipa": "an",
+      "hanzi": "安",
+      "pinyin": "ān",
+      "vi": "an toàn",
+      "group": "Vận mũi trước"
+    },
+    {
+      "id": "fin-20",
+      "sound": "en",
+      "ipa": "ən",
+      "hanzi": "很",
+      "pinyin": "hěn",
+      "vi": "rất",
+      "group": "Vận mũi trước"
+    },
+    {
+      "id": "fin-21",
+      "sound": "in",
+      "ipa": "in",
+      "hanzi": "新",
+      "pinyin": "xīn",
+      "vi": "mới",
+      "group": "Vận mũi trước"
+    },
+    {
+      "id": "fin-22",
+      "sound": "uen (un)",
+      "ipa": "u̯ən",
+      "hanzi": "问",
+      "pinyin": "wèn",
+      "vi": "hỏi",
+      "group": "Vận mũi trước"
+    },
+    {
+      "id": "fin-23",
+      "sound": "ün",
+      "ipa": "yn",
+      "hanzi": "云",
+      "pinyin": "yún",
+      "vi": "mây",
+      "group": "Vận mũi trước"
+    },
+    {
+      "id": "fin-24",
+      "sound": "ian",
+      "ipa": "i̯ɛn",
+      "hanzi": "天",
+      "pinyin": "tiān",
+      "vi": "trời",
+      "group": "Vận mũi trước"
+    },
+    {
+      "id": "fin-25",
+      "sound": "uan",
+      "ipa": "u̯an",
+      "hanzi": "完",
+      "pinyin": "wán",
+      "vi": "xong",
+      "group": "Vận mũi trước"
+    },
+    {
+      "id": "fin-26",
+      "sound": "üan",
+      "ipa": "y̯ɛn",
+      "hanzi": "远",
+      "pinyin": "yuǎn",
+      "vi": "xa",
+      "group": "Vận mũi trước"
+    },
+    {
+      "id": "fin-27",
+      "sound": "ang",
+      "ipa": "ɑŋ",
+      "hanzi": "忙",
+      "pinyin": "máng",
+      "vi": "bận",
+      "group": "Vận mũi sau"
+    },
+    {
+      "id": "fin-28",
+      "sound": "eng",
+      "ipa": "əŋ",
+      "hanzi": "冷",
+      "pinyin": "lěng",
+      "vi": "lạnh",
+      "group": "Vận mũi sau"
+    },
+    {
+      "id": "fin-29",
+      "sound": "ing",
+      "ipa": "iŋ",
+      "hanzi": "听",
+      "pinyin": "tīng",
+      "vi": "nghe",
+      "group": "Vận mũi sau"
+    },
+    {
+      "id": "fin-30",
+      "sound": "ong",
+      "ipa": "ʊŋ",
+      "hanzi": "中",
+      "pinyin": "zhōng",
+      "vi": "giữa",
+      "group": "Vận mũi sau"
+    },
+    {
+      "id": "fin-31",
+      "sound": "iang",
+      "ipa": "i̯ɑŋ",
+      "hanzi": "想",
+      "pinyin": "xiǎng",
+      "vi": "muốn",
+      "group": "Vận mũi sau"
+    },
+    {
+      "id": "fin-32",
+      "sound": "uang",
+      "ipa": "u̯ɑŋ",
+      "hanzi": "黄",
+      "pinyin": "huáng",
+      "vi": "vàng",
+      "group": "Vận mũi sau"
+    },
+    {
+      "id": "fin-33",
+      "sound": "iong",
+      "ipa": "i̯ʊŋ",
+      "hanzi": "熊",
+      "pinyin": "xióng",
+      "vi": "gấu",
+      "group": "Vận mũi sau"
+    },
+    {
+      "id": "fin-34",
+      "sound": "ueng",
+      "ipa": "u̯əŋ",
+      "hanzi": "翁",
+      "pinyin": "wēng",
+      "vi": "ông lão",
+      "group": "Vận mũi sau"
+    },
+    {
+      "id": "fin-35",
+      "sound": "er",
+      "ipa": "ɚ",
+      "hanzi": "二",
+      "pinyin": "èr",
+      "vi": "hai",
+      "group": "Vận uốn lưỡi"
+    }
+  ],
+  "tones": [
+    {
+      "id": 1,
+      "name": "Thanh 1 · Âm bình",
+      "mark": "ˉ",
+      "contour": "55",
+      "pitch": "Cao và bằng",
+      "desc": "Giữ cao độ ổn định như khi ngân một nốt nhạc. Người Việt hay hạ giọng ở cuối — cần giữ đều.",
+      "hanzi": "妈",
+      "pinyin": "mā",
+      "vi": "mẹ",
+      "path": "8,12 92,12"
+    },
+    {
+      "id": 2,
+      "name": "Thanh 2 · Dương bình",
+      "mark": "ˊ",
+      "contour": "35",
+      "pitch": "Đi lên",
+      "desc": "Vút lên từ giữa lên cao, giống ngữ điệu câu hỏi ngắn trong tiếng Việt.",
+      "hanzi": "麻",
+      "pinyin": "má",
+      "vi": "cây gai",
+      "path": "8,42 92,10"
+    },
+    {
+      "id": 3,
+      "name": "Thanh 3 · Thướng thanh",
+      "mark": "ˇ",
+      "contour": "214",
+      "pitch": "Xuống rồi lên",
+      "desc": "Trong lời nói tự nhiên thường chỉ còn phần thấp (nửa thanh 3), không nhất thiết vống lên.",
+      "hanzi": "马",
+      "pinyin": "mǎ",
+      "vi": "con ngựa",
+      "path": "8,26 34,50 62,50 92,14"
+    },
+    {
+      "id": 4,
+      "name": "Thanh 4 · Khứ thanh",
+      "mark": "ˋ",
+      "contour": "51",
+      "pitch": "Dốc xuống",
+      "desc": "Rơi dứt khoát từ cao xuống thấp, giống khi ra lệnh ngắn gọn.",
+      "hanzi": "骂",
+      "pinyin": "mà",
+      "vi": "mắng",
+      "path": "8,10 92,50"
+    }
+  ],
+  "sandhi": [
+    {
+      "id": "s1",
+      "title": "Hai thanh 3 liền nhau",
+      "rule": "3 + 3 → 2 + 3",
+      "before": "nǐ hǎo",
+      "after": "ní hǎo",
+      "hanzi": "你好",
+      "vi": "xin chào"
+    },
+    {
+      "id": "s2",
+      "title": "Ba thanh 3 liên tiếp",
+      "rule": "3 + 3 + 3 → 2 + 2 + 3",
+      "before": "wǒ hěn hǎo",
+      "after": "wó hén hǎo",
+      "hanzi": "我很好",
+      "vi": "tôi rất khoẻ"
+    },
+    {
+      "id": "s3",
+      "title": "不 trước thanh 4",
+      "rule": "bù → bú",
+      "before": "bù shì",
+      "after": "bú shì",
+      "hanzi": "不是",
+      "vi": "không phải"
+    },
+    {
+      "id": "s4",
+      "title": "一 trước thanh 4",
+      "rule": "yī → yí",
+      "before": "yī yàng",
+      "after": "yí yàng",
+      "hanzi": "一样",
+      "vi": "giống nhau"
+    },
+    {
+      "id": "s5",
+      "title": "一 trước thanh 1/2/3",
+      "rule": "yī → yì",
+      "before": "yī qǐ",
+      "after": "yì qǐ",
+      "hanzi": "一起",
+      "vi": "cùng nhau"
+    },
+    {
+      "id": "s6",
+      "title": "Thanh nhẹ",
+      "rule": "Âm tiết cuối mất trọng âm",
+      "before": "mā ma",
+      "after": "māma",
+      "hanzi": "妈妈",
+      "vi": "mẹ"
+    }
+  ],
+  "radicals": [
+    {
+      "no": 1,
+      "char": "一",
+      "strokes": 1,
+      "pinyin": "yī",
+      "meaning": "Nhất — một",
+      "hanViet": "Nhất"
+    },
+    {
+      "no": 2,
+      "char": "丨",
+      "strokes": 1,
+      "pinyin": "gǔn",
+      "meaning": "Cổn — nét sổ",
+      "hanViet": "Cổn"
+    },
+    {
+      "no": 3,
+      "char": "丶",
+      "strokes": 1,
+      "pinyin": "zhǔ",
+      "meaning": "Chủ — nét chấm",
+      "hanViet": "Chủ"
+    },
+    {
+      "no": 4,
+      "char": "丿",
+      "strokes": 1,
+      "pinyin": "piě",
+      "meaning": "Phiệt — nét phẩy",
+      "hanViet": "Phiệt"
+    },
+    {
+      "no": 5,
+      "char": "乙",
+      "strokes": 1,
+      "pinyin": "yǐ",
+      "meaning": "Ất — can Ất",
+      "hanViet": "Ất"
+    },
+    {
+      "no": 6,
+      "char": "亅",
+      "strokes": 1,
+      "pinyin": "jué",
+      "meaning": "Quyết — nét móc",
+      "hanViet": "Quyết"
+    },
+    {
+      "no": 7,
+      "char": "二",
+      "strokes": 2,
+      "pinyin": "èr",
+      "meaning": "Nhị — hai",
+      "hanViet": "Nhị"
+    },
+    {
+      "no": 8,
+      "char": "亠",
+      "strokes": 2,
+      "pinyin": "tóu",
+      "meaning": "Đầu — phần đầu",
+      "hanViet": "Đầu"
+    },
+    {
+      "no": 9,
+      "char": "人",
+      "strokes": 2,
+      "pinyin": "rén",
+      "meaning": "Nhân — người",
+      "hanViet": "Nhân"
+    },
+    {
+      "no": 10,
+      "char": "儿",
+      "strokes": 2,
+      "pinyin": "ér",
+      "meaning": "Nhi — trẻ nhỏ",
+      "hanViet": "Nhi"
+    },
+    {
+      "no": 11,
+      "char": "入",
+      "strokes": 2,
+      "pinyin": "rù",
+      "meaning": "Nhập — vào",
+      "hanViet": "Nhập"
+    },
+    {
+      "no": 12,
+      "char": "八",
+      "strokes": 2,
+      "pinyin": "bā",
+      "meaning": "Bát — tám",
+      "hanViet": "Bát"
+    },
+    {
+      "no": 13,
+      "char": "冂",
+      "strokes": 2,
+      "pinyin": "jiōng",
+      "meaning": "Quynh — vùng biên",
+      "hanViet": "Quynh"
+    },
+    {
+      "no": 14,
+      "char": "冖",
+      "strokes": 2,
+      "pinyin": "mì",
+      "meaning": "Mịch — trùm khăn",
+      "hanViet": "Mịch"
+    },
+    {
+      "no": 15,
+      "char": "冫",
+      "strokes": 2,
+      "pinyin": "bīng",
+      "meaning": "Băng — nước đá",
+      "hanViet": "Băng"
+    },
+    {
+      "no": 16,
+      "char": "几",
+      "strokes": 2,
+      "pinyin": "jī",
+      "meaning": "Kỷ — ghế nhỏ",
+      "hanViet": "Kỷ"
+    },
+    {
+      "no": 17,
+      "char": "凵",
+      "strokes": 2,
+      "pinyin": "kǎn",
+      "meaning": "Khảm — há miệng",
+      "hanViet": "Khảm"
+    },
+    {
+      "no": 18,
+      "char": "刀",
+      "strokes": 2,
+      "pinyin": "dāo",
+      "meaning": "Đao — con dao",
+      "hanViet": "Đao"
+    },
+    {
+      "no": 19,
+      "char": "力",
+      "strokes": 2,
+      "pinyin": "lì",
+      "meaning": "Lực — sức lực",
+      "hanViet": "Lực"
+    },
+    {
+      "no": 20,
+      "char": "勹",
+      "strokes": 2,
+      "pinyin": "bāo",
+      "meaning": "Bao — bao bọc",
+      "hanViet": "Bao"
+    },
+    {
+      "no": 21,
+      "char": "匕",
+      "strokes": 2,
+      "pinyin": "bǐ",
+      "meaning": "Chuỷ — cái thìa",
+      "hanViet": "Chuỷ"
+    },
+    {
+      "no": 22,
+      "char": "匚",
+      "strokes": 2,
+      "pinyin": "fāng",
+      "meaning": "Phương — hộp vuông",
+      "hanViet": "Phương"
+    },
+    {
+      "no": 23,
+      "char": "匸",
+      "strokes": 2,
+      "pinyin": "xì",
+      "meaning": "Hệ — che giấu",
+      "hanViet": "Hệ"
+    },
+    {
+      "no": 24,
+      "char": "十",
+      "strokes": 2,
+      "pinyin": "shí",
+      "meaning": "Thập — mười",
+      "hanViet": "Thập"
+    },
+    {
+      "no": 25,
+      "char": "卜",
+      "strokes": 2,
+      "pinyin": "bǔ",
+      "meaning": "Bốc — bói toán",
+      "hanViet": "Bốc"
+    },
+    {
+      "no": 26,
+      "char": "卩",
+      "strokes": 2,
+      "pinyin": "jié",
+      "meaning": "Tiết — đốt tre",
+      "hanViet": "Tiết"
+    },
+    {
+      "no": 27,
+      "char": "厂",
+      "strokes": 2,
+      "pinyin": "hǎn",
+      "meaning": "Hán — sườn núi",
+      "hanViet": "Hán"
+    },
+    {
+      "no": 28,
+      "char": "厶",
+      "strokes": 2,
+      "pinyin": "sī",
+      "meaning": "Tư — riêng tư",
+      "hanViet": "Tư"
+    },
+    {
+      "no": 29,
+      "char": "又",
+      "strokes": 2,
+      "pinyin": "yòu",
+      "meaning": "Hựu — lại nữa",
+      "hanViet": "Hựu"
+    },
+    {
+      "no": 30,
+      "char": "口",
+      "strokes": 3,
+      "pinyin": "kǒu",
+      "meaning": "Khẩu — cái miệng",
+      "hanViet": "Khẩu"
+    },
+    {
+      "no": 31,
+      "char": "囗",
+      "strokes": 3,
+      "pinyin": "wéi",
+      "meaning": "Vi — vây quanh",
+      "hanViet": "Vi"
+    },
+    {
+      "no": 32,
+      "char": "土",
+      "strokes": 3,
+      "pinyin": "tǔ",
+      "meaning": "Thổ — đất",
+      "hanViet": "Thổ"
+    },
+    {
+      "no": 33,
+      "char": "士",
+      "strokes": 3,
+      "pinyin": "shì",
+      "meaning": "Sĩ — kẻ sĩ",
+      "hanViet": "Sĩ"
+    },
+    {
+      "no": 34,
+      "char": "夂",
+      "strokes": 3,
+      "pinyin": "zhǐ",
+      "meaning": "Truy — đến sau",
+      "hanViet": "Truy"
+    },
+    {
+      "no": 35,
+      "char": "夊",
+      "strokes": 3,
+      "pinyin": "suī",
+      "meaning": "Tuy — đi chậm",
+      "hanViet": "Tuy"
+    },
+    {
+      "no": 36,
+      "char": "夕",
+      "strokes": 3,
+      "pinyin": "xī",
+      "meaning": "Tịch — chiều tối",
+      "hanViet": "Tịch"
+    },
+    {
+      "no": 37,
+      "char": "大",
+      "strokes": 3,
+      "pinyin": "dà",
+      "meaning": "Đại — to lớn",
+      "hanViet": "Đại"
+    },
+    {
+      "no": 38,
+      "char": "女",
+      "strokes": 3,
+      "pinyin": "nǚ",
+      "meaning": "Nữ — nữ giới",
+      "hanViet": "Nữ"
+    },
+    {
+      "no": 39,
+      "char": "子",
+      "strokes": 3,
+      "pinyin": "zǐ",
+      "meaning": "Tử — con cái",
+      "hanViet": "Tử"
+    },
+    {
+      "no": 40,
+      "char": "宀",
+      "strokes": 3,
+      "pinyin": "mián",
+      "meaning": "Miên — mái nhà",
+      "hanViet": "Miên"
+    },
+    {
+      "no": 41,
+      "char": "寸",
+      "strokes": 3,
+      "pinyin": "cùn",
+      "meaning": "Thốn — tấc",
+      "hanViet": "Thốn"
+    },
+    {
+      "no": 42,
+      "char": "小",
+      "strokes": 3,
+      "pinyin": "xiǎo",
+      "meaning": "Tiểu — nhỏ",
+      "hanViet": "Tiểu"
+    },
+    {
+      "no": 43,
+      "char": "尢",
+      "strokes": 3,
+      "pinyin": "wāng",
+      "meaning": "Uông — chân khoèo",
+      "hanViet": "Uông"
+    },
+    {
+      "no": 44,
+      "char": "尸",
+      "strokes": 3,
+      "pinyin": "shī",
+      "meaning": "Thi — thây người",
+      "hanViet": "Thi"
+    },
+    {
+      "no": 45,
+      "char": "屮",
+      "strokes": 3,
+      "pinyin": "chè",
+      "meaning": "Triệt — mầm cây",
+      "hanViet": "Triệt"
+    },
+    {
+      "no": 46,
+      "char": "山",
+      "strokes": 3,
+      "pinyin": "shān",
+      "meaning": "Sơn — núi",
+      "hanViet": "Sơn"
+    },
+    {
+      "no": 47,
+      "char": "巛",
+      "strokes": 3,
+      "pinyin": "chuān",
+      "meaning": "Xuyên — sông ngòi",
+      "hanViet": "Xuyên"
+    },
+    {
+      "no": 48,
+      "char": "工",
+      "strokes": 3,
+      "pinyin": "gōng",
+      "meaning": "Công — công việc",
+      "hanViet": "Công"
+    },
+    {
+      "no": 49,
+      "char": "己",
+      "strokes": 3,
+      "pinyin": "jǐ",
+      "meaning": "Kỷ — bản thân",
+      "hanViet": "Kỷ"
+    },
+    {
+      "no": 50,
+      "char": "巾",
+      "strokes": 3,
+      "pinyin": "jīn",
+      "meaning": "Cân — khăn vải",
+      "hanViet": "Cân"
+    },
+    {
+      "no": 51,
+      "char": "干",
+      "strokes": 3,
+      "pinyin": "gān",
+      "meaning": "Can — cái khiên",
+      "hanViet": "Can"
+    },
+    {
+      "no": 52,
+      "char": "幺",
+      "strokes": 3,
+      "pinyin": "yāo",
+      "meaning": "Yêu — nhỏ bé",
+      "hanViet": "Yêu"
+    },
+    {
+      "no": 53,
+      "char": "广",
+      "strokes": 3,
+      "pinyin": "guǎng",
+      "meaning": "Nghiễm — mái che",
+      "hanViet": "Nghiễm"
+    },
+    {
+      "no": 54,
+      "char": "廴",
+      "strokes": 3,
+      "pinyin": "yǐn",
+      "meaning": "Dẫn — bước dài",
+      "hanViet": "Dẫn"
+    },
+    {
+      "no": 55,
+      "char": "廾",
+      "strokes": 3,
+      "pinyin": "gǒng",
+      "meaning": "Củng — chắp tay",
+      "hanViet": "Củng"
+    },
+    {
+      "no": 56,
+      "char": "弋",
+      "strokes": 3,
+      "pinyin": "yì",
+      "meaning": "Dặc — bắn tên",
+      "hanViet": "Dặc"
+    },
+    {
+      "no": 57,
+      "char": "弓",
+      "strokes": 3,
+      "pinyin": "gōng",
+      "meaning": "Cung — cái cung",
+      "hanViet": "Cung"
+    },
+    {
+      "no": 58,
+      "char": "彐",
+      "strokes": 3,
+      "pinyin": "jì",
+      "meaning": "Kệ — mõm lợn",
+      "hanViet": "Kệ"
+    },
+    {
+      "no": 59,
+      "char": "彡",
+      "strokes": 3,
+      "pinyin": "shān",
+      "meaning": "Sam — lông tóc",
+      "hanViet": "Sam"
+    },
+    {
+      "no": 60,
+      "char": "彳",
+      "strokes": 3,
+      "pinyin": "chì",
+      "meaning": "Xích — bước ngắn",
+      "hanViet": "Xích"
+    },
+    {
+      "no": 61,
+      "char": "心",
+      "strokes": 4,
+      "pinyin": "xīn",
+      "meaning": "Tâm — trái tim",
+      "hanViet": "Tâm"
+    },
+    {
+      "no": 62,
+      "char": "戈",
+      "strokes": 4,
+      "pinyin": "gē",
+      "meaning": "Qua — giáo mác",
+      "hanViet": "Qua"
+    },
+    {
+      "no": 63,
+      "char": "戶",
+      "strokes": 4,
+      "pinyin": "hù",
+      "meaning": "Hộ — cánh cửa",
+      "hanViet": "Hộ"
+    },
+    {
+      "no": 64,
+      "char": "手",
+      "strokes": 4,
+      "pinyin": "shǒu",
+      "meaning": "Thủ — bàn tay",
+      "hanViet": "Thủ"
+    },
+    {
+      "no": 65,
+      "char": "支",
+      "strokes": 4,
+      "pinyin": "zhī",
+      "meaning": "Chi — cành nhánh",
+      "hanViet": "Chi"
+    },
+    {
+      "no": 66,
+      "char": "攴",
+      "strokes": 4,
+      "pinyin": "pū",
+      "meaning": "Phộc — đánh khẽ",
+      "hanViet": "Phộc"
+    },
+    {
+      "no": 67,
+      "char": "文",
+      "strokes": 4,
+      "pinyin": "wén",
+      "meaning": "Văn — chữ viết",
+      "hanViet": "Văn"
+    },
+    {
+      "no": 68,
+      "char": "斗",
+      "strokes": 4,
+      "pinyin": "dǒu",
+      "meaning": "Đẩu — cái đấu",
+      "hanViet": "Đẩu"
+    },
+    {
+      "no": 69,
+      "char": "斤",
+      "strokes": 4,
+      "pinyin": "jīn",
+      "meaning": "Cân — cái rìu",
+      "hanViet": "Cân"
+    },
+    {
+      "no": 70,
+      "char": "方",
+      "strokes": 4,
+      "pinyin": "fāng",
+      "meaning": "Phương — vuông",
+      "hanViet": "Phương"
+    },
+    {
+      "no": 71,
+      "char": "无",
+      "strokes": 4,
+      "pinyin": "wú",
+      "meaning": "Vô — không có",
+      "hanViet": "Vô"
+    },
+    {
+      "no": 72,
+      "char": "日",
+      "strokes": 4,
+      "pinyin": "rì",
+      "meaning": "Nhật — mặt trời",
+      "hanViet": "Nhật"
+    },
+    {
+      "no": 73,
+      "char": "曰",
+      "strokes": 4,
+      "pinyin": "yuē",
+      "meaning": "Viết — nói rằng",
+      "hanViet": "Viết"
+    },
+    {
+      "no": 74,
+      "char": "月",
+      "strokes": 4,
+      "pinyin": "yuè",
+      "meaning": "Nguyệt — mặt trăng",
+      "hanViet": "Nguyệt"
+    },
+    {
+      "no": 75,
+      "char": "木",
+      "strokes": 4,
+      "pinyin": "mù",
+      "meaning": "Mộc — cây gỗ",
+      "hanViet": "Mộc"
+    },
+    {
+      "no": 76,
+      "char": "欠",
+      "strokes": 4,
+      "pinyin": "qiàn",
+      "meaning": "Khiếm — thiếu",
+      "hanViet": "Khiếm"
+    },
+    {
+      "no": 77,
+      "char": "止",
+      "strokes": 4,
+      "pinyin": "zhǐ",
+      "meaning": "Chỉ — dừng lại",
+      "hanViet": "Chỉ"
+    },
+    {
+      "no": 78,
+      "char": "歹",
+      "strokes": 4,
+      "pinyin": "dǎi",
+      "meaning": "Ngạt — xấu, chết",
+      "hanViet": "Ngạt"
+    },
+    {
+      "no": 79,
+      "char": "殳",
+      "strokes": 4,
+      "pinyin": "shū",
+      "meaning": "Thù — binh khí",
+      "hanViet": "Thù"
+    },
+    {
+      "no": 80,
+      "char": "毋",
+      "strokes": 4,
+      "pinyin": "wú",
+      "meaning": "Vô — chớ, đừng",
+      "hanViet": "Vô"
+    },
+    {
+      "no": 81,
+      "char": "比",
+      "strokes": 4,
+      "pinyin": "bǐ",
+      "meaning": "Tỷ — so sánh",
+      "hanViet": "Tỷ"
+    },
+    {
+      "no": 82,
+      "char": "毛",
+      "strokes": 4,
+      "pinyin": "máo",
+      "meaning": "Mao — lông",
+      "hanViet": "Mao"
+    },
+    {
+      "no": 83,
+      "char": "氏",
+      "strokes": 4,
+      "pinyin": "shì",
+      "meaning": "Thị — họ tộc",
+      "hanViet": "Thị"
+    },
+    {
+      "no": 84,
+      "char": "气",
+      "strokes": 4,
+      "pinyin": "qì",
+      "meaning": "Khí — hơi",
+      "hanViet": "Khí"
+    },
+    {
+      "no": 85,
+      "char": "水",
+      "strokes": 4,
+      "pinyin": "shuǐ",
+      "meaning": "Thuỷ — nước",
+      "hanViet": "Thuỷ"
+    },
+    {
+      "no": 86,
+      "char": "火",
+      "strokes": 4,
+      "pinyin": "huǒ",
+      "meaning": "Hoả — lửa",
+      "hanViet": "Hoả"
+    },
+    {
+      "no": 87,
+      "char": "爪",
+      "strokes": 4,
+      "pinyin": "zhǎo",
+      "meaning": "Trảo — móng vuốt",
+      "hanViet": "Trảo"
+    },
+    {
+      "no": 88,
+      "char": "父",
+      "strokes": 4,
+      "pinyin": "fù",
+      "meaning": "Phụ — người cha",
+      "hanViet": "Phụ"
+    },
+    {
+      "no": 89,
+      "char": "爻",
+      "strokes": 4,
+      "pinyin": "yáo",
+      "meaning": "Hào — hào quẻ",
+      "hanViet": "Hào"
+    },
+    {
+      "no": 90,
+      "char": "爿",
+      "strokes": 4,
+      "pinyin": "pán",
+      "meaning": "Tường — mảnh gỗ",
+      "hanViet": "Tường"
+    },
+    {
+      "no": 91,
+      "char": "片",
+      "strokes": 4,
+      "pinyin": "piàn",
+      "meaning": "Phiến — tấm mỏng",
+      "hanViet": "Phiến"
+    },
+    {
+      "no": 92,
+      "char": "牙",
+      "strokes": 4,
+      "pinyin": "yá",
+      "meaning": "Nha — răng",
+      "hanViet": "Nha"
+    },
+    {
+      "no": 93,
+      "char": "牛",
+      "strokes": 4,
+      "pinyin": "niú",
+      "meaning": "Ngưu — trâu bò",
+      "hanViet": "Ngưu"
+    },
+    {
+      "no": 94,
+      "char": "犬",
+      "strokes": 4,
+      "pinyin": "quǎn",
+      "meaning": "Khuyển — con chó",
+      "hanViet": "Khuyển"
+    },
+    {
+      "no": 95,
+      "char": "玄",
+      "strokes": 5,
+      "pinyin": "xuán",
+      "meaning": "Huyền — huyền bí",
+      "hanViet": "Huyền"
+    },
+    {
+      "no": 96,
+      "char": "玉",
+      "strokes": 5,
+      "pinyin": "yù",
+      "meaning": "Ngọc — ngọc",
+      "hanViet": "Ngọc"
+    },
+    {
+      "no": 97,
+      "char": "瓜",
+      "strokes": 5,
+      "pinyin": "guā",
+      "meaning": "Qua — quả dưa",
+      "hanViet": "Qua"
+    },
+    {
+      "no": 98,
+      "char": "瓦",
+      "strokes": 5,
+      "pinyin": "wǎ",
+      "meaning": "Ngoã — ngói",
+      "hanViet": "Ngoã"
+    },
+    {
+      "no": 99,
+      "char": "甘",
+      "strokes": 5,
+      "pinyin": "gān",
+      "meaning": "Cam — ngọt",
+      "hanViet": "Cam"
+    },
+    {
+      "no": 100,
+      "char": "生",
+      "strokes": 5,
+      "pinyin": "shēng",
+      "meaning": "Sinh — sinh ra",
+      "hanViet": "Sinh"
+    },
+    {
+      "no": 101,
+      "char": "用",
+      "strokes": 5,
+      "pinyin": "yòng",
+      "meaning": "Dụng — dùng",
+      "hanViet": "Dụng"
+    },
+    {
+      "no": 102,
+      "char": "田",
+      "strokes": 5,
+      "pinyin": "tián",
+      "meaning": "Điền — ruộng",
+      "hanViet": "Điền"
+    },
+    {
+      "no": 103,
+      "char": "疋",
+      "strokes": 5,
+      "pinyin": "pǐ",
+      "meaning": "Thất — tấm vải",
+      "hanViet": "Thất"
+    },
+    {
+      "no": 104,
+      "char": "疒",
+      "strokes": 5,
+      "pinyin": "nè",
+      "meaning": "Nạch — bệnh tật",
+      "hanViet": "Nạch"
+    },
+    {
+      "no": 105,
+      "char": "癶",
+      "strokes": 5,
+      "pinyin": "bō",
+      "meaning": "Bát — gạt ngang",
+      "hanViet": "Bát"
+    },
+    {
+      "no": 106,
+      "char": "白",
+      "strokes": 5,
+      "pinyin": "bái",
+      "meaning": "Bạch — màu trắng",
+      "hanViet": "Bạch"
+    },
+    {
+      "no": 107,
+      "char": "皮",
+      "strokes": 5,
+      "pinyin": "pí",
+      "meaning": "Bì — da",
+      "hanViet": "Bì"
+    },
+    {
+      "no": 108,
+      "char": "皿",
+      "strokes": 5,
+      "pinyin": "mǐn",
+      "meaning": "Mãnh — bát đĩa",
+      "hanViet": "Mãnh"
+    },
+    {
+      "no": 109,
+      "char": "目",
+      "strokes": 5,
+      "pinyin": "mù",
+      "meaning": "Mục — con mắt",
+      "hanViet": "Mục"
+    },
+    {
+      "no": 110,
+      "char": "矛",
+      "strokes": 5,
+      "pinyin": "máo",
+      "meaning": "Mâu — cây giáo",
+      "hanViet": "Mâu"
+    },
+    {
+      "no": 111,
+      "char": "矢",
+      "strokes": 5,
+      "pinyin": "shǐ",
+      "meaning": "Thỉ — mũi tên",
+      "hanViet": "Thỉ"
+    },
+    {
+      "no": 112,
+      "char": "石",
+      "strokes": 5,
+      "pinyin": "shí",
+      "meaning": "Thạch — đá",
+      "hanViet": "Thạch"
+    },
+    {
+      "no": 113,
+      "char": "示",
+      "strokes": 5,
+      "pinyin": "shì",
+      "meaning": "Thị — thờ cúng",
+      "hanViet": "Thị"
+    },
+    {
+      "no": 114,
+      "char": "禸",
+      "strokes": 5,
+      "pinyin": "róu",
+      "meaning": "Nhựu — vết chân",
+      "hanViet": "Nhựu"
+    },
+    {
+      "no": 115,
+      "char": "禾",
+      "strokes": 5,
+      "pinyin": "hé",
+      "meaning": "Hoà — cây lúa",
+      "hanViet": "Hoà"
+    },
+    {
+      "no": 116,
+      "char": "穴",
+      "strokes": 5,
+      "pinyin": "xué",
+      "meaning": "Huyệt — hang",
+      "hanViet": "Huyệt"
+    },
+    {
+      "no": 117,
+      "char": "立",
+      "strokes": 5,
+      "pinyin": "lì",
+      "meaning": "Lập — đứng",
+      "hanViet": "Lập"
+    },
+    {
+      "no": 118,
+      "char": "竹",
+      "strokes": 6,
+      "pinyin": "zhú",
+      "meaning": "Trúc — tre trúc",
+      "hanViet": "Trúc"
+    },
+    {
+      "no": 119,
+      "char": "米",
+      "strokes": 6,
+      "pinyin": "mǐ",
+      "meaning": "Mễ — gạo",
+      "hanViet": "Mễ"
+    },
+    {
+      "no": 120,
+      "char": "糸",
+      "strokes": 6,
+      "pinyin": "mì",
+      "meaning": "Mịch — sợi tơ",
+      "hanViet": "Mịch"
+    },
+    {
+      "no": 121,
+      "char": "缶",
+      "strokes": 6,
+      "pinyin": "fǒu",
+      "meaning": "Phẫu — vò sành",
+      "hanViet": "Phẫu"
+    },
+    {
+      "no": 122,
+      "char": "网",
+      "strokes": 6,
+      "pinyin": "wǎng",
+      "meaning": "Võng — cái lưới",
+      "hanViet": "Võng"
+    },
+    {
+      "no": 123,
+      "char": "羊",
+      "strokes": 6,
+      "pinyin": "yáng",
+      "meaning": "Dương — con dê",
+      "hanViet": "Dương"
+    },
+    {
+      "no": 124,
+      "char": "羽",
+      "strokes": 6,
+      "pinyin": "yǔ",
+      "meaning": "Vũ — lông vũ",
+      "hanViet": "Vũ"
+    },
+    {
+      "no": 125,
+      "char": "老",
+      "strokes": 6,
+      "pinyin": "lǎo",
+      "meaning": "Lão — già",
+      "hanViet": "Lão"
+    },
+    {
+      "no": 126,
+      "char": "而",
+      "strokes": 6,
+      "pinyin": "ér",
+      "meaning": "Nhi — mà, và",
+      "hanViet": "Nhi"
+    },
+    {
+      "no": 127,
+      "char": "耒",
+      "strokes": 6,
+      "pinyin": "lěi",
+      "meaning": "Lỗi — cái cày",
+      "hanViet": "Lỗi"
+    },
+    {
+      "no": 128,
+      "char": "耳",
+      "strokes": 6,
+      "pinyin": "ěr",
+      "meaning": "Nhĩ — cái tai",
+      "hanViet": "Nhĩ"
+    },
+    {
+      "no": 129,
+      "char": "聿",
+      "strokes": 6,
+      "pinyin": "yù",
+      "meaning": "Duật — cây bút",
+      "hanViet": "Duật"
+    },
+    {
+      "no": 130,
+      "char": "肉",
+      "strokes": 6,
+      "pinyin": "ròu",
+      "meaning": "Nhục — thịt",
+      "hanViet": "Nhục"
+    },
+    {
+      "no": 131,
+      "char": "臣",
+      "strokes": 6,
+      "pinyin": "chén",
+      "meaning": "Thần — bề tôi",
+      "hanViet": "Thần"
+    },
+    {
+      "no": 132,
+      "char": "自",
+      "strokes": 6,
+      "pinyin": "zì",
+      "meaning": "Tự — tự mình",
+      "hanViet": "Tự"
+    },
+    {
+      "no": 133,
+      "char": "至",
+      "strokes": 6,
+      "pinyin": "zhì",
+      "meaning": "Chí — đến nơi",
+      "hanViet": "Chí"
+    },
+    {
+      "no": 134,
+      "char": "臼",
+      "strokes": 6,
+      "pinyin": "jiù",
+      "meaning": "Cữu — cối giã",
+      "hanViet": "Cữu"
+    },
+    {
+      "no": 135,
+      "char": "舌",
+      "strokes": 6,
+      "pinyin": "shé",
+      "meaning": "Thiệt — cái lưỡi",
+      "hanViet": "Thiệt"
+    },
+    {
+      "no": 136,
+      "char": "舛",
+      "strokes": 6,
+      "pinyin": "chuǎn",
+      "meaning": "Suyễn — trái ngược",
+      "hanViet": "Suyễn"
+    },
+    {
+      "no": 137,
+      "char": "舟",
+      "strokes": 6,
+      "pinyin": "zhōu",
+      "meaning": "Chu — con thuyền",
+      "hanViet": "Chu"
+    },
+    {
+      "no": 138,
+      "char": "艮",
+      "strokes": 6,
+      "pinyin": "gèn",
+      "meaning": "Cấn — quẻ Cấn",
+      "hanViet": "Cấn"
+    },
+    {
+      "no": 139,
+      "char": "色",
+      "strokes": 6,
+      "pinyin": "sè",
+      "meaning": "Sắc — màu sắc",
+      "hanViet": "Sắc"
+    },
+    {
+      "no": 140,
+      "char": "艸",
+      "strokes": 6,
+      "pinyin": "cǎo",
+      "meaning": "Thảo — cỏ",
+      "hanViet": "Thảo"
+    },
+    {
+      "no": 141,
+      "char": "虍",
+      "strokes": 6,
+      "pinyin": "hū",
+      "meaning": "Hô — vằn hổ",
+      "hanViet": "Hô"
+    },
+    {
+      "no": 142,
+      "char": "虫",
+      "strokes": 6,
+      "pinyin": "chóng",
+      "meaning": "Trùng — sâu bọ",
+      "hanViet": "Trùng"
+    },
+    {
+      "no": 143,
+      "char": "血",
+      "strokes": 6,
+      "pinyin": "xuè",
+      "meaning": "Huyết — máu",
+      "hanViet": "Huyết"
+    },
+    {
+      "no": 144,
+      "char": "行",
+      "strokes": 6,
+      "pinyin": "xíng",
+      "meaning": "Hành — đi",
+      "hanViet": "Hành"
+    },
+    {
+      "no": 145,
+      "char": "衣",
+      "strokes": 6,
+      "pinyin": "yī",
+      "meaning": "Y — áo",
+      "hanViet": "Y"
+    },
+    {
+      "no": 146,
+      "char": "襾",
+      "strokes": 6,
+      "pinyin": "yà",
+      "meaning": "Á — che đậy",
+      "hanViet": "Á"
+    },
+    {
+      "no": 147,
+      "char": "見",
+      "strokes": 7,
+      "pinyin": "jiàn",
+      "meaning": "Kiến — nhìn thấy",
+      "hanViet": "Kiến"
+    },
+    {
+      "no": 148,
+      "char": "角",
+      "strokes": 7,
+      "pinyin": "jiǎo",
+      "meaning": "Giác — cái sừng",
+      "hanViet": "Giác"
+    },
+    {
+      "no": 149,
+      "char": "言",
+      "strokes": 7,
+      "pinyin": "yán",
+      "meaning": "Ngôn — lời nói",
+      "hanViet": "Ngôn"
+    },
+    {
+      "no": 150,
+      "char": "谷",
+      "strokes": 7,
+      "pinyin": "gǔ",
+      "meaning": "Cốc — thung lũng",
+      "hanViet": "Cốc"
+    },
+    {
+      "no": 151,
+      "char": "豆",
+      "strokes": 7,
+      "pinyin": "dòu",
+      "meaning": "Đậu — hạt đậu",
+      "hanViet": "Đậu"
+    },
+    {
+      "no": 152,
+      "char": "豕",
+      "strokes": 7,
+      "pinyin": "shǐ",
+      "meaning": "Thỉ — con lợn",
+      "hanViet": "Thỉ"
+    },
+    {
+      "no": 153,
+      "char": "豸",
+      "strokes": 7,
+      "pinyin": "zhì",
+      "meaning": "Trĩ — thú dữ",
+      "hanViet": "Trĩ"
+    },
+    {
+      "no": 154,
+      "char": "貝",
+      "strokes": 7,
+      "pinyin": "bèi",
+      "meaning": "Bối — vỏ sò, tiền",
+      "hanViet": "Bối"
+    },
+    {
+      "no": 155,
+      "char": "赤",
+      "strokes": 7,
+      "pinyin": "chì",
+      "meaning": "Xích — màu đỏ",
+      "hanViet": "Xích"
+    },
+    {
+      "no": 156,
+      "char": "走",
+      "strokes": 7,
+      "pinyin": "zǒu",
+      "meaning": "Tẩu — chạy",
+      "hanViet": "Tẩu"
+    },
+    {
+      "no": 157,
+      "char": "足",
+      "strokes": 7,
+      "pinyin": "zú",
+      "meaning": "Túc — bàn chân",
+      "hanViet": "Túc"
+    },
+    {
+      "no": 158,
+      "char": "身",
+      "strokes": 7,
+      "pinyin": "shēn",
+      "meaning": "Thân — thân thể",
+      "hanViet": "Thân"
+    },
+    {
+      "no": 159,
+      "char": "車",
+      "strokes": 7,
+      "pinyin": "chē",
+      "meaning": "Xa — xe cộ",
+      "hanViet": "Xa"
+    },
+    {
+      "no": 160,
+      "char": "辛",
+      "strokes": 7,
+      "pinyin": "xīn",
+      "meaning": "Tân — cay",
+      "hanViet": "Tân"
+    },
+    {
+      "no": 161,
+      "char": "辰",
+      "strokes": 7,
+      "pinyin": "chén",
+      "meaning": "Thần — chi Thìn",
+      "hanViet": "Thần"
+    },
+    {
+      "no": 162,
+      "char": "辵",
+      "strokes": 7,
+      "pinyin": "chuò",
+      "meaning": "Sước — bước đi",
+      "hanViet": "Sước"
+    },
+    {
+      "no": 163,
+      "char": "邑",
+      "strokes": 7,
+      "pinyin": "yì",
+      "meaning": "Ấp — vùng đất",
+      "hanViet": "Ấp"
+    },
+    {
+      "no": 164,
+      "char": "酉",
+      "strokes": 7,
+      "pinyin": "yǒu",
+      "meaning": "Dậu — rượu",
+      "hanViet": "Dậu"
+    },
+    {
+      "no": 165,
+      "char": "釆",
+      "strokes": 7,
+      "pinyin": "biàn",
+      "meaning": "Biện — phân biệt",
+      "hanViet": "Biện"
+    },
+    {
+      "no": 166,
+      "char": "里",
+      "strokes": 7,
+      "pinyin": "lǐ",
+      "meaning": "Lý — dặm, làng",
+      "hanViet": "Lý"
+    },
+    {
+      "no": 167,
+      "char": "金",
+      "strokes": 8,
+      "pinyin": "jīn",
+      "meaning": "Kim — kim loại",
+      "hanViet": "Kim"
+    },
+    {
+      "no": 168,
+      "char": "長",
+      "strokes": 8,
+      "pinyin": "cháng",
+      "meaning": "Trường — dài",
+      "hanViet": "Trường"
+    },
+    {
+      "no": 169,
+      "char": "門",
+      "strokes": 8,
+      "pinyin": "mén",
+      "meaning": "Môn — cửa lớn",
+      "hanViet": "Môn"
+    },
+    {
+      "no": 170,
+      "char": "阜",
+      "strokes": 8,
+      "pinyin": "fù",
+      "meaning": "Phụ — gò đất",
+      "hanViet": "Phụ"
+    },
+    {
+      "no": 171,
+      "char": "隶",
+      "strokes": 8,
+      "pinyin": "dài",
+      "meaning": "Lệ — nô lệ",
+      "hanViet": "Lệ"
+    },
+    {
+      "no": 172,
+      "char": "隹",
+      "strokes": 8,
+      "pinyin": "zhuī",
+      "meaning": "Chuy — chim đuôi ngắn",
+      "hanViet": "Chuy"
+    },
+    {
+      "no": 173,
+      "char": "雨",
+      "strokes": 8,
+      "pinyin": "yǔ",
+      "meaning": "Vũ — mưa",
+      "hanViet": "Vũ"
+    },
+    {
+      "no": 174,
+      "char": "靑",
+      "strokes": 8,
+      "pinyin": "qīng",
+      "meaning": "Thanh — xanh",
+      "hanViet": "Thanh"
+    },
+    {
+      "no": 175,
+      "char": "非",
+      "strokes": 8,
+      "pinyin": "fēi",
+      "meaning": "Phi — không phải",
+      "hanViet": "Phi"
+    },
+    {
+      "no": 176,
+      "char": "面",
+      "strokes": 9,
+      "pinyin": "miàn",
+      "meaning": "Diện — khuôn mặt",
+      "hanViet": "Diện"
+    },
+    {
+      "no": 177,
+      "char": "革",
+      "strokes": 9,
+      "pinyin": "gé",
+      "meaning": "Cách — da thuộc",
+      "hanViet": "Cách"
+    },
+    {
+      "no": 178,
+      "char": "韋",
+      "strokes": 9,
+      "pinyin": "wéi",
+      "meaning": "Vi — da mềm",
+      "hanViet": "Vi"
+    },
+    {
+      "no": 179,
+      "char": "韭",
+      "strokes": 9,
+      "pinyin": "jiǔ",
+      "meaning": "Cửu — rau hẹ",
+      "hanViet": "Cửu"
+    },
+    {
+      "no": 180,
+      "char": "音",
+      "strokes": 9,
+      "pinyin": "yīn",
+      "meaning": "Âm — âm thanh",
+      "hanViet": "Âm"
+    },
+    {
+      "no": 181,
+      "char": "頁",
+      "strokes": 9,
+      "pinyin": "yè",
+      "meaning": "Hiệt — đầu, trang",
+      "hanViet": "Hiệt"
+    },
+    {
+      "no": 182,
+      "char": "風",
+      "strokes": 9,
+      "pinyin": "fēng",
+      "meaning": "Phong — gió",
+      "hanViet": "Phong"
+    },
+    {
+      "no": 183,
+      "char": "飛",
+      "strokes": 9,
+      "pinyin": "fēi",
+      "meaning": "Phi — bay",
+      "hanViet": "Phi"
+    },
+    {
+      "no": 184,
+      "char": "食",
+      "strokes": 9,
+      "pinyin": "shí",
+      "meaning": "Thực — ăn",
+      "hanViet": "Thực"
+    },
+    {
+      "no": 185,
+      "char": "首",
+      "strokes": 9,
+      "pinyin": "shǒu",
+      "meaning": "Thủ — cái đầu",
+      "hanViet": "Thủ"
+    },
+    {
+      "no": 186,
+      "char": "香",
+      "strokes": 9,
+      "pinyin": "xiāng",
+      "meaning": "Hương — thơm",
+      "hanViet": "Hương"
+    },
+    {
+      "no": 187,
+      "char": "馬",
+      "strokes": 10,
+      "pinyin": "mǎ",
+      "meaning": "Mã — con ngựa",
+      "hanViet": "Mã"
+    },
+    {
+      "no": 188,
+      "char": "骨",
+      "strokes": 10,
+      "pinyin": "gǔ",
+      "meaning": "Cốt — xương",
+      "hanViet": "Cốt"
+    },
+    {
+      "no": 189,
+      "char": "高",
+      "strokes": 10,
+      "pinyin": "gāo",
+      "meaning": "Cao — cao",
+      "hanViet": "Cao"
+    },
+    {
+      "no": 190,
+      "char": "髟",
+      "strokes": 10,
+      "pinyin": "biāo",
+      "meaning": "Bưu — tóc dài",
+      "hanViet": "Bưu"
+    },
+    {
+      "no": 191,
+      "char": "鬥",
+      "strokes": 10,
+      "pinyin": "dòu",
+      "meaning": "Đấu — đánh nhau",
+      "hanViet": "Đấu"
+    },
+    {
+      "no": 192,
+      "char": "鬯",
+      "strokes": 10,
+      "pinyin": "chàng",
+      "meaning": "Sưởng — rượu nếp",
+      "hanViet": "Sưởng"
+    },
+    {
+      "no": 193,
+      "char": "鬲",
+      "strokes": 10,
+      "pinyin": "lì",
+      "meaning": "Cách — cái vạc",
+      "hanViet": "Cách"
+    },
+    {
+      "no": 194,
+      "char": "鬼",
+      "strokes": 10,
+      "pinyin": "guǐ",
+      "meaning": "Quỷ — ma quỷ",
+      "hanViet": "Quỷ"
+    },
+    {
+      "no": 195,
+      "char": "魚",
+      "strokes": 11,
+      "pinyin": "yú",
+      "meaning": "Ngư — con cá",
+      "hanViet": "Ngư"
+    },
+    {
+      "no": 196,
+      "char": "鳥",
+      "strokes": 11,
+      "pinyin": "niǎo",
+      "meaning": "Điểu — con chim",
+      "hanViet": "Điểu"
+    },
+    {
+      "no": 197,
+      "char": "鹵",
+      "strokes": 11,
+      "pinyin": "lǔ",
+      "meaning": "Lỗ — đất mặn",
+      "hanViet": "Lỗ"
+    },
+    {
+      "no": 198,
+      "char": "鹿",
+      "strokes": 11,
+      "pinyin": "lù",
+      "meaning": "Lộc — con hươu",
+      "hanViet": "Lộc"
+    },
+    {
+      "no": 199,
+      "char": "麥",
+      "strokes": 11,
+      "pinyin": "mài",
+      "meaning": "Mạch — lúa mạch",
+      "hanViet": "Mạch"
+    },
+    {
+      "no": 200,
+      "char": "麻",
+      "strokes": 11,
+      "pinyin": "má",
+      "meaning": "Ma — cây gai",
+      "hanViet": "Ma"
+    },
+    {
+      "no": 201,
+      "char": "黃",
+      "strokes": 12,
+      "pinyin": "huáng",
+      "meaning": "Hoàng — màu vàng",
+      "hanViet": "Hoàng"
+    },
+    {
+      "no": 202,
+      "char": "黍",
+      "strokes": 12,
+      "pinyin": "shǔ",
+      "meaning": "Thử — lúa nếp",
+      "hanViet": "Thử"
+    },
+    {
+      "no": 203,
+      "char": "黑",
+      "strokes": 12,
+      "pinyin": "hēi",
+      "meaning": "Hắc — màu đen",
+      "hanViet": "Hắc"
+    },
+    {
+      "no": 204,
+      "char": "黹",
+      "strokes": 12,
+      "pinyin": "zhǐ",
+      "meaning": "Chỉ — thêu thùa",
+      "hanViet": "Chỉ"
+    },
+    {
+      "no": 205,
+      "char": "黽",
+      "strokes": 13,
+      "pinyin": "mǐn",
+      "meaning": "Mãnh — con ếch",
+      "hanViet": "Mãnh"
+    },
+    {
+      "no": 206,
+      "char": "鼎",
+      "strokes": 13,
+      "pinyin": "dǐng",
+      "meaning": "Đỉnh — cái đỉnh",
+      "hanViet": "Đỉnh"
+    },
+    {
+      "no": 207,
+      "char": "鼓",
+      "strokes": 13,
+      "pinyin": "gǔ",
+      "meaning": "Cổ — cái trống",
+      "hanViet": "Cổ"
+    },
+    {
+      "no": 208,
+      "char": "鼠",
+      "strokes": 13,
+      "pinyin": "shǔ",
+      "meaning": "Thử — con chuột",
+      "hanViet": "Thử"
+    },
+    {
+      "no": 209,
+      "char": "鼻",
+      "strokes": 14,
+      "pinyin": "bí",
+      "meaning": "Tỵ — cái mũi",
+      "hanViet": "Tỵ"
+    },
+    {
+      "no": 210,
+      "char": "齊",
+      "strokes": 14,
+      "pinyin": "qí",
+      "meaning": "Tề — ngay ngắn",
+      "hanViet": "Tề"
+    },
+    {
+      "no": 211,
+      "char": "齒",
+      "strokes": 15,
+      "pinyin": "chǐ",
+      "meaning": "Xỉ — răng",
+      "hanViet": "Xỉ"
+    },
+    {
+      "no": 212,
+      "char": "龍",
+      "strokes": 16,
+      "pinyin": "lóng",
+      "meaning": "Long — con rồng",
+      "hanViet": "Long"
+    },
+    {
+      "no": 213,
+      "char": "龜",
+      "strokes": 16,
+      "pinyin": "guī",
+      "meaning": "Quy — con rùa",
+      "hanViet": "Quy"
+    },
+    {
+      "no": 214,
+      "char": "龠",
+      "strokes": 17,
+      "pinyin": "yuè",
+      "meaning": "Dược — ống sáo",
+      "hanViet": "Dược"
+    }
+  ],
+  "listening": [
+    {
+      "id": "l1",
+      "title": "Gọi món ở nhà hàng",
+      "hanzi": "在餐厅点菜",
+      "level": 2,
+      "seconds": 45,
+      "speed": "Chậm",
+      "accent": "Phổ thông Bắc Kinh",
+      "transcript": "你好，请问几位？两位，谢谢。",
+      "vi": "Xin chào, quý khách mấy người ạ? Hai người, cảm ơn."
+    },
+    {
+      "id": "l2",
+      "title": "Hỏi đường tới ga tàu",
+      "hanzi": "问路去火车站",
+      "level": 2,
+      "seconds": 52,
+      "speed": "Chậm",
+      "accent": "Phổ thông Bắc Kinh",
+      "transcript": "请问，火车站怎么走？一直走，然后向左拐。",
+      "vi": "Xin hỏi, ga tàu đi thế nào? Đi thẳng rồi rẽ trái."
+    },
+    {
+      "id": "l3",
+      "title": "Thông báo ở sân bay",
+      "hanzi": "机场广播",
+      "level": 3,
+      "seconds": 38,
+      "speed": "Vừa",
+      "accent": "Giọng phát thanh",
+      "transcript": "前往上海的旅客请到十二号登机口登机。",
+      "vi": "Hành khách đi Thượng Hải vui lòng ra cửa số 12."
+    },
+    {
+      "id": "l4",
+      "title": "Phỏng vấn xin việc",
+      "hanzi": "求职面试",
+      "level": 4,
+      "seconds": 74,
+      "speed": "Vừa",
+      "accent": "Phổ thông chuẩn",
+      "transcript": "请你简单介绍一下自己的工作经验。",
+      "vi": "Mời bạn giới thiệu ngắn gọn về kinh nghiệm làm việc."
+    },
+    {
+      "id": "l5",
+      "title": "Bản tin thời tiết",
+      "hanzi": "天气预报",
+      "level": 4,
+      "seconds": 61,
+      "speed": "Nhanh",
+      "accent": "Giọng phát thanh",
+      "transcript": "明天北京晴转多云，最高气温二十八度。",
+      "vi": "Ngày mai Bắc Kinh nắng chuyển nhiều mây, cao nhất 28 độ."
+    },
+    {
+      "id": "l6",
+      "title": "Thảo luận nhóm dự án",
+      "hanzi": "项目讨论",
+      "level": 5,
+      "seconds": 96,
+      "speed": "Nhanh",
+      "accent": "Giọng miền Nam nhẹ",
+      "transcript": "我们先确定预算，再讨论时间安排。",
+      "vi": "Chúng ta xác định ngân sách trước, rồi bàn lịch trình."
+    }
+  ],
+  "speaking": [
+    {
+      "id": "sp1",
+      "prompt": "你好，很高兴认识你。",
+      "pinyin": "Nǐ hǎo, hěn gāoxìng rènshi nǐ.",
+      "vi": "Xin chào, rất vui được gặp bạn.",
+      "focus": "Thanh 3 nối tiếp",
+      "level": 1
+    },
+    {
+      "id": "sp2",
+      "prompt": "我想买两张去北京的票。",
+      "pinyin": "Wǒ xiǎng mǎi liǎng zhāng qù Běijīng de piào.",
+      "vi": "Tôi muốn mua hai vé đi Bắc Kinh.",
+      "focus": "Vận mũi -ing / -ang",
+      "level": 2
+    },
+    {
+      "id": "sp3",
+      "prompt": "这个周末我打算去爬山。",
+      "pinyin": "Zhège zhōumò wǒ dǎsuàn qù pá shān.",
+      "vi": "Cuối tuần này tôi định đi leo núi.",
+      "focus": "Âm zh / ch / sh",
+      "level": 3
+    },
+    {
+      "id": "sp4",
+      "prompt": "因为堵车，所以我迟到了。",
+      "pinyin": "Yīnwèi dǔchē, suǒyǐ wǒ chídào le.",
+      "vi": "Vì tắc đường nên tôi đến muộn.",
+      "focus": "Ngữ điệu câu phức",
+      "level": 4
+    },
+    {
+      "id": "sp5",
+      "prompt": "请你谈谈对这个问题的看法。",
+      "pinyin": "Qǐng nǐ tántan duì zhège wèntí de kànfǎ.",
+      "vi": "Mời bạn nói về quan điểm với vấn đề này.",
+      "focus": "Nhịp điệu tự nhiên",
+      "level": 5
+    },
+    {
+      "id": "sp6",
+      "prompt": "虽然任务很难，但我们还是完成了。",
+      "pinyin": "Suīrán rènwù hěn nán, dàn wǒmen háishi wánchéng le.",
+      "vi": "Tuy nhiệm vụ rất khó nhưng chúng tôi vẫn hoàn thành.",
+      "focus": "Trọng âm câu",
+      "level": 5
+    }
+  ],
+  "pdfs": [
+    {
+      "id": "p1",
+      "title": "Bảng Pinyin đầy đủ",
+      "desc": "21 thanh mẫu, 36 vận mẫu, kèm IPA và ví dụ.",
+      "pages": 6,
+      "size": "1.2 MB",
+      "tag": "Pinyin"
+    },
+    {
+      "id": "p2",
+      "title": "Sơ đồ bốn thanh & biến điệu",
+      "desc": "Đường cong thanh điệu, quy tắc sandhi và bài luyện.",
+      "pages": 4,
+      "size": "860 KB",
+      "tag": "Thanh điệu"
+    },
+    {
+      "id": "p3",
+      "title": "214 bộ thủ Khang Hy",
+      "desc": "Tra cứu theo số nét, kèm Hán Việt và chữ ví dụ.",
+      "pages": 12,
+      "size": "2.4 MB",
+      "tag": "Bộ thủ"
+    },
+    {
+      "id": "p4",
+      "title": "Vở luyện viết nét cơ bản",
+      "desc": "Ô kẻ mễ tự, thứ tự nét cho 100 chữ đầu tiên.",
+      "pages": 24,
+      "size": "3.8 MB",
+      "tag": "Chữ Hán"
+    }
+  ]
+}

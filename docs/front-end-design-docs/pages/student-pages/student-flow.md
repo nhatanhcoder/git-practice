@@ -135,8 +135,8 @@ backend dependency — the **Sprint 4** exam engine (`AttemptsModule`), previous
 - ⛔ Manage/review the saved-word bank (S-SRS-7).
 - ⛔ Assignment/Attempt mistake collection (S-MSTK) — the source data exists (Sprint 4 attempts), no collection contract.
 - ⛔ Exam room / result + placement transport (S-SELF-7) — ADR-005 is a 0-byte stub (DOC-017).
-- ⛔ Analytics response shapes — `GET /student/progress`(+`/chart`) paths are reserved in `API_STUDENT.md` but no module spec defines the payloads (F6.1/F6.2).
-- ⛔ Gamification — XP, rank/level, streak calendar, badge unlocks, leaderboard aggregation/privacy (S-GAME-1..5, S-ANL-4).
+- ⛔ Analytics response shapes — `GET /student/progress`(+`/chart`) proposed in `04-progress-analytics.md` (unapproved, needs PR #73); no endpoint invented (F6.1/F6.2).
+- ⛔ Gamification — XP, rank/level, streak calendar, badge unlocks, leaderboard aggregation/privacy (S-GAME-1..5, S-ANL-4). No catalog of decisions exists yet; see `04-progress-analytics.md` §16.
 
 ## Blocked prototype branches — mapped 2026-09-12
 
@@ -149,9 +149,9 @@ edges ⛔ there is no traversal to document beyond list → detail inside each f
 | Sổ tay lỗi sai | [student-mistakes](./student-mistakes.md) | mistake collection (source data live via Sprint 4) |
 | Phòng thi + kết quả | [student-exams](./student-exams.md) | ADR-005 stub (DOC-017) |
 | Kiểm tra xếp cấp | [student-placement](./student-placement.md) | ADR-005 stub (DOC-017) |
-| Tiến độ học tập | [student-progress](./student-progress.md) | analytics response shapes unapproved |
-| Bảng xếp hạng | [student-leaderboard](./student-leaderboard.md) | aggregation + privacy rules |
-| Kho huy hiệu | [student-badges](./student-badges.md) | server-authoritative unlocks |
+| Tiến độ học tập | [student-progress](./student-progress.md) | analytics shapes proposed in `04-progress-analytics.md` (unapproved) + PR #73 |
+| Bảng xếp hạng | [student-leaderboard](./student-leaderboard.md) | aggregation + privacy rules (no contract) |
+| Kho huy hiệu | [student-badges](./student-badges.md) | server-authoritative unlocks + XP economy (no contract) |
 | Luyện viết chữ | [student-writing](./student-writing.md) | DOC-011 corpus + progress contract |
 | Ghép câu Lego | [student-lego](./student-lego.md) | DOC-011 corpus + progress contract |
 | Mô phỏng công sở | [student-workplace](./student-workplace.md) | DOC-011 corpus + scorer unspecified |
@@ -163,45 +163,46 @@ Live branches with contracts: SRS (`student-srs`), Classes (`student-classes-lis
 (`student-notifications` — module 07 merged via PR #67).
 
 
-## Foundation and Grammar proposal — 2026-09-10
+## Foundation and Grammar — live 2026-09-16 (`feat/student-foundation-be`)
 
-**Status: proposed / blocked; NOT IMPLEMENTED.** Operation labels below refer to
-[the module proposal](../../../api/modules/student/02-foundation-grammar.md), not endpoints.
-All F/G/M operations are ⛔ until exact path/method/DTO/error contracts are approved.
+F-read/F-progress/F-save + G-read/G-progress/G-save implemented per
+[the module](../../../api/modules/student/02-foundation-grammar.md) §2 (D1–D5
+owner-approved). Foundation FE wired; Grammar FE still mock (endpoints ready).
+G-practice deferred and M-read nonexistent stay ⛔ by design, not by omission.
 Existing SRS/Classes branches above are unchanged.
 
-### Foundation traversal
+### Foundation traversal (live)
 
 ```text
 /student  Dashboard
 └── Navigation: Foundation
     ▼
-    /student/foundation?tab=pinyin           ⛔ F-read + F-progress
-    ├── Tab/search/strokes/page → same hub  local selection; ⛔ F-read if needed
-    ├── Item → same-screen detail           local / ⛔ F-read if needed
-    ├── Mark/unmark studied → same item     ⛔ F-save → confirmed state
-    ├── Play/download → same screen         ⛔ M-read / verified resource only
-    ├── Record → permission → playback      local session only, after D4 approval
-    ├── Retry failed read → same screen     ⛔ F-read / F-progress / M-read
+    /student/foundation?tab=pinyin           GET /student/foundation + GET /student/foundation/progress
+    ├── Tab/search/strokes/page → same hub  local selection; catalog already loaded
+    ├── Item → same-screen detail           local, from loaded catalog
+    ├── Mark/unmark studied → same item     PUT /student/foundation/progress → confirmed state
+    ├── Play/download → same screen         NO endpoint (D4) — control unavailable with reason
+    ├── Record → permission → playback      not implemented — control unavailable with reason
+    ├── Retry failed read → same screen     catalog retry; progress failure keeps catalog
     └── Back to Dashboard
         ▼
         /student                           navigation only
 ```
 
-### Grammar traversal
+### Grammar traversal (BE live, FE unwired)
 
 ```text
 /student  Dashboard
 └── Navigation: Grammar
     ▼
-    /student/grammar                       ⛔ G-read + G-progress
-    ├── HSK/category/search/reset → hub     local selection; ⛔ G-read if needed
-    ├── Point → inline study, same route    ⛔ G-read if needed; URL selection proposed
-    │   ├── Mark/unmark studied             ⛔ G-save → confirmed state
-    │   ├── Practise → answer → submit      ⛔ G-practice → confirmed result
+    /student/grammar                       BE: GET /student/grammar + GET /student/grammar/progress (FE still mock)
+    ├── HSK/category/search/reset → hub     BE filters; FE unwired
+    ├── Point → inline study, same route    BE: GET /student/grammar/:id; URL selection proposed
+    │   ├── Mark/unmark studied             BE: PUT /student/grammar/progress → confirmed state; FE unwired
+    │   ├── Practise → answer → submit      ⛔ G-practice → confirmed result (deferred, no manifest)
     │   │   └── Continue study → point/list local selection; no mutation
     │   └── Close point → filtered list     local navigation; preserve filters
-    ├── Retry failed read → same screen     ⛔ G-read / G-progress
+    ├── Retry failed read → same screen     BE errors per §9; FE unwired
     └── Back to Dashboard
         ▼
         /student                           navigation only
@@ -215,22 +216,22 @@ proposal, not accepted API query parameters. Back/forward must restore the chose
 
 | # | From | Action | To | API | Errors |
 |---|---|---|---|---|---|
-| FG1 | Dashboard | Open Foundation | Foundation hub | ⛔ F-read + F-progress | TODO(error-code) |
-| FG2 | Foundation | Tab/search/strokes/page | same hub | local / ⛔ F-read | TODO(error-code) |
-| FG3 | Foundation | Inspect item | same-screen detail | local / ⛔ F-read | TODO(error-code) |
-| FG4 | Foundation item | Mark/unmark studied | same item, confirmed | ⛔ F-save | TODO(error-code) |
-| FG5 | Foundation | Play/download | same screen/resource | ⛔ M-read | TODO(error-code) |
-| FG6 | Foundation speaking | Record/playback | permission then local playback | none; D4 blocked | denial/unavailable UI |
-| FG7 | Foundation | Retry failed read | same screen | ⛔ F-read / F-progress / M-read | TODO(error-code) |
+| FG1 | Dashboard | Open Foundation | Foundation hub | GET /student/foundation + GET /student/foundation/progress | `VALIDATION_ERROR` |
+| FG2 | Foundation | Tab/search/strokes/page | same hub | local (catalog loaded) | — |
+| FG3 | Foundation | Inspect item | same-screen detail | local (loaded catalog) | — |
+| FG4 | Foundation item | Mark/unmark studied | same item, confirmed | PUT /student/foundation/progress | `VALIDATION_ERROR` |
+| FG5 | Foundation | Play/download | same screen/resource | none by design (D4) | unavailable UI, no code |
+| FG6 | Foundation speaking | Record/playback | permission then local playback | none; not implemented | denial/unavailable UI |
+| FG7 | Foundation | Retry failed read | same screen | catalog retry; progress failure keeps catalog | per-error UI |
 | FG8 | Foundation | Return | Dashboard | none | — |
-| FG9 | Dashboard | Open Grammar | Grammar hub | ⛔ G-read + G-progress | TODO(error-code) |
-| FG10 | Grammar | Filter/search/reset | same hub | local / ⛔ G-read | TODO(error-code) |
-| FG11 | Grammar | Open point | inline study | local / ⛔ G-read | TODO(error-code) |
+| FG9 | Dashboard | Open Grammar | Grammar hub | BE live (FE mock): GET /student/grammar + GET /student/grammar/progress | `VALIDATION_ERROR` |
+| FG10 | Grammar | Filter/search/reset | same hub | BE filters (FE unwired) | `VALIDATION_ERROR` |
+| FG11 | Grammar | Open point | inline study | BE: GET /student/grammar/:id (FE unwired) | `GRAMMAR_NOT_FOUND` |
 | FG12 | Grammar point | Close point | filtered list | none | — |
-| FG13 | Grammar point | Mark/unmark studied | same point, confirmed | ⛔ G-save | TODO(error-code) |
-| FG14 | Grammar point | Practise/submit | answer then confirmed result | ⛔ G-practice | TODO(error-code) |
+| FG13 | Grammar point | Mark/unmark studied | same point, confirmed | BE: PUT /student/grammar/progress (FE unwired) | `GRAMMAR_NOT_FOUND` |
+| FG14 | Grammar point | Practise/submit | answer then confirmed result | ⛔ G-practice (deferred) | — (no endpoint) |
 | FG15 | Grammar result | Continue study | point/list | none | — |
-| FG16 | Grammar | Retry failed read | same screen | ⛔ G-read / G-progress | TODO(error-code) |
+| FG16 | Grammar | Retry failed read | same screen | BE errors per §9 (FE unwired) | per-error UI |
 | FG17 | Grammar | Return | Dashboard | none | — |
 
 ### Additional state transitions and absent paths
@@ -239,7 +240,8 @@ Proposed study state: not studied ⇄ explicitly studied, with set semantics rat
 blind toggle. Proposed practice state: ready → answering → submitting → confirmed result;
 failed/uncertain submit preserves the draft and does not auto-replay. Neither means mastery/XP.
 
-Missing contracts: F-read, F-progress, F-save, G-read, G-progress, G-save, G-practice and M-read.
+Missing by design: G-practice (deferred — no reviewed exercise manifest) and M-read
+(none — no licensed assets, D4).
 There is no Student create/delete/publish catalog path because existing permissions forbid it.
 No microphone-upload path, cloud scorer, Teacher progress surface, gamification event or
 Assignment-grade transition is introduced. No persisted-write edge is executable yet.
