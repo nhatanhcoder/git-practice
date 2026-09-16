@@ -338,6 +338,12 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
   mock (endpoints ready) — next slice. Session:
   `ai/context/sessions/2026-09-16-opencode-foundation-be.md`.
 - ⛔ F10 Grammar points (browse, auto-generate exercises from `tokens`, progress)
+- 🔶 (opencode · 2026-09-16) **F10 Grammar practice port (option A)** — branch
+  `feat/student-grammar-practice-port`. Keep #89 BE; port zcode's reorder practice
+  adapted: `GrammarPracticeAttempt` rows (no UserGrammarProgress), submissionId
+  idempotency + 409 conflict, strip `tokens` from list/detail; wire grammar FE.
+  zcode lane (`feat/student-grammar-live` worktree) untouched — superseded, owner
+  to abandon after this lands.
 - ⛔ F11 Character writing (stroke-order animation, canvas practice, radical breakdown)
 - ⛔ F12 Lego sentence builder (7 stations, drag-drop with S/T/P/A/V/O/C/Q roles, endless mode)
 - ⛔ F13 HSK mock exams (11 exams / 161 questions, real timers, skill breakdown → `SkillScore`)
