@@ -280,6 +280,10 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
       ownership/RBAC/null/UTC/deleted-question/no-content-leak rules. XP, streak, badge, rank and peer
       figures remain outside this slice.
       *(if F9–F16 ever land, `SkillScore.skill` widens 3 → 7 values — `PROJECT_KNOWLEDGE.md` §8. Blocked, see Sprint 5b)*
+- 🔶 (codex · 2026-09-16) S-ANL-4/S-GAME-5 Leaderboard + S-GAME-4 Badges — implementing
+      the owner-approved bounded slice: anonymized official-grade ranking (minimum three attempts,
+      top 20 + caller rank) and four server-authoritative attempt badges. No XP, streak, identity,
+      retention, local unlock state, schema change or badge reward.
 - ⬜ F6.3 Class dashboard (Teacher) · ⬜ F6.4 API Quota Monitoring (Admin)
 - ✅ (zcode · 2026-09-12) **S-BILL-1/2 Student invoice read path — SCOPE-BILL-01 closed.**
       `GET /student/invoices` + `GET /student/invoices/:id` (both defined in `API_STUDENT.md`
