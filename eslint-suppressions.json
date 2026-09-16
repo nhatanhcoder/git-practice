@@ -216,19 +216,9 @@
       "count": 2
     }
   },
-  "apps/web/src/app/student/(app)/grammar/page.tsx": {
-    "@typescript-eslint/no-unused-vars": {
-      "count": 1
-    }
-  },
   "apps/web/src/app/student/(app)/page.tsx": {
     "@typescript-eslint/no-unused-vars": {
       "count": 1
-    }
-  },
-  "apps/web/src/app/landing/landing-view.tsx": {
-    "@next/next/no-img-element — external Unsplash URL": {
-      "count": 2
     }
   },
   "apps/web/src/app/teacher/classes/[classId]/lessons/page.tsx": {
@@ -253,11 +243,6 @@
     },
     "no-empty": {
       "count": 1
-    }
-  },
-  "apps/web/src/components/site/three-teacher-cylinder-stage.tsx": {
-    "prefer-const": {
-      "count": 2
     }
   },
   "apps/web/src/components/student/controls.tsx": {
