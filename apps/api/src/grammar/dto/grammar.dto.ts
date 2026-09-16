@@ -1,9 +1,13 @@
 import { Type } from 'class-transformer';
 import {
+  ArrayMaxSize,
+  ArrayMinSize,
+  IsArray,
   IsBoolean,
   IsInt,
   IsOptional,
   IsString,
+  IsUUID,
   Max,
   MaxLength,
   Min,
@@ -54,4 +58,23 @@ export class SetGrammarProgressDto {
 
   @IsBoolean()
   studied!: boolean;
+}
+
+/**
+ * POST /student/grammar/:id/practice — one reorder attempt.
+ * `submissionId` is the retry identity (§8): the client mints one uuid per
+ * attempt and reuses it only to recover a lost response — never across two
+ * different answers.
+ */
+export class SubmitPracticeDto {
+  @IsString()
+  @IsUUID('4')
+  submissionId!: string;
+
+  @IsArray()
+  @ArrayMinSize(1)
+  @ArrayMaxSize(20)
+  @IsString({ each: true })
+  @MaxLength(120, { each: true })
+  answer!: string[];
 }

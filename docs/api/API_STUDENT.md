@@ -70,15 +70,17 @@ only — nothing to mark, no studied-state).
 
 ## Grammar
 
-Implemented 2026-09-16 (same module/branch). Browse + own studied-state.
-Practice exercises (G-practice) deferred — no reviewed exercise manifest.
+Implemented 2026-09-16 (same module/branch). Browse + own studied-state +
+reorder practice. Media (audio/PDF) intentionally absent (D4).
 
 | Method | Path | Description |
 |--------|------|-------------|
-| GET | `/api/v1/student/grammar?hskLevel=&category=&search=&page=&limit=` | Paginated list, stable order (level asc, id asc) |
-| GET | `/api/v1/student/grammar/:id` | Grammar detail (`GRAMMAR_NOT_FOUND` 404 when absent) |
-| GET | `/api/v1/student/grammar/progress` | Own studied-state list |
+| GET | `/api/v1/student/grammar?hskLevel=&category=&search=&page=&limit=` | Paginated list, stable order (level asc, id asc); `tokens` never served |
+| GET | `/api/v1/student/grammar/:id` | Grammar detail, no `tokens` (`GRAMMAR_NOT_FOUND` 404 when absent) |
+| GET | `/api/v1/student/grammar/progress` | Own studied-state + per-point practice counts |
 | PUT | `/api/v1/student/grammar/progress` | Explicit idempotent set `{ grammarId, studied }` |
+| GET | `/api/v1/student/grammar/:id/practice` | Reorder exercise: prompt + deterministically shuffled tokens |
+| POST | `/api/v1/student/grammar/:id/practice` | Submit `{ submissionId, answer }`; server grades, idempotent retry (`GRAMMAR_PRACTICE_CONFLICT` 409 on conflict) |
 
 ---
 
@@ -139,8 +141,9 @@ prototype's `/api/progress` routes into production by default.
 [Module proposal](modules/student/02-foundation-grammar.md) and
 [source audit](modules/student/foundation-grammar-source-audit.md), 2026-09-10;
 transport/DTO/errors approved 2026-09-16 (D1–D5), implemented on
-`feat/student-foundation-be`. G-practice (exercises) and M-read (media) remain
-intentionally undefined — no endpoint, no code.
+`feat/student-foundation-be`; reorder practice added by the option-A port
+(`feat/student-grammar-practice-port`). M-read (media) remains intentionally
+undefined — no endpoint, no code.
 
 ## Mistake notebook — approved Task B
 

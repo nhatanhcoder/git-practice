@@ -78,6 +78,8 @@ export const ErrorCode = {
   // (02-foundation-grammar.md §9, D5-approved 2026-09-16). Same rationale as writing:
   // the only failure a caller can produce is asking for an item outside the corpus.
   GRAMMAR_NOT_FOUND: 'GRAMMAR_NOT_FOUND',
+  // Practice retry with the same submissionId but a different answer (option-A port).
+  GRAMMAR_PRACTICE_CONFLICT: 'GRAMMAR_PRACTICE_CONFLICT',
 
   // Placement (registry § Placement Errors) — 04-placement.md, Task C 2026-09-13.
   PLACEMENT_NO_QUESTIONS: 'PLACEMENT_NO_QUESTIONS',
@@ -186,6 +188,7 @@ export const ERROR_STATUS: Record<ErrorCodeValue, number> = {
   MISTAKE_NOT_FOUND: 404,
   MISTAKE_REVIEW_STALE: 409,
   GRAMMAR_NOT_FOUND: 404,
+  GRAMMAR_PRACTICE_CONFLICT: 409,
   PLACEMENT_NO_QUESTIONS: 409,
   NOTIFICATION_NOT_FOUND: 404,
   SESSION_NOT_FOUND: 404,

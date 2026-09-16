@@ -2,15 +2,15 @@
 feature: S-SELF-3, S-SELF-9
 role: student
 route: /student/grammar
-status: contracted
+status: built
 approval: proposed
-last_updated: 2026-09-10
+last_updated: 2026-09-16
 ---
 # Page Contract — Student · Grammar
 ## Purpose
-Find a grammar point, study its explanation and practise only reviewed exercise modes.
-Backend live since 2026-09-16 (list/detail/progress/save, 02-foundation-grammar.md §2);
-FE still mock-backed (unwired). Practice needs a reviewed exercise manifest (deferred).
+Find a grammar point, study its explanation and practise the reviewed reorder exercise.
+Backend live since 2026-09-16 (list/detail/progress/save/practice, 02-foundation-grammar.md §2);
+FE wiring lands in the option-A slice. Only the reorder exercise ships — no other modes.
 ## Access
 - Allowed roles: student; existing Student shell, no new Auth/RBAC behavior.
 - Ownership: published catalog plus current learner's state; never another learner's progress.
@@ -23,11 +23,11 @@ FE still mock-backed (unwired). Practice needs a reviewed exercise manifest (def
 ## Data
 | Need | Endpoint | Envelope field |
 |---|---|---|
-| List/detail/filter choices | `GET /student/grammar…` (BE live, FE unwired) | `data[]` + `meta`; §3 |
-| Own study/practice state | `GET /student/grammar/progress` (BE live, FE unwired) | `data.studied[]` |
-| Mark studied | `PUT /student/grammar/progress` (BE live, FE unwired) | `data` saved record; `GRAMMAR_NOT_FOUND` |
-| Reviewed exercise + submit | ⛔ G-practice, deferred (no manifest) | — (no endpoint) |
-BE per [module decisions D1–D5](../../../api/modules/student/02-foundation-grammar.md) (approved 2026-09-16); FE wiring is the remaining work.
+| List/detail/filter choices | `GET /student/grammar…` (live; `tokens` never served) | `data[]` + `meta`; §3 |
+| Own study/practice state | `GET /student/grammar/progress` (live) | `data.studied[]` + `data.practice[]` |
+| Mark studied | `PUT /student/grammar/progress` (live) | `data` saved record; `GRAMMAR_NOT_FOUND` |
+| Reorder exercise + submit | `GET/POST /student/grammar/:id/practice` (live) | shuffled `tokens`; graded result; `GRAMMAR_PRACTICE_CONFLICT` |
+BE per [module decisions D1–D5 + option A](../../../api/modules/student/02-foundation-grammar.md) (approved 2026-09-16).
 
 ## Regions
 1. Title, parent action, known private study summary; unknown state is not zero.
@@ -48,10 +48,10 @@ BE per [module decisions D1–D5](../../../api/modules/student/02-foundation-gra
 ## Actions
 | Action | Trigger | Result | Error code |
 |---|---|---|---|
-| Filter/search/reset | controls | G-read (BE live); latest response only; URL restored | `VALIDATION_ERROR` |
-| Open/close point | card/return to list | same hub and URL selection; G-read (BE live) | `GRAMMAR_NOT_FOUND` |
-| Mark/unmark studied | explicit control | G-save (BE live) confirmed before display changes | `GRAMMAR_NOT_FOUND` |
-| Practise/submit | reviewed mode/answer | ⛔ deferred — no reviewed mode exists | — (no endpoint) |
+| Filter/search/reset | controls | G-read (live); latest response only; URL restored | `VALIDATION_ERROR` |
+| Open/close point | card/return to list | same hub and URL selection; G-read (live) | `GRAMMAR_NOT_FOUND` |
+| Mark/unmark studied | explicit control | G-save (live) confirmed before display changes | `GRAMMAR_NOT_FOUND` |
+| Practise/submit | reorder mode/answer + fresh submissionId | G-practice server result; replay returns stored row | `GRAMMAR_PRACTICE_CONFLICT` |
 | Continue study | confirmed result | same point or list, no extra write | — |
 | Retry/return | retry or Dashboard link | failed read only / `/student` | existing handling |
 

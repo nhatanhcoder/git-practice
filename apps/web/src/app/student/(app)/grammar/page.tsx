@@ -1,142 +1,270 @@
 "use client";
 
 /**
- * /student/grammar — the grammar library.
+ * /student/grammar — the grammar library, live (02-foundation-grammar.md §2).
  *
- * Browse by level and category, open a point for the full explanation, then
- * drill it in one of five exercise shapes. Mastery is the learner's, so it
- * lives in the store and is joined onto the content here.
+ * Catalog + filters run server-side (GET /student/grammar); the learner's own
+ * study/practice state is a separate read (GET /student/grammar/progress) so a
+ * progress failure never hides readable content — Partial banner, catalog stays
+ * usable (contract state Partial).
  *
- * MOCK(student): content from `lib/student/grammar-data.ts`; no API call.
+ * Honesty rules (module invariants 6/8, ADR-005, D3/D4):
+ * - "Đã học" is a self-reported flag the SERVER confirms before the UI changes.
+ * - No mastery percentage, no XP, no streak — unknown progress renders "—".
+ * - Practice is the reviewed reorder exercise only; grading is server-side and
+ *   each submit carries a client-minted submissionId so a lost-response retry
+ *   never double-counts (a 409 names the conflict instead of failing silently).
  */
 
-import { useMemo, useState } from "react";
-import { BookOpen, Check, Dumbbell, Filter, Gauge, RotateCcw, Search, Sparkles, X } from "lucide-react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { BookOpen, Check, Dumbbell, RotateCcw, Search, X } from "lucide-react";
 import {
-  Bar,
   Chip,
   EmptyState,
   ErrorState,
-  Metric,
   Panel,
-  Ring,
   SectionHeader,
   SkeletonPanel,
 } from "@/components/student/primitives";
-import {
-  DemoStateSwitcher,
-  LevelSelector,
-  Tabs,
-  type DemoState,
-} from "@/components/student/controls";
+import { LevelSelector, Pagination } from "@/components/student/controls";
 import { Drawer, Modal } from "@/components/student/overlay";
 import { useToast } from "@/components/student/toast";
-import { useStudentStore } from "@/lib/student/store";
-import { grammarCategories, grammarPoints, type GrammarPoint } from "@/lib/student/grammar-data";
-import { shuffleBlocks } from "@/lib/student/student-rules";
-import { UnavailableState } from "@/components/student/unavailable-state";
+import { ApiError } from "@/lib/api-client";
+import {
+  fetchGrammarDetail,
+  fetchGrammarList,
+  fetchGrammarPractice,
+  fetchGrammarProgress,
+  setGrammarStudied,
+  submitGrammarPractice,
+  type GrammarCatalogItem,
+  type GrammarPracticeStat,
+  type GrammarStudiedRow,
+} from "@/lib/student/grammar-service";
 
 const LEVELS = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+const PAGE_SIZE = 20;
 
-type ExerciseKind = "mcq" | "blank" | "reorder" | "match" | "reflex";
+type LoadState = "loading" | "ready" | "error";
 
-const EXERCISE_TABS: { id: ExerciseKind; label: string }[] = [
-  { id: "mcq", label: "Trắc nghiệm" },
-  { id: "blank", label: "Điền chỗ trống" },
-  { id: "reorder", label: "Sắp xếp" },
-  { id: "match", label: "Nối cặp" },
-  { id: "reflex", label: "Phản xạ nhanh" },
-];
-
-/** Options for the MCQ / blank / reflex shapes: the right answer plus three others. */
-function optionsFor(point: GrammarPoint, all: GrammarPoint[]) {
-  const others = all
-    .filter((p) => p.id !== point.id && p.level === point.level)
-    .slice(0, 3)
-    .map((p) => p.hanzi);
-  const pool = [point.hanzi, ...others];
-  while (pool.length < 4) pool.push(all[pool.length].hanzi);
-  return shuffleBlocks(pool, point.id.length * 17 + point.level) as string[];
-}
-
-export default function GrammarPage() {
-  if (process.env.NODE_ENV === "production") {
-    return (
-      <UnavailableState
-        title="Thư viện ngữ pháp"
-        description="Thư viện ngữ pháp chưa được kết nối máy chủ dữ liệu trong phiên bản hiện tại. Vui lòng quay lại sau."
-      />
-    );
-  }
-  return <GrammarInner />;
+function newSubmissionId(): string {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) return crypto.randomUUID();
+  return `sub-${Date.now()}-${Math.floor(Math.random() * 1e9)}`;
 }
 
 function GrammarInner() {
-  const [demo, setDemo] = useState<DemoState>("ready");
-  const [level, setLevel] = useState<number | "all">("all");
-  const [category, setCategory] = useState<string>("all");
-  const [query, setQuery] = useState("");
-  const [open, setOpen] = useState<GrammarPoint | null>(null);
+  const router = useRouter();
+  const params = useSearchParams();
+  const [state, setState] = useState<LoadState>("loading");
+  const [items, setItems] = useState<GrammarCatalogItem[]>([]);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  const [studied, setStudied] = useState<Map<string, GrammarStudiedRow>>(new Map());
+  const [practiceStats, setPracticeStats] = useState<Map<string, GrammarPracticeStat>>(new Map());
+  const [progressKnown, setProgressKnown] = useState(false);
+
+  const [level, setLevel] = useState<number | "all">(() => {
+    const raw = params?.get("hskLevel");
+    const n = raw === null ? NaN : Number(raw);
+    return Number.isInteger(n) && n >= 1 && n <= 9 ? n : "all";
+  });
+  const [category, setCategory] = useState<string>(() => params?.get("category") ?? "all");
+  const [query, setQuery] = useState<string>(() => params?.get("search") ?? "");
+  const [page, setPage] = useState(1);
+
+  const [openId, setOpenId] = useState<string | null>(null);
+  const [openItem, setOpenItem] = useState<GrammarCatalogItem | null>(null);
+  const [openState, setOpenState] = useState<LoadState>("loading");
+  const [studiedBusy, setStudiedBusy] = useState(false);
   const [drillOpen, setDrillOpen] = useState(false);
-  const [kind, setKind] = useState<ExerciseKind>("mcq");
-  const [picked, setPicked] = useState<string | null>(null);
+  const [drill, setDrill] = useState<LoadState>("loading");
+  const [tokens, setTokens] = useState<string[]>([]);
   const [slot, setSlot] = useState<string[]>([]);
+  const [result, setResult] = useState<{ correct: boolean; expected: string[] } | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [submissionId, setSubmissionId] = useState<string>("");
 
-  const mastery = useStudentStore((s) => s.grammarMastery);
-  const practiseGrammar = useStudentStore((s) => s.practiseGrammar);
-  const awardXp = useStudentStore((s) => s.awardXp);
   const toast = useToast();
+  // A stale response must never repaint a newer filter (module invariant 10).
+  const requestSeq = useRef(0);
 
-  /** Content mastery is a fixture; the store's value wins once the learner drills. */
-  const points = useMemo(
-    () =>
-      grammarPoints.map((p) => ({
-        ...p,
-        mastery: mastery[p.id] ? mastery[p.id].level : p.mastery,
-      })),
-    [mastery],
+  const syncUrl = useCallback(
+    (next: { level: number | "all"; category: string; search: string }) => {
+      const qs = new URLSearchParams();
+      if (next.level !== "all") qs.set("hskLevel", String(next.level));
+      if (next.category !== "all") qs.set("category", next.category);
+      if (next.search.trim() !== "") qs.set("search", next.search.trim());
+      const suffix = qs.size > 0 ? `?${qs.toString()}` : "";
+      router.replace(`/student/grammar${suffix}`, { scroll: false });
+    },
+    [router],
   );
 
-  const results = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    return points.filter((p) => {
-      if (level !== "all" && p.level !== level) return false;
-      if (category !== "all" && p.category !== category) return false;
-      if (!q) return true;
-      return (
-        p.title.toLowerCase().includes(q) ||
-        p.formula.toLowerCase().includes(q) ||
-        p.hanzi.includes(q) ||
-        p.pinyin.toLowerCase().includes(q)
+  const load = useCallback(async () => {
+    const seq = ++requestSeq.current;
+    setState("loading");
+    try {
+      const res = await fetchGrammarList({
+        hskLevel: level === "all" ? undefined : level,
+        category: category === "all" ? undefined : category,
+        search: query.trim() || undefined,
+        page,
+        limit: PAGE_SIZE,
+      });
+      if (seq !== requestSeq.current) return;
+      setItems(res.items);
+      setTotal(res.total);
+      setTotalPages(res.totalPages);
+      setState("ready");
+    } catch (err) {
+      if (seq !== requestSeq.current) return;
+      if (err instanceof ApiError && (err.isUnauthenticated || err.isForbidden)) {
+        router.replace(`/login?next=${encodeURIComponent("/student/grammar")}`);
+        return;
+      }
+      setState("error");
+    }
+  }, [level, category, query, page, router]);
+
+  const loadProgress = useCallback(async () => {
+    try {
+      const res = await fetchGrammarProgress();
+      // Only server-confirmed studied:true counts — unmarked rows are history.
+      setStudied(
+        new Map(
+          res.studied.filter((r) => r.studied).map((r) => [r.grammarId, r]),
+        ),
       );
-    });
-  }, [points, level, category, query]);
+      setPracticeStats(new Map(res.practice.map((s) => [s.grammarId, s])));
+      setProgressKnown(true);
+    } catch {
+      setProgressKnown(false);
+    }
+  }, []);
 
-  const summary = useMemo(() => {
-    const mastered = points.filter((p) => p.mastery >= 80).length;
-    const learning = points.filter((p) => p.mastery > 0 && p.mastery < 80).length;
-    return {
-      total: points.length,
-      mastered,
-      learning,
-      notStarted: points.length - mastered - learning,
-      pct: Math.round(points.reduce((sum, point) => sum + point.mastery, 0) / points.length),
-    };
-  }, [points]);
+  useEffect(() => {
+    void load();
+  }, [load]);
+  useEffect(() => {
+    void loadProgress();
+  }, [loadProgress]);
 
-  const drillOptions = open ? optionsFor(open, points) : [];
-  const drillTokens = open ? (shuffleBlocks(open.hanzi.replace(/[。？！]/g, "").split(""), 7) as string[]) : [];
+  // Deep links restore filters; filter changes rewrite the URL.
+  useEffect(() => {
+    const rawLevel = params?.get("hskLevel");
+    const n = rawLevel === null || rawLevel === undefined ? NaN : Number(rawLevel);
+    if (Number.isInteger(n) && n >= 1 && n <= 9 && n !== level) setLevel(n);
+    const rawCat = params?.get("category") ?? "all";
+    if (rawCat !== category) setCategory(rawCat);
+    const rawSearch = params?.get("search") ?? "";
+    if (rawSearch !== query) setQuery(rawSearch);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [params]);
 
-  function answerDrill(correct: boolean) {
-    if (!open) return;
-    practiseGrammar(open.id, correct);
-    if (correct) {
-      awardXp(20, 1);
-      toast("Chính xác — +20 XP", "success");
-    } else {
-      toast("Chưa đúng, thử lại nhé", "warn");
+  function changeFilters(next: { level: number | "all"; category: string; search: string }) {
+    setLevel(next.level);
+    setCategory(next.category);
+    setQuery(next.search);
+    setPage(1);
+    syncUrl(next);
+  }
+
+  function resetFilters() {
+    changeFilters({ level: "all", category: "all", search: "" });
+  }
+
+  // Categories come from the loaded catalog page — plus the active selection
+  // when a filter narrows the list past it (so the active pill never vanishes).
+  const categories = useMemo(() => {
+    const seen = new Set<string>();
+    for (const it of items) seen.add(it.category);
+    if (category !== "all") seen.add(category);
+    return Array.from(seen).sort((a, b) => a.localeCompare(b, "vi"));
+  }, [items, category]);
+
+  async function openDetail(id: string) {
+    setOpenId(id);
+    setOpenItem(null);
+    setOpenState("loading");
+    try {
+      setOpenItem(await fetchGrammarDetail(id));
+      setOpenState("ready");
+    } catch {
+      setOpenState("error");
     }
   }
+
+  async function toggleStudied(id: string, next: boolean) {
+    setStudiedBusy(true);
+    try {
+      const saved = await setGrammarStudied(id, next);
+      setStudied((prev) => {
+        const copy = new Map(prev);
+        if (saved.studied) {
+          copy.set(id, {
+            grammarId: id,
+            studied: true,
+            updatedAt: saved.updatedAt,
+          });
+        } else {
+          copy.delete(id);
+        }
+        return copy;
+      });
+      setProgressKnown(true);
+      toast(next ? "Đã đánh dấu đã học" : "Đã bỏ đánh dấu", "success");
+    } catch {
+      toast("Không lưu được — thử lại", "danger");
+    } finally {
+      setStudiedBusy(false);
+    }
+  }
+
+  async function openDrill(item: GrammarCatalogItem) {
+    setDrillOpen(true);
+    setDrill("loading");
+    setSlot([]);
+    setResult(null);
+    setSubmissionId(newSubmissionId());
+    try {
+      const practice = await fetchGrammarPractice(item.id);
+      setTokens(practice.tokens);
+      setDrill("ready");
+    } catch {
+      setDrill("error");
+    }
+  }
+
+  async function submitDrill(item: GrammarCatalogItem) {
+    setSubmitting(true);
+    try {
+      const { result: res } = await submitGrammarPractice(item.id, slot, submissionId);
+      setResult({ correct: res.correct, expected: res.expected });
+      // Counts come back server-derived with every submit — adopt them.
+      setPracticeStats((prev) => {
+        const copy = new Map(prev);
+        copy.set(item.id, {
+          grammarId: item.id,
+          attempts: res.attemptCount,
+          correct: res.correctCount,
+        });
+        return copy;
+      });
+    } catch (err) {
+      if (err instanceof ApiError && err.code === "GRAMMAR_PRACTICE_CONFLICT") {
+        toast("Lượt nộp này đã dùng cho câu khác — hãy luyện lại lượt mới", "danger");
+        setDrillOpen(false);
+      } else {
+        // Failed submit keeps the answer on screen — no success repaint.
+        toast("Không nộp được — câu trả lời vẫn còn, thử lại", "danger");
+      }
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  const filtersActive = level !== "all" || category !== "all" || query.trim() !== "";
 
   return (
     <>
@@ -145,449 +273,343 @@ function GrammarInner() {
           <p className="eyebrow">Thư viện</p>
           <h1 className="pagehead__title">Ngữ pháp HSK 1 – 9</h1>
           <p className="pagehead__sub">
-            {points.length} điểm ngữ pháp có công thức, ví dụ chữ Hán, phiên âm, dịch nghĩa tiếng Việt và năm dạng bài tập luyện ngay trong thư viện.
+            {state === "ready"
+              ? `${total} điểm ngữ pháp — công thức, ví dụ chữ Hán, phiên âm, dịch nghĩa và bài luyện xếp từ.`
+              : "Đang tải thư viện…"}
           </p>
         </div>
-        <DemoStateSwitcher value={demo} onChange={setDemo} />
       </header>
 
-      {demo === "loading" ? (
-        <SkeletonPanel rows={5} height={200} />
-      ) : demo === "error" ? (
+      {state === "loading" ? (
+        <SkeletonPanel rows={5} height={220} />
+      ) : state === "error" ? (
         <Panel className="panel--pad">
-          <ErrorState onRetry={() => setDemo("ready")} />
+          <ErrorState onRetry={() => void load()} />
         </Panel>
       ) : (
         <>
-          {/* ---------- Mastery summary ---------- */}
-          <Panel className="panel--pad mastery" aria-label="Tổng quan mức thành thạo">
-            <div className="row gap-5">
-              <Ring value={summary.pct} size={104} stroke={10} label="Mức thành thạo tổng thể">
-                <div className="stack" style={{ gap: 0 }}>
-                  <span className="num" style={{ fontSize: "var(--step-2)", fontWeight: 700 }}>
-                    {summary.pct}%
-                  </span>
-                  <span style={{ color: "var(--text-3)", fontSize: 10 }}>tổng thể</span>
-                </div>
-              </Ring>
-              <div className="grow stack gap-4">
-                <div className="row gap-6 wrap">
-                  <Metric label="Thành thạo" value={summary.mastered} icon={<Check size={12} />} color="var(--success)" />
-                  <Metric label="Đang học" value={summary.learning} icon={<Gauge size={12} />} color="var(--warn)" />
-                  <Metric label="Chưa học" value={summary.notStarted} icon={<Sparkles size={12} />} />
-                </div>
-                <div className="mastery__levels">
-                  {LEVELS.map((itemLevel) => {
-                    const levelPoints = points.filter((point) => point.level === itemLevel);
-                    const levelPct = levelPoints.length
-                      ? Math.round(levelPoints.reduce((sum, point) => sum + point.mastery, 0) / levelPoints.length)
-                      : 0;
-                    return (
-                      <button key={itemLevel} type="button" className="mastery__level" onClick={() => setLevel(itemLevel)} aria-label={`Lọc HSK ${itemLevel} — thành thạo ${levelPct}%`}>
-                        <span className="mastery__level-n num">HSK {itemLevel}</span>
-                        <Bar value={levelPct} size="sm" tone={levelPct >= 70 ? "success" : levelPct > 0 ? "accent" : "info"} />
-                        <span className="mastery__level-p num">{levelPct}%</span>
-                      </button>
-                    );
-                  })}
-                </div>
+          {/* ---------- Study summary — confirmed counts only, no mastery % ---------- */}
+          <Panel className="panel--pad" aria-label="Tổng quan học tập">
+            <div className="row gap-6 wrap">
+              <div className="stack gap-1">
+                <span className="metric__label">Đã đánh dấu đã học</span>
+                <span className="num" style={{ fontSize: "var(--step-3)", fontWeight: 700 }}>
+                  {progressKnown ? studied.size : "—"}
+                </span>
+                <span style={{ color: "var(--text-3)", fontSize: "var(--step--1)" }}>
+                  trên {total} điểm ngữ pháp
+                </span>
               </div>
+              {!progressKnown ? (
+                <div className="grow stack gap-2">
+                  <Chip tone="warn">Không tải được tiến độ của bạn — thư viện vẫn xem được</Chip>
+                </div>
+              ) : null}
+              <p className="grow" style={{ color: "var(--text-3)", fontSize: "var(--step--1)" }}>
+                “Đã học” là tự đánh dấu của bạn — không phải kết quả kiểm tra. Bài luyện do máy chủ chấm.
+              </p>
             </div>
           </Panel>
 
           {/* ---------- Filters ---------- */}
           <Panel className="panel--pad stack gap-5" aria-label="Bộ lọc ngữ pháp">
-              <div className="row gap-4 wrap">
+            <div className="row gap-4 wrap">
               <label className="field grow" style={{ minWidth: 240, maxWidth: 420 }}>
                 <Search size={16} aria-hidden="true" />
                 <input
                   type="search"
                   value={query}
-                  onChange={(e) => setQuery(e.target.value)}
+                  onChange={(e) => {
+                    const next = e.target.value;
+                    setQuery(next);
+                    setPage(1);
+                    syncUrl({ level, category, search: next });
+                  }}
                   placeholder="Tìm theo tên, công thức, chữ Hán hoặc pinyin…"
                   aria-label="Tìm điểm ngữ pháp"
                 />
-                {query ? <button type="button" className="btn btn--ghost btn--icon btn--sm" onClick={() => setQuery("")} aria-label="Xoá từ khoá"><X size={14} /></button> : null}
+                {query ? (
+                  <button
+                    type="button"
+                    className="btn btn--ghost btn--icon btn--sm"
+                    onClick={() => changeFilters({ level, category, search: "" })}
+                    aria-label="Xoá từ khoá"
+                  >
+                    <X size={14} />
+                  </button>
+                ) : null}
               </label>
               <span className="grow" />
-              <Chip icon={<Filter size={12} />}>{results.length} kết quả</Chip>
-              {level !== "all" || category !== "all" || query.trim() ? (
-                <button type="button" className="btn btn--ghost btn--sm" onClick={() => { setLevel("all"); setCategory("all"); setQuery(""); }}><RotateCcw size={14} /> Xoá bộ lọc</button>
+              <Chip>{total} kết quả</Chip>
+              {filtersActive ? (
+                <button type="button" className="btn btn--ghost btn--sm" onClick={resetFilters}>
+                  <RotateCcw size={14} /> Xoá bộ lọc
+                </button>
               ) : null}
-              </div>
+            </div>
 
-              <div className="stack gap-2">
-                <span className="metric__label">Cấp độ</span>
-                <div className="row gap-3 wrap">
-                  <button
-                    type="button"
-                    className={`pill ${level === "all" ? "is-active" : ""}`}
-                    aria-pressed={level === "all"}
-                    onClick={() => setLevel("all")}
-                  >
-                    Tất cả
-                  </button>
-                  <LevelSelector
-                    levels={LEVELS.map((id) => ({ id }))}
-                    value={typeof level === "number" ? level : -1}
-                    onChange={(id) => setLevel(id)}
-                  />
-                </div>
+            <div className="stack gap-2">
+              <span className="metric__label">Cấp độ</span>
+              <div className="row gap-3 wrap">
+                <button
+                  type="button"
+                  className={`pill ${level === "all" ? "is-active" : ""}`}
+                  aria-pressed={level === "all"}
+                  onClick={() => changeFilters({ level: "all", category, search: query })}
+                >
+                  Tất cả
+                </button>
+                <LevelSelector
+                  levels={LEVELS.map((id) => ({ id }))}
+                  value={typeof level === "number" ? level : -1}
+                  onChange={(id) => changeFilters({ level: id, category, search: query })}
+                />
               </div>
+            </div>
 
-              <div className="stack gap-2">
-                <span className="metric__label">Nhóm ngữ pháp</span>
-                <div className="row gap-2 wrap">
+            <div className="stack gap-2">
+              <span className="metric__label">Nhóm ngữ pháp</span>
+              <div className="row gap-2 wrap">
+                <button
+                  type="button"
+                  className={`pill ${category === "all" ? "is-active" : ""}`}
+                  aria-pressed={category === "all"}
+                  onClick={() => changeFilters({ level, category: "all", search: query })}
+                >
+                  Tất cả nhóm
+                </button>
+                {categories.map((c) => (
                   <button
+                    key={c}
                     type="button"
-                    className={`pill ${category === "all" ? "is-active" : ""}`}
-                    aria-pressed={category === "all"}
-                    onClick={() => setCategory("all")}
+                    className={`pill ${category === c ? "is-active" : ""}`}
+                    aria-pressed={category === c}
+                    onClick={() => changeFilters({ level, category: c, search: query })}
                   >
-                    Tất cả nhóm
+                    {c}
                   </button>
-                  {grammarCategories.map((c) => (
-                    <button
-                      key={c}
-                      type="button"
-                      className={`pill ${category === c ? "is-active" : ""}`}
-                      aria-pressed={category === c}
-                      onClick={() => setCategory(c)}
-                    >
-                      {c}
-                    </button>
-                  ))}
-                </div>
+                ))}
               </div>
+            </div>
           </Panel>
 
           {/* ---------- Results ---------- */}
           <section>
-            <SectionHeader
-              title="Điểm ngữ pháp"
-              sub={`${results.length} kết quả khớp bộ lọc`}
-            />
-            {demo === "empty" || results.length === 0 ? (
+            <SectionHeader title="Điểm ngữ pháp" sub={`${total} kết quả · trang ${page}/${Math.max(totalPages, 1)}`} />
+            {items.length === 0 ? (
               <Panel className="panel--pad">
                 <EmptyState
                   title="Không có điểm nào khớp"
                   text="Thử bỏ bớt bộ lọc hoặc tìm bằng từ khoá khác."
                   action={
-                    <button
-                      type="button"
-                      className="btn btn--outline"
-                      onClick={() => {
-                        setLevel("all");
-                        setCategory("all");
-                        setQuery("");
-                      }}
-                    >
+                    <button type="button" className="btn btn--outline" onClick={resetFilters}>
                       Xoá bộ lọc
                     </button>
                   }
                 />
               </Panel>
             ) : (
-              <div className="cards">
-                {results.map((p) => (
-                  <button key={p.id} type="button" className="gcard" onClick={() => setOpen(p)}>
-                    <div className="row gap-2 wrap">
-                      <Chip tone="accent">HSK {p.level}</Chip>
-                      <Chip>{p.category}</Chip>
-                    </div>
-                    <span className="gcard__name">{p.title}</span>
-                    <span className="gcard__formula">{p.formula}</span>
-                    <div className="stack gap-1">
-                      <span className="gcard__hanzi han">{p.hanzi}</span>
-                      <span className="gcard__pinyin pinyin">{p.pinyin}</span>
-                      <span className="gcard__vi vi-meaning">{p.vi}</span>
-                    </div>
-                    <div className="stack gap-1">
-                      <Bar
-                        value={p.mastery}
-                        tone={p.mastery >= 80 ? "success" : "accent"}
-                        size="sm"
-                        label={`Thành thạo ${p.mastery}%`}
-                      />
-                      <span style={{ color: "var(--text-3)", fontSize: "var(--step--2)" }}>
-                        Thành thạo <span className="num">{p.mastery}%</span>
-                      </span>
-                    </div>
-                  </button>
-                ))}
-              </div>
+              <>
+                <div className="cards">
+                  {items.map((p) => {
+                    const isStudied = studied.has(p.id);
+                    const stats = practiceStats.get(p.id);
+                    return (
+                      <button key={p.id} type="button" className="gcard" onClick={() => void openDetail(p.id)}>
+                        <div className="row gap-2 wrap">
+                          <Chip tone="accent">HSK {p.level}</Chip>
+                          <Chip>{p.category}</Chip>
+                          {isStudied ? (
+                            <Chip tone="success">
+                              <Check size={12} /> Đã học
+                            </Chip>
+                          ) : null}
+                        </div>
+                        <span className="gcard__name">{p.name}</span>
+                        <span className="gcard__formula">{p.formula}</span>
+                        <div className="stack gap-1">
+                          <span className="gcard__hanzi han">{p.hanzi}</span>
+                          <span className="gcard__pinyin pinyin">{p.pinyin}</span>
+                          <span className="gcard__vi vi-meaning">{p.vi}</span>
+                        </div>
+                        {stats && stats.attempts > 0 ? (
+                          <span style={{ color: "var(--text-3)", fontSize: "var(--step--2)" }}>
+                            Đã luyện {stats.attempts} lần · đúng {stats.correct}
+                          </span>
+                        ) : (
+                          <span style={{ color: "var(--text-3)", fontSize: "var(--step--2)" }}>Chưa luyện</span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+                <Pagination
+                  page={page}
+                  totalItems={total}
+                  pageSize={PAGE_SIZE}
+                  onPageChange={(next) => {
+                    setPage(next);
+                    syncUrl({ level, category, search: query });
+                  }}
+                  unit="điểm ngữ pháp"
+                />
+              </>
             )}
           </section>
         </>
       )}
 
-      {/* ---------- Detail drawer ---------- */}
+      {/* ---------- Detail drawer (server-fetched, not the card copy) ---------- */}
       <Drawer
-        open={open !== null && !drillOpen}
-        onClose={() => setOpen(null)}
-        eyebrow={open ? `HSK ${open.level} · ${open.category}` : ""}
-        title={open?.title ?? ""}
-        subtitle={open?.formula}
+        open={openId !== null && !drillOpen}
+        onClose={() => {
+          setOpenId(null);
+          setOpenItem(null);
+        }}
+        eyebrow={openItem ? `HSK ${openItem.level} · ${openItem.category}` : ""}
+        title={openItem?.name ?? ""}
+        subtitle={openItem?.formula}
         footer={
-          <button
-            type="button"
-            className="btn btn--primary btn--block"
-            onClick={() => {
-              setPicked(null);
-              setSlot([]);
-              setDrillOpen(true);
-            }}
-          >
-            <Dumbbell size={16} /> Luyện điểm này
-          </button>
+          openItem ? (
+            <div className="stack gap-2">
+              <button type="button" className="btn btn--primary btn--block" onClick={() => void openDrill(openItem)}>
+                <Dumbbell size={16} /> Luyện xếp từ
+              </button>
+              <button
+                type="button"
+                className={`btn btn--block ${studied.has(openItem.id) ? "btn--outline" : "btn--ghost"}`}
+                disabled={studiedBusy}
+                onClick={() => void toggleStudied(openItem.id, !studied.has(openItem.id))}
+              >
+                <BookOpen size={16} />
+                {studied.has(openItem.id) ? "Bỏ đánh dấu đã học" : "Đánh dấu đã học"}
+              </button>
+            </div>
+          ) : null
         }
       >
-        {open ? (
+        {openState === "loading" ? (
+          <SkeletonPanel rows={3} height={120} />
+        ) : openState === "error" || !openItem ? (
+          <ErrorState onRetry={() => openId && void openDetail(openId)} />
+        ) : (
           <div className="stack gap-5">
             <div className="stack gap-2">
               <span className="eyebrow">Công thức</span>
-              <span className="gcard__formula" style={{ alignSelf: "flex-start" }}>
-                {open.formula}
-              </span>
+              <span className="gcard__formula" style={{ alignSelf: "flex-start" }}>{openItem.formula}</span>
             </div>
-
             <div className="stack gap-2">
               <span className="eyebrow">Giải thích</span>
-              <p style={{ color: "var(--text-2)" }}>{open.notes}</p>
+              <p style={{ color: "var(--text-2)" }}>{openItem.note}</p>
             </div>
-
             <div className="stack gap-3">
               <span className="eyebrow">Ví dụ</span>
-              {[{ hanzi: open.hanzi, pinyin: open.pinyin, vi: open.vi }, ...open.examples].map(
-                (ex, i) => (
-                  <div key={i} className="drawer-hanzi stack gap-1">
-                    <span className="han" style={{ fontSize: "var(--step-2)" }}>
-                      {ex.hanzi}
-                    </span>
-                    <span
-                      className="pinyin drawer-hanzi__pinyin"
-                      style={{ fontFamily: "var(--font-mono)", color: "var(--accent)", fontSize: "var(--step--1)" }}
-                    >
-                      {ex.pinyin}
-                    </span>
-                    <span
-                      className="vi-meaning drawer-hanzi__vi"
-                      style={{ color: "var(--text-2)", fontSize: "var(--step--1)" }}
-                    >
-                      {ex.vi}
-                    </span>
-                  </div>
-                ),
-              )}
+              <div className="drawer-hanzi stack gap-1">
+                <span className="han" style={{ fontSize: "var(--step-2)" }}>{openItem.hanzi}</span>
+                <span className="pinyin drawer-hanzi__pinyin" style={{ fontFamily: "var(--font-mono)", color: "var(--accent)", fontSize: "var(--step--1)" }}>
+                  {openItem.pinyin}
+                </span>
+                <span className="vi-meaning drawer-hanzi__vi" style={{ color: "var(--text-2)", fontSize: "var(--step--1)" }}>
+                  {openItem.vi}
+                </span>
+              </div>
             </div>
-
-            <div className="stack gap-2">
-              <span className="eyebrow">Mức thành thạo</span>
-              <Bar value={open.mastery} tone={open.mastery >= 80 ? "success" : "accent"} />
-            </div>
+            {(() => {
+              const stats = practiceStats.get(openItem.id);
+              return stats && stats.attempts > 0 ? (
+                <div className="stack gap-2">
+                  <span className="eyebrow">Luyện tập</span>
+                  <span style={{ color: "var(--text-2)", fontSize: "var(--step--1)" }}>
+                    Đã luyện {stats.attempts} lần · đúng {stats.correct} lần (máy chủ chấm)
+                  </span>
+                </div>
+              ) : null;
+            })()}
           </div>
-        ) : null}
+        )}
       </Drawer>
 
-      {/* ---------- Exercise modal ---------- */}
+      {/* ---------- Reorder practice modal ---------- */}
       <Modal
         open={drillOpen}
         onClose={() => setDrillOpen(false)}
-        title={`Luyện: ${open?.title ?? ""}`}
-        subtitle="Năm dạng bài, chọn tab để đổi"
+        title={`Luyện: ${openItem?.name ?? ""}`}
+        subtitle="Xếp các khối chữ thành câu đúng"
       >
-        <div className="stack gap-5">
-          <Tabs
-            tabs={EXERCISE_TABS}
-            active={kind}
-            onChange={(id) => {
-              setKind(id as ExerciseKind);
-              setPicked(null);
-              setSlot([]);
-            }}
-            label="Dạng bài tập"
-          />
-
-          {open && (kind === "mcq" || kind === "blank" || kind === "reflex") ? (
-            <div className="stack gap-4">
-              <p className="ex-prompt">
-                {kind === "mcq"
-                  ? `Câu nào dùng đúng «${open.formula}»?`
-                  : kind === "blank"
-                    ? `Điền câu đúng cho: «${open.vi}»`
-                    : `Phản xạ nhanh — chọn trong 5 giây: «${open.vi}»`}
-              </p>
-              <div className="ex-options">
-                {drillOptions.map((opt) => {
-                  const isRight = opt === open.hanzi;
-                  const state =
-                    picked === null
-                      ? ""
-                      : opt === picked
-                        ? isRight
-                          ? "is-right"
-                          : "is-wrong"
-                        : isRight
-                          ? "is-right"
-                          : "";
-                  return (
-                    <button
-                      key={opt}
-                      type="button"
-                      className={`ex-option han ${state}`}
-                      disabled={picked !== null}
-                      onClick={() => {
-                        setPicked(opt);
-                        answerDrill(isRight);
-                      }}
-                    >
-                      {opt}
-                    </button>
-                  );
-                })}
-              </div>
-              {picked !== null ? (
-                <div className={`ex-feedback ${picked === open.hanzi ? "is-right" : "is-wrong"}`}>
-                  <p style={{ fontWeight: 700 }}>
-                    {picked === open.hanzi ? "Chính xác" : "Chưa đúng"}
-                  </p>
-                  <p style={{ color: "var(--text-2)", fontSize: "var(--step--1)" }}>{open.notes}</p>
-                </div>
-              ) : null}
-            </div>
-          ) : null}
-
-          {open && kind === "reorder" ? (
-            <div className="stack gap-4">
-              <p className="ex-prompt">Sắp xếp thành câu đúng: «{open.vi}»</p>
-              <div className="ex-slot">
-                {slot.length === 0 ? (
-                  <span style={{ color: "var(--text-3)", fontSize: "var(--step--1)" }}>
-                    Bấm các khối bên dưới để xếp câu
-                  </span>
-                ) : (
-                  slot.map((t, i) => (
-                    <button
-                      key={`${t}-${i}`}
-                      type="button"
-                      className="token"
-                      onClick={() => setSlot((s) => s.filter((_, idx) => idx !== i))}
-                    >
-                      {t}
-                    </button>
-                  ))
-                )}
-              </div>
-              <div className="ex-bank">
-                {drillTokens.map((t, i) => (
+        {drill === "loading" ? (
+          <SkeletonPanel rows={3} height={120} />
+        ) : drill === "error" ? (
+          <ErrorState onRetry={() => openItem && void openDrill(openItem)} />
+        ) : openItem ? (
+          <div className="stack gap-4">
+            <p className="ex-prompt">Sắp xếp thành câu đúng: «{openItem.vi}»</p>
+            <div className="ex-slot" aria-label="Câu của bạn">
+              {slot.length === 0 ? (
+                <span style={{ color: "var(--text-3)", fontSize: "var(--step--1)" }}>Bấm các khối bên dưới để xếp câu</span>
+              ) : (
+                slot.map((t, i) => (
                   <button
                     key={`${t}-${i}`}
                     type="button"
                     className="token"
-                    disabled={slot.filter((x) => x === t).length >= drillTokens.filter((x) => x === t).length}
-                    onClick={() => setSlot((s) => [...s, t])}
+                    disabled={result !== null}
+                    onClick={() => setSlot((s) => s.filter((_, idx) => idx !== i))}
                   >
                     {t}
                   </button>
-                ))}
-              </div>
+                ))
+              )}
+            </div>
+            <div className="ex-bank">
+              {tokens.map((t, i) => (
+                <button
+                  key={`${t}-${i}`}
+                  type="button"
+                  className="token"
+                  disabled={
+                    result !== null ||
+                    slot.filter((x) => x === t).length >= tokens.filter((x) => x === t).length
+                  }
+                  onClick={() => setSlot((s) => [...s, t])}
+                >
+                  {t}
+                </button>
+              ))}
+            </div>
+            {result === null ? (
               <button
                 type="button"
                 className="btn btn--primary"
-                disabled={slot.length === 0}
-                onClick={() => {
-                  const target = open.hanzi.replace(/[。？！]/g, "");
-                  answerDrill(slot.join("") === target);
-                  setPicked(slot.join("") === target ? "ok" : "no");
-                }}
+                disabled={slot.length === 0 || submitting}
+                onClick={() => openItem && void submitDrill(openItem)}
               >
-                Kiểm tra
+                {submitting ? "Đang nộp…" : "Kiểm tra"}
               </button>
-              {picked ? (
-                <div className={`ex-feedback ${picked === "ok" ? "is-right" : "is-wrong"}`}>
-                  <p style={{ fontWeight: 700 }}>{picked === "ok" ? "Chính xác" : "Chưa đúng"}</p>
-                  <p className="han">{open.hanzi}</p>
+            ) : (
+              <div className={`ex-feedback ${result.correct ? "is-right" : "is-wrong"}`}>
+                <p style={{ fontWeight: 700 }}>{result.correct ? "Chính xác" : "Chưa đúng"}</p>
+                <p className="han">{result.expected.join("")}</p>
+                <div className="row gap-2 wrap" style={{ marginTop: 8 }}>
+                  <button type="button" className="btn btn--outline btn--sm" onClick={() => openItem && void openDrill(openItem)}>
+                    Luyện lại
+                  </button>
+                  <button type="button" className="btn btn--ghost btn--sm" onClick={() => { setDrillOpen(false); setOpenId(null); setOpenItem(null); }}>
+                    Xong
+                  </button>
                 </div>
-              ) : null}
-            </div>
-          ) : null}
-
-          {open && kind === "match" ? (
-            <MatchExercise points={points} anchor={open} onDone={() => answerDrill(true)} />
-          ) : null}
-        </div>
+              </div>
+            )}
+          </div>
+        ) : null}
       </Modal>
     </>
   );
 }
 
-/** Four Chinese cells and four Vietnamese cells; tap one of each to pair them. */
-function MatchExercise({
-  points,
-  anchor,
-  onDone,
-}: {
-  points: GrammarPoint[];
-  anchor: GrammarPoint;
-  onDone: () => void;
-}) {
-  const pairs = useMemo(() => {
-    const pool = [anchor, ...points.filter((p) => p.id !== anchor.id).slice(0, 3)];
-    return pool.map((p) => ({ id: p.id, hanzi: p.hanzi, vi: p.vi }));
-  }, [points, anchor]);
-
-  const shuffledVi = useMemo(() => shuffleBlocks(pairs, 23) as typeof pairs, [pairs]);
-  const [selected, setSelected] = useState<string | null>(null);
-  const [done, setDone] = useState<string[]>([]);
-
-  function pickVi(id: string) {
-    if (!selected) return;
-    if (selected === id) {
-      const next = [...done, id];
-      setDone(next);
-      if (next.length === pairs.length) onDone();
-    }
-    setSelected(null);
-  }
-
+export default function GrammarPage() {
   return (
-    <div className="stack gap-4">
-      <p className="ex-prompt">Nối câu chữ Hán với nghĩa tiếng Việt</p>
-      <div className="ex-match">
-        <div className="stack gap-2">
-          {pairs.map((p) => (
-            <button
-              key={p.id}
-              type="button"
-              className={`match-cell han ${selected === p.id ? "is-sel" : ""} ${done.includes(p.id) ? "is-done" : ""}`}
-              disabled={done.includes(p.id)}
-              onClick={() => setSelected(p.id)}
-            >
-              {p.hanzi}
-            </button>
-          ))}
-        </div>
-        <div className="stack gap-2">
-          {shuffledVi.map((p) => (
-            <button
-              key={p.id}
-              type="button"
-              className={`match-cell ${done.includes(p.id) ? "is-done" : ""}`}
-              disabled={done.includes(p.id)}
-              onClick={() => pickVi(p.id)}
-            >
-              {p.vi}
-            </button>
-          ))}
-        </div>
-      </div>
-      {done.length === pairs.length ? (
-        <div className="ex-feedback is-right">
-          <p style={{ fontWeight: 700 }}>
-            <Sparkles size={14} style={{ display: "inline" }} /> Nối đúng cả bốn cặp
-          </p>
-        </div>
-      ) : null}
-    </div>
+    <Suspense fallback={<SkeletonPanel rows={5} height={200} />}>
+      <GrammarInner />
+    </Suspense>
   );
 }

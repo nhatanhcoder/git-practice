@@ -338,6 +338,22 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
   mock (endpoints ready) — next slice. Session:
   `ai/context/sessions/2026-09-16-opencode-foundation-be.md`.
 - ⛔ F10 Grammar points (browse, auto-generate exercises from `tokens`, progress)
+- 🔶 (opencode · 2026-09-16) **F10 Grammar practice port (option A)** — branch
+  `feat/student-grammar-practice-port`. Keep #89 BE; port zcode's reorder practice
+  adapted: `GrammarPracticeAttempt` rows (no UserGrammarProgress), submissionId
+  idempotency + 409 conflict, strip `tokens` from list/detail; wire grammar FE.
+  zcode lane (`feat/student-grammar-live` worktree) untouched — superseded, owner
+  to abandon after this lands.
+- ✅ (opencode · 2026-09-16) **F10 DONE, verified end to end.** `GET/POST
+  :id/practice` live (deterministic shuffle, server grading, idempotent replay,
+  409 conflict); e2e 13/13 (4 practice cases incl. no-answer-leak + derived
+  counts); FE grammar hub live (filters, drawer, reorder modal, 7 states, prod
+  gate removed); Playwright grammar spec 3×(desktop+375px) = 18/18 green,
+  screenshots read. Full API suite + web unit + check-docs re-verified at PR
+  time (pre-existing API-018 only). Two test-caught fixes same slice
+  (production-gate unit test rewritten for the live contract; NFD pinyin
+  folding replacing the lint-flagged char class). Session:
+  `ai/context/sessions/2026-09-16-opencode-grammar-port.md`.
 - ⛔ F11 Character writing (stroke-order animation, canvas practice, radical breakdown)
 - ⛔ F12 Lego sentence builder (7 stations, drag-drop with S/T/P/A/V/O/C/Q roles, endless mode)
 - ⛔ F13 HSK mock exams (11 exams / 161 questions, real timers, skill breakdown → `SkillScore`)
@@ -1216,3 +1232,5 @@ are accepted and implemented; 02 is implemented but its spec status is in confli
 - ✅ (codex · 2026-09-14) **S-MSTK Task B — live mistake notebook/review.** Owner approved schema and student-owned API; branch codex/student-mistakes-live. Sources: real failed flashcard review and graded wrong attempt answers. Implementation, API 305/305, SRS cleanup rerun 15/15 and production browser 2/2 verified; records in `ai/context/sessions/2026-09-14-codex-student-mistakes-live.md`.
 
 - ✅ (codex · 2026-09-15) **S-SELF-1 live vocabulary learning path** — published 1,119 approved Hán Lộ words as 143 immutable units across HSK 1–9; added student-owned, revision-safe study/quiz/completion progress and connected both production pages. Textbook curricula remain honestly empty pending verified content. API lifecycle passed three independent DB rounds; production browser lifecycle passed three rounds on desktop and 375px. Branch `codex/student-learning-path-live`.
+
+- ✅ (opencode · 2026-09-16) **Merged lanes #88 + #87 + #86** (owner-directed) onto main with lane-branch resolutions, all CI-green before merge: #88 learning-path (2 additive conflicts resolved in-lane-worktree; e2e 5/5 + PW 2/2 re-verified on the merge), #87 mistakes (11 additive conflicts; builds + e2e 3/3 + PW 2/2 re-verified), #86 landing removal (+lockfile sync + 1 lint fix; web build + landing unit 7/7 + PW 10/10). Incident: one #87 resolution batch landed on the wrong branch and was reset + redone (check-docs caught it). Records: `ai/context/sessions/2026-09-16-opencode-merge-lanes.md`.

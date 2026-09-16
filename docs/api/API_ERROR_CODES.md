@@ -183,6 +183,7 @@ progress record.
 | Code | HTTP | Description |
 |------|------|-------|
 | `GRAMMAR_NOT_FOUND` | 404 | No grammar item with that id exists in the catalogue |
+| `GRAMMAR_PRACTICE_CONFLICT` | 409 | Same practice `submissionId` retried with a different answer (option-A port 2026-09-16) |
 
 ### Placement Errors (PLACEMENT_*) — added 2026-09-13, Task C (`modules/student/04-placement.md`)
 

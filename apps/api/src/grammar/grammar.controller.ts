@@ -5,6 +5,7 @@ import {
   HttpCode,
   HttpStatus,
   Param,
+  Post,
   Put,
   Query,
 } from '@nestjs/common';
@@ -12,7 +13,11 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Roles } from '../common/decorators/roles.decorator';
 import { CurrentUser, type AuthenticatedUser } from '../common/decorators/current-user.decorator';
 import { GrammarService } from './grammar.service';
-import { ListGrammarQueryDto, SetGrammarProgressDto } from './dto/grammar.dto';
+import {
+  ListGrammarQueryDto,
+  SetGrammarProgressDto,
+  SubmitPracticeDto,
+} from './dto/grammar.dto';
 
 /**
  * Grammar catalog + studied-state (02-foundation-grammar.md §2).
@@ -49,8 +54,25 @@ export class GrammarController {
   }
 
   @Get(':id')
-  @ApiOperation({ summary: 'One grammar record (GRAMMAR_NOT_FOUND when absent)' })
+  @ApiOperation({ summary: 'One grammar record, no tokens (GRAMMAR_NOT_FOUND when absent)' })
   one(@Param('id') id: string) {
     return this.grammar.getOne(id);
+  }
+
+  @Get(':id/practice')
+  @ApiOperation({ summary: 'The reorder exercise: prompt + deterministically shuffled tokens' })
+  practice(@Param('id') id: string) {
+    return this.grammar.getPractice(id);
+  }
+
+  @Post(':id/practice')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Submit a token order with a submissionId; server grades, idempotent' })
+  submit(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+    @Body() dto: SubmitPracticeDto,
+  ) {
+    return this.grammar.submitPractice(user.id, id, dto.submissionId, dto.answer);
   }
 }
