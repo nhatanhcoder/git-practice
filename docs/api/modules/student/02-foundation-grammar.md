@@ -1,9 +1,9 @@
 ---
 module: student-foundation-grammar
-status: proposed
-blocked_by: content adoption; storage and completion rules; endpoint/DTO/error contracts
+status: proposed → owner-approved to code 2026-09-16 (D1–D5)
+blocked_by: G-practice exercise manifest; nothing else for this slice
 owner: project owner
-last_updated: 2026-09-10
+last_updated: 2026-09-16
 ---
 
 # Foundation and Grammar — design for approval
@@ -28,21 +28,45 @@ Recommended sequence: audited text catalog and private study completion first, v
 practice second, playable/downloadable media third. This is sequencing, not permission to call
 the whole feature done while any committed capability remains unavailable.
 
-## 1. Data and storage proposal — no tables touched
+## 1. Data and storage — approved physical design (D1/D2, 2026-09-16)
 
-| Aggregate | Recommendation to approve | Identity / boundary |
+| Aggregate | Approved store | Identity / boundary |
 |---|---|---|
-| Published Foundation and Grammar content | MongoDB versioned content, preserving source fields | Source group plus source `id`; radicals use source `no`; immutable published revision |
-| Personal study progress | PostgreSQL relational state linked to existing User | One learner + one stable content identity; distinguish self-reported study from assessed ability |
-| Grammar practice result | PostgreSQL result and progress update in the same transaction | Pin the content/exercise revision; retries of one submission must not create another result |
-| Audio/PDF assets | Separate reviewed asset manifest | Verified file/hash/rights, never the unverified source duration/size labels |
-| Microphone recording | Recommend browser-session playback only in the first media slice | No upload or retention; no pronunciation score; choice pending D4 |
+| Published Foundation and Grammar content | MongoDB versioned content, preserving source fields | `foundation_items` / `grammar_items`; per-record key below; immutable published `revision` = short hash of the source files |
+| Import bookkeeping | MongoDB `content_revisions` | `{ name, revision, sourceHash, counts, importedAt }`, unique `(name, revision)` |
+| Personal study progress | PostgreSQL `UserStudyProgress` linked to existing User | `(userId, contentKind, contentKey)` unique; explicit studied/un-studied with `updatedAt` ordering; self-reported study only |
+| Grammar practice result | DEFERRED with G-practice — no table | — |
+| Audio/PDF assets | NONE (D4) — no manifest, no files | Missing resources stay unavailable; no delivery contract |
+| Microphone recording | Browser-session playback only; no upload or retention; no score | — |
 
-These are conceptual aggregates, not approved collection/table/column names. Physical schemas,
-indexes and transport fields stay ⛔ until D2/D5. No Prisma/Mongoose file is changed by this task.
-PostgreSQL progress avoids adding relational learner/result records to the content documents.
-Mongo content and PG progress cannot share a transaction: pin immutable content before the PG write.
-A future content withdrawal policy must preserve past result references rather than hard-delete them.
+MongoDB shapes:
+
+```
+foundation_items: { revision, group, key, data }
+  group ∈ initials|finals|tones|sandhi|radicals|listening|speaking|pdfs
+  key = source `id` — except `initials`/`finals` (keyed by `sound`: the sound is
+  the pedagogical identity, unique across both groups, enforced at import) and
+  `radicals` (keyed by source `no` 1–214). data = source fields verbatim (§3).
+  Unique (revision, group, key); index (group, key).
+grammar_items: { revision, key (= source `id`), level, category, data }
+  data = source fields verbatim (§3). Unique (revision, key); index (level, category).
+```
+
+PostgreSQL (`UserStudyProgress`, new migration):
+
+```
+id uuid PK · userId FK → User.id ON DELETE CASCADE
+contentKind: 'foundation' | 'grammar'   // foundation key = "<kind>:<sourceKey>"
+contentKey: string                       // grammar key = source grammar `id`
+studied: boolean · updatedAt
+@@unique([userId, contentKind, contentKey]) · @@index([userId])
+```
+
+Deviation recorded: `PROJECT_KNOWLEDGE.md` §8.9's `UserGrammarProgress(userId,
+grammarPointId, status, attemptCount, lastPracticedAt)` is NOT used — this module
+§1 already records ADR-016 never approved that SQL shape. One table covers
+studied-state for both catalogs; `attemptCount`/practice results arrive with
+G-practice (deferred). No sample request body beyond §3.
 
 ### Source-derived field mapping
 
@@ -62,37 +86,75 @@ A future content withdrawal policy must preserve past result references rather t
 - Physical fields for those missing concepts must be specified and approved, not inferred from
   mock counters. No sample request body is provided while the required contract is missing.
 
-## 2. Required API operations — blocked contract register
+## 2. Required API operations — approved transport (D1–D5 owner-approved 2026-09-16)
 
-Operation labels here are document references, not API routes or error codes.
-Every path/method is **⛔ missing**, including operations described as reads/writes below.
+Operation labels are document references; the method+path column below IS the contract
+as of this edit. All routes are student-scoped (`@Roles('student')`, token subject only —
+no `userId` on the wire). Flat envelopes per API_CONVENTIONS; DateTime UTC ISO 8601.
 
-| Operation | Caller need | Contract status |
+| Operation | Method + path | Contract |
 |---|---|---|
-| F-read | Read published Foundation groups/items and available resource references | ⛔ path, query, envelope fields and item identity mapping |
-| F-progress | Read own Foundation study state | ⛔ path, response fields and missing-state semantics |
-| F-save | Explicitly set own studied state; never infer from play/download | ⛔ method, body, concurrency/revision and response |
-| G-read | Read Grammar list/detail using HSK/category/search filters | ⛔ path, query, pagination, fields and stable order |
-| G-progress | Read own study/practice results separately from catalog | ⛔ path, fields and aggregate semantics |
-| G-save | Explicitly mark studied, separate from assessed mastery | ⛔ method, body and response |
-| G-practice | Start/submit a reviewed exercise and get server-assessed feedback | ⛔ all transport, answer identity, retry and scoring contracts |
-| M-read | Resolve verified audio/PDF resources | ⛔ delivery contract and CR-3; absent resources must stay unavailable |
+| F-read | `GET /student/foundation` | Single object (no pagination — 297 records, ~90 KB): `{ revision, groups: { initials, finals, tones, sandhi, radicals, listening, speaking, pdfs } }`. Source fields verbatim (§1 mapping); `revision` = short hash of the imported files. |
+| F-progress | `GET /student/foundation/progress` | `{ studied: [{ kind, key, updatedAt }] }` — own state only; never studied = absent (not `false`, not zero). |
+| F-save | `PUT /student/foundation/progress` | Body `{ kind, key, studied: boolean }` — explicit idempotent SET, never a toggle. `kind` ∈ `pinyin\|tones\|sandhi\|radicals\|listening\|speaking` (`pdfs` excluded: descriptors only, nothing to mark). Unknown kind/key → `VALIDATION_ERROR` 400. Returns the saved record. |
+| G-read | `GET /student/grammar?hskLevel=&category=&search=&page=&limit=` | Paginated list envelope (`data` + `meta`). Stable order: `level` asc, `id` asc. `hskLevel` 1–9; `page` default 1, `limit` default 20 max 50. |
+| G-read-one | `GET /student/grammar/:id` | Single grammar record. Well-formed but absent id → `GRAMMAR_NOT_FOUND` 404 (sole new code, D5-approved). |
+| G-progress | `GET /student/grammar/progress` | `{ studied: [{ grammarId, updatedAt }] }` — own state only. |
+| G-save | `PUT /student/grammar/progress` | Body `{ grammarId, studied: boolean }` — idempotent set. Unknown id → `GRAMMAR_NOT_FOUND` 404. Returns the saved record. |
+| G-practice | DEFERRED — no reviewed exercise manifest exists (source has no distractors/cloze/match pairs, §6). Not built in this slice; FE grammar practice stays honestly unavailable. | — |
+| M-read | NONE — no licensed audio/PDF assets exist (D4). Missing resources stay unavailable in the UI; no delivery contract is defined. | — |
 
 Do not reuse the SRS review endpoint: studying grammar is not an SM-2 flashcard rating.
 Do not copy the external prototype API or name-based profile authentication.
 Do not reinterpret generic analytics routes as write APIs for study progress.
 
-## 3. DTO design constraints — ⛔ exact contracts missing
+## 3. DTO design constraints — approved shapes (D5)
 
-The source mapping in section 1 defines required content information, not an executable DTO.
-The BE owner must settle paths, identifiers, query names/defaults/limits, nullability, body and
-success envelope fields before implementation. Apply existing API_CONVENTIONS flat envelopes
-and UTC ISO timestamps. A client must never select another learner via a request `userId`.
+Flat envelopes per API_CONVENTIONS; UTC ISO timestamps. A client must never select
+another learner via a request `userId` — every read/write is scoped to the token
+subject in the service layer.
 
-Catalog filters must support HSK 1–9 for Grammar; Foundation pinyin/radicals need no invented
-HSK level. Content and own progress must remain separable so a progress read failure does not
-hide readable content. Unknown progress is not zero. Responses may not embed another learner's
-state or fabricated audio, elapsed duration, examples or percentages.
+```
+GET /student/foundation
+→ { data: { revision: string, groups: {
+      initials: [{ id, sound, ipa, hanzi, pinyin, vi, group }],
+      finals:   [{ id, sound, ipa, hanzi, pinyin, vi, group }],
+      tones:    [{ id, name, mark, contour, pitch, desc, hanzi, pinyin, vi, path }],
+      sandhi:   [{ id, rule, ...source fields }],
+      radicals: [{ no, char, strokes, pinyin, meaning, hanViet }],
+      listening:[{ id, ...source fields }],
+      speaking: [{ id, ...source fields }],
+      pdfs:     [{ id, ...descriptor fields }] } } }
+NOTE: `tones[].path` is source coordinate pairs (`"8,12 92,12"`), not an SVG path —
+the FE parses/validates it before drawing and never injects it as markup.
+Radicals carry NO variants/examples in the source — the FE must not render any.
+
+GET /student/foundation/progress
+→ { data: { studied: [{ kind, key, studied, updatedAt }] } }
+  // Rows persist after unmarking (history + updatedAt ordering); readers MUST
+  // filter `studied === true`. An unmarked row reading back as studied is a bug
+  // (caught 2026-09-16 by the foundation browser spec, fixed same day).
+
+PUT /student/foundation/progress   { kind, key, studied: boolean }
+→ { data: { kind, key, studied, updatedAt } }   // unknown kind/key: VALIDATION_ERROR 400
+
+GET /student/grammar?hskLevel=1&category=&search=&page=1&limit=20
+→ { data: [{ id, level, category, name, formula, hanzi, pinyin, vi, note, key,
+             tokens, frequency }], meta: { total, page, limit, totalPages } }
+
+GET /student/grammar/:id → { data: { ...same record } }   // absent: GRAMMAR_NOT_FOUND 404
+
+GET /student/grammar/progress → { data: { studied: [{ grammarId, studied, updatedAt }] } }
+
+PUT /student/grammar/progress   { grammarId, studied: boolean }
+→ { data: { grammarId, studied, updatedAt } }   // unknown id: GRAMMAR_NOT_FOUND 404
+```
+
+Catalog filters support HSK 1–9 for Grammar; Foundation pinyin/radicals carry no
+invented HSK level. Content and own progress remain separable so a progress read
+failure does not hide readable content. Unknown progress is absent, not zero.
+Responses embed no other learner's state and no fabricated audio, duration,
+examples or percentages.
 
 ## 4. Proposed invariants
 
@@ -159,13 +221,20 @@ not implicit headers to invent. Set studied/un-studied must also define ordering
 writes; recommend optimistic revision checks instead of nondeterministic toggles. Do not
 implement or auto-replay either write until these cases have approved responses/error mappings.
 
-## 9. Error mapping — ⛔ BE-owner decisions
+## 9. Error mapping — approved (D5, 2026-09-16)
 
-Existing shared authentication/validation handling is reusable only as defined in the current
-registry. New content-not-found/withdrawn, unavailable exercise, stale revision, submission
-conflict, missing asset and invalid-answer cases have no approved Foundation/Grammar mapping.
-Mark each TODO(error-code); do not borrow FLASHCARD errors or mint a new error family here.
-The FE can distinguish request/network failure from empty content without inventing a code.
+Shared authentication/validation handling applies as defined in the registry.
+Content-specific mapping for this slice:
+
+| Case | Code | HTTP |
+|---|---|---|
+| F-save unknown `kind`/`key`; malformed bodies | `VALIDATION_ERROR` (existing) | 400 |
+| Grammar id well-formed but absent (detail + save) | `GRAMMAR_NOT_FOUND` (sole new code, D5-approved — mirrors the `WRITING_CHAR_NOT_FOUND` rationale: the only failure a caller can produce against a read-only catalogue) | 404 |
+| Missing/invalid auth, wrong role | existing `AUTH_*` | 401/403 |
+
+No other new code is minted here. G-practice/M-read define no mapping because they
+define no endpoint. The FE distinguishes request/network failure from empty content
+without inventing a code.
 
 ## 10. Side effects & notifications
 
@@ -183,18 +252,29 @@ original text and distinguish canonical normalization from changing pedagogical 
 
 ## 12. Import and rollout plan
 
-1. Owner approves source/hash/provenance and editorial disposition of repeated concepts (D1).
-2. Store approved corpus plus manifest in the repository or another approved versioned source
-   accessible to CI; no developer-drive dependency. No copy occurs in this docs task.
+1. Owner approved source/hash/provenance and editorial disposition of repeated concepts (D1 —
+   approved 2026-09-16; repeated ids kept, no merge/delete).
+2. Corpus is repository-owned at `apps/api/content/foundation.json` + `grammar.json`
+   (byte-identical copies, SHA-256 verified against the D1 hashes) — no developer-drive
+   dependency at runtime. CI-accessible like `writing.json`.
 3. Validate type/required fields, stable keys, HSK, Unicode, token integrity and resource refs.
    Emit per-record errors; structural success is not pedagogical approval.
+   Runner mirrors the A11 precedent: `apps/api/scripts/foundation-import.ts`
+   (`pnpm --filter api foundation:dry-run` default no-writes; `--apply` writes),
+   extract in `src/foundation/import/`, apply with create/update/unchanged/invalid counts.
 4. Dry-run defaults to no writes; report create/update/unchanged/invalid and identity collisions.
 5. Apply only to a named isolated database after schema/import approval. Reapply the same input
    twice; counts and identities must remain stable. Never drop/reset collections.
+   Revision = SHA-256(source bytes + key-scheme tag): a key-scheme change mints a new
+   revision rather than mixing two key generations under one pin (v1 ordinal sound ids →
+   v2 sound-keyed pinyin, 2026-09-16; the v1 rows persist unserved).
 6. Failure midway is resumable against immutable revisions; do not publish a partial revision.
    Rollback reselects a previous catalog version, not deletion of learner progress/results.
-7. After contract/backend verification, wire the two FE routes and remove their production
-   unavailable gates only for actually implemented capabilities. Deploy/import remains separate.
+   Withdrawal preserves past progress references (progress rows keep their contentKey even if
+   the catalog revision moves on).
+7. After contract/backend verification, wire the FE foundation route and remove its production
+   unavailable gate only for implemented capabilities (catalog read + studied-state).
+   Grammar FE, G-practice and media stay gated. Deploy/import remains separate.
 
 ## 13. Security, media & resource limits
 
