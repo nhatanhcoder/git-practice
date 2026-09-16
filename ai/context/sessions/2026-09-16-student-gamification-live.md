@@ -21,6 +21,8 @@ Added read-only `GET /student/leaderboard` and `GET /student/badges`, then repla
 - Privacy assertions: no email, user id, nickname, prompt or answer content in leaderboard payload
 - `node scripts/check-docs.mjs`: pass (9 checks)
 - Mock grep on both routes: no `MOCK(`, rivals, local student store or production unavailable gate
+- Production browser: leaderboard desktop + 375px and badges 375px inspected; both loaded live
+  empty/partial states and measured `scrollWidth === clientWidth` with no horizontal overflow
 
 ## Remaining scope
 
