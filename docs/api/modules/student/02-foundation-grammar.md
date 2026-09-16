@@ -229,7 +229,7 @@ Content-specific mapping for this slice:
 | Case | Code | HTTP |
 |---|---|---|
 | F-save unknown `kind`/`key`; malformed bodies | `VALIDATION_ERROR` (existing) | 400 |
-| Grammar id well-formed but absent (detail + save) | `GRAMMAR_NOT_FOUND` (sole new code, D5-approved — mirrors the `WRITING_CHAR_NOT_FOUND` rationale: the only failure a caller can produce against a read-only catalogue) | 404 |
+| Grammar id well-formed but absent (detail + save) | `GRAMMAR_NOT_FOUND` (sole new code, D5-approved) | 404 |
 | Missing/invalid auth, wrong role | existing `AUTH_*` | 401/403 |
 
 No other new code is minted here. G-practice/M-read define no mapping because they
