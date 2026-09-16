@@ -403,6 +403,21 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
 
 ## Off-sprint / spike
 
+- ✅ (zcode · 2026-09-14) **WEB-017 final — the /landing prototype removed again (owner's
+      recorded "Gỡ trang + redirect" decision governs; re-confirmed by the Task F re-issue with
+      the hard constraint "Không để trang public nào còn dữ liệu bịa").** PR #83's restored
+      prototype (4 invented teachers, "Bảng vàng" student results, five-box SRS copy, 8.5 MB
+      images, `three`) is deleted: route + `components/site/*` + `landing-data.ts` +
+      `public/teachers/*` + the dependency. `/landing`, `/student/landing` and sub-paths →
+      **temporary 307 → `/login`** (signed-in visitors are delivered to their role home by the
+      gate's existing logic). Auth brand → `/`. Tests rewritten for the removal:
+      `landing-routes.test.mjs` 7/7 (no landing files, all three redirects, no live refs, no
+      invented-content data in src, no `three`) · `landing-route.spec.ts` 3× 5/5 (all paths →
+      gate, gate renders, 375px) · login-theme spec unchanged and green. Full web scripts
+      **220/220** · check-docs **9/9** · build **43/43**. A real landing returns only from
+      owner-approved sources; restoration recipe in the WEB-017 resolution. Branch
+      `fix/remove-landing-final`.
+
 - ✅ (opencode · 2026-09-12) **Task E design slice — analytics module + board/badge decisions (contracts linked, not replaced).**
   Full BE/FE blocked by 4 approval gates + PR #73, so no code. PR #74 had just merged
   mock-fidelity contracts for the 3 routes — per Conflict Rules those stay authoritative;
