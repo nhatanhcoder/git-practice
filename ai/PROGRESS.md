@@ -275,8 +275,9 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
       Pre-existing red `pnpm --filter api build` on `origin/main` → **BUILD-004**
       (not fixed, out of scope). Session:
       `ai/context/sessions/2026-09-11-opencode-srs-flow-tests.md`.
-- ⛔ F6.1 Weekly skill heatmap · ⛔ F6.2 Progress chart — names exist in the actor document,
-      but request/response contracts are not approved; no payload was invented
+- 🔶 (codex · 2026-09-16) F6.1 Weekly skill heatmap · F6.2 Progress chart — PR #73 and
+      #81 are merged; implementing the approved own-data analytics slice on branch
+      `codex/student-progress-live`. No XP, streak, badge, rank, or peer figures in this slice.
       *(if F9–F16 ever land, `SkillScore.skill` widens 3 → 7 values — `PROJECT_KNOWLEDGE.md` §8. Blocked, see Sprint 5b)*
 - ⬜ F6.3 Class dashboard (Teacher) · ⬜ F6.4 API Quota Monitoring (Admin)
 - ✅ (zcode · 2026-09-12) **S-BILL-1/2 Student invoice read path — SCOPE-BILL-01 closed.**
