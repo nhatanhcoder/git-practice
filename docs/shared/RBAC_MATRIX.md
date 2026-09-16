@@ -100,3 +100,7 @@ createQuestion() { ... }
 - [PERMISSIONS_STUDENT.md](../actors/student/PERMISSIONS_STUDENT.md)
 - [API_CONVENTIONS.md](../api/API_CONVENTIONS.md) — auth header, error 403
 - [diagrams/rbac-matrix.mmd](../diagrams/rbac-matrix.mmd)
+
+## Vocabulary learning path — approved 2026-09-15
+
+Student may read published vocabulary catalog and read/start/study/answer/complete own unit progress. Locked content requires prior completion. Teacher/admin cannot call student learning-path routes. Catalog publication uses an operator CLI, not a new public permission.

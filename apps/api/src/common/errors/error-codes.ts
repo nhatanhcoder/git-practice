@@ -7,6 +7,10 @@
  * which is why no rate limiting is wired up yet (01-auth.md §16).
  */
 export const ErrorCode = {
+  LEARNING_UNIT_NOT_FOUND: 'LEARNING_UNIT_NOT_FOUND',
+  LEARNING_UNIT_LOCKED: 'LEARNING_UNIT_LOCKED',
+  LEARNING_PROGRESS_CONFLICT: 'LEARNING_PROGRESS_CONFLICT',
+  LEARNING_STEP_INVALID: 'LEARNING_STEP_INVALID',
   // Auth (registry § Auth Errors)
   AUTH_EMAIL_EXISTS: 'AUTH_EMAIL_EXISTS',
   AUTH_INVALID_CREDENTIALS: 'AUTH_INVALID_CREDENTIALS',
@@ -65,6 +69,13 @@ export const ErrorCode = {
   // Word bank (registry § Word Bank Errors) — "not found OR not mine" deliberately share
   // one code so a caller cannot probe for another student's bookmark ids (02-word-bank §5).
   WORD_BANK_NOT_FOUND: 'WORD_BANK_NOT_FOUND',
+  // Foundation/Grammar (registry § Foundation/Grammar Errors) — read-only catalogues
+  // (02-foundation-grammar.md §9, D5-approved 2026-09-16). Same rationale as writing:
+  // the only failure a caller can produce is asking for an item outside the corpus.
+  GRAMMAR_NOT_FOUND: 'GRAMMAR_NOT_FOUND',
+
+  // Placement (registry § Placement Errors) — 04-placement.md, Task C 2026-09-13.
+  PLACEMENT_NO_QUESTIONS: 'PLACEMENT_NO_QUESTIONS',
   // Notifications (registry § Notification Errors) — the mailbox read side.
   // The only branch this module needs: "not found OR not mine" deliberately share one
   // code so a caller cannot probe for the existence of other users' notifications
@@ -123,6 +134,10 @@ export type ErrorCodeValue = (typeof ErrorCode)[keyof typeof ErrorCode];
  * HTTP status for each code, exactly as the registry tables state it.
  */
 export const ERROR_STATUS: Record<ErrorCodeValue, number> = {
+  LEARNING_UNIT_NOT_FOUND: 404,
+  LEARNING_UNIT_LOCKED: 403,
+  LEARNING_PROGRESS_CONFLICT: 409,
+  LEARNING_STEP_INVALID: 400,
   AUTH_EMAIL_EXISTS: 409,
   AUTH_INVALID_CREDENTIALS: 401,
   AUTH_ACCOUNT_PENDING: 403,
@@ -163,6 +178,8 @@ export const ERROR_STATUS: Record<ErrorCodeValue, number> = {
   FLASHCARD_ALREADY_IN_REVIEW: 409,
   FLASHCARD_INVALID_RATING: 400,
   WORD_BANK_NOT_FOUND: 404,
+  GRAMMAR_NOT_FOUND: 404,
+  PLACEMENT_NO_QUESTIONS: 409,
   NOTIFICATION_NOT_FOUND: 404,
   SESSION_NOT_FOUND: 404,
   SESSION_ALREADY_REVIEWED: 409,

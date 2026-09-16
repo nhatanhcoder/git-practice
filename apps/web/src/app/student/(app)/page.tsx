@@ -7,10 +7,13 @@
  * where you left off, then what is due, then how the week is going. Not a
  * control panel.
  *
- * MOCK(student): every figure comes from `lib/student/*`; no API call.
+ * Production renders live figures only (`ProductionWelcome` → classes + SRS
+ * stats from the API; missing figures named, never invented). Development
+ * keeps the mock design surface below behind `DemoStateSwitcher` (dev-only
+ * review scaffolding — never shipped, see A02/WEB-016).
  */
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -47,6 +50,14 @@ import { Drawer, Modal } from "@/components/student/overlay";
 import { useToast } from "@/components/student/toast";
 import { useStudentProfile, useStudentStore } from "@/lib/student/store";
 import { useDisplayIdentity } from "@/lib/student/identity";
+import {
+  MISSING_FIGURES,
+  buildDashboardTiles,
+} from "@/lib/student/dashboard-rules";
+import {
+  fetchDashboardLive,
+  type DashboardLive,
+} from "@/lib/student/dashboard-service";
 import { boxInterval, rankProgress, reviewQueueFromMistakes } from "@/lib/student/student-rules";
 import { SRS_ROUTE } from "@/lib/student/srs-routes";
 import { levelProgress } from "@/lib/student/mock-user";
@@ -82,26 +93,146 @@ function greeting() {
 }
 
 /**
- * A02: production dashboard body. The mock widgets above present local demo
- * progress as the signed-in learner's own; until real endpoints exist, the
- * production build shows only what actually works (flashcards, mistakes and
- * classes are live API) and says so, instead of fabricating progress.
+ * Production dashboard body — live figures only (Task A, WEB-011).
+ *
+ * Reads GET /student/classes + GET /student/flashcards/stats through
+ * `lib/student/dashboard-service.ts`. The two sources load independently, so a
+ * classes outage never blanks the SRS tiles and vice versa; each panel owns
+ * its loading / error / empty / ready state. Figures with no endpoint
+ * (XP, rank, minutes, HSK progress, activity) are named under "Chưa có số
+ * liệu" with a pointer to Needs — never rendered as numbers.
  */
 function ProductionWelcome() {
+  const [data, setData] = useState<DashboardLive | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [reloadKey, setReloadKey] = useState(0);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    fetchDashboardLive()
+      .then((res) => {
+        if (!cancelled) setData(res);
+      })
+      .catch(() => {
+        if (!cancelled) setData(null);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [reloadKey]);
+
   const liveShortcuts = [
     { href: "/student/flashcards", icon: Sparkles, tone: "info", title: "Flashcard SRS", text: "Ôn từ vựng theo lịch SM-2, lưu theo tài khoản." },
     { href: "/student/mistakes", icon: NotebookPen, tone: "accent", title: "Sổ tay lỗi sai", text: "Ôn lại những thẻ bạn trả lời sai." },
     { href: "/student/classes", icon: School, tone: "success", title: "Lớp của tôi", text: "Tham gia lớp bằng mã do giáo viên cấp." },
   ];
+
+  const classesOk = data?.classes.status === "ok" ? data.classes.data : null;
+  const statsOk = data?.stats.status === "ok" ? data.stats.data : null;
+  const failed = !loading && (!classesOk || !statsOk);
+
   return (
     <>
       <Panel className="panel--pad stack gap-3">
         <h2 style={{ fontSize: "var(--step-2)", margin: 0 }}>Chào mừng đến Hán Lộ</h2>
         <p style={{ color: "var(--text-2)", margin: 0, maxWidth: "60ch" }}>
-          Các khu vực học tập đang được kết nối từng bước với máy chủ. Hiện tại bạn có thể bắt đầu
-          với các tính năng dưới đây — tiến độ được ghi nhận theo tài khoản của bạn.
+          Các khu vực học tập đang được kết nối từng bước với máy chủ. Số liệu dưới đây
+          đọc trực tiếp từ tài khoản của bạn.
         </p>
       </Panel>
+
+      <section>
+        <SectionHeader title="Số liệu học tập" sub="Đọc trực tiếp từ máy chủ theo tài khoản của bạn." />
+        {loading ? (
+          <SkeletonPanel rows={2} height={72} />
+        ) : !statsOk ? (
+          <Panel className="panel--pad">
+            <ErrorState
+              title="Không tải được số liệu"
+              text="Đã xảy ra lỗi khi kết nối tới máy chủ. Vui lòng thử lại."
+              onRetry={() => setReloadKey((n) => n + 1)}
+            />
+          </Panel>
+        ) : (
+          <div className="stack gap-3">
+            <div className="row gap-3 wrap">
+              {buildDashboardTiles(classesOk, statsOk).map((t) => (
+                <Metric key={t.key} label={t.label} value={t.value} />
+              ))}
+            </div>
+            {failed ? (
+              <p className="section-sub" style={{ color: "var(--text-3)", margin: 0 }}>
+                Một phần số liệu chưa tải được — đang hiển thị “—” ở các ô liên quan.
+              </p>
+            ) : null}
+          </div>
+        )}
+      </section>
+
+      <section>
+        <SectionHeader
+          title="Lớp của tôi"
+          sub="Các lớp bạn đang theo học."
+          action={
+            <Link href="/student/classes" className="btn btn--outline btn--sm">
+              Mở danh sách lớp <ChevronRight size={15} />
+            </Link>
+          }
+        />
+        {loading ? (
+          <SkeletonPanel rows={2} height={64} />
+        ) : !classesOk ? (
+          <Panel className="panel--pad">
+            <ErrorState
+              title="Không tải được danh sách lớp"
+              text="Đã xảy ra lỗi khi kết nối tới máy chủ. Vui lòng thử lại."
+              onRetry={() => setReloadKey((n) => n + 1)}
+            />
+          </Panel>
+        ) : classesOk.length === 0 ? (
+          <Panel className="panel--pad">
+            <EmptyState
+              title="Chưa tham gia lớp nào"
+              text="Nhập mã ghi danh do giáo viên cấp để tham gia lớp học."
+              action={
+                <Link href="/student/classes" className="btn btn--primary">
+                  Tham gia lớp
+                </Link>
+              }
+            />
+          </Panel>
+        ) : (
+          <div className="stack gap-3">
+            {classesOk.map((c) => (
+              <Panel key={c.id} className="panel--pad row gap-4 wrap">
+                <span className="grow stack gap-1">
+                  <strong>{c.name}</strong>
+                  <span className="row gap-2 wrap">
+                    <Chip tone="accent">HSK {c.hskLevel}</Chip>
+                    <Chip tone="neutral">{c.lessonCount} bài học</Chip>
+                  </span>
+                </span>
+                <Link href={`/student/classes/${c.id}`} className="btn btn--outline btn--sm">
+                  Vào lớp <ChevronRight size={15} />
+                </Link>
+              </Panel>
+            ))}
+          </div>
+        )}
+      </section>
+
+      <Panel className="panel--pad stack gap-2">
+        <h2 style={{ fontSize: "var(--step-1)", margin: 0 }}>Chưa có số liệu</h2>
+        <p style={{ color: "var(--text-2)", margin: 0, maxWidth: "62ch" }}>
+          {MISSING_FIGURES.join(" · ")} — chưa có endpoint nào cung cấp các số này
+          (theo dõi ở mục Needs), nên trang này không tự bịa số liệu.
+        </p>
+      </Panel>
+
       <section>
         <SectionHeader title="Khả dụng ngay" sub="Ba khu vực đã kết nối máy chủ dữ liệu thật." />
         <div className="shortcuts">
@@ -124,8 +255,8 @@ function ProductionWelcome() {
 export default function StudentDashboard() {
   const [demo, setDemo] = useState<DemoState>("ready");
   const profile = useStudentProfile();
-  // A01: the greeting name comes from the live session. Everything else on
-  // this page (level, xp, streak, rank, queue) is still mock progress data.
+  // A01: the greeting name comes from the live session (both branches). The dev
+  // branch below this point is mock progress data, kept for design review only.
   const identity = useDisplayIdentity();
   const mistakes = useStudentStore((s) => s.mistakes);
   const activity = useStudentStore((s) => s.activity);

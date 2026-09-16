@@ -19,7 +19,11 @@
     "db:seed": "dotenv -e ../../.env -- tsx prisma/seed.ts",
     "db:check": "tsx scripts/check-db.ts",
     "vocab:dry-run": "nest build && dotenv -e ../../.env -- node dist/scripts/vocab-import.js",
-    "vocab:import": "nest build && dotenv -e ../../.env -- node dist/scripts/vocab-import.js --apply"
+    "vocab:import": "nest build && dotenv -e ../../.env -- node dist/scripts/vocab-import.js --apply",
+    "learning-path:dry-run": "nest build && dotenv -e ../../.env -- node dist/scripts/learning-path-import.js",
+    "learning-path:import": "nest build && dotenv -e ../../.env -- node dist/scripts/learning-path-import.js --apply",
+    "foundation:dry-run": "nest build && dotenv -e ../../.env -- node dist/scripts/foundation-import.js",
+    "foundation:import": "nest build && dotenv -e ../../.env -- node dist/scripts/foundation-import.js --apply"
   },
   "prisma": {
     "seed": "dotenv -e ../../.env -- tsx prisma/seed.ts"

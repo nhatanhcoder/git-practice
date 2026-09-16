@@ -62,4 +62,16 @@ export class StudentAttemptsController {
   result(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string) {
     return this.attempts.getResult(user.id, id);
   }
+
+  // INV-ATLP-12: pure own-attempt lookup — ids and status only, never content. A
+  // random assignment id reads as "no attempt yet" (no existence probing), and a
+  // lapsed enrollment does not hide past attempts.
+  @Get('assignments/:assignmentId/attempt')
+  @ApiOperation({ summary: "Resolve my attempt for an assignment (id + status, or null)" })
+  myAttempt(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('assignmentId') assignmentId: string,
+  ) {
+    return this.attempts.findMyAttempt(user.id, assignmentId);
+  }
 }

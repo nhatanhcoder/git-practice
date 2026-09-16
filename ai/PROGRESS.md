@@ -230,11 +230,30 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
 - **DoD**: Create a question set → group into an Assignment assigned to a class
 
 ## Sprint 4 — Taking Tests & Grading (+ AI Suggest)
-- ⬜ F5.1 Start attempt · ⬜ F5.2 Auto-save answers (2s debounce)
-- ⬜ F5.3 Submit + auto-grade MCQ
+- ✅ F5.1 Start attempt · ✅ F5.2 Auto-save answers (2s debounce) — live via `feat/s4-attempt-lifecycle`
+      (#73, 2026-09-12); browser DoD re-verified 2026-09-13 through the exam path
+- ✅ F5.3 Submit + auto-grade MCQ (#73; server-side per ADR-005)
 - ⬜ F5.4 Manual grading for Writing
 - ⬜ Gemini AI Suggest for Writing (`AiRateLimiterGuard`, store `aiSuggestedScore`/`aiFeedback`)
-- ⬜ F5.5 View submitted attempt results
+- ✅ F5.5 View submitted attempt results (#73; exams result deep-link added by Task C)
+- ✅ (claude · 2026-09-13) **Task C — exams×3 + placement.** `/student/exams` now lists
+  `mock_test` assignments from the real S-ASGN-1 list (F13 papers stay blocked by DOC-011 —
+  nothing invented); the door page starts/re-enters the official attempt and hands to the live
+  take screen (server deadline + ref-lock submit inherited, ADR-005 intact — the old
+  client-clock client-scored room is deleted); the result route resolves INV-ATLP-12
+  (`GET /student/assignments/:id/attempt`, new — specced into `03-attempt-lifecycle.md`).
+  `/student/placement` is live on new `GET/POST /student/placement` (`04-placement.md`): paper
+  sampled from the existing question bank (contiguous bands ≤6, 2/band, single-answer MCQ),
+  nothing revealed mid-quiz, server grades + saves to `User.hskLevelGoal` (existing column —
+  no migration). MOCK markers gone from these routes; orphaned content.ts fixtures left for A12.
+  Verify: api build · placement e2e **13/13** + resolve e2e **4/4** · full API suite **318/319**
+  (1 fail = `API-018`, reproduced on pristine main — not this branch) · web build · web unit
+  **221/221** · structure test 7/7 · lint · check-docs 9/9 · PW **10/10** (exam DoD: reload
+  keeps answers, double-submit ⇒ exactly 1 POST, result deep-link resolves) + attempt DoD
+  **6/6** · screenshots read (lobby with real attempt-status chips; placement with audio
+  player + saved HSK 3). Auto-submit at deadline: server side covered by INV-ATLP-05's real
+  65s e2e; the client effect is the take screen's, shared with the PR #73 DoD path. Branch
+  `feat/student-exams-placement`.
 - **DoD**: Student runs out of time and attempt auto-submits → Teacher uses AI Suggest to grade Writing → enters final score → Student views the result
 
 ## Sprint 5 — SRS Flashcards & Analytics
@@ -305,10 +324,26 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
       the five-box Leitner behavior in the FE mockup
 - ⛔ Content loader: read + validate the JSON files, schema guards — import/seed strategy not approved
 - ⛔ F9 Pronunciation foundation (pinyin table, tones, tone sandhi, 214 radicals, 4 PDFs)
+- 🔶 (opencode · 2026-09-16) **F9 Foundation backend + FE wiring (scope B, D1–D5 owner-approved)** —
+  branch `feat/student-foundation-be`. Mongo versioned catalog + PG studied-state + 7 endpoints
+  (F-read/F-progress/F-save/G-read/G-progress/G-save + deferred G-practice, no M-read); FE
+  `/student/foundation` live. Grammar endpoints ride along per module 02; grammar FE untouched.
+- ✅ (opencode · 2026-09-16) **F9 DONE, verified end to end.** Corpus in repo (hashes match D1);
+  import applied (373 records, re-apply stable); migration `..._add_user_study_progress` deployed;
+  e2e 9/9; full API suite 28/29 (sole red = pre-existing API-018, sessions lane, untouched);
+  web build + 233/233 unit + eslint clean + check-docs 9/9; Playwright foundation spec
+  3×(desktop+375px) = 18/18 green, screenshots read. FE: real counts (0/293), no fabricated
+  %, no fake buttons, no +XP, prod gate lifted for implemented parts. Two test-caught bugs
+  fixed same day (sound-keyed pinyin + unmarked-must-not-read-studied). Grammar FE still
+  mock (endpoints ready) — next slice. Session:
+  `ai/context/sessions/2026-09-16-opencode-foundation-be.md`.
 - ⛔ F10 Grammar points (browse, auto-generate exercises from `tokens`, progress)
 - ⛔ F11 Character writing (stroke-order animation, canvas practice, radical breakdown)
 - ⛔ F12 Lego sentence builder (7 stations, drag-drop with S/T/P/A/V/O/C/Q roles, endless mode)
 - ⛔ F13 HSK mock exams (11 exams / 161 questions, real timers, skill breakdown → `SkillScore`)
+      — meanwhile (Task C 2026-09-13) `/student/exams` serves the room from `mock_test`
+      assignments + the attempt lifecycle; the F13 catalog itself still has no contract and no
+      corpus (DOC-011)
 - ⛔ F14 Workplace roleplay (6 scenarios, multi-turn, keyword scoring)
 - ⛔ F15 Learning path (2 curricula, topic map, side quests, 3 bosses)
 - ⛔ F16 Gamification (XP, 9 named levels, 6 imperial-exam ranks, streaks, 20 badges, leaderboard)
@@ -383,6 +418,21 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
       owner-approved sources; restoration recipe in the WEB-017 resolution. Branch
       `fix/remove-landing-final`.
 
+- ✅ (opencode · 2026-09-12) **Task E design slice — analytics module + board/badge decisions (contracts linked, not replaced).**
+  Full BE/FE blocked by 4 approval gates + PR #73, so no code. PR #74 had just merged
+  mock-fidelity contracts for the 3 routes — per Conflict Rules those stay authoritative;
+  this slice only links them to the new module: `04-progress-analytics.md` (7 invariants,
+  read-only, no new tables/codes, streak omitted) fills the exact gap #74's progress contract
+  recorded ("needs the analytics module spec first"); board/badge contracts untouched (their
+  ⛔ stances match this slice's findings). `_INDEX` row 4 (+no-collision note vs PR #73's
+  `03`); decisions list in §16 (XP curve, streak rule, badge unlocks, board privacy).
+  Verify: check-docs 9/9. Branch `feat/student-progress-contracts`.
+- ✅ (opencode · 2026-09-12) **Task A — `/student` dashboard live hóa (figures → API thật).**
+  Prod dashboard đọc `GET /student/classes` + `GET /student/flashcards/stats` (7 tiles =
+  API numbers, verified browser-side; streak "—" có chủ đích); figures thiếu endpoint ghi
+  "Chưa có số liệu" (Needs, không bịa); identity giữ `useDisplayIdentity`; dev mock branch
+  nguyên vẹn; contract `student-dashboard.md` mới (`built`). Verify: web build 43/43 ·
+  unit 7/7 · tracked suite xanh · check-docs 9/9. Branch `feat/student-dashboard-live`.
 - ✅ (zcode · 2026-09-12) **Landing contrast + theme toggle + route/theme tests (on top of PR
       #83's /landing move).** Two sessions executed the owner's landing task in parallel: #83
       (merged) moved the page to `/landing` with permanent redirects and restored the full
@@ -822,6 +872,14 @@ _(discovered while mapping the Admin UI — 2026-08-13)_
 - [x] (be) ~~Missing endpoints~~ — 2026-09-05: all endpoints implemented in live NestJS modules.
 - [ ] (be) **`packages/types` does not exist** — no shared contract between the two lanes.
       This is the most important unlock; it must be the first commit of a parallel session
+- [ ] (content/BE) **F13 exam papers** — `/student/exams` is live on `mock_test` assignments
+      (Task C 2026-09-13), but the fixed-exam catalog (11 papers / 161 questions, timers,
+      skill breakdown) still needs the DOC-011 corpus + a transport contract
+      (`API_STUDENT.md` § no-contract list).
+- [ ] (content) **Placement paper depth** — the live paper samples the teacher question bank
+      (2 single-MCQ per band, bands 1..6 cap): bands missing from the bank shrink the paper
+      and cap the placement level. A richer bank (or the F13 corpus) raises the ceiling
+      without any wire change (`04-placement.md` §16-Q3).
 - [ ] (fe → be) **Student analytics module spec** — `GET /student/progress` and
       `/student/progress/chart` are reserved paths in `API_STUDENT.md`, but no module spec
       defines their request/response DTOs (F6.1/F6.2 blocked in Sprint 5). Found writing the
@@ -1154,3 +1212,5 @@ are accepted and implemented; 02 is implemented but its spec status is in confli
   before merge; the database-backed notification suite remains NOT RUN in this review worktree.
 
 - ✅ (codex · 2026-09-13) **AttemptAnswer migration integration.** Schema and migration only, split from PR #73 so the database change reaches main before attempt lifecycle code. Prisma schema valid; check-docs 9/9; DB apply NOT RUN locally.
+
+- ✅ (codex · 2026-09-15) **S-SELF-1 live vocabulary learning path** — published 1,119 approved Hán Lộ words as 143 immutable units across HSK 1–9; added student-owned, revision-safe study/quiz/completion progress and connected both production pages. Textbook curricula remain honestly empty pending verified content. API lifecycle passed three independent DB rounds; production browser lifecycle passed three rounds on desktop and 375px. Branch `codex/student-learning-path-live`.

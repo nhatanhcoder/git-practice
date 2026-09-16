@@ -40,6 +40,7 @@ All routes require: `Authorization: Bearer <token>` + `role=student`
 | PATCH | `/api/v1/student/attempts/:id/answers` | Auto-save answers |
 | POST | `/api/v1/student/attempts/:id/submit` | Submit attempt |
 | GET | `/api/v1/student/attempts/:id/result` | View graded result + feedback |
+| GET | `/api/v1/student/assignments/:id/attempt` | Resolve my attempt for an assignment (id + status) |
 
 ---
 
@@ -51,6 +52,33 @@ All routes require: `Authorization: Bearer <token>` + `role=student`
 | GET | `/api/v1/student/flashcards/due` | Get cards due for review today |
 | POST | `/api/v1/student/flashcards/:id/review` | Submit review rating (again/hard/good/easy) |
 | GET | `/api/v1/student/flashcards/stats` | SRS stats: streak, due count, retention |
+
+---
+
+## Foundation
+
+Implemented 2026-09-16 (module `02-foundation-grammar.md`, branch
+`feat/student-foundation-be`). Read-only versioned catalog + own studied-state.
+`kind` ∈ `pinyin|tones|sandhi|radicals|listening|speaking` (`pdfs` are descriptors
+only — nothing to mark, no studied-state).
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/api/v1/student/foundation` | Whole catalog: `{ revision, groups }` (8 groups, source fields verbatim) |
+| GET | `/api/v1/student/foundation/progress` | Own studied-state list (absent = never studied) |
+| PUT | `/api/v1/student/foundation/progress` | Explicit idempotent set `{ kind, key, studied }` |
+
+## Grammar
+
+Implemented 2026-09-16 (same module/branch). Browse + own studied-state.
+Practice exercises (G-practice) deferred — no reviewed exercise manifest.
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/api/v1/student/grammar?hskLevel=&category=&search=&page=&limit=` | Paginated list, stable order (level asc, id asc) |
+| GET | `/api/v1/student/grammar/:id` | Grammar detail (`GRAMMAR_NOT_FOUND` 404 when absent) |
+| GET | `/api/v1/student/grammar/progress` | Own studied-state list |
+| PUT | `/api/v1/student/grammar/progress` | Explicit idempotent set `{ grammarId, studied }` |
 
 ---
 
@@ -96,8 +124,10 @@ mistaken for API contracts:
 
 - learning catalog and curriculum paths;
 - teacher-selected supplemental practice and completion visibility;
-- foundation, grammar, character writing, Lego and workplace progress;
-- placement attempts and platform mock exams;
+- character writing, Lego and workplace progress;
+- platform mock exams (F13 papers — `/student/exams` is served from `mock_test` assignments +
+  the attempt lifecycle meanwhile); placement moved to its own module on 2026-09-13
+  (`modules/student/04-placement.md`: `GET/POST /student/placement`);
 - XP, rank, streak, badges and leaderboard;
 - display preferences and cross-device progress sync.
 
@@ -107,6 +137,17 @@ prototype's `/api/progress` routes into production by default.
 ### Foundation / Grammar review package
 
 [Module proposal](modules/student/02-foundation-grammar.md) and
-[source audit](modules/student/foundation-grammar-source-audit.md), 2026-09-10:
-proposed only. All eight required operation groups remain ⛔ with no approved path, DTO or
-error mapping. The endpoint tables above do not gain any executable Foundation/Grammar route.
+[source audit](modules/student/foundation-grammar-source-audit.md), 2026-09-10;
+transport/DTO/errors approved 2026-09-16 (D1–D5), implemented on
+`feat/student-foundation-be`. G-practice (exercises) and M-read (media) remain
+intentionally undefined — no endpoint, no code.
+
+## Vocabulary learning path — approved 2026-09-15
+
+See [module contract](modules/student/05-learning-path.md). GET `/student/learning-path`, GET `/:slug`, POST `/:slug/start`, `/:slug/study`, `/:slug/answers`, `/:slug/complete`. Student-owned progress; no XP or official grades.
+
+GET /student/learning-path/:slug
+POST /student/learning-path/:slug/start
+POST /student/learning-path/:slug/study
+POST /student/learning-path/:slug/answers
+POST /student/learning-path/:slug/complete
