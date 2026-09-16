@@ -72,3 +72,7 @@ own invoices. They cannot create platform catalog content or view anyone else's 
 
 ### S-MSTK Task B
 Student may list and practice own mistakes. No access to another account; no manual mistake creation. Source questions must belong to an owned graded attempt.
+
+## Learning path — approved 2026-09-15
+
+Read published vocabulary units and write own revision-checked study/practice progress. Cannot supply userId, scores, completion state, or unlock bypass.

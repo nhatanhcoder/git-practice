@@ -1,6 +1,6 @@
 ---
 status: active
-last_updated: 2026-09-14
+last_updated: 2026-09-16
 ---
 
 # 🗃️ Entities Index
@@ -99,3 +99,7 @@ and proposes catalog/progress aggregate boundaries. It is **not an accepted enti
 the blocked rows above remain blocked. Physical schema, columns, indexes and transport need approval.
 
 - [UserMistake](mongodb/ENTITY_USER_MISTAKE.md) — MongoDB; approved Task B, private notebook state.
+
+## Vocabulary-first learning path — approved 2026-09-15
+
+[LearningUnit](mongodb/ENTITY_LEARNING_UNIT.md) and [UserLearningProgress](mongodb/ENTITY_USER_LEARNING_PROGRESS.md) implement the vocabulary slice of catalog/progress. Other domain concepts above remain unapproved.

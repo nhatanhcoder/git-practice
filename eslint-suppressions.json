@@ -226,7 +226,7 @@
       "count": 1
     }
   },
-  "apps/web/src/app/student/landing/landing-view.tsx": {
+  "apps/web/src/app/landing/landing-view.tsx": {
     "@next/next/no-img-element — external Unsplash URL": {
       "count": 2
     }

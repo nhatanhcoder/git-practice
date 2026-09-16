@@ -108,3 +108,7 @@ createQuestion() { ... }
 
 ### Task B: UserMistake (approved 2026-09-13)
 Student may read and review own rows only; system captures real failures. Teacher/admin have no access. All lookups use token userId; no client creation endpoint.
+
+## Vocabulary learning path — approved 2026-09-15
+
+Student may read published vocabulary catalog and read/start/study/answer/complete own unit progress. Locked content requires prior completion. Teacher/admin cannot call student learning-path routes. Catalog publication uses an operator CLI, not a new public permission.

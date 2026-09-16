@@ -1,218 +1,308 @@
 "use client";
 
 /**
- * /student/placement — the level check.
+ * /student/placement — the level check, live against GET/POST /student/placement
+ * (04-placement.md, Task C).
  *
- * Twelve questions across HSK 1–6 bands. The suggested level is the highest
- * band such that every band below it also has at least one right answer, so one
- * lucky guess at HSK 6 cannot skip a learner past HSK 2.
- *
- * ⚠️ `placementLevel` defaults to a cap of **9**, not 6. The prototype this was
- * distilled from capped at 6 — the stale HSK 1–6 range `DOC-004` exists to stamp
- * out. The question bank here only reaches HSK 6, which is a content gap, not a
- * range decision.
- *
- * MOCK(student): questions from `content.placementQuestions`.
+ * Two rules shape this screen:
+ * - Nothing is revealed during the quiz. The paper arrives stripped (the take-payload
+ *   rule, INV-PLC-04) and the server grades at the end — showing right/wrong per
+ *   question would leak the key and let a learner place themselves by trial.
+ * - The level is computed and saved server-side (ADR-005, INV-PLC-05/06) into
+ *   `User.hskLevelGoal`. The result card renders what the server returned, never a
+ *   client-side recount.
  */
 
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Check, Target, X } from "lucide-react";
+import { ArrowLeft, Check, Target } from "lucide-react";
 import {
   Bar,
   Chip,
+  EmptyState,
+  ErrorState,
   Metric,
   PageHead,
   Panel,
   Ring,
-  SectionHeader,
+  SkeletonPanel,
 } from "@/components/student/primitives";
-import { UnavailableState } from "@/components/student/unavailable-state";
 import { useToast } from "@/components/student/toast";
-import { useStudentStore } from "@/lib/student/store";
-import { placementQuestions } from "@/lib/student/content";
-import { placementLevel } from "@/lib/student/student-rules";
+import {
+  fetchPlacementPaper,
+  submitPlacement,
+  type PlacementPaper,
+  type PlacementResult,
+} from "@/lib/student/placement-service";
+
+type Outcome = "loading" | "error" | "empty" | "quiz" | "done";
 
 export default function PlacementPage() {
+  const [paper, setPaper] = useState<PlacementPaper | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+
   const [idx, setIdx] = useState(0);
-  const [picked, setPicked] = useState<number | null>(null);
-  const [answers, setAnswers] = useState<Record<string, boolean>>({});
-  const [done, setDone] = useState(false);
+  const [picked, setPicked] = useState<Record<string, string>>({});
+  const [submitting, setSubmitting] = useState(false);
+  const [result, setResult] = useState<PlacementResult | null>(null);
+  const [submitError, setSubmitError] = useState(false);
+  const pushToast = useToast();
 
-  const setCurrentLevel = useStudentStore((s) => s.setCurrentLevel);
-  const toast = useToast();
-
-  const q = placementQuestions[idx];
-  const correctByLevel = useMemo(() => {
-    const acc: Record<number, number> = {};
-    for (const item of placementQuestions) {
-      if (answers[item.id]) acc[item.level] = (acc[item.level] ?? 0) + 1;
+  const load = useCallback(async () => {
+    setLoading(true);
+    setLoadError(false);
+    try {
+      const res = await fetchPlacementPaper();
+      setPaper(res);
+      setIdx(0);
+      setPicked({});
+      setResult(null);
+    } catch {
+      setLoadError(true);
+    } finally {
+      setLoading(false);
     }
-    return acc;
-  }, [answers]);
+  }, []);
 
-  const recommended = placementLevel(correctByLevel);
-  const rightCount = Object.values(answers).filter(Boolean).length;
+  useEffect(() => {
+    void load();
+  }, [load]);
 
-  function answer(i: number) {
-    if (picked !== null) return;
-    setPicked(i);
-    setAnswers((a) => ({ ...a, [q.id]: i === q.answer }));
-  }
+  const questions = useMemo(() => paper?.questions ?? [], [paper]);
+  const current = questions[idx] ?? null;
+  const answeredCount = useMemo(
+    () => questions.filter((q) => picked[q.questionId]).length,
+    [questions, picked],
+  );
 
-  function next() {
-    if (idx + 1 >= placementQuestions.length) {
-      setDone(true);
-      return;
+  const outcome: Outcome = loading
+    ? "loading"
+    : loadError
+      ? "error"
+      : !paper || questions.length === 0
+        ? "empty"
+        : result
+          ? "done"
+          : "quiz";
+
+  async function finish() {
+    if (submitting || !paper) return;
+    setSubmitting(true);
+    setSubmitError(false);
+    try {
+      const answers = questions.map((q) => ({
+        questionId: q.questionId,
+        selectedOptions: picked[q.questionId] ? [picked[q.questionId]] : [],
+      }));
+      const res = await submitPlacement(answers);
+      setResult(res);
+      pushToast(`Đã lưu trình độ: HSK ${res.level}`, "success");
+    } catch {
+      setSubmitError(true);
+      pushToast("Chấm bài thất bại — thử gửi lại.", "danger");
+    } finally {
+      setSubmitting(false);
     }
-    setIdx((n) => n + 1);
-    setPicked(null);
   }
 
   /* ---------- Result ---------- */
-  if (done) {
+  if (outcome === "done" && result) {
+    const percent = result.total > 0 && questions.length > 0
+      ? Math.round((result.total / questions.length) * 100)
+      : 0;
     return (
-      <>
+      <div className="stack gap-6">
         <Link href="/student" className="backlink">
           <ArrowLeft size={14} /> Trang chủ
         </Link>
         <PageHead
+          eyebrow="Xếp cấp HSK"
           title="Kết quả xếp cấp"
-          sub={`Đúng ${rightCount}/${placementQuestions.length} câu`}
+          sub={`Đúng ${result.total}/${questions.length} câu — chấm và lưu trên server`}
         />
 
         <Panel className="panel--pad">
           <div className="stack gap-5" style={{ alignItems: "center", textAlign: "center" }}>
-            <Ring
-              value={(rightCount / placementQuestions.length) * 100}
-              size={128}
-              stroke={10}
-              label="Tỉ lệ đúng"
-            >
+            <Ring value={percent} size={128} stroke={10} label="Tỉ lệ đúng">
               <div className="stack">
                 <span className="num" style={{ fontSize: "var(--step-4)", fontWeight: 700 }}>
-                  {recommended}
+                  {result.level}
                 </span>
                 <span style={{ fontSize: 10, color: "var(--text-3)" }}>HSK đề xuất</span>
               </div>
             </Ring>
             <h2 style={{ fontSize: "var(--step-3)" }}>
-              Nên bắt đầu từ <em style={{ color: "var(--accent)" }}>HSK {recommended}</em>
+              Nên bắt đầu từ <em style={{ color: "var(--accent)" }}>HSK {result.level}</em>
             </h2>
             <p style={{ color: "var(--text-2)", maxWidth: "52ch" }}>
-              Cấp đề xuất là bậc cao nhất mà mọi bậc từ 1 tới đó đều có ít nhất một câu đúng — một
-              câu may mắn ở bậc cao không đẩy bạn vượt cấp.
+              Cấp đề xuất là bậc cao nhất mà mọi bậc từ 1 tới đó đều có ít nhất một câu đúng —
+              một câu may mắn ở bậc cao không đẩy bạn vượt cấp. Trình độ này đã được lưu vào hồ
+              sơ của bạn.
             </p>
 
             <div className="grid grid--3" style={{ width: "100%" }}>
-              {[1, 2, 3, 4, 5, 6].map((lv) => (
-                <Metric
-                  key={lv}
-                  label={`HSK ${lv}`}
-                  value={`${correctByLevel[lv] ?? 0}/${placementQuestions.filter((p) => p.level === lv).length}`}
-                />
+              {Object.entries(result.correctByLevel).map(([lv, correct]) => (
+                <Metric key={lv} label={`HSK ${lv}`} value={`${correct}`} />
               ))}
             </div>
 
             <div className="row gap-3 wrap" style={{ justifyContent: "center" }}>
-              <button
-                type="button"
-                className="btn btn--outline"
-                onClick={() => {
-                  setIdx(0);
-                  setPicked(null);
-                  setAnswers({});
-                  setDone(false);
-                }}
-              >
+              <button type="button" className="btn btn--outline" onClick={() => void load()}>
                 Làm lại
               </button>
-              <button
-                type="button"
-                className="btn btn--primary"
-                onClick={() => {
-                  setCurrentLevel(recommended);
-                  toast(`Đã đặt cấp hiện tại thành HSK ${recommended}`, "success");
-                }}
-              >
-                <Target size={16} /> Đặt HSK {recommended} làm cấp hiện tại
-              </button>
+              <Link href="/student/flashcards" className="btn btn--primary">
+                <Target size={15} /> Học từ vựng HSK {result.level}
+              </Link>
             </div>
           </div>
         </Panel>
-      </>
+      </div>
     );
   }
 
-  /* ---------- Question ---------- */
-  // Production renders the unavailable state, but only AFTER every hook has run —
-  // an early return above them would make the component conditionally hooked, which
-  // React forbids (A05 fixed this for /mistakes/review; this file follows the same rule).
-  if (process.env.NODE_ENV === "production") {
+  /* ---------- Empty / error ---------- */
+  if (outcome === "empty") {
     return (
-      <UnavailableState
-        title="Kiểm tra xếp cấp"
-        description="Chức năng kiểm tra xếp cấp chưa được kết nối máy chủ dữ liệu trong phiên bản hiện tại. Vui lòng quay lại sau."
-      />
+      <div className="stack gap-6">
+        <Link href="/student" className="backlink">
+          <ArrowLeft size={14} /> Trang chủ
+        </Link>
+        <PageHead
+          eyebrow="Xếp cấp HSK"
+          title="Bài xếp cấp"
+          sub="Kiểm tra trình độ để hệ thống đề xuất cấp phù hợp"
+        />
+        <Panel className="panel--pad">
+          <EmptyState
+            icon={<Target size={22} />}
+            title="Chưa có câu hỏi xếp cấp"
+            text="Ngân hàng câu hỏi chưa có câu hỏi trắc nghiệm ở bậc 1 — bài xếp cấp cần đề thật nên hệ thống không tự đặt câu hỏi thay."
+          />
+          {paper?.savedLevel != null ? (
+            <p className="section-sub" style={{ textAlign: "center" }}>
+              Trình độ đã lưu trước đó: <Chip tone="info">HSK {paper.savedLevel}</Chip>
+            </p>
+          ) : null}
+        </Panel>
+      </div>
     );
   }
 
+  if (outcome === "error") {
+    return (
+      <div className="stack gap-6">
+        <Link href="/student" className="backlink">
+          <ArrowLeft size={14} /> Trang chủ
+        </Link>
+        <PageHead eyebrow="Xếp cấp HSK" title="Bài xếp cấp" />
+        <ErrorState onRetry={() => void load()} />
+      </div>
+    );
+  }
+
+  if (outcome === "loading") {
+    return (
+      <div className="stack gap-6">
+        <PageHead eyebrow="Xếp cấp HSK" title="Bài xếp cấp" sub="Đang tải đề…" />
+        <SkeletonPanel rows={4} />
+      </div>
+    );
+  }
+
+  /* ---------- Quiz — no reveal until the server grades ---------- */
   return (
-    <>
+    <div className="stack gap-6">
       <Link href="/student" className="backlink">
         <ArrowLeft size={14} /> Trang chủ
       </Link>
-
       <PageHead
-        title="Bài kiểm tra xếp cấp"
-        sub="Mười hai câu, tăng dần độ khó. Không tính điểm — chỉ để gợi ý chỗ bắt đầu."
-        action={<Chip tone="accent">HSK {q.level}</Chip>}
+        eyebrow="Xếp cấp HSK"
+        title="Bài xếp cấp"
+        sub={`${answeredCount}/${questions.length} câu · trình độ hiện tại${
+          paper?.savedLevel != null ? `: HSK ${paper.savedLevel}` : ": chưa xếp"
+        }`}
       />
 
-      <Bar value={(idx / placementQuestions.length) * 100} label="Tiến độ bài xếp cấp" />
+      <Bar value={questions.length > 0 ? (answeredCount / questions.length) * 100 : 0} />
 
-      <Panel className="panel--pad">
-        <SectionHeader
-          title={`Câu ${idx + 1}/${placementQuestions.length}`}
-          sub={`Bậc HSK ${q.level}`}
-        />
-        <div className="stack gap-5">
-          <p className="ex-prompt">{q.prompt}</p>
+      {current ? (
+        <Panel className="panel--pad stack gap-5">
+          <div className="row gap-2" style={{ alignItems: "center" }}>
+            <Chip tone="neutral">Câu {idx + 1}/{questions.length}</Chip>
+            <Chip tone="info">HSK {current.hskLevel}</Chip>
+            <Chip tone="neutral">{current.skill === "listening" ? "Nghe" : "Đọc"}</Chip>
+          </div>
 
-          <div className="opt-list">
-            {q.options.map((opt, i) => {
-              const state =
-                picked === null
-                  ? ""
-                  : i === q.answer
-                    ? "is-right"
-                    : i === picked
-                      ? "is-wrong"
-                      : "";
+          <p style={{ fontSize: "var(--step-2)", fontWeight: 600 }}>
+            {current.content?.prompt ?? "(Câu hỏi không có nội dung)"}
+          </p>
+
+          {current.content?.audioUrl ? (
+            <audio controls preload="none" src={current.content.audioUrl} style={{ width: "100%" }} />
+          ) : null}
+
+          {current.content?.passage ? (
+            <p style={{ color: "var(--text-2)", whiteSpace: "pre-wrap" }}>{current.content.passage}</p>
+          ) : null}
+
+          <div className="stack gap-2" role="radiogroup" aria-label="Chọn đáp án">
+            {current.options.map((opt) => {
+              const active = picked[current.questionId] === opt.id;
               return (
                 <button
-                  key={opt}
+                  key={opt.id}
                   type="button"
-                  className={`opt ${state}`}
-                  disabled={picked !== null}
-                  onClick={() => answer(i)}
+                  role="radio"
+                  aria-checked={active}
+                  className={`btn ${active ? "btn--primary" : "btn--outline"} btn--block`}
+                  style={{ justifyContent: "flex-start" }}
+                  onClick={() => setPicked((p) => ({ ...p, [current.questionId]: opt.id }))}
                 >
-                  <span className="opt__key">{String.fromCharCode(65 + i)}</span>
-                  <span className="grow">{opt}</span>
-                  {picked !== null && i === q.answer ? <Check size={16} /> : null}
-                  {picked === i && i !== q.answer ? <X size={16} /> : null}
+                  {active ? <Check size={16} /> : null}
+                  {opt.text}
                 </button>
               );
             })}
           </div>
 
-          {picked !== null ? (
-            <button type="button" className="btn btn--primary btn--block" onClick={next}>
-              {idx + 1 >= placementQuestions.length ? "Xem kết quả" : "Câu tiếp theo"}
-            </button>
+          {submitError ? (
+            <p style={{ color: "var(--danger)" }}>
+              Chưa gửi được bài — đáp án của bạn vẫn còn nguyên, thử lại.
+            </p>
           ) : null}
-        </div>
-      </Panel>
-    </>
+
+          <div className="row gap-3" style={{ justifyContent: "space-between" }}>
+            <button
+              type="button"
+              className="btn btn--outline"
+              disabled={idx === 0 || submitting}
+              onClick={() => setIdx((n) => Math.max(0, n - 1))}
+            >
+              Câu trước
+            </button>
+            {idx + 1 < questions.length ? (
+              <button
+                type="button"
+                className="btn btn--primary"
+                disabled={submitting}
+                onClick={() => setIdx((n) => Math.min(questions.length - 1, n + 1))}
+              >
+                Câu sau
+              </button>
+            ) : (
+              <button
+                type="button"
+                className="btn btn--primary"
+                disabled={submitting}
+                onClick={() => void finish()}
+              >
+                {submitting ? "Đang chấm…" : `Nộp bài (${answeredCount}/${questions.length})`}
+              </button>
+            )}
+          </div>
+        </Panel>
+      ) : null}
+    </div>
   );
 }

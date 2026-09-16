@@ -1,0 +1,1459 @@
+[
+  {
+    "id": "g001",
+    "level": 1,
+    "category": "Trật tự câu",
+    "name": "Câu với 是",
+    "formula": "A + 是 + B",
+    "hanzi": "我是学生。",
+    "pinyin": "Wǒ shì xuésheng.",
+    "vi": "Tôi là học sinh.",
+    "note": "Dùng để định danh, không dùng 是 trước tính từ.",
+    "key": "是",
+    "tokens": [
+      "我",
+      "是",
+      "学生"
+    ],
+    "frequency": "Rất cao"
+  },
+  {
+    "id": "g002",
+    "level": 1,
+    "category": "Trợ từ",
+    "name": "Câu hỏi với 吗",
+    "formula": "Câu trần thuật + 吗?",
+    "hanzi": "你是老师吗？",
+    "pinyin": "Nǐ shì lǎoshī ma?",
+    "vi": "Bạn là giáo viên phải không?",
+    "note": "Biến câu trần thuật thành câu hỏi đúng/sai.",
+    "key": "吗",
+    "tokens": [
+      "你",
+      "是",
+      "老师",
+      "吗"
+    ],
+    "frequency": "Rất cao"
+  },
+  {
+    "id": "g003",
+    "level": 1,
+    "category": "Trợ từ",
+    "name": "Sở hữu với 的",
+    "formula": "N/Đại từ + 的 + N",
+    "hanzi": "这是我的书。",
+    "pinyin": "Zhè shì wǒ de shū.",
+    "vi": "Đây là sách của tôi.",
+    "note": "Có thể lược bỏ 的 với quan hệ thân thuộc: 我妈妈.",
+    "key": "的",
+    "tokens": [
+      "这",
+      "是",
+      "我",
+      "的",
+      "书"
+    ],
+    "frequency": "Rất cao"
+  },
+  {
+    "id": "g004",
+    "level": 1,
+    "category": "Phó từ",
+    "name": "Phủ định với 不",
+    "formula": "不 + V/Adj",
+    "hanzi": "我不喝咖啡。",
+    "pinyin": "Wǒ bù hē kāfēi.",
+    "vi": "Tôi không uống cà phê.",
+    "note": "不 phủ định thói quen và tương lai; 没 phủ định quá khứ.",
+    "key": "不",
+    "tokens": [
+      "我",
+      "不",
+      "喝",
+      "咖啡"
+    ],
+    "frequency": "Rất cao"
+  },
+  {
+    "id": "g005",
+    "level": 1,
+    "category": "Câu đặc biệt",
+    "name": "Câu với 有",
+    "formula": "A + 有 + B",
+    "hanzi": "我有两个哥哥。",
+    "pinyin": "Wǒ yǒu liǎng ge gēge.",
+    "vi": "Tôi có hai anh trai.",
+    "note": "Phủ định dùng 没有, không dùng 不有.",
+    "key": "有",
+    "tokens": [
+      "我",
+      "有",
+      "两个",
+      "哥哥"
+    ],
+    "frequency": "Rất cao"
+  },
+  {
+    "id": "g006",
+    "level": 1,
+    "category": "Trật tự câu",
+    "name": "Hỏi số lượng với 几",
+    "formula": "几 + Lượng từ + N",
+    "hanzi": "你家有几口人？",
+    "pinyin": "Nǐ jiā yǒu jǐ kǒu rén?",
+    "vi": "Nhà bạn có mấy người?",
+    "note": "Dùng 几 khi dự đoán dưới 10, dùng 多少 khi lớn hơn.",
+    "key": "几",
+    "tokens": [
+      "你家",
+      "有",
+      "几",
+      "口",
+      "人"
+    ],
+    "frequency": "Cao"
+  },
+  {
+    "id": "g007",
+    "level": 2,
+    "category": "Trợ từ",
+    "name": "Hoàn thành với 了",
+    "formula": "V + 了 + (O)",
+    "hanzi": "我吃了两碗饭。",
+    "pinyin": "Wǒ chī le liǎng wǎn fàn.",
+    "vi": "Tôi đã ăn hai bát cơm.",
+    "note": "了 chỉ sự hoàn thành hành động, không phải thì quá khứ.",
+    "key": "了",
+    "tokens": [
+      "我",
+      "吃",
+      "了",
+      "两碗饭"
+    ],
+    "frequency": "Rất cao"
+  },
+  {
+    "id": "g008",
+    "level": 2,
+    "category": "Trật tự câu",
+    "name": "Địa điểm với 在",
+    "formula": "S + 在 + Nơi chốn + V",
+    "hanzi": "他在图书馆学习。",
+    "pinyin": "Tā zài túshūguǎn xuéxí.",
+    "vi": "Anh ấy học ở thư viện.",
+    "note": "Trạng ngữ nơi chốn đứng trước động từ, khác tiếng Việt.",
+    "key": "在",
+    "tokens": [
+      "他",
+      "在",
+      "图书馆",
+      "学习"
+    ],
+    "frequency": "Rất cao"
+  },
+  {
+    "id": "g009",
+    "level": 2,
+    "category": "So sánh",
+    "name": "So sánh với 比",
+    "formula": "A + 比 + B + Adj",
+    "hanzi": "今天比昨天热。",
+    "pinyin": "Jīntiān bǐ zuótiān rè.",
+    "vi": "Hôm nay nóng hơn hôm qua.",
+    "note": "Không dùng 很 sau 比; muốn nhấn mạnh dùng 更 hoặc 还.",
+    "key": "比",
+    "tokens": [
+      "今天",
+      "比",
+      "昨天",
+      "热"
+    ],
+    "frequency": "Rất cao"
+  },
+  {
+    "id": "g010",
+    "level": 2,
+    "category": "Phó từ",
+    "name": "Động từ năng nguyện 想/要/会",
+    "formula": "S + 想/要/会 + V",
+    "hanzi": "我想去中国旅行。",
+    "pinyin": "Wǒ xiǎng qù Zhōngguó lǚxíng.",
+    "vi": "Tôi muốn đi du lịch Trung Quốc.",
+    "note": "会 nhấn mạnh kỹ năng đã học, 能 nhấn mạnh điều kiện cho phép.",
+    "key": "想",
+    "tokens": [
+      "我",
+      "想",
+      "去",
+      "中国",
+      "旅行"
+    ],
+    "frequency": "Rất cao"
+  },
+  {
+    "id": "g011",
+    "level": 2,
+    "category": "Liên từ",
+    "name": "因为…所以…",
+    "formula": "因为 + Nguyên nhân, 所以 + Kết quả",
+    "hanzi": "因为下雨，所以我没去。",
+    "pinyin": "Yīnwèi xià yǔ, suǒyǐ wǒ méi qù.",
+    "vi": "Vì trời mưa nên tôi đã không đi.",
+    "note": "Có thể lược bỏ một trong hai vế liên từ.",
+    "key": "所以",
+    "tokens": [
+      "因为",
+      "下雨",
+      "所以",
+      "我",
+      "没去"
+    ],
+    "frequency": "Rất cao"
+  },
+  {
+    "id": "g012",
+    "level": 2,
+    "category": "Liên từ",
+    "name": "一边…一边…",
+    "formula": "一边 + V1 + 一边 + V2",
+    "hanzi": "他一边走一边打电话。",
+    "pinyin": "Tā yìbiān zǒu yìbiān dǎ diànhuà.",
+    "vi": "Anh ấy vừa đi vừa gọi điện.",
+    "note": "Hai hành động xảy ra đồng thời và kéo dài.",
+    "key": "一边",
+    "tokens": [
+      "他",
+      "一边",
+      "走",
+      "一边",
+      "打电话"
+    ],
+    "frequency": "Cao"
+  },
+  {
+    "id": "g013",
+    "level": 3,
+    "category": "Câu đặc biệt",
+    "name": "Câu chữ 把",
+    "formula": "S + 把 + O + V + thành phần khác",
+    "hanzi": "请把窗户关上。",
+    "pinyin": "Qǐng bǎ chuānghu guānshàng.",
+    "vi": "Làm ơn đóng cửa sổ lại.",
+    "note": "Động từ phải có thành phần đi kèm, không đứng trần.",
+    "key": "把",
+    "tokens": [
+      "请",
+      "把",
+      "窗户",
+      "关上"
+    ],
+    "frequency": "Rất cao"
+  },
+  {
+    "id": "g014",
+    "level": 3,
+    "category": "Câu đặc biệt",
+    "name": "Câu bị động với 被",
+    "formula": "S + 被 + (tác nhân) + V + kết quả",
+    "hanzi": "我的自行车被偷了。",
+    "pinyin": "Wǒ de zìxíngchē bèi tōu le.",
+    "vi": "Xe đạp của tôi bị trộm mất rồi.",
+    "note": "Thường mang sắc thái không mong muốn.",
+    "key": "被",
+    "tokens": [
+      "我的自行车",
+      "被",
+      "偷",
+      "了"
+    ],
+    "frequency": "Cao"
+  },
+  {
+    "id": "g015",
+    "level": 3,
+    "category": "Bổ ngữ",
+    "name": "Bổ ngữ kết quả",
+    "formula": "V + 完/好/懂/见",
+    "hanzi": "我看完这本书了。",
+    "pinyin": "Wǒ kàn wán zhè běn shū le.",
+    "vi": "Tôi đã đọc xong cuốn sách này.",
+    "note": "Phủ định dùng 没, không dùng 不.",
+    "key": "完",
+    "tokens": [
+      "我",
+      "看",
+      "完",
+      "这本书",
+      "了"
+    ],
+    "frequency": "Rất cao"
+  },
+  {
+    "id": "g016",
+    "level": 3,
+    "category": "Liên từ",
+    "name": "又…又…",
+    "formula": "又 + Adj1 + 又 + Adj2",
+    "hanzi": "这个菜又便宜又好吃。",
+    "pinyin": "Zhège cài yòu piányi yòu hǎochī.",
+    "vi": "Món này vừa rẻ vừa ngon.",
+    "note": "Hai tính chất cùng tồn tại, thường cùng sắc thái.",
+    "key": "又",
+    "tokens": [
+      "这个菜",
+      "又",
+      "便宜",
+      "又",
+      "好吃"
+    ],
+    "frequency": "Cao"
+  },
+  {
+    "id": "g017",
+    "level": 3,
+    "category": "So sánh",
+    "name": "越来越…",
+    "formula": "越来越 + Adj/V",
+    "hanzi": "天气越来越冷了。",
+    "pinyin": "Tiānqì yuè lái yuè lěng le.",
+    "vi": "Thời tiết ngày càng lạnh.",
+    "note": "Không dùng kèm phó từ mức độ như 很, 非常.",
+    "key": "越来越",
+    "tokens": [
+      "天气",
+      "越来越",
+      "冷",
+      "了"
+    ],
+    "frequency": "Cao"
+  },
+  {
+    "id": "g018",
+    "level": 3,
+    "category": "Liên từ",
+    "name": "虽然…但是…",
+    "formula": "虽然 + A, 但是 + B",
+    "hanzi": "虽然很累，但是很开心。",
+    "pinyin": "Suīrán hěn lèi, dànshì hěn kāixīn.",
+    "vi": "Tuy rất mệt nhưng rất vui.",
+    "note": "Trong tiếng Trung hai liên từ được dùng cùng lúc.",
+    "key": "但是",
+    "tokens": [
+      "虽然",
+      "很累",
+      "但是",
+      "很开心"
+    ],
+    "frequency": "Rất cao"
+  },
+  {
+    "id": "g019",
+    "level": 3,
+    "category": "Câu đặc biệt",
+    "name": "Cấu trúc 是…的",
+    "formula": "是 + (thời gian/nơi chốn/cách thức) + 的",
+    "hanzi": "我是坐飞机来的。",
+    "pinyin": "Wǒ shì zuò fēijī lái de.",
+    "vi": "Tôi đến bằng máy bay.",
+    "note": "Nhấn mạnh tình huống của một việc đã xảy ra.",
+    "key": "的",
+    "tokens": [
+      "我",
+      "是",
+      "坐飞机",
+      "来",
+      "的"
+    ],
+    "frequency": "Cao"
+  },
+  {
+    "id": "g020",
+    "level": 4,
+    "category": "Liên từ",
+    "name": "不但…而且…",
+    "formula": "不但 + A, 而且 + B",
+    "hanzi": "他不但会说汉语，而且说得很好。",
+    "pinyin": "Tā bùdàn huì shuō Hànyǔ, érqiě shuō de hěn hǎo.",
+    "vi": "Anh ấy không những biết nói tiếng Trung mà còn nói rất hay.",
+    "note": "Vế sau phải tăng tiến so với vế trước.",
+    "key": "而且",
+    "tokens": [
+      "他",
+      "不但",
+      "会说汉语",
+      "而且",
+      "说得很好"
+    ],
+    "frequency": "Rất cao"
+  },
+  {
+    "id": "g021",
+    "level": 4,
+    "category": "Liên từ",
+    "name": "只要…就…",
+    "formula": "只要 + Điều kiện, 就 + Kết quả",
+    "hanzi": "只要努力，就会成功。",
+    "pinyin": "Zhǐyào nǔlì, jiù huì chénggōng.",
+    "vi": "Chỉ cần cố gắng thì sẽ thành công.",
+    "note": "So với 只有…才… (điều kiện duy nhất), 只要 nhẹ hơn.",
+    "key": "就",
+    "tokens": [
+      "只要",
+      "努力",
+      "就",
+      "会",
+      "成功"
+    ],
+    "frequency": "Rất cao"
+  },
+  {
+    "id": "g022",
+    "level": 4,
+    "category": "Liên từ",
+    "name": "除了…以外",
+    "formula": "除了 + N + 以外, 都/也…",
+    "hanzi": "除了小王以外，大家都来了。",
+    "pinyin": "Chúle Xiǎo Wáng yǐwài, dàjiā dōu lái le.",
+    "vi": "Ngoài Tiểu Vương ra, mọi người đều đến.",
+    "note": "Đi với 都 nghĩa loại trừ, đi với 还/也 nghĩa bao gồm.",
+    "key": "除了",
+    "tokens": [
+      "除了",
+      "小王",
+      "以外",
+      "大家",
+      "都来了"
+    ],
+    "frequency": "Cao"
+  },
+  {
+    "id": "g023",
+    "level": 4,
+    "category": "Bổ ngữ",
+    "name": "Bổ ngữ khả năng",
+    "formula": "V + 得/不 + bổ ngữ",
+    "hanzi": "这个字我看不清楚。",
+    "pinyin": "Zhège zì wǒ kàn bu qīngchu.",
+    "vi": "Chữ này tôi nhìn không rõ.",
+    "note": "Chỉ khả năng khách quan, khác với 不能.",
+    "key": "不",
+    "tokens": [
+      "这个字",
+      "我",
+      "看",
+      "不",
+      "清楚"
+    ],
+    "frequency": "Rất cao"
+  },
+  {
+    "id": "g024",
+    "level": 4,
+    "category": "Phó từ",
+    "name": "连…都/也…",
+    "formula": "连 + N + 都/也 + V",
+    "hanzi": "他连一句汉语都不会说。",
+    "pinyin": "Tā lián yí jù Hànyǔ dōu bú huì shuō.",
+    "vi": "Anh ta đến một câu tiếng Trung cũng không biết nói.",
+    "note": "Nhấn mạnh mức độ cực đoan của sự việc.",
+    "key": "连",
+    "tokens": [
+      "他",
+      "连",
+      "一句汉语",
+      "都",
+      "不会说"
+    ],
+    "frequency": "Cao"
+  },
+  {
+    "id": "g025",
+    "level": 4,
+    "category": "Liên từ",
+    "name": "无论…都…",
+    "formula": "无论 + Nghi vấn, 都…",
+    "hanzi": "无论多难，我都要坚持。",
+    "pinyin": "Wúlùn duō nán, wǒ dōu yào jiānchí.",
+    "vi": "Dù khó thế nào tôi cũng sẽ kiên trì.",
+    "note": "Vế trước phải chứa từ nghi vấn hoặc cặp đối lập.",
+    "key": "无论",
+    "tokens": [
+      "无论",
+      "多难",
+      "我",
+      "都",
+      "要坚持"
+    ],
+    "frequency": "Cao"
+  },
+  {
+    "id": "g026",
+    "level": 4,
+    "category": "Bổ ngữ",
+    "name": "Bổ ngữ xu hướng kép",
+    "formula": "V + 进/出/上/下 + 来/去",
+    "hanzi": "他走进教室来了。",
+    "pinyin": "Tā zǒu jìn jiàoshì lái le.",
+    "vi": "Anh ấy bước vào phòng học.",
+    "note": "Tân ngữ chỉ nơi chốn phải đứng trước 来/去.",
+    "key": "进",
+    "tokens": [
+      "他",
+      "走",
+      "进",
+      "教室",
+      "来了"
+    ],
+    "frequency": "Trung bình"
+  },
+  {
+    "id": "g027",
+    "level": 5,
+    "category": "Liên từ",
+    "name": "尽管…还是…",
+    "formula": "尽管 + A, 还是 + B",
+    "hanzi": "尽管下着大雨，他还是来了。",
+    "pinyin": "Jǐnguǎn xià zhe dà yǔ, tā háishi lái le.",
+    "vi": "Mặc dù mưa lớn, anh ấy vẫn đến.",
+    "note": "尽管 mang sắc thái văn viết hơn 虽然.",
+    "key": "还是",
+    "tokens": [
+      "尽管",
+      "下着大雨",
+      "他",
+      "还是",
+      "来了"
+    ],
+    "frequency": "Cao"
+  },
+  {
+    "id": "g028",
+    "level": 5,
+    "category": "So sánh",
+    "name": "与其…不如…",
+    "formula": "与其 + A, 不如 + B",
+    "hanzi": "与其抱怨，不如行动。",
+    "pinyin": "Yǔqí bàoyuàn, bùrú xíngdòng.",
+    "vi": "Thay vì than phiền, chi bằng hành động.",
+    "note": "Dùng khi lựa chọn phương án tốt hơn trong hai lựa chọn.",
+    "key": "不如",
+    "tokens": [
+      "与其",
+      "抱怨",
+      "不如",
+      "行动"
+    ],
+    "frequency": "Trung bình"
+  },
+  {
+    "id": "g029",
+    "level": 5,
+    "category": "Liên từ",
+    "name": "之所以…是因为…",
+    "formula": "S + 之所以 + A, 是因为 + B",
+    "hanzi": "他之所以成功，是因为坚持。",
+    "pinyin": "Tā zhī suǒyǐ chénggōng, shì yīnwèi jiānchí.",
+    "vi": "Sở dĩ anh ấy thành công là vì kiên trì.",
+    "note": "Đảo kết quả lên trước để nhấn mạnh nguyên nhân.",
+    "key": "之所以",
+    "tokens": [
+      "他",
+      "之所以",
+      "成功",
+      "是因为",
+      "坚持"
+    ],
+    "frequency": "Cao"
+  },
+  {
+    "id": "g030",
+    "level": 5,
+    "category": "Liên từ",
+    "name": "不是…而是…",
+    "formula": "不是 + A, 而是 + B",
+    "hanzi": "这不是钱的问题，而是态度问题。",
+    "pinyin": "Zhè bú shì qián de wèntí, ér shì tàidu wèntí.",
+    "vi": "Đây không phải vấn đề tiền bạc mà là vấn đề thái độ.",
+    "note": "Phủ định vế trước để khẳng định vế sau.",
+    "key": "而是",
+    "tokens": [
+      "这",
+      "不是",
+      "钱的问题",
+      "而是",
+      "态度问题"
+    ],
+    "frequency": "Cao"
+  },
+  {
+    "id": "g031",
+    "level": 5,
+    "category": "Trật tự câu",
+    "name": "一…就…",
+    "formula": "一 + V1, 就 + V2",
+    "hanzi": "我一到家就给你打电话。",
+    "pinyin": "Wǒ yí dào jiā jiù gěi nǐ dǎ diànhuà.",
+    "vi": "Tôi vừa về đến nhà là gọi cho bạn ngay.",
+    "note": "Hai hành động nối tiếp gần như tức thì.",
+    "key": "就",
+    "tokens": [
+      "我",
+      "一",
+      "到家",
+      "就",
+      "给你打电话"
+    ],
+    "frequency": "Rất cao"
+  },
+  {
+    "id": "g032",
+    "level": 6,
+    "category": "Liên từ",
+    "name": "宁可…也不…",
+    "formula": "宁可 + A, 也不 + B",
+    "hanzi": "他宁可自己吃亏，也不愿骗人。",
+    "pinyin": "Tā nìngkě zìjǐ chīkuī, yě bú yuàn piàn rén.",
+    "vi": "Anh ấy thà mình chịu thiệt chứ không chịu lừa người.",
+    "note": "Diễn đạt lựa chọn dứt khoát theo giá trị cá nhân.",
+    "key": "宁可",
+    "tokens": [
+      "他",
+      "宁可",
+      "自己吃亏",
+      "也不",
+      "愿骗人"
+    ],
+    "frequency": "Trung bình"
+  },
+  {
+    "id": "g033",
+    "level": 6,
+    "category": "Liên từ",
+    "name": "即使…也…",
+    "formula": "即使 + A, 也 + B",
+    "hanzi": "即使失败，也要再试一次。",
+    "pinyin": "Jíshǐ shībài, yě yào zài shì yí cì.",
+    "vi": "Cho dù thất bại cũng phải thử lại lần nữa.",
+    "note": "Giả thiết nhượng bộ, khác 虽然 (sự thật đã xảy ra).",
+    "key": "即使",
+    "tokens": [
+      "即使",
+      "失败",
+      "也",
+      "要",
+      "再试一次"
+    ],
+    "frequency": "Cao"
+  },
+  {
+    "id": "g034",
+    "level": 6,
+    "category": "Phó từ",
+    "name": "何况",
+    "formula": "连 A 都…, 何况 B",
+    "hanzi": "连大人都做不到，何况孩子。",
+    "pinyin": "Lián dàrén dōu zuò bu dào, hékuàng háizi.",
+    "vi": "Người lớn còn không làm được, huống hồ trẻ con.",
+    "note": "Tăng tiến theo lối phản vấn, thường gặp trong văn viết.",
+    "key": "何况",
+    "tokens": [
+      "连",
+      "大人",
+      "都做不到",
+      "何况",
+      "孩子"
+    ],
+    "frequency": "Trung bình"
+  },
+  {
+    "id": "g035",
+    "level": 6,
+    "category": "Văn viết",
+    "name": "以…为…",
+    "formula": "以 + A + 为 + B",
+    "hanzi": "这家公司以质量为核心。",
+    "pinyin": "Zhè jiā gōngsī yǐ zhìliàng wéi héxīn.",
+    "vi": "Công ty này lấy chất lượng làm cốt lõi.",
+    "note": "Cấu trúc trang trọng, hay gặp trong báo chí.",
+    "key": "以",
+    "tokens": [
+      "这家公司",
+      "以",
+      "质量",
+      "为",
+      "核心"
+    ],
+    "frequency": "Cao"
+  },
+  {
+    "id": "g036",
+    "level": 7,
+    "category": "Văn viết",
+    "name": "就…而言",
+    "formula": "就 + N + 而言",
+    "hanzi": "就目前的情况而言，计划需要调整。",
+    "pinyin": "Jiù mùqián de qíngkuàng ér yán, jìhuà xūyào tiáozhěng.",
+    "vi": "Xét theo tình hình hiện tại, kế hoạch cần điều chỉnh.",
+    "note": "Giới hạn phạm vi nhận định, dùng trong văn nghị luận.",
+    "key": "而言",
+    "tokens": [
+      "就",
+      "目前的情况",
+      "而言",
+      "计划",
+      "需要调整"
+    ],
+    "frequency": "Trung bình"
+  },
+  {
+    "id": "g037",
+    "level": 7,
+    "category": "Văn viết",
+    "name": "鉴于",
+    "formula": "鉴于 + N/Mệnh đề, …",
+    "hanzi": "鉴于时间有限，我们简要说明。",
+    "pinyin": "Jiànyú shíjiān yǒuxiàn, wǒmen jiǎnyào shuōmíng.",
+    "vi": "Xét thấy thời gian có hạn, chúng tôi xin nói ngắn gọn.",
+    "note": "Trang trọng, thường mở đầu văn bản hành chính.",
+    "key": "鉴于",
+    "tokens": [
+      "鉴于",
+      "时间有限",
+      "我们",
+      "简要说明"
+    ],
+    "frequency": "Thấp"
+  },
+  {
+    "id": "g038",
+    "level": 7,
+    "category": "Văn viết",
+    "name": "不外乎",
+    "formula": "S + 不外乎 + A（和 B）",
+    "hanzi": "原因不外乎两点。",
+    "pinyin": "Yuányīn bú wàihū liǎng diǎn.",
+    "vi": "Nguyên nhân chẳng qua chỉ có hai điểm.",
+    "note": "Thu hẹp phạm vi khả năng về một vài lựa chọn.",
+    "key": "不外乎",
+    "tokens": [
+      "原因",
+      "不外乎",
+      "两点"
+    ],
+    "frequency": "Thấp"
+  },
+  {
+    "id": "g039",
+    "level": 8,
+    "category": "Văn viết",
+    "name": "无不",
+    "formula": "S + 无不 + V",
+    "hanzi": "听众无不为之动容。",
+    "pinyin": "Tīngzhòng wú bù wèi zhī dòngróng.",
+    "vi": "Khán giả không ai là không xúc động.",
+    "note": "Phủ định kép mang sắc thái văn học.",
+    "key": "无不",
+    "tokens": [
+      "听众",
+      "无不",
+      "为之",
+      "动容"
+    ],
+    "frequency": "Thấp"
+  },
+  {
+    "id": "g040",
+    "level": 8,
+    "category": "Văn viết",
+    "name": "之余",
+    "formula": "V/N + 之余, …",
+    "hanzi": "工作之余，他坚持写作。",
+    "pinyin": "Gōngzuò zhī yú, tā jiānchí xiězuò.",
+    "vi": "Ngoài giờ làm việc, anh ấy vẫn kiên trì viết lách.",
+    "note": "Chỉ khoảng thời gian còn lại sau một hoạt động chính.",
+    "key": "之余",
+    "tokens": [
+      "工作",
+      "之余",
+      "他",
+      "坚持写作"
+    ],
+    "frequency": "Trung bình"
+  },
+  {
+    "id": "g041",
+    "level": 8,
+    "category": "Văn viết",
+    "name": "与…相辅相成",
+    "formula": "A 与 B 相辅相成",
+    "hanzi": "理论与实践相辅相成。",
+    "pinyin": "Lǐlùn yǔ shíjiàn xiāng fǔ xiāng chéng.",
+    "vi": "Lý thuyết và thực tiễn bổ trợ lẫn nhau.",
+    "note": "Thành ngữ bốn chữ dùng như vị ngữ.",
+    "key": "相辅相成",
+    "tokens": [
+      "理论",
+      "与",
+      "实践",
+      "相辅相成"
+    ],
+    "frequency": "Thấp"
+  },
+  {
+    "id": "g042",
+    "level": 9,
+    "category": "Văn viết",
+    "name": "莫不",
+    "formula": "S + 莫不 + V",
+    "hanzi": "众人莫不称赞。",
+    "pinyin": "Zhòngrén mò bù chēngzàn.",
+    "vi": "Mọi người không ai không khen ngợi.",
+    "note": "Sắc thái văn ngôn, trang trọng hơn 无不.",
+    "key": "莫不",
+    "tokens": [
+      "众人",
+      "莫不",
+      "称赞"
+    ],
+    "frequency": "Thấp"
+  },
+  {
+    "id": "g043",
+    "level": 9,
+    "category": "Văn viết",
+    "name": "一言以蔽之",
+    "formula": "一言以蔽之，…",
+    "hanzi": "一言以蔽之，此举得不偿失。",
+    "pinyin": "Yì yán yǐ bì zhī, cǐ jǔ dé bù cháng shī.",
+    "vi": "Nói tóm lại, việc này lợi bất cập hại.",
+    "note": "Câu chuyển ý tổng kết trong văn nghị luận.",
+    "key": "一言以蔽之",
+    "tokens": [
+      "一言以蔽之",
+      "此举",
+      "得不偿失"
+    ],
+    "frequency": "Thấp"
+  },
+  {
+    "id": "g044",
+    "level": 9,
+    "category": "Văn viết",
+    "name": "有过之而无不及",
+    "formula": "A 比 B 有过之而无不及",
+    "hanzi": "其影响之大，有过之而无不及。",
+    "pinyin": "Qí yǐngxiǎng zhī dà, yǒu guò zhī ér wú bù jí.",
+    "vi": "Mức độ ảnh hưởng của nó còn hơn chứ không kém.",
+    "note": "So sánh vượt trội theo lối văn ngôn.",
+    "key": "有过之而无不及",
+    "tokens": [
+      "其影响之大",
+      "有过之而无不及"
+    ],
+    "frequency": "Thấp"
+  },
+  {
+    "id": "g045",
+    "level": 1,
+    "category": "Trợ từ",
+    "name": "Câu hỏi với 呢",
+    "formula": "A + 呢 ?",
+    "hanzi": "我很好，你呢？",
+    "pinyin": "Wǒ hěn hǎo, nǐ ne?",
+    "vi": "Tôi khoẻ, còn bạn thì sao?",
+    "note": "Hỏi lại cùng nội dung vừa nói, không lặp lại cả câu.",
+    "key": "呢",
+    "tokens": [
+      "我很好",
+      "你",
+      "呢"
+    ],
+    "frequency": "Rất cao"
+  },
+  {
+    "id": "g046",
+    "level": 1,
+    "category": "Phó từ",
+    "name": "Phó từ 也",
+    "formula": "A + 也 + V",
+    "hanzi": "我也去。",
+    "pinyin": "Wǒ yě qù.",
+    "vi": "Tôi cũng đi.",
+    "note": "也 luôn đứng trước động từ, không đứng cuối câu như \"cũng\" tiếng Việt.",
+    "key": "也",
+    "tokens": [
+      "我",
+      "也",
+      "去"
+    ],
+    "frequency": "Rất cao"
+  },
+  {
+    "id": "g047",
+    "level": 1,
+    "category": "Trật tự câu",
+    "name": "Trạng ngữ thời gian đứng đầu",
+    "formula": "Thời gian + S + V",
+    "hanzi": "明天我去学校。",
+    "pinyin": "Míngtiān wǒ qù xuéxiào.",
+    "vi": "Ngày mai tôi đến trường.",
+    "note": "Khác tiếng Việt: thời gian đặt trước chủ ngữ hoặc ngay sau, không để cuối câu.",
+    "key": "明天",
+    "tokens": [
+      "明天",
+      "我",
+      "去",
+      "学校"
+    ],
+    "frequency": "Rất cao"
+  },
+  {
+    "id": "g048",
+    "level": 2,
+    "category": "Bổ ngữ",
+    "name": "Bổ ngữ trình độ với 得",
+    "formula": "V + 得 + tính từ",
+    "hanzi": "他跑得很快。",
+    "pinyin": "Tā pǎo de hěn kuài.",
+    "vi": "Anh ấy chạy rất nhanh.",
+    "note": "Đánh giá mức độ của hành động; sau 得 hầu như luôn cần một phó từ mức độ.",
+    "key": "得",
+    "tokens": [
+      "他",
+      "跑",
+      "得",
+      "很快"
+    ],
+    "frequency": "Rất cao"
+  },
+  {
+    "id": "g049",
+    "level": 2,
+    "category": "Câu đặc biệt",
+    "name": "Câu tồn tại với 有",
+    "formula": "Nơi chốn + 有 + N",
+    "hanzi": "桌子上有一本书。",
+    "pinyin": "Zhuōzi shang yǒu yì běn shū.",
+    "vi": "Trên bàn có một quyển sách.",
+    "note": "Nơi chốn đứng đầu câu, không thêm 在 trước nó.",
+    "key": "有",
+    "tokens": [
+      "桌子上",
+      "有",
+      "一本书"
+    ],
+    "frequency": "Cao"
+  },
+  {
+    "id": "g050",
+    "level": 2,
+    "category": "Phó từ",
+    "name": "就 chỉ ngay lập tức",
+    "formula": "S + 就 + V",
+    "hanzi": "他就来。",
+    "pinyin": "Tā jiù lái.",
+    "vi": "Anh ấy đến ngay.",
+    "note": "Nhấn thời điểm sớm hoặc sự tất yếu; đặt trước động từ.",
+    "key": "就",
+    "tokens": [
+      "他",
+      "就",
+      "来"
+    ],
+    "frequency": "Cao"
+  },
+  {
+    "id": "g051",
+    "level": 3,
+    "category": "Bổ ngữ",
+    "name": "Bổ ngữ khả năng",
+    "formula": "V + 得/不 + bổ ngữ",
+    "hanzi": "这个字我看得懂。",
+    "pinyin": "Zhège zì wǒ kàn de dǒng.",
+    "vi": "Chữ này tôi đọc hiểu được.",
+    "note": "Phủ định thay 得 bằng 不: 看不懂. Không dùng 能 kèm theo.",
+    "key": "得懂",
+    "tokens": [
+      "这个字",
+      "我",
+      "看",
+      "得懂"
+    ],
+    "frequency": "Cao"
+  },
+  {
+    "id": "g052",
+    "level": 3,
+    "category": "Liên từ",
+    "name": "虽然…但是…",
+    "formula": "虽然 A，但是 B",
+    "hanzi": "虽然很累，但是很开心。",
+    "pinyin": "Suīrán hěn lèi, dànshì hěn kāixīn.",
+    "vi": "Tuy mệt nhưng rất vui.",
+    "note": "Tiếng Trung giữ cả hai vế liên từ, khác tiếng Việt thường lược bớt một vế.",
+    "key": "虽然",
+    "tokens": [
+      "虽然",
+      "很累",
+      "但是",
+      "很开心"
+    ],
+    "frequency": "Cao"
+  },
+  {
+    "id": "g053",
+    "level": 3,
+    "category": "Trật tự câu",
+    "name": "Câu chữ 是…的",
+    "formula": "是 + thông tin + 的",
+    "hanzi": "我是坐飞机来的。",
+    "pinyin": "Wǒ shì zuò fēijī lái de.",
+    "vi": "Tôi đến bằng máy bay.",
+    "note": "Nhấn cách thức, thời gian hay nơi chốn của một việc đã xảy ra.",
+    "key": "是…的",
+    "tokens": [
+      "我",
+      "是",
+      "坐飞机",
+      "来的"
+    ],
+    "frequency": "Cao"
+  },
+  {
+    "id": "g054",
+    "level": 4,
+    "category": "Câu đặc biệt",
+    "name": "Câu kiêm ngữ với 让",
+    "formula": "A + 让 + B + V",
+    "hanzi": "老师让我们写作文。",
+    "pinyin": "Lǎoshī ràng wǒmen xiě zuòwén.",
+    "vi": "Cô giáo bảo chúng tôi viết bài.",
+    "note": "Tân ngữ của 让 đồng thời là chủ ngữ của động từ sau.",
+    "key": "让",
+    "tokens": [
+      "老师",
+      "让",
+      "我们",
+      "写作文"
+    ],
+    "frequency": "Cao"
+  },
+  {
+    "id": "g055",
+    "level": 4,
+    "category": "Phó từ",
+    "name": "再 và 又 phân biệt",
+    "formula": "再 (chưa xảy ra) / 又 (đã xảy ra)",
+    "hanzi": "他又迟到了。",
+    "pinyin": "Tā yòu chídào le.",
+    "vi": "Anh ấy lại đến muộn rồi.",
+    "note": "又 dùng cho việc đã lặp lại; 再 dùng cho lần lặp trong tương lai.",
+    "key": "又",
+    "tokens": [
+      "他",
+      "又",
+      "迟到",
+      "了"
+    ],
+    "frequency": "Rất cao"
+  },
+  {
+    "id": "g056",
+    "level": 5,
+    "category": "Bổ ngữ",
+    "name": "Bổ ngữ xu hướng kép",
+    "formula": "V + 出来 / 起来 / 下去",
+    "hanzi": "他想起来了。",
+    "pinyin": "Tā xiǎng qǐlai le.",
+    "vi": "Anh ấy nhớ ra rồi.",
+    "note": "Nghĩa đã chuyển sang trừu tượng, không còn chỉ phương hướng thật.",
+    "key": "起来",
+    "tokens": [
+      "他",
+      "想",
+      "起来",
+      "了"
+    ],
+    "frequency": "Cao"
+  },
+  {
+    "id": "g057",
+    "level": 5,
+    "category": "Liên từ",
+    "name": "不但…而且…",
+    "formula": "不但 A，而且 B",
+    "hanzi": "他不但会说汉语，而且说得很好。",
+    "pinyin": "Tā búdàn huì shuō Hànyǔ, érqiě shuō de hěn hǎo.",
+    "vi": "Anh ấy không những nói được tiếng Trung mà còn nói rất hay.",
+    "note": "Hai vế phải cùng chủ ngữ thì 不但 đứng sau chủ ngữ.",
+    "key": "不但",
+    "tokens": [
+      "他",
+      "不但",
+      "会说汉语",
+      "而且",
+      "说得很好"
+    ],
+    "frequency": "Cao"
+  },
+  {
+    "id": "g058",
+    "level": 6,
+    "category": "Văn viết",
+    "name": "以…为…",
+    "formula": "以 A 为 B",
+    "hanzi": "以质量为核心。",
+    "pinyin": "Yǐ zhìliàng wéi héxīn.",
+    "vi": "Lấy chất lượng làm cốt lõi.",
+    "note": "Khuôn văn viết, thường gặp trong báo cáo và văn bản công việc.",
+    "key": "以…为",
+    "tokens": [
+      "以",
+      "质量",
+      "为",
+      "核心"
+    ],
+    "frequency": "Trung bình"
+  },
+  {
+    "id": "g059",
+    "level": 7,
+    "category": "Văn viết",
+    "name": "在…的基础上",
+    "formula": "在 + N + 的基础上",
+    "hanzi": "在原有方案的基础上修改。",
+    "pinyin": "Zài yuányǒu fāngàn de jīchǔ shang xiūgǎi.",
+    "vi": "Sửa trên cơ sở phương án cũ.",
+    "note": "Nêu điểm xuất phát của một việc; hầu như chỉ gặp ở văn viết.",
+    "key": "的基础上",
+    "tokens": [
+      "在",
+      "原有方案",
+      "的基础上",
+      "修改"
+    ],
+    "frequency": "Trung bình"
+  },
+  {
+    "id": "g060",
+    "level": 8,
+    "category": "Văn viết",
+    "name": "与其…不如…",
+    "formula": "与其 A 不如 B",
+    "hanzi": "与其抱怨，不如行动。",
+    "pinyin": "Yǔqí bàoyuàn, bùrú xíngdòng.",
+    "vi": "Thay vì than phiền, chi bằng hành động.",
+    "note": "So sánh hai lựa chọn và nghiêng hẳn về vế sau.",
+    "key": "与其",
+    "tokens": [
+      "与其",
+      "抱怨",
+      "不如",
+      "行动"
+    ],
+    "frequency": "Thấp"
+  },
+  {
+    "id": "g061",
+    "level": 6,
+    "category": "Phó từ",
+    "name": "无非…罢了",
+    "formula": "S + 无非 + A + 罢了",
+    "hanzi": "他无非是开个玩笑罢了。",
+    "pinyin": "Tā wúfēi shì kāi ge wánxiào bàle.",
+    "vi": "Anh ấy chẳng qua chỉ là đùa một chút mà thôi.",
+    "note": "Biểu thị sự việc đơn giản, không đáng kể.",
+    "key": "无非",
+    "tokens": [
+      "他",
+      "无非",
+      "是开个玩笑",
+      "罢了"
+    ],
+    "frequency": "Trung bình"
+  },
+  {
+    "id": "g062",
+    "level": 6,
+    "category": "Phó từ",
+    "name": "动辄",
+    "formula": "S + 动辄 + V/Adj",
+    "hanzi": "他动辄就发脾气。",
+    "pinyin": "Tā dòngzhé jiù fā píqi.",
+    "vi": "Anh ta hở ra một cái là nổi nóng.",
+    "note": "Chỉ hành vi diễn ra thường xuyên, mang sắc thái tiêu cực.",
+    "key": "动辄",
+    "tokens": [
+      "他",
+      "动辄",
+      "就",
+      "发脾气"
+    ],
+    "frequency": "Trung bình"
+  },
+  {
+    "id": "g063",
+    "level": 6,
+    "category": "Liên từ",
+    "name": "固然…但是…",
+    "formula": "A + 固然 + 好, 但是 + B",
+    "hanzi": "速度固然重要，但是质量更关键。",
+    "pinyin": "Sùdù gùrán zhòngyào, dànshì zhìliàng gèng guānjiàn.",
+    "vi": "Tốc độ dẫu rằng quan trọng, nhưng chất lượng còn then chốt hơn.",
+    "note": "Thừa nhận vế trước để nhấn mạnh vế sau.",
+    "key": "固然",
+    "tokens": [
+      "速度",
+      "固然",
+      "重要",
+      "但是",
+      "质量更关键"
+    ],
+    "frequency": "Cao"
+  },
+  {
+    "id": "g064",
+    "level": 6,
+    "category": "Văn viết",
+    "name": "基于",
+    "formula": "基于 + N, …",
+    "hanzi": "基于这一考量，我们调整了策略。",
+    "pinyin": "Jīyú zhè yì kǎoliàng, wǒmen tiáozhěng le cèlüè.",
+    "vi": "Căn cứ vào cân nhắc này, chúng tôi đã điều chỉnh chiến lược.",
+    "note": "Nêu cơ sở hoặc tiền đề lập luận trong văn viết.",
+    "key": "基于",
+    "tokens": [
+      "基于",
+      "这一考量",
+      "我们",
+      "调整了策略"
+    ],
+    "frequency": "Cao"
+  },
+  {
+    "id": "g065",
+    "level": 7,
+    "category": "Văn viết",
+    "name": "毋庸置疑",
+    "formula": "毋庸置疑，…",
+    "hanzi": "毋庸置疑，科技改变了人类生活。",
+    "pinyin": "Wú yōng zhì yí, kējì gǎibiàn le rénlèi shēnghuó.",
+    "vi": "Không còn nghi ngờ gì nữa, khoa học kỹ thuật đã thay đổi đời sống nhân loại.",
+    "note": "Thành ngữ biểu thị sự khẳng định tuyệt đối trong văn nghị luận.",
+    "key": "毋庸置疑",
+    "tokens": [
+      "毋庸置疑",
+      "科技",
+      "改变了",
+      "人类生活"
+    ],
+    "frequency": "Trung bình"
+  },
+  {
+    "id": "g066",
+    "level": 7,
+    "category": "Liên từ",
+    "name": "从而",
+    "formula": "A, 从而 + B",
+    "hanzi": "提高效率，从而降低运营成本。",
+    "pinyin": "Tígāo xiàolǜ, cóng'ér jiàngdī yùnyíng chéngběn.",
+    "vi": "Nâng cao hiệu suất, từ đó giảm chi phí vận hành.",
+    "note": "Nối hai vế để biểu thị phương thức và kết quả/mục đích tiếp sau.",
+    "key": "从而",
+    "tokens": [
+      "提高效率",
+      "从而",
+      "降低",
+      "运营成本"
+    ],
+    "frequency": "Cao"
+  },
+  {
+    "id": "g067",
+    "level": 7,
+    "category": "Văn viết",
+    "name": "鉴于",
+    "formula": "鉴于 + N + 起见, …",
+    "hanzi": "鉴于安全起见，活动延期举行。",
+    "pinyin": "Jiànyú ānquán qǐjiàn, huódòng yánqī jǔxíng.",
+    "vi": "Xét thấy vấn đề an toàn, sự kiện được hoãn lại.",
+    "note": "Nêu lý do mang tính thận trọng hoặc quy định.",
+    "key": "鉴于",
+    "tokens": [
+      "鉴于",
+      "安全起见",
+      "活动",
+      "延期举行"
+    ],
+    "frequency": "Trung bình"
+  },
+  {
+    "id": "g068",
+    "level": 7,
+    "category": "Liên từ",
+    "name": "借以",
+    "formula": "A, 借以 + V",
+    "hanzi": "他发表声明，借以澄清事实。",
+    "pinyin": "Tā fābiǎo shēngmíng, jièyǐ chéngqīng shìshí.",
+    "vi": "Anh ấy đưa ra tuyên bố nhằm để làm rõ sự thật.",
+    "note": "Chỉ phương tiện hoặc hành động dùng để đạt mục đích.",
+    "key": "借以",
+    "tokens": [
+      "他",
+      "发表声明",
+      "借以",
+      "澄清事实"
+    ],
+    "frequency": "Trung bình"
+  },
+  {
+    "id": "g069",
+    "level": 8,
+    "category": "Văn viết",
+    "name": "显而易见",
+    "formula": "显而易见，…",
+    "hanzi": "显而易见，这一结论缺乏依据。",
+    "pinyin": "Xiǎn'ér yì jiàn, zhè yì jiélùn quēfá yījù.",
+    "vi": "Rõ ràng, kết luận này thiếu căn cứ.",
+    "note": "Khẳng định tính hiển nhiên trong văn phong học thuật.",
+    "key": "显而易见",
+    "tokens": [
+      "显而易见",
+      "这一结论",
+      "缺乏",
+      "依据"
+    ],
+    "frequency": "Trung bình"
+  },
+  {
+    "id": "g070",
+    "level": 8,
+    "category": "Văn viết",
+    "name": "归根结底",
+    "formula": "归根结底，…",
+    "hanzi": "归根结底，这是教育体制的问题。",
+    "pinyin": "Guī gēn jié dǐ, zhè shì jiàoyù tǐzhì de wèntí.",
+    "vi": "Suy cho cùng, đây là vấn đề của thể chế giáo dục.",
+    "note": "Quy về nguyên nhân căn bản nhất của sự việc.",
+    "key": "归根结底",
+    "tokens": [
+      "归根结底",
+      "这是",
+      "教育体制",
+      "的问题"
+    ],
+    "frequency": "Trung bình"
+  },
+  {
+    "id": "g071",
+    "level": 8,
+    "category": "Phó từ",
+    "name": "何以",
+    "formula": "何以 + V",
+    "hanzi": "若不自强，何以立足于世？",
+    "pinyin": "Ruò bù zìqiáng, héyǐ lìzú yú shì?",
+    "vi": "Nếu không tự cường, lấy gì để đứng vững ở đời?",
+    "note": "Từ văn ngôn dùng trong phản vấn.",
+    "key": "何以",
+    "tokens": [
+      "若不自强",
+      "何以",
+      "立足",
+      "于世"
+    ],
+    "frequency": "Thấp"
+  },
+  {
+    "id": "g072",
+    "level": 8,
+    "category": "Văn viết",
+    "name": "有鉴于此",
+    "formula": "有鉴于此，…",
+    "hanzi": "有鉴于此，委员会决定重组队伍。",
+    "pinyin": "Yǒu jiàn yú cǐ, wěiyuánhuì juédìng chóngzǔ duìwǔ.",
+    "vi": "Xét thấy điều này, ủy ban quyết định tái cơ cấu đội ngũ.",
+    "note": "Cụm từ chuyển tiếp trang trọng trong công văn.",
+    "key": "有鉴于此",
+    "tokens": [
+      "有鉴于此",
+      "委员会",
+      "决定",
+      "重组队伍"
+    ],
+    "frequency": "Thấp"
+  },
+  {
+    "id": "g073",
+    "level": 9,
+    "category": "Liên từ",
+    "name": "殊不知",
+    "formula": "A, 殊不知 + B",
+    "hanzi": "他以为胜券在握，殊不知早已落入陷阱。",
+    "pinyin": "Tā yǐwéi shèngquàn zài wò, shūbùzhī zǎoyǐ luòrù xiànjǐng.",
+    "vi": "Anh ta tưởng đã nắm chắc phần thắng, nào ngờ từ lâu đã rơi vào cạm bẫy.",
+    "note": "Biểu thị sự thật trái ngược hoàn toàn với nhận định trước đó.",
+    "key": "殊不知",
+    "tokens": [
+      "他以为胜券在握",
+      "殊不知",
+      "早已",
+      "落入陷阱"
+    ],
+    "frequency": "Thấp"
+  },
+  {
+    "id": "g074",
+    "level": 9,
+    "category": "Văn viết",
+    "name": "旨在",
+    "formula": "S + 旨在 + V",
+    "hanzi": "该公约旨在维护多边国际秩序。",
+    "pinyin": "Gāi gōngyuē zhǐzài wéihù duōbiān guójì zhìxù.",
+    "vi": "Công ước này nhằm mục đích duy trì trật tự quốc tế đa phương.",
+    "note": "Dùng trong văn kiện pháp lý và tuyên bố quốc tế.",
+    "key": "旨在",
+    "tokens": [
+      "该公约",
+      "旨在",
+      "维护",
+      "多边国际秩序"
+    ],
+    "frequency": "Thấp"
+  },
+  {
+    "id": "g075",
+    "level": 9,
+    "category": "Văn viết",
+    "name": "相提并论",
+    "formula": "把 A 与 B 相提并论",
+    "hanzi": "两者性质不同，不可相提并论。",
+    "pinyin": "Liǎng zhě xìngzhì bù tóng, bù kě xiāng tí bìng lùn.",
+    "vi": "Tính chất hai bên khác nhau, không thể đặt ngang hàng.",
+    "note": "Thành ngữ văn học mang tính biện luận cao cấp.",
+    "key": "相提并论",
+    "tokens": [
+      "两者性质不同",
+      "不可",
+      "相提并论"
+    ],
+    "frequency": "Thấp"
+  },
+  {
+    "id": "g076",
+    "level": 9,
+    "category": "Văn viết",
+    "name": "自不待言",
+    "formula": "A 自不待言，B 也…",
+    "hanzi": "其学术价值自不待言。",
+    "pinyin": "Qí xuéshù jiàzhí zì bù dài yán.",
+    "vi": "Giá trị học thuật của nó tự nó đã rõ ràng, không cần phải nói thêm.",
+    "note": "Đỉnh cao phong cách học thuật cổ điển và hiện đại.",
+    "key": "自不待言",
+    "tokens": [
+      "其学术价值",
+      "自不待言"
+    ],
+    "frequency": "Thấp"
+  }
+]
