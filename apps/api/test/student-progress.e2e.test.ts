@@ -68,8 +68,11 @@ before(async () => {
   }
   await makeAttempt(studentA.id, 'graded', 'owned', questionId, 8);
   await makeAttempt(studentA.id, 'graded', 'deleted', deletedQuestionId, 6);
+  await makeAttempt(studentA.id, 'graded', 'perfect', questionId, 10);
   await makeAttempt(studentA.id, 'submitted', 'ungraded', questionId, null);
   await makeAttempt(studentB.id, 'graded', 'foreign', questionId, 1);
+  await makeAttempt(studentB.id, 'graded', 'foreign-2', questionId, 1);
+  await makeAttempt(studentB.id, 'graded', 'foreign-3', questionId, 1);
 });
 
 after(async () => {
@@ -83,8 +86,8 @@ describe('GET /student/progress', () => {
   it('aggregates only the caller graded rows, preserves deleted-question totals and leaks no content', async () => {
     const response = await get('/student/progress', tokens[EMAILS[1]]);
     assert.equal(response.status, 200);
-    assert.equal(response.body.data.totals.gradedAttempts, 2);
-    assert.equal(response.body.data.totals.avgScore, 7);
+    assert.equal(response.body.data.totals.gradedAttempts, 3);
+    assert.equal(response.body.data.totals.avgScore, 8);
     assert.equal(response.body.data.heatmap.at(-1).reading, 1);
     const payload = JSON.stringify(response.body);
     assert.equal(payload.includes('PRIVATE PROMPT'), false);
@@ -97,8 +100,8 @@ describe('GET /student/progress', () => {
     assert.equal(response.status, 200);
     const point = response.body.data.points.at(-1);
     assert.equal(new Date(point.weekStart).getUTCDay(), 1);
-    assert.equal(point.count, 2);
-    assert.equal(point.avgScore, 7);
+    assert.equal(point.count, 3);
+    assert.equal(point.avgScore, 8);
   });
 
   it('returns the explicit empty shape', async () => {
@@ -112,5 +115,40 @@ describe('GET /student/progress', () => {
   it('rejects a teacher and an anonymous caller', async () => {
     assert.equal((await get('/student/progress', tokens[EMAILS[0]])).status, 403);
     assert.equal((await get('/student/progress')).status, 401);
+  });
+});
+
+describe('GET /student/leaderboard and /student/badges', () => {
+  it('returns only anonymized eligible aggregates and identifies the caller', async () => {
+    const response = await get('/student/leaderboard', tokens[EMAILS[1]]);
+    assert.equal(response.status, 200);
+    assert.ok(response.body.data.eligibleCount >= 2);
+    assert.equal(response.body.data.me.score, 80);
+    assert.equal(response.body.data.me.gradedAttempts, 3);
+    const payload = JSON.stringify(response.body);
+    for (const email of EMAILS) assert.equal(payload.includes(email), false);
+    assert.equal(payload.includes('studentId'), false);
+    assert.equal(payload.includes('nickname'), false);
+    assert.equal(payload.includes('PRIVATE PROMPT'), false);
+  });
+
+  it('computes only the caller badge history and keeps locked milestones explicit', async () => {
+    const response = await get('/student/badges', tokens[EMAILS[1]]);
+    assert.equal(response.status, 200);
+    assert.equal(response.body.data.earnedCount, 2);
+    const perfect = response.body.data.badges.find((badge: { id: string }) => badge.id === 'perfect-score');
+    const five = response.body.data.badges.find((badge: { id: string }) => badge.id === 'five-grades');
+    assert.equal(perfect.earned, true);
+    assert.ok(perfect.earnedAt);
+    assert.equal(five.current, 3);
+    assert.equal(five.earned, false);
+    assert.equal(five.earnedAt, null);
+  });
+
+  it('rejects teacher and anonymous callers on both routes', async () => {
+    for (const path of ['/student/leaderboard', '/student/badges']) {
+      assert.equal((await get(path, tokens[EMAILS[0]])).status, 403);
+      assert.equal((await get(path)).status, 401);
+    }
   });
 });
