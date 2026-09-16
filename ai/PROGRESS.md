@@ -324,6 +324,19 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
       the five-box Leitner behavior in the FE mockup
 - ⛔ Content loader: read + validate the JSON files, schema guards — import/seed strategy not approved
 - ⛔ F9 Pronunciation foundation (pinyin table, tones, tone sandhi, 214 radicals, 4 PDFs)
+- 🔶 (opencode · 2026-09-16) **F9 Foundation backend + FE wiring (scope B, D1–D5 owner-approved)** —
+  branch `feat/student-foundation-be`. Mongo versioned catalog + PG studied-state + 7 endpoints
+  (F-read/F-progress/F-save/G-read/G-progress/G-save + deferred G-practice, no M-read); FE
+  `/student/foundation` live. Grammar endpoints ride along per module 02; grammar FE untouched.
+- ✅ (opencode · 2026-09-16) **F9 DONE, verified end to end.** Corpus in repo (hashes match D1);
+  import applied (373 records, re-apply stable); migration `..._add_user_study_progress` deployed;
+  e2e 9/9; full API suite 28/29 (sole red = pre-existing API-018, sessions lane, untouched);
+  web build + 233/233 unit + eslint clean + check-docs 9/9; Playwright foundation spec
+  3×(desktop+375px) = 18/18 green, screenshots read. FE: real counts (0/293), no fabricated
+  %, no fake buttons, no +XP, prod gate lifted for implemented parts. Two test-caught bugs
+  fixed same day (sound-keyed pinyin + unmarked-must-not-read-studied). Grammar FE still
+  mock (endpoints ready) — next slice. Session:
+  `ai/context/sessions/2026-09-16-opencode-foundation-be.md`.
 - ⛔ F10 Grammar points (browse, auto-generate exercises from `tokens`, progress)
 - ⛔ F11 Character writing (stroke-order animation, canvas practice, radical breakdown)
 - ⛔ F12 Lego sentence builder (7 stations, drag-drop with S/T/P/A/V/O/C/Q roles, endless mode)

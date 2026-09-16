@@ -86,6 +86,7 @@ model User {
   recordedPayments TuitionPayment[]      @relation("AdminRecordedPayments")
   notifications    Notification[]        @relation("UserNotifications")
   marketingProfile UserMarketingProfile? @relation("UserMarketingProfile")
+  studyProgress    UserStudyProgress[]   @relation("UserStudyProgress")
 
   @@index([status])
   @@index([role, status])
@@ -635,4 +636,34 @@ model UserMarketingProfile {
   @@index([marketingConsent])
   @@index([learningGoal])
   @@map("user_marketing_profiles")
+}
+
+// ============================================================================
+// Self-study progress — explicit studied-state for the versioned catalogs.
+//
+// 02-foundation-grammar.md §1 (D2-approved 2026-09-16). One row per
+// (learner, catalog, item): `contentKind` + `contentKey` address the item
+// (`foundation` keys are `<kind>:<sourceKey>`, `grammar` keys are the source
+// grammar `id`). `studied` is an explicit SET, never a toggle — repeating a
+// write converges, and `updatedAt` orders competing writes.
+//
+// Deliberately NOT PROJECT_KNOWLEDGE §8.9's UserGrammarProgress(userId,
+// grammarPointId, status, attemptCount, lastPracticedAt): ADR-016 never
+// approved that shape (02 §1), and attempt counts belong to the deferred
+// G-practice slice, not to self-reported study.
+// ============================================================================
+model UserStudyProgress {
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String   @map("user_id") @db.Uuid
+  contentKind String   @map("content_kind") @db.VarChar(20)
+  contentKey  String   @map("content_key") @db.VarChar(150)
+  studied     Boolean  @default(false)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  user User @relation("UserStudyProgress", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, contentKind, contentKey])
+  @@index([userId])
+  @@map("user_study_progress")
 }
