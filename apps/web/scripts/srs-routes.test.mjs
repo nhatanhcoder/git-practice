@@ -58,7 +58,7 @@ describe("A05 · the real screen is the one on the canonical route", () => {
   });
 });
 
-describe("A05 · the demo notebook session is development only", () => {
+describe("S-MSTK · legacy demo helper stays gated; live review is available", () => {
   it("is enabled in development", () => {
     assert.equal(isMistakeDemoEnabled("development"), true);
     assert.equal(isMistakeDemoEnabled("test"), true);
@@ -68,19 +68,10 @@ describe("A05 · the demo notebook session is development only", () => {
     assert.equal(isMistakeDemoEnabled("production"), false);
   });
 
-  it("guards the deep link, not just the entry page", () => {
+  it("serves real practice on the production deep link", () => {
     const review = read("../src/app/student/(app)/mistakes/review/page.tsx");
-    assert.match(
-      review,
-      /isMistakeDemoEnabled/,
-      "a deep link straight to the review session must be checked too",
-    );
-  });
-
-  it("checks after the hooks, so the hook order is never conditional", () => {
-    const review = read("../src/app/student/(app)/mistakes/review/page.tsx");
-    const gate = review.indexOf("isMistakeDemoEnabled(process.env.NODE_ENV)");
-    const lastHook = Math.max(review.lastIndexOf("useState("), review.lastIndexOf("useMemo("));
-    assert.ok(gate > lastHook, "the production gate must sit below every hook call");
+    assert.doesNotMatch(review, /isMistakeDemoEnabled|MOCK\(|useStudentStore|awardXp/);
+    assert.match(review, /fetchMistakeSession/);
+    assert.match(review, /reviewMistake/);
   });
 });

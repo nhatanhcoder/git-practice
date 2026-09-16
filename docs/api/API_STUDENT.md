@@ -1,6 +1,6 @@
 ---
 status: active
-last_updated: 2026-09-10
+last_updated: 2026-09-14
 ---
 
 # 🔌 API Student
@@ -141,5 +141,20 @@ prototype's `/api/progress` routes into production by default.
 [Module proposal](modules/student/02-foundation-grammar.md) and
 [source audit](modules/student/foundation-grammar-source-audit.md), 2026-09-10;
 transport/DTO/errors approved 2026-09-16 (D1–D5), implemented on
-`feat/student-foundation-be`. G-practice (exercises) and M-read (media) remain
-intentionally undefined — no endpoint, no code.
+`feat/student-foundation-be`; reorder practice added by the option-A port
+(`feat/student-grammar-practice-port`). M-read (media) remains intentionally
+undefined — no endpoint, no code.
+
+## Mistake notebook — approved Task B
+
+GET /api/v1/student/mistakes; GET /api/v1/student/mistakes/review; POST /api/v1/student/mistakes/:id/review. Full DTO, ownership and lifecycle: [04-mistakes](modules/student/04-mistakes.md).
+
+## Vocabulary learning path — approved 2026-09-15
+
+See [module contract](modules/student/05-learning-path.md). GET `/student/learning-path`, GET `/:slug`, POST `/:slug/start`, `/:slug/study`, `/:slug/answers`, `/:slug/complete`. Student-owned progress; no XP or official grades.
+
+GET /student/learning-path/:slug
+POST /student/learning-path/:slug/start
+POST /student/learning-path/:slug/study
+POST /student/learning-path/:slug/answers
+POST /student/learning-path/:slug/complete

@@ -1,247 +1,77 @@
 "use client";
-
-/**
- * /student/mistakes/review — one pass over everything due.
- *
- * The queue is frozen when the session starts. Recomputing it from the store on
- * every answer would drop each card the moment it was answered right, so the
- * counter would jump around and the last card would never render.
- *
- * MOCK(student): box moves go to the store; nothing is submitted.
- *
- * A05: development only. The queue, the boxes and the XP all live in `localStorage`, so in a
- * production build this route renders a notice instead — a deep link straight here must not
- * open a demo session and pass it off as the learner's own review history.
- */
-
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Check, Sparkles, X } from "lucide-react";
-import {
-  Bar,
-  Chip,
-  EmptyState,
-  PageHead,
-  Panel,
-  SectionHeader,
-} from "@/components/student/primitives";
-import { DemoBanner } from "@/components/student/demo-banner";
-import { useToast } from "@/components/student/toast";
-import { useStudentStore } from "@/lib/student/store";
-import { boxInterval } from "@/lib/student/student-rules";
-import {
-  MISTAKES_ROUTE,
-  SRS_ROUTE,
-  isMistakeDemoEnabled,
-} from "@/lib/student/srs-routes";
-
-/** XP for each card answered right. */
-const XP_PER_CORRECT = 15;
-
+import { PageHead, Panel } from "@/components/student/primitives";
+import { fetchMistakeSession, reviewMistake, type Mistake } from "@/lib/student/mistakes-service";
 export default function MistakeReviewPage() {
-  const mistakes = useStudentStore((s) => s.mistakes);
-  const reviewMistake = useStudentStore((s) => s.reviewMistake);
-  const awardXp = useStudentStore((s) => s.awardXp);
-  const toast = useToast();
-
-  // Frozen on first render — see the note at the top of the file.
-  const [queue] = useState(() => mistakes.filter((m) => m.status === "due"));
-  const [idx, setIdx] = useState(0);
-  const [picked, setPicked] = useState<string | null>(null);
-  const [right, setRight] = useState(0);
-  const [done, setDone] = useState(false);
-
-  const item = queue[idx];
-  const options = useMemo(
-    () => (item ? [...item.options].sort((a, b) => a.localeCompare(b, "vi")) : []),
-    [item],
-  );
-
-  function answer(choice: string) {
-    if (!item || picked !== null) return;
-    const correct = choice === item.answer;
-    setPicked(choice);
-    reviewMistake(item.id, correct);
-    if (correct) {
-      setRight((n) => n + 1);
-      awardXp(XP_PER_CORRECT, 1);
-    }
-  }
-
-  function next() {
-    if (idx + 1 >= queue.length) {
-      setDone(true);
-      toast(`Xong phiên — đúng ${right}/${queue.length}`, "success");
-      return;
-    }
-    setIdx((n) => n + 1);
-    setPicked(null);
-  }
-
-  // Placed after every hook on purpose: an early return above them would make the hook order
-  // conditional. `process.env.NODE_ENV` is a build-time constant so the branch never flips at
-  // runtime, but writing it this way keeps the component legal React either way.
-  if (!isMistakeDemoEnabled(process.env.NODE_ENV)) {
-    return (
-      <>
-        <Link href={MISTAKES_ROUTE} className="backlink">
-          <ArrowLeft size={14} /> Sổ tay lỗi sai
-        </Link>
-        <PageHead title="Phiên ôn tập" />
-        <Panel className="panel--pad">
-          <EmptyState
-            title="Phiên ôn demo không có ở bản chính thức"
-            text="Phiên này chạy trên dữ liệu mô phỏng trong trình duyệt. Sổ tay lỗi sai thật cần các endpoint Sprint 4 (Assignments & Attempts). Để ôn từ vựng ngay, hãy mở Flashcard."
-            action={
-              <Link href={SRS_ROUTE} className="btn btn--primary">
-                Mở Flashcard từ vựng
-              </Link>
-            }
-          />
-        </Panel>
-      </>
-    );
-  }
-
-  if (queue.length === 0) {
-    return (
-      <>
-        <Link href={MISTAKES_ROUTE} className="backlink">
-          <ArrowLeft size={14} /> Sổ tay lỗi sai
-        </Link>
-        <PageHead title="Phiên ôn tập" />
-        <Panel className="panel--pad">
-          <EmptyState
-            title="Không có thẻ nào đến hạn"
-            text="Cả sổ tay đang trong lịch chờ. Quay lại khi có thẻ tới hạn, hoặc học thêm chặng mới."
-            action={
-              <Link href="/student/learning-path" className="btn btn--primary">
-                Về lộ trình học
-              </Link>
-            }
-          />
-        </Panel>
-      </>
-    );
-  }
-
-  if (done) {
-    const pct = Math.round((right / queue.length) * 100);
-    return (
-      <>
-        <Link href={MISTAKES_ROUTE} className="backlink">
-          <ArrowLeft size={14} /> Sổ tay lỗi sai
-        </Link>
-        <PageHead title="Xong phiên ôn" sub={`Đúng ${right}/${queue.length} · +${right * XP_PER_CORRECT} XP`} />
-        <Panel className="panel--pad">
-          <div className="stack gap-5" style={{ alignItems: "center", textAlign: "center" }}>
-            <span className="hero__mark han" aria-hidden="true">
-              复
-            </span>
-            <h2 style={{ fontSize: "var(--step-3)" }}>
-              Đúng <span className="num">{pct}%</span>
-            </h2>
-            <Bar value={pct} tone={pct >= 80 ? "success" : "accent"} label="Tỉ lệ đúng phiên này" />
-            <p style={{ color: "var(--text-2)" }}>
-              Thẻ trả lời đúng đã lên hộp kế tiếp; thẻ sai quay về hộp 1 và sẽ gặp lại sớm.
-            </p>
-            <div className="row gap-3 wrap" style={{ justifyContent: "center" }}>
-              <Link href={MISTAKES_ROUTE} className="btn btn--outline">
-                Xem sổ tay
-              </Link>
-              <Link href="/student" className="btn btn--primary">
-                Về trang chủ
-              </Link>
-            </div>
-          </div>
-        </Panel>
-      </>
-    );
-  }
-
-  return (
-    <>
-      <Link href={MISTAKES_ROUTE} className="backlink">
-        <ArrowLeft size={14} /> Sổ tay lỗi sai
-      </Link>
-
-      <PageHead
-        title={`Ôn lỗi sai · câu ${idx + 1}/${queue.length}`}
-        sub={`Đúng ${right} · hộp hiện tại ${item.box} (${boxInterval(item.box)})`}
-      />
-      <DemoBanner text="Phiên ôn này chạy trên dữ liệu mô phỏng trong trình duyệt — không phải sổ tay lỗi sai thật của bạn." />
-
-      <Bar value={((idx + (picked ? 1 : 0)) / queue.length) * 100} label="Tiến độ phiên ôn" />
-
-      <Panel className="panel--pad">
-        <SectionHeader title={item.prompt} sub={`Nguồn: ${item.from}`} />
-
-        <div className="stack gap-5">
-          <div className="stack gap-2" style={{ textAlign: "center" }}>
-            <span className="han" style={{ fontSize: 64, lineHeight: 1.1 }}>
-              {item.hanzi}
-            </span>
-            <span
-              className="pinyin"
-              style={{ fontFamily: "var(--font-mono)", color: "var(--accent)", fontSize: "var(--step-1)" }}
-            >
-              {item.pinyin}
-            </span>
-          </div>
-
-          <div className="opt-list">
-            {options.map((opt, i) => {
-              const state =
-                picked === null
-                  ? ""
-                  : opt === item.answer
-                    ? "is-right"
-                    : opt === picked
-                      ? "is-wrong"
-                      : "";
-              return (
-                <button
-                  key={opt}
-                  type="button"
-                  className={`opt ${state}`}
-                  disabled={picked !== null}
-                  onClick={() => answer(opt)}
-                >
-                  <span className="opt__key">{String.fromCharCode(65 + i)}</span>
-                  <span className="grow">{opt}</span>
-                  {picked !== null && opt === item.answer ? <Check size={16} /> : null}
-                  {picked === opt && opt !== item.answer ? <X size={16} /> : null}
-                </button>
-              );
-            })}
-          </div>
-
-          {picked !== null ? (
-            <>
-              <div className={`verdict ${picked === item.answer ? "is-right" : "is-wrong"}`}>
-                <p className="verdict__title">
-                  {picked === item.answer ? (
-                    <>
-                      <Sparkles size={14} style={{ display: "inline" }} /> Chính xác — +
-                      {XP_PER_CORRECT} XP
-                    </>
-                  ) : (
-                    <>Chưa đúng — đáp án là «{item.answer}»</>
-                  )}
-                </p>
-                <p className="vi-meaning" style={{ color: "var(--text-2)", fontSize: "var(--step--1)" }}>
-                  {item.tip}
-                </p>
-              </div>
-              <button type="button" className="btn btn--primary btn--block" onClick={next}>
-                {idx + 1 >= queue.length ? "Kết thúc phiên" : "Câu tiếp theo"}
-              </button>
-            </>
-          ) : (
-            <Chip>Chọn một đáp án để tiếp tục</Chip>
-          )}
-        </div>
-      </Panel>
-    </>
-  );
+ const [queue, setQueue] = useState<Mistake[]>([]);
+ const [index, setIndex] = useState(0);
+ const [loading, setLoading] = useState(true);
+ const [error, setError] = useState("");
+ const [skipped, setSkipped] = useState(0);
+ const [picked, setPicked] = useState<string[]>([]);
+ const [text, setText] = useState("");
+ const [revealed, setRevealed] = useState(false);
+ const [feedback, setFeedback] = useState<{correct: boolean; explanation: string | null} | null>(null);
+ const [busy, setBusy] = useState(false);
+ const lock = useRef(false);
+ const load = useCallback(async () => {
+  setLoading(true); setError(""); setQueue([]); setIndex(0); setFeedback(null);
+  setPicked([]); setText(""); setRevealed(false);
+  try {
+   const items = await fetchMistakeSession();
+   setSkipped(items.filter(i => !i.available).length);
+   setQueue(items.filter(i => i.available));
+  } catch { setError("Không tải được phiên ôn. Vui lòng thử lại."); }
+  finally { setLoading(false); }
+ }, []);
+ useEffect(() => { void load(); }, [load]);
+ const item = queue[index];
+ async function submit(recalled?: boolean) {
+  if (!item || lock.current || feedback) return;
+  lock.current = true; setBusy(true); setError("");
+  try {
+   const answer = item.sourceType === "flashcard" ? {recalled: recalled === true}
+    : {selectedOptions: item.options.length ? picked : text.split(",").map(s => s.trim()).filter(Boolean)};
+   setFeedback(await reviewMistake(item, answer));
+  } catch { setError("Không lưu được kết quả hoặc phiên đã thay đổi. Hãy tải lại phiên trước khi tiếp tục."); }
+  finally { lock.current = false; setBusy(false); }
+ }
+ function next() {
+  setIndex(i => i + 1); setFeedback(null); setPicked([]); setText(""); setRevealed(false); setError("");
+ }
+ return <div className="stack gap-5">
+  <Link href="/student/mistakes" className="backlink">← Sổ tay lỗi sai</Link>
+  <PageHead title="Ôn lỗi sai" sub="Kết quả được lưu theo tài khoản; không thay đổi điểm bài tập chính thức." />
+  {loading ? <p role="status">Đang tải phiên ôn…</p> : <>
+   {skipped > 0 && <p>{skipped} nội dung gốc không còn khả dụng đã được bỏ qua.</p>}
+   {error && <Panel className="panel--pad"><p role="alert">{error}</p><button disabled={busy} className="btn btn--outline" onClick={() => void load()}>Tải lại phiên</button></Panel>}
+   {!error && !item && <Panel className="panel--pad"><h2>{queue.length ? "Đã hoàn thành phiên ôn" : "Không có lỗi sai cần ôn"}</h2>
+    <p>Câu ôn chưa đúng vẫn ở lại sổ tay để bạn luyện tiếp.</p><button className="btn btn--primary" onClick={() => void load()}>Kiểm tra lại</button></Panel>}
+   {item && <Panel className="panel--pad stack gap-4">
+    <p>{index + 1}/{queue.length} · {item.sourceType === "flashcard" ? "Từ vựng" : "Câu hỏi"}</p>
+    <h2 style={{overflowWrap: "anywhere", whiteSpace: "pre-wrap"}}>{item.prompt}</h2>
+    {item.audioUrl && <audio controls src={item.audioUrl} style={{width: "100%"}} />}
+    {item.sourceType === "flashcard" ? <>
+     {!revealed ? <button className="btn btn--outline" onClick={() => setRevealed(true)}>Hiện nghĩa</button>
+      : <><p>{item.pinyin}</p><p>{item.meaning}</p>
+      <div className="row gap-3" style={{flexWrap: "wrap"}}>
+       <button className="btn btn--outline" disabled={busy || !!feedback || !!error} onClick={() => void submit(false)}>Chưa nhớ</button>
+       <button className="btn btn--primary" disabled={busy || !!feedback || !!error} onClick={() => void submit(true)}>Đã nhớ</button>
+      </div></>}
+    </> : <fieldset disabled={busy || !!feedback || !!error} style={{minWidth: 0, border: 0, padding: 0}}>
+     <legend>Chọn câu trả lời</legend>
+     {item.options.length ? item.options.map(o => <label key={o.id} className="row gap-3" style={{overflowWrap: "anywhere", paddingBlock: 8}}>
+      <input type="checkbox" checked={picked.includes(o.id)} onChange={() => setPicked(p => p.includes(o.id) ? p.filter(v => v !== o.id) : [...p, o.id])} />
+      <span>{o.id}. {o.text}</span></label>)
+      : <label>Câu trả lời (nhiều phần ngăn cách bằng dấu phẩy)<input style={{width: "100%", boxSizing: "border-box"}} value={text} onChange={e => setText(e.target.value)} /></label>}
+     <button className="btn btn--primary" onClick={() => void submit()}>Kiểm tra</button>
+    </fieldset>}
+    {busy && <p role="status">Đang lưu…</p>}
+    {feedback && <div role="status"><p>{feedback.correct ? "Đúng — đã lưu trạng thái đã ôn." : "Chưa đúng — nội dung vẫn cần ôn."}</p>
+     {feedback.explanation && <p style={{overflowWrap: "anywhere"}}>{feedback.explanation}</p>}
+     <button className="btn btn--primary" onClick={next}>Tiếp tục</button></div>}
+   </Panel>}
+  </>}
+ </div>;
 }

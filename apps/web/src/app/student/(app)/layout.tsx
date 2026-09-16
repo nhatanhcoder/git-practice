@@ -27,7 +27,8 @@ export const metadata: Metadata = {
  *
  * `(app)` is a route group, so it contributes nothing to the URL — /student and every learner
  * route keep the paths they already had. The group exists so the guard and the chrome stop
- * applying to public marketing content (the landing page, now at /landing).
+ * applying to public marketing content (none exists today — the prototype
+ * landing was removed, WEB-017; a future one lives outside this group).
  *
  * RequireAuth is kept deliberately. The source branch's layout had no guard because that
  * branch predates PR #32; dropping it while porting would have taken the entire learner area

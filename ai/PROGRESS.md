@@ -419,6 +419,21 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
 
 ## Off-sprint / spike
 
+- ✅ (zcode · 2026-09-14) **WEB-017 final — the /landing prototype removed again (owner's
+      recorded "Gỡ trang + redirect" decision governs; re-confirmed by the Task F re-issue with
+      the hard constraint "Không để trang public nào còn dữ liệu bịa").** PR #83's restored
+      prototype (4 invented teachers, "Bảng vàng" student results, five-box SRS copy, 8.5 MB
+      images, `three`) is deleted: route + `components/site/*` + `landing-data.ts` +
+      `public/teachers/*` + the dependency. `/landing`, `/student/landing` and sub-paths →
+      **temporary 307 → `/login`** (signed-in visitors are delivered to their role home by the
+      gate's existing logic). Auth brand → `/`. Tests rewritten for the removal:
+      `landing-routes.test.mjs` 7/7 (no landing files, all three redirects, no live refs, no
+      invented-content data in src, no `three`) · `landing-route.spec.ts` 3× 5/5 (all paths →
+      gate, gate renders, 375px) · login-theme spec unchanged and green. Full web scripts
+      **220/220** · check-docs **9/9** · build **43/43**. A real landing returns only from
+      owner-approved sources; restoration recipe in the WEB-017 resolution. Branch
+      `fix/remove-landing-final`.
+
 - ✅ (opencode · 2026-09-12) **Task E design slice — analytics module + board/badge decisions (contracts linked, not replaced).**
   Full BE/FE blocked by 4 approval gates + PR #73, so no code. PR #74 had just merged
   mock-fidelity contracts for the 3 routes — per Conflict Rules those stay authoritative;
@@ -886,9 +901,9 @@ _(discovered while mapping the Admin UI — 2026-08-13)_
       defines their request/response DTOs (F6.1/F6.2 blocked in Sprint 5). Found writing the
       `student-progress` Page Contract 2026-09-12. Streak/XP figures on the same screen are
       gamification (below), not analytics.
-- [ ] (fe → be) **S-MSTK mistake-notebook collection endpoints** — the source data now exists
-      (Sprint 4 attempts, PR #73), but no contract collects wrongly-answered questions from it.
-      `student-mistakes.md` contract written; the screen renders an honest empty state.
+- [x] (codex · 2026-09-14) **S-MSTK mistake-notebook collection endpoints** — implemented on
+      `codex/student-mistakes-live`: real failed reviews + graded wrong answers, owned list/session/review.
+      Production notebook/review and lifecycle tests verified; see Task B session for full-suite/PR status.
 - [ ] (fe → be) **Placement + platform mock-exam transport contract** — ADR-005
       (server-authoritative exam) is a 0-byte stub (`DOC-017`); placement decision rule never
       settled. Blocks `student-exams` / `student-placement` contracts.
@@ -1213,3 +1228,9 @@ are accepted and implemented; 02 is implemented but its spec status is in confli
   before merge; the database-backed notification suite remains NOT RUN in this review worktree.
 
 - ✅ (codex · 2026-09-13) **AttemptAnswer migration integration.** Schema and migration only, split from PR #73 so the database change reaches main before attempt lifecycle code. Prisma schema valid; check-docs 9/9; DB apply NOT RUN locally.
+
+- ✅ (codex · 2026-09-14) **S-MSTK Task B — live mistake notebook/review.** Owner approved schema and student-owned API; branch codex/student-mistakes-live. Sources: real failed flashcard review and graded wrong attempt answers. Implementation, API 305/305, SRS cleanup rerun 15/15 and production browser 2/2 verified; records in `ai/context/sessions/2026-09-14-codex-student-mistakes-live.md`.
+
+- ✅ (codex · 2026-09-15) **S-SELF-1 live vocabulary learning path** — published 1,119 approved Hán Lộ words as 143 immutable units across HSK 1–9; added student-owned, revision-safe study/quiz/completion progress and connected both production pages. Textbook curricula remain honestly empty pending verified content. API lifecycle passed three independent DB rounds; production browser lifecycle passed three rounds on desktop and 375px. Branch `codex/student-learning-path-live`.
+
+- ✅ (opencode · 2026-09-16) **Merged lanes #88 + #87 + #86** (owner-directed) onto main with lane-branch resolutions, all CI-green before merge: #88 learning-path (2 additive conflicts resolved in-lane-worktree; e2e 5/5 + PW 2/2 re-verified on the merge), #87 mistakes (11 additive conflicts; builds + e2e 3/3 + PW 2/2 re-verified), #86 landing removal (+lockfile sync + 1 lint fix; web build + landing unit 7/7 + PW 10/10). Incident: one #87 resolution batch landed on the wrong branch and was reset + redone (check-docs caught it). Records: `ai/context/sessions/2026-09-16-opencode-merge-lanes.md`.

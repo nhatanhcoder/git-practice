@@ -1,3 +1,4 @@
+import { MistakesModule } from '../mistakes/mistakes.module';
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Flashcard, FlashcardSchema } from '../mongodb/schemas/flashcard.schema';
@@ -9,7 +10,7 @@ import { FlashcardsService } from './flashcards.service';
 import { StudentFlashcardsController } from './student-flashcards.controller';
 
 @Module({
-  imports: [
+  imports: [MistakesModule,
     MongooseModule.forFeature([
       { name: Flashcard.name, schema: FlashcardSchema },
       { name: UserFlashcardState.name, schema: UserFlashcardStateSchema },
