@@ -3,6 +3,8 @@ import { after, before, describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, type INestApplication, type ValidationError } from '@nestjs/common';
+import { getConnectionToken } from '@nestjs/mongoose';
+import type { Connection } from 'mongoose';
 import cookieParser from 'cookie-parser';
 import { AppModule } from '../dist/src/app.module';
 import { GlobalExceptionFilter } from '../dist/src/common/filters/global-exception.filter';
@@ -18,19 +20,22 @@ import { PrismaService } from '../dist/src/prisma/prisma.service';
  * index, A/B ownership isolation, idempotent SET semantics — cannot be proven
  * against mocks.
  *
- * Requires the catalog import (`pnpm --filter api foundation:import`) — the
- * suites assert the audited counts (297 foundation / 76 grammar), so an
- * un-imported database fails loudly instead of passing vacuously.
+ * Own fixtures only (placement/word-bank discipline): a fixed `foundation-e2e`
+ * revision with a handful of records, created in `before()` and deleted in
+ * `after()`. Never the imported corpus — CI runs disposable databases where no
+ * import has ever run, and leaning on shared rows is exactly what API-012 and
+ * DEBT-004 forbid. The full-corpus shape (297/76 audited counts) is pinned by
+ * `test/foundation-extract.test.ts`, which needs no database at all.
  *
- * Cleanup deletes only the two students it creates: PG progress rows cascade
- * off the users, and the shared catalog revisions are revision-pinned reads
- * other suites never touch.
+ * PG progress rows cascade off the two owned students on user delete.
  */
 const PREFIX = 'api/v1';
+const E2E_REVISION = 'foundation-e2e';
 
 let app: INestApplication;
 let base: string;
 let prisma: PrismaService;
+let mongo: Connection;
 
 const STUDENT_A_EMAIL = 'test.found.student.a@hsk.local';
 const STUDENT_B_EMAIL = 'test.found.student.b@hsk.local';
@@ -71,6 +76,55 @@ let adminToken: string;
 let aToken: string;
 let bToken: string;
 
+async function seedCatalogFixtures(): Promise<void> {
+  await mongo.collection('foundation_items').deleteMany({ revision: E2E_REVISION });
+  await mongo.collection('grammar_items').deleteMany({ revision: E2E_REVISION });
+  await mongo.collection('content_revisions').deleteMany({ revision: E2E_REVISION });
+
+  const F = (group: string, key: string, data: Record<string, unknown>) => ({
+    revision: E2E_REVISION,
+    group,
+    key,
+    data,
+  });
+  await mongo.collection('foundation_items').insertMany([
+    F('initials', 'b', { id: 'ini-e2e-b', sound: 'b', ipa: '[p]', hanzi: '爸', pinyin: 'bà', vi: 'bố', group: 'Môi' }),
+    F('initials', 'p', { id: 'ini-e2e-p', sound: 'p', ipa: '[pʰ]', hanzi: '跑', pinyin: 'pǎo', vi: 'chạy', group: 'Môi' }),
+    F('finals', 'a', { id: 'fin-e2e-a', sound: 'a', ipa: '[a]', hanzi: '八', pinyin: 'bā', vi: 'tám', group: 'Đơn' }),
+    F('tones', '1', { id: 1, name: 'Thanh 1', mark: 'ā', contour: '55', pitch: 'cao bằng', desc: 'giữ cao', hanzi: '妈', pinyin: 'mā', vi: 'mẹ', path: '8,12 92,12' }),
+    F('sandhi', 's-e2e', { id: 's-e2e', title: 'quy tắc thử', rule: 'quy tắc' }),
+    F('radicals', '1', { no: 1, char: '一', strokes: 1, pinyin: 'yī', meaning: 'một', hanViet: 'Nhất' }),
+    F('radicals', '2', { no: 2, char: '丨', strokes: 1, pinyin: 'gǔn', meaning: 'nét sổ', hanViet: 'Cổn' }),
+    F('listening', 'l-e2e', { id: 'l-e2e', title: 'nghe thử', transcript: 'nǐ hǎo', vi: 'xin chào', level: 1 }),
+    F('speaking', 'sp-e2e', { id: 'sp-e2e', prompt: '你好', pinyin: 'nǐ hǎo', vi: 'xin chào', focus: 'thanh điệu', level: 1 }),
+  ]);
+  const G = (key: string, level: number, category: string) => ({
+    revision: E2E_REVISION,
+    key,
+    level,
+    category,
+    data: {
+      id: key, level, category, name: `điểm ${key}`, formula: 'A + B', hanzi: '我爱你',
+      pinyin: 'wǒ ài nǐ', vi: 'tôi yêu bạn', note: 'ghi chú', key: '爱', tokens: ['我', '爱', '你'], frequency: 'cao',
+    },
+  });
+  await mongo.collection('grammar_items').insertMany([
+    G('g-e2e-1', 1, 'Trật tự câu'),
+    G('g-e2e-2', 2, 'Trợ từ'),
+  ]);
+  const now = new Date();
+  await mongo.collection('content_revisions').insertMany([
+    { name: 'foundation', revision: E2E_REVISION, sourceHash: 'e2e', counts: {}, importedAt: now },
+    { name: 'grammar', revision: E2E_REVISION, sourceHash: 'e2e', counts: {}, importedAt: now },
+  ]);
+}
+
+async function cleanCatalogFixtures(): Promise<void> {
+  await mongo.collection('foundation_items').deleteMany({ revision: E2E_REVISION });
+  await mongo.collection('grammar_items').deleteMany({ revision: E2E_REVISION });
+  await mongo.collection('content_revisions').deleteMany({ revision: E2E_REVISION });
+}
+
 before(async () => {
   app = await NestFactory.create(AppModule, { logger: false });
   app.setGlobalPrefix(PREFIX);
@@ -89,8 +143,13 @@ before(async () => {
   await app.listen(0);
   base = (await app.getUrl()).replace('[::1]', 'localhost');
   prisma = app.get(PrismaService);
+  mongo = app.get<Connection>(getConnectionToken());
 
   await prisma.user.deleteMany({ where: { email: { in: OWNED_EMAILS } } });
+  // A killed run may leave this revision behind (no cross-DB transaction can
+  // prevent it) — sweep before seeding so the run starts deterministic.
+  await cleanCatalogFixtures();
+  await seedCatalogFixtures();
 
   const adminLogin = await req('POST', '/auth/login', {
     email: 'admin@hsk.local',
@@ -118,29 +177,27 @@ before(async () => {
 });
 
 after(async () => {
+  // Own fixtures only — the shared catalog (if any) is never touched.
+  await cleanCatalogFixtures();
   await prisma.user.deleteMany({ where: { email: { in: OWNED_EMAILS } } });
   await app?.close();
 });
 
 describe('Foundation — catalog read (F-read)', () => {
-  it('serves the audited corpus: 8 groups, exact counts, one revision', async () => {
+  it('serves the pinned revision with all 8 groups, source fields verbatim', async () => {
     const res = await req('GET', '/student/foundation', undefined, aToken);
     assert.equal(res.status, 200, JSON.stringify(res.body));
     const { revision, groups } = res.body.data;
-    assert.match(revision, /^[0-9a-f]{12}$/, 'revision is the 12-hex import pin');
-    const counts = Object.fromEntries(
-      Object.entries(groups).map(([g, rows]) => [g, (rows as unknown[]).length]),
+    assert.equal(revision, E2E_REVISION, 'reads pin the seeded revision');
+    assert.deepEqual(
+      Object.keys(groups).sort(),
+      ['finals', 'initials', 'listening', 'pdfs', 'radicals', 'sandhi', 'speaking', 'tones'],
     );
-    assert.deepEqual(counts, {
-      initials: 21,
-      finals: 36,
-      tones: 4,
-      sandhi: 6,
-      radicals: 214,
-      listening: 6,
-      speaking: 6,
-      pdfs: 4,
-    });
+    assert.deepEqual(
+      groups.initials.map((s: { sound: string }) => s.sound).sort(),
+      ['b', 'p'],
+    );
+    assert.deepEqual(groups.pdfs, [], 'groups with no fixture rows read as empty, not missing');
   });
 
   it('keeps source fields verbatim: no invented variants, tone geometry is coordinates', async () => {
@@ -265,30 +322,38 @@ describe('Foundation — studied-state (F-progress / F-save)', () => {
 });
 
 describe('Grammar — list and detail (G-read)', () => {
-  it('lists 76 records with stable order and honest pagination meta', async () => {
+  it('lists fixtures with stable order and honest pagination meta', async () => {
     const res = await req('GET', '/student/grammar?limit=50', undefined, aToken);
     assert.equal(res.status, 200, JSON.stringify(res.body));
-    assert.equal(res.body.meta.total, 76);
-    assert.equal(res.body.meta.totalPages, 2);
+    assert.equal(res.body.meta.total, 2);
+    assert.equal(res.body.meta.totalPages, 1);
     const levels = res.body.data.map((g: { level: number }) => g.level);
-    const sorted = [...levels].sort((a, b) => a - b);
-    assert.deepEqual(levels, sorted, 'level asc within a page');
+    assert.deepEqual(levels, [1, 2], 'level asc');
 
     const hsk1 = await req('GET', '/student/grammar?hskLevel=1', undefined, aToken);
-    assert.equal(hsk1.body.meta.total, 9);
+    assert.equal(hsk1.body.meta.total, 1);
     assert.ok(
       hsk1.body.data.every((g: { level: number }) => g.level === 1),
       'the level filter holds',
     );
+
+    const cat = await req(
+      'GET',
+      `/student/grammar?category=${encodeURIComponent('Trợ từ')}`,
+      undefined,
+      aToken,
+    );
+    assert.equal(cat.body.meta.total, 1);
+    assert.equal(cat.body.data[0].id, 'g-e2e-2');
 
     const badLevel = await req('GET', '/student/grammar?hskLevel=99', undefined, aToken);
     assert.equal(badLevel.status, 400, JSON.stringify(badLevel.body));
   });
 
   it('serves one record; absent ids answer GRAMMAR_NOT_FOUND, not a leak', async () => {
-    const one = await req('GET', '/student/grammar/g001', undefined, aToken);
+    const one = await req('GET', '/student/grammar/g-e2e-1', undefined, aToken);
     assert.equal(one.status, 200, JSON.stringify(one.body));
-    assert.equal(one.body.data.id, 'g001');
+    assert.equal(one.body.data.id, 'g-e2e-1');
     assert.ok(Array.isArray(one.body.data.tokens), 'tokens stay an array on the wire');
 
     const missing = await req('GET', '/student/grammar/gx-no-such', undefined, aToken);
@@ -302,15 +367,15 @@ describe('Grammar — studied-state (G-progress / G-save)', () => {
     const set = await req(
       'PUT',
       '/student/grammar/progress',
-      { grammarId: 'g001', studied: true },
+      { grammarId: 'g-e2e-1', studied: true },
       aToken,
     );
     assert.equal(set.status, 200, JSON.stringify(set.body));
-    assert.equal(set.body.data.grammarId, 'g001');
+    assert.equal(set.body.data.grammarId, 'g-e2e-1');
 
     const bList = await req('GET', '/student/grammar/progress', undefined, bToken);
     assert.ok(
-      !bList.body.data.studied.some((s: { grammarId: string }) => s.grammarId === 'g001'),
+      !bList.body.data.studied.some((s: { grammarId: string }) => s.grammarId === 'g-e2e-1'),
       'B must not see A’s grammar row',
     );
 

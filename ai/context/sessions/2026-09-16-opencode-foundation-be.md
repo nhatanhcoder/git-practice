@@ -70,13 +70,28 @@ and excluded from every commit below.
   speaking, both viewports). Parallel-project race fixed by per-project sounds.
 - Seeded `student@hsk.local` left with 0 studied=true rows (toggles paired).
 
-**Blocker / needs follow-up**:
+**CI fixes (same day, before merge)**:
+1. CI type-checks failed: `app.module` referenced the parallel writing lane's
+   untracked `WritingModule` (absent from clean checkouts), and the PW spec
+   spread `NodeList` (web tsconfig lacks downlevelIteration). Fixed by removing
+   the writing lane's lines from this branch (its files untouched; it re-adds
+   them on its own branch) + `Array.from`. Local `tsc` still reports the one
+   writing-lane error because its untracked files sit in this checkout — CI
+   checkouts do not have them.
+2. CI api-quality failed 6/9: the e2e leaned on the imported corpus, but CI
+   runs disposable databases with no import. Rewrote the e2e to self-seed a
+   fixed `foundation-e2e` revision (placement/word-bank discipline; created +
+   deleted in-suite, verified 0 rows left) and moved the audited 297/76 counts
+   into a DB-free unit test `test/foundation-extract.test.ts` (5/5).
+   Lesson: a suite that needs shared rows must bring its own fixtures.
 - API-018 (pre-existing, sessions lane) — not this branch.
 - Grammar FE wiring is the natural next slice (endpoints ready).
 - `foundation-data.ts` / `radicals-data.ts` now orphaned by the foundation page
   (kept for the A12 dead-code sweep, Task-C precedent).
 - Dev-DB catalog rows for key-scheme v1 persist unserved under the old revision
   (by design — rollback material, never served).
+- `.gitattributes` correction: the `*.xlsx` line attributed to it in 5569d5d's
+  message actually lives in `.gitignore` (misread diff header) — untouched either way.
 
 **Next steps**: push, PR, merge review. Keep the writing lane's files out of
 this PR (verify via `git status` before every commit — done throughout).
