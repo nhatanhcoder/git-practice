@@ -870,9 +870,9 @@ _(discovered while mapping the Admin UI — 2026-08-13)_
       defines their request/response DTOs (F6.1/F6.2 blocked in Sprint 5). Found writing the
       `student-progress` Page Contract 2026-09-12. Streak/XP figures on the same screen are
       gamification (below), not analytics.
-- [ ] (fe → be) **S-MSTK mistake-notebook collection endpoints** — the source data now exists
-      (Sprint 4 attempts, PR #73), but no contract collects wrongly-answered questions from it.
-      `student-mistakes.md` contract written; the screen renders an honest empty state.
+- [x] (codex · 2026-09-14) **S-MSTK mistake-notebook collection endpoints** — implemented on
+      `codex/student-mistakes-live`: real failed reviews + graded wrong answers, owned list/session/review.
+      Production notebook/review and lifecycle tests verified; see Task B session for full-suite/PR status.
 - [ ] (fe → be) **Placement + platform mock-exam transport contract** — ADR-005
       (server-authoritative exam) is a 0-byte stub (`DOC-017`); placement decision rule never
       settled. Blocks `student-exams` / `student-placement` contracts.
@@ -1197,5 +1197,7 @@ are accepted and implemented; 02 is implemented but its spec status is in confli
   before merge; the database-backed notification suite remains NOT RUN in this review worktree.
 
 - ✅ (codex · 2026-09-13) **AttemptAnswer migration integration.** Schema and migration only, split from PR #73 so the database change reaches main before attempt lifecycle code. Prisma schema valid; check-docs 9/9; DB apply NOT RUN locally.
+
+- ✅ (codex · 2026-09-14) **S-MSTK Task B — live mistake notebook/review.** Owner approved schema and student-owned API; branch codex/student-mistakes-live. Sources: real failed flashcard review and graded wrong attempt answers. Implementation, API 305/305, SRS cleanup rerun 15/15 and production browser 2/2 verified; records in `ai/context/sessions/2026-09-14-codex-student-mistakes-live.md`.
 
 - ✅ (codex · 2026-09-15) **S-SELF-1 live vocabulary learning path** — published 1,119 approved Hán Lộ words as 143 immutable units across HSK 1–9; added student-owned, revision-safe study/quiz/completion progress and connected both production pages. Textbook curricula remain honestly empty pending verified content. API lifecycle passed three independent DB rounds; production browser lifecycle passed three rounds on desktop and 375px. Branch `codex/student-learning-path-live`.

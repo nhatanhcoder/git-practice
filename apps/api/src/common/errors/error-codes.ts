@@ -69,6 +69,11 @@ export const ErrorCode = {
   // Word bank (registry § Word Bank Errors) — "not found OR not mine" deliberately share
   // one code so a caller cannot probe for another student's bookmark ids (02-word-bank §5).
   WORD_BANK_NOT_FOUND: 'WORD_BANK_NOT_FOUND',
+
+  // Mistake notebook (student module 04).
+  MISTAKE_NOT_FOUND: 'MISTAKE_NOT_FOUND',
+  MISTAKE_REVIEW_STALE: 'MISTAKE_REVIEW_STALE',
+
   // Foundation/Grammar (registry § Foundation/Grammar Errors) — read-only catalogues
   // (02-foundation-grammar.md §9, D5-approved 2026-09-16). Same rationale as writing:
   // the only failure a caller can produce is asking for an item outside the corpus.
@@ -178,6 +183,8 @@ export const ERROR_STATUS: Record<ErrorCodeValue, number> = {
   FLASHCARD_ALREADY_IN_REVIEW: 409,
   FLASHCARD_INVALID_RATING: 400,
   WORD_BANK_NOT_FOUND: 404,
+  MISTAKE_NOT_FOUND: 404,
+  MISTAKE_REVIEW_STALE: 409,
   GRAMMAR_NOT_FOUND: 404,
   PLACEMENT_NO_QUESTIONS: 409,
   NOTIFICATION_NOT_FOUND: 404,

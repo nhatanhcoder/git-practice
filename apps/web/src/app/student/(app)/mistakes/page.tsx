@@ -1,71 +1,37 @@
 "use client";
-
-/**
- * /student/mistakes — the mistake notebook.
- *
- * A05 separates two things that had been sharing this route. The vocabulary SRS lives at
- * `/student/flashcards` (see `lib/student/srs-routes.ts`); this page is the notebook of
- * questions answered wrongly in assignments and mock exams, which is a Sprint 4 feature with
- * no endpoints yet.
- *
- * It deliberately does NOT show a card queue. The store still holds demo mistakes, and
- * rendering them here would put invented review history in front of a signed-in learner — the
- * same defect as `WEB-011`. In development the demo session stays reachable, clearly labelled;
- * in production the page says what it is waiting for and points at the review that is real.
- */
-
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowRight, NotebookPen, Sparkles } from "lucide-react";
-import { EmptyState, PageHead, Panel } from "@/components/student/primitives";
-import {
-  MISTAKES_REVIEW_ROUTE,
-  SRS_ROUTE,
-  isMistakeDemoEnabled,
-} from "@/lib/student/srs-routes";
-
+import { PageHead, Panel } from "@/components/student/primitives";
+import { fetchMistakes, type Mistake } from "@/lib/student/mistakes-service";
 export default function MistakeNotebookPage() {
-  const demoEnabled = isMistakeDemoEnabled(process.env.NODE_ENV);
-
-  return (
-    <div className="stack gap-5">
-      <PageHead
-        title="Sổ tay lỗi sai"
-        sub="Những câu bạn trả lời sai trong bài tập và đề thi thử sẽ được gom về đây."
-      />
-
-      <EmptyState
-        icon={<NotebookPen size={22} />}
-        title="Chưa có dữ liệu lỗi sai"
-        text="Sổ tay lỗi sai lấy dữ liệu từ bài tập và bài thi đã nộp. Các endpoint đó thuộc Sprint 4 (Assignments & Attempts) và chưa được xây dựng, nên trang này chưa hiển thị thẻ nào — thay vì dựng dữ liệu giả."
-      />
-
-      <Panel className="panel--pad stack gap-3">
-        <h2 style={{ fontSize: "var(--step-1)", margin: 0 }}>Ôn từ vựng thì đã sẵn sàng</h2>
-        <p style={{ color: "var(--text-2)", margin: 0, maxWidth: "62ch" }}>
-          Flashcard từ vựng là một chức năng riêng và đã chạy trên máy chủ thật: thẻ đến hạn,
-          bốn mức đánh giá SM-2 và thống kê ghi nhớ đều lưu theo tài khoản của bạn.
-        </p>
-        <Link href={SRS_ROUTE} className="btn btn--primary" style={{ alignSelf: "flex-start" }}>
-          <Sparkles size={16} /> Mở Flashcard từ vựng <ArrowRight size={14} />
-        </Link>
-      </Panel>
-
-      {demoEnabled ? (
-        <Panel className="panel--pad stack gap-3">
-          <h2 style={{ fontSize: "var(--step-1)", margin: 0 }}>Bản demo (chỉ có ở môi trường dev)</h2>
-          <p style={{ color: "var(--text-2)", margin: 0, maxWidth: "62ch" }}>
-            Phiên ôn lỗi sai dựng sẵn chạy hoàn toàn trong trình duyệt, không gửi gì lên máy chủ.
-            Nó chỉ dùng để xem giao diện; không có ở bản production.
-          </p>
-          <Link
-            href={MISTAKES_REVIEW_ROUTE}
-            className="btn btn--outline"
-            style={{ alignSelf: "flex-start" }}
-          >
-            Mở phiên ôn demo <ArrowRight size={14} />
-          </Link>
-        </Panel>
-      ) : null}
-    </div>
-  );
+ const [items, setItems] = useState<Mistake[]>([]);
+ const [page, setPage] = useState(1);
+ const [pages, setPages] = useState(0);
+ const [loading, setLoading] = useState(true);
+ const [error, setError] = useState(false);
+ const load = useCallback(async () => {
+  setLoading(true); setError(false); setItems([]);
+  try { const res = await fetchMistakes(page); setItems(res.items); setPages(res.totalPages); }
+  catch { setError(true); }
+  finally { setLoading(false); }
+ }, [page]);
+ useEffect(() => { void load(); }, [load]);
+ return <div className="stack gap-5">
+  <PageHead title="Sổ tay lỗi sai" sub="Những lần ôn từ chưa nhớ và câu trả lời sai trong bài đã chấm." />
+  <Link className="btn btn--primary" href="/student/mistakes/review">Ôn lỗi sai</Link>
+  {loading ? <Panel className="panel--pad"><p role="status">Đang tải lỗi sai…</p></Panel>
+   : error ? <Panel className="panel--pad"><p role="alert">Không tải được sổ tay lỗi sai.</p><button className="btn btn--outline" onClick={() => void load()}>Thử lại</button></Panel>
+   : !items.length ? <Panel className="panel--pad"><h2>Chưa có lỗi sai</h2><p>Khi bạn ôn chưa nhớ hoặc trả lời sai trong bài đã chấm, nội dung sẽ xuất hiện ở đây.</p></Panel>
+   : <><div className="stack gap-3">{items.map(item => <Panel key={item.id} className="panel--pad">
+    <p className="eyebrow">{item.sourceType === "flashcard" ? "Từ vựng" : "Câu hỏi trong bài tập"}</p>
+    <p style={{overflowWrap: "anywhere", whiteSpace: "pre-wrap"}}>{item.prompt}</p>
+    {item.pinyin && <p>{item.pinyin}</p>}
+    <p>{item.available ? item.status === "reviewed" ? "Đã ôn đúng" : "Cần ôn" : "Nội dung gốc không còn khả dụng"}</p>
+   </Panel>)}</div>
+   <nav aria-label="Phân trang lỗi sai" className="row gap-3">
+    <button className="btn btn--outline" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>Trước</button>
+    <span>{page}/{pages}</span>
+    <button className="btn btn--outline" disabled={page >= pages} onClick={() => setPage(p => p + 1)}>Sau</button>
+   </nav></>}
+ </div>;
 }

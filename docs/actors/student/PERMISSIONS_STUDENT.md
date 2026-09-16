@@ -1,3 +1,8 @@
+---
+status: active
+last_updated: 2026-09-14
+---
+
 # 🎓 Student — Permissions
 
 > Specific Student permissions. Full source of truth: [RBAC_MATRIX.md](../../shared/RBAC_MATRIX.md)
@@ -64,6 +69,9 @@ own invoices. They cannot create platform catalog content or view anyone else's 
 
 - [RBAC_MATRIX.md](../../shared/RBAC_MATRIX.md)
 - [FEATURES_STUDENT.md](./FEATURES_STUDENT.md)
+
+### S-MSTK Task B
+Student may list and practice own mistakes. No access to another account; no manual mistake creation. Source questions must belong to an owned graded attempt.
 
 ## Learning path — approved 2026-09-15
 

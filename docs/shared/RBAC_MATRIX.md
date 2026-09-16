@@ -1,3 +1,8 @@
+---
+status: active
+last_updated: 2026-09-14
+---
+
 # 🔐 RBAC Matrix — Actor × Resource × Action
 
 > **The single source of truth** for all permissions in the system.  
@@ -100,6 +105,9 @@ createQuestion() { ... }
 - [PERMISSIONS_STUDENT.md](../actors/student/PERMISSIONS_STUDENT.md)
 - [API_CONVENTIONS.md](../api/API_CONVENTIONS.md) — auth header, error 403
 - [diagrams/rbac-matrix.mmd](../diagrams/rbac-matrix.mmd)
+
+### Task B: UserMistake (approved 2026-09-13)
+Student may read and review own rows only; system captures real failures. Teacher/admin have no access. All lookups use token userId; no client creation endpoint.
 
 ## Vocabulary learning path — approved 2026-09-15
 

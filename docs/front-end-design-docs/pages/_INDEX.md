@@ -1,7 +1,7 @@
 ---
 status: active
 owner: Nhật
-last_updated: 2026-09-15
+last_updated: 2026-09-16
 ---
 
 # Page Contracts — Index
@@ -80,7 +80,8 @@ Analytics (T-ANL-1…4): _not yet mapped._ Every other Teacher area has a contra
 | `/student/attempts/[attemptId]` | S-ASGN-2..6 | [student-attempt-take](./student-pages/student-attempt-take.md) | built (live) | v1 | **LIVE on attempt endpoints (Sprint 4)** — autosave debounce + server-enforced deadline; attempt status needs no mock |
 | `/student/attempts/[attemptId]/result` | S-ASGN-7,8 | [student-attempt-result](./student-pages/student-attempt-result.md) | built (live) | v1 | **LIVE on GET result (Sprint 4)** — partial (submitted) never presented as final; keys only at graded |
 | `/student/notifications` | S-BILL-3 + Notifications table | [student-notifications](./student-pages/student-notifications.md) | built | v1 | — (module 07 live; role-agnostic `/api/v1/notifications` per 07-notifications.md) |
-| `/student/mistakes` | S-MSTK | [student-mistakes](./student-pages/student-mistakes.md) | built (mock) | v1 | ⛔ mistake-collection endpoints (Needs lane) |
+| `/student/mistakes` | S-MSTK | [student-mistakes](./student-pages/student-mistakes.md) | built (live) | v1 | — |
+| `/student/mistakes/review` | S-MSTK | [student-mistakes-review](./student-pages/student-mistakes-review.md) | built (live) | v1 | — |
 | `/student/exams` | S-SELF-7 | [student-exams](./student-pages/student-exams.md) | built (mock) | v1 | ⛔ ADR-005 is a 0-byte stub (DOC-017); exam transport contract |
 | `/student/placement` | S-SELF-7 | [student-placement](./student-pages/student-placement.md) | built (mock) | v1 | ⛔ ADR-005 stub (DOC-017); placement contract |
 | `/student/progress` | S-ANL-1,2 | [student-progress](./student-pages/student-progress.md) | built (mock) | v1 | ⛔ shapes proposed in `04-progress-analytics.md` (unapproved, needs PR #73) |
