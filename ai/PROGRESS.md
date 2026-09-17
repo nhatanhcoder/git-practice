@@ -284,6 +284,9 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
       anonymized official-grade ranking (minimum three attempts, top 20 + caller rank) and four
       server-authoritative attempt badges. API e2e verifies privacy, ownership and RBAC; production
       pages contain no rivals/XP fixtures or local unlock state. No schema or badge reward added.
+      Full regression on 2026-09-17: API 33/33 files (346 tests), web 233/233 tests, both builds,
+      both type-checks, lint and docs checks pass. The run also closed API-018 by isolating and
+      cleaning the teacher-sessions e2e fixture; no production behavior changed.
 - ⬜ F6.3 Class dashboard (Teacher) · ⬜ F6.4 API Quota Monitoring (Admin)
 - ✅ (zcode · 2026-09-12) **S-BILL-1/2 Student invoice read path — SCOPE-BILL-01 closed.**
       `GET /student/invoices` + `GET /student/invoices/:id` (both defined in `API_STUDENT.md`

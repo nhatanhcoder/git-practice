@@ -1960,3 +1960,12 @@ global test runner.
 No new issue ID assigned. The implemented slice removes named rivals, XP, streak, retention and
 client-computed badge unlocks from both production routes. The wider F16 XP/rank/streak/catalog
 scope remains blocked and is not partially claimed by these four read-only attempt badges.
+### Resolution note — API-018 (2026-09-17)
+
+**Status**: Resolved on `codex/student-progress-live`.
+
+The teacher-sessions suite now creates a unique class for each run, lists the created session
+through that class filter, and deletes both session and class fixtures during teardown. This removes
+the shared-database pagination dependency without changing the production endpoint. The suite passed
+three consecutive isolated runs (6/6 each), followed by the complete API regression run: 33/33 test
+files and 346/346 tests passed.
