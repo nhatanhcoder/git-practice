@@ -32,3 +32,6 @@ this slice takes `04` so the two never collide whatever merges first.
 ## Source audits
 
 - [Foundation and Grammar source audit](foundation-grammar-source-audit.md) — audited 2026-09-10; content adoption and media remain blocked.
+
+- [04-mistakes](04-mistakes.md) — S-MSTK, implemented; Task B owner approval 2026-09-13; 8 invariants.
+- [05-learning-path](05-learning-path.md) — ✅ implemented vocabulary-first catalog and owned progress; 12 invariants.

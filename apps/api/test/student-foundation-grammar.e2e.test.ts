@@ -346,6 +346,13 @@ describe('Grammar — list and detail (G-read)', () => {
     assert.equal(cat.body.meta.total, 1);
     assert.equal(cat.body.data[0].id, 'g-e2e-2');
 
+    // Pinyin folds diacritics: bare-ASCII queries match marked pinyin.
+    const folded = await req('GET', '/student/grammar?search=wo%20ai', undefined, aToken);
+    assert.ok(
+      folded.body.data.some((g: { id: string }) => g.id === 'g-e2e-1'),
+      'unmarked query must match marked pinyin',
+    );
+
     const badLevel = await req('GET', '/student/grammar?hskLevel=99', undefined, aToken);
     assert.equal(badLevel.status, 400, JSON.stringify(badLevel.body));
   });
@@ -354,7 +361,7 @@ describe('Grammar — list and detail (G-read)', () => {
     const one = await req('GET', '/student/grammar/g-e2e-1', undefined, aToken);
     assert.equal(one.status, 200, JSON.stringify(one.body));
     assert.equal(one.body.data.id, 'g-e2e-1');
-    assert.ok(Array.isArray(one.body.data.tokens), 'tokens stay an array on the wire');
+    assert.ok(!('tokens' in one.body.data), 'the reorder answer never rides list/detail');
 
     const missing = await req('GET', '/student/grammar/gx-no-such', undefined, aToken);
     assert.equal(missing.status, 404, JSON.stringify(missing.body));
@@ -387,5 +394,125 @@ describe('Grammar — studied-state (G-progress / G-save)', () => {
     );
     assert.equal(unknown.status, 404, JSON.stringify(unknown.body));
     assert.equal(unknown.body.code, 'GRAMMAR_NOT_FOUND');
+  });
+});
+
+describe('Grammar — reorder practice (G-practice)', () => {
+  // Fixture g-e2e-1 carries tokens ['我', '爱', '你'] (seeded above).
+  const RIGHT = ['我', '爱', '你'];
+  const WRONG = ['你', '爱', '我'];
+  const SUBMIT = (submissionId: string, answer: string[]) => ({ submissionId, answer });
+
+  it('serves a shuffled bank without ever revealing the order', async () => {
+    const first = await req('GET', '/student/grammar/g-e2e-1/practice', undefined, aToken);
+    assert.equal(first.status, 200, JSON.stringify(first.body));
+    assert.equal(first.body.data.id, 'g-e2e-1');
+    assert.equal(first.body.data.hanziLength, 3);
+    assert.deepEqual([...first.body.data.tokens].sort(), [...RIGHT].sort());
+
+    const second = await req('GET', '/student/grammar/g-e2e-1/practice', undefined, aToken);
+    assert.deepEqual(second.body.data.tokens, first.body.data.tokens, 'deterministic per point');
+
+    const missing = await req('GET', '/student/grammar/gx-no-such/practice', undefined, aToken);
+    assert.equal(missing.status, 404, JSON.stringify(missing.body));
+    assert.equal(missing.body.code, 'GRAMMAR_NOT_FOUND');
+  });
+
+  it('grades server-side; replay is idempotent, conflict is rejected', async () => {
+    const { randomUUID } = await import('node:crypto');
+    const sub1 = randomUUID();
+    const sub2 = randomUUID();
+
+    const good = await req(
+      'POST',
+      '/student/grammar/g-e2e-1/practice',
+      SUBMIT(sub1, RIGHT),
+      aToken,
+    );
+    assert.equal(good.status, 200, JSON.stringify(good.body));
+    assert.equal(good.body.data.correct, true);
+    assert.deepEqual(good.body.data.expected, RIGHT);
+    assert.equal(good.body.data.attemptCount, 1);
+    assert.equal(good.body.data.correctCount, 1);
+
+    const bad = await req(
+      'POST',
+      '/student/grammar/g-e2e-1/practice',
+      SUBMIT(sub2, WRONG),
+      aToken,
+    );
+    assert.equal(bad.status, 200, JSON.stringify(bad.body));
+    assert.equal(bad.body.data.correct, false);
+    assert.equal(bad.body.data.attemptCount, 2);
+    assert.equal(bad.body.data.correctCount, 1);
+
+    // Lost-response replay: same submission, same answer — no double count.
+    const replay = await req(
+      'POST',
+      '/student/grammar/g-e2e-1/practice',
+      SUBMIT(sub1, RIGHT),
+      aToken,
+    );
+    assert.equal(replay.status, 200, JSON.stringify(replay.body));
+    assert.equal(replay.body.data.correct, true);
+    assert.equal(replay.body.data.attemptCount, 2, 'replay must not insert a second row');
+    assert.equal(replay.body.data.correctCount, 1);
+
+    // Same submission, different answer — the retry is corrupt, reject it.
+    const conflict = await req(
+      'POST',
+      '/student/grammar/g-e2e-1/practice',
+      SUBMIT(sub1, WRONG),
+      aToken,
+    );
+    assert.equal(conflict.status, 409, JSON.stringify(conflict.body));
+    assert.equal(conflict.body.code, 'GRAMMAR_PRACTICE_CONFLICT');
+  });
+
+  it('validates the submission envelope and the caller', async () => {
+    const { randomUUID } = await import('node:crypto');
+
+    const anon = await req(
+      'POST',
+      '/student/grammar/g-e2e-1/practice',
+      SUBMIT(randomUUID(), RIGHT),
+    );
+    assert.equal(anon.status, 401, JSON.stringify(anon.body));
+
+    const badUuid = await req(
+      'POST',
+      '/student/grammar/g-e2e-1/practice',
+      SUBMIT('not-a-uuid', RIGHT),
+      aToken,
+    );
+    assert.equal(badUuid.status, 400, JSON.stringify(badUuid.body));
+    assert.equal(badUuid.body.code, 'VALIDATION_ERROR');
+
+    const empty = await req(
+      'POST',
+      '/student/grammar/g-e2e-1/practice',
+      SUBMIT(randomUUID(), []),
+      aToken,
+    );
+    assert.equal(empty.status, 400, JSON.stringify(empty.body));
+
+    const smuggle = await req(
+      'POST',
+      '/student/grammar/g-e2e-1/practice',
+      { ...SUBMIT(randomUUID(), RIGHT), userId: 'someone-else' },
+      aToken,
+    );
+    assert.equal(smuggle.status, 400, JSON.stringify(smuggle.body));
+    assert.equal(smuggle.body.code, 'VALIDATION_ERROR');
+  });
+
+  it('exposes derived per-point counts in progress (no stored counters)', async () => {
+    const progress = await req('GET', '/student/grammar/progress', undefined, aToken);
+    const stats = progress.body.data.practice.find(
+      (s: { grammarId: string }) => s.grammarId === 'g-e2e-1',
+    );
+    assert.ok(stats, 'practice stats ride along with progress');
+    assert.equal(stats.attempts, 2);
+    assert.equal(stats.correct, 1);
   });
 });

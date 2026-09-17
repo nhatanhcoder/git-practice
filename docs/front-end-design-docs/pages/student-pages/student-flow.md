@@ -1,6 +1,6 @@
 ---
 status: active
-last_updated: 2026-09-10
+last_updated: 2026-09-14
 ---
 
 # Student Flow Map — SRS & Classes
@@ -229,7 +229,7 @@ proposal, not accepted API query parameters. Back/forward must restore the chose
 | FG11 | Grammar | Open point | inline study | BE: GET /student/grammar/:id (FE unwired) | `GRAMMAR_NOT_FOUND` |
 | FG12 | Grammar point | Close point | filtered list | none | — |
 | FG13 | Grammar point | Mark/unmark studied | same point, confirmed | BE: PUT /student/grammar/progress (FE unwired) | `GRAMMAR_NOT_FOUND` |
-| FG14 | Grammar point | Practise/submit | answer then confirmed result | ⛔ G-practice (deferred) | — (no endpoint) |
+| FG14 | Grammar point | Practise/submit | answer then confirmed result | POST /student/grammar/:id/practice (submissionId; live) | `GRAMMAR_PRACTICE_CONFLICT` |
 | FG15 | Grammar result | Continue study | point/list | none | — |
 | FG16 | Grammar | Retry failed read | same screen | BE errors per §9 (FE unwired) | per-error UI |
 | FG17 | Grammar | Return | Dashboard | none | — |
@@ -240,8 +240,7 @@ Proposed study state: not studied ⇄ explicitly studied, with set semantics rat
 blind toggle. Proposed practice state: ready → answering → submitting → confirmed result;
 failed/uncertain submit preserves the draft and does not auto-replay. Neither means mastery/XP.
 
-Missing by design: G-practice (deferred — no reviewed exercise manifest) and M-read
-(none — no licensed assets, D4).
+Missing by design: M-read (none — no licensed assets, D4).
 There is no Student create/delete/publish catalog path because existing permissions forbid it.
 No microphone-upload path, cloud scorer, Teacher progress surface, gamification event or
 Assignment-grade transition is introduced. No persisted-write edge is executable yet.
@@ -293,3 +292,10 @@ the server owns XP). Boss clears at ≥80% practice score. No Student catalog
 create/delete/publish path (permissions forbid it); no XP/badge server event; no
 Assignment-grade transition. Missing contracts: catalog path read, curriculum read,
 self-study progress read/write — all under API_STUDENT §83.
+
+### Task B — live mistake notebook
+Student sidebar -> /student/mistakes (GET list) -> /student/mistakes/review (GET pending session) -> POST /student/mistakes/:id/review -> server feedback -> next/finish. No local progress or XP writes.
+
+## Live vocabulary learning path — 2026-09-15
+
+`/student` → `/student/learning-path` (GET catalog) → `/:nodeId` (GET unit) → start (POST start) → acknowledge each word (POST study) → save choices (POST answers) → grade (POST complete) → next unit or retry. All progress belongs to token owner; no delete/reset/XP path.

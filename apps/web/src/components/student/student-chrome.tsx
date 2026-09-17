@@ -3,14 +3,13 @@
 /**
  * Layout switch for the Student area.
  *
- * The public Hán Lộ landing page used to live at `/student/landing` and needed an
- * exemption here (it renders its own `SiteShell`, not the app's `StudentShell`).
- * It moved to `/landing` — outside this segment entirely — so the exemption is
- * gone and every remaining Student route keeps the app shell. The component stays
- * as the single place a future public sibling would hook into.
+ * Every Student route renders inside the app shell (`StudentShell` — rail + HUD).
+ * The prototype landing page that once bypassed it was removed (WEB-017,
+ * 2026-09-12); the component stays as the single place a future public page
+ * would hook into.
  *
  * CSS imports stay in `student/layout.tsx` on purpose: they are global once
- * imported, so the landing route reuses the same Hán Lộ tokens, utilities and
+ * imported, so every Student route shares the same Hán Lộ tokens, utilities and
  * `.btn/.panel/.pill/.seal/.modal` chrome scoped to `.student-root`.
  */
 

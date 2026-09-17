@@ -1,3 +1,8 @@
+---
+status: active
+last_updated: 2026-09-14
+---
+
 # ⚠️ API_ERROR_CODES.md — Standardised Error Responses
 
 > **In effect from**: Sprint 1  
@@ -178,6 +183,7 @@ progress record.
 | Code | HTTP | Description |
 |------|------|-------|
 | `GRAMMAR_NOT_FOUND` | 404 | No grammar item with that id exists in the catalogue |
+| `GRAMMAR_PRACTICE_CONFLICT` | 409 | Same practice `submissionId` retried with a different answer (option-A port 2026-09-16) |
 
 ### Placement Errors (PLACEMENT_*) — added 2026-09-13, Task C (`modules/student/04-placement.md`)
 
@@ -403,3 +409,19 @@ export function handleApiError(error: AxiosError) {
   }
 }
 ```
+
+## Mistake notebook — approved Task B 2026-09-13
+
+| Code | HTTP | Meaning |
+|---|---|---|
+| MISTAKE_NOT_FOUND | 404 | Missing, foreign or unavailable mistake |
+| MISTAKE_REVIEW_STALE | 409 | Version changed or already resolved; reload session |
+
+## Learning path — approved 2026-09-15
+
+| Code | HTTP | Meaning |
+|---|---|---|
+| LEARNING_UNIT_NOT_FOUND | 404 | Invalid or unpublished unit |
+| LEARNING_UNIT_LOCKED | 403 | Previous unit not completed |
+| LEARNING_PROGRESS_CONFLICT | 409 | Stale revision, not started or already completed |
+| LEARNING_STEP_INVALID | 400 | Study/answer/completion precondition fails |

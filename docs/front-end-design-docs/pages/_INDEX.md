@@ -1,7 +1,7 @@
 ---
 status: active
 owner: Nhật
-last_updated: 2026-09-10
+last_updated: 2026-09-16
 ---
 
 # Page Contracts — Index
@@ -80,7 +80,8 @@ Analytics (T-ANL-1…4): _not yet mapped._ Every other Teacher area has a contra
 | `/student/attempts/[attemptId]` | S-ASGN-2..6 | [student-attempt-take](./student-pages/student-attempt-take.md) | built (live) | v1 | **LIVE on attempt endpoints (Sprint 4)** — autosave debounce + server-enforced deadline; attempt status needs no mock |
 | `/student/attempts/[attemptId]/result` | S-ASGN-7,8 | [student-attempt-result](./student-pages/student-attempt-result.md) | built (live) | v1 | **LIVE on GET result (Sprint 4)** — partial (submitted) never presented as final; keys only at graded |
 | `/student/notifications` | S-BILL-3 + Notifications table | [student-notifications](./student-pages/student-notifications.md) | built | v1 | — (module 07 live; role-agnostic `/api/v1/notifications` per 07-notifications.md) |
-| `/student/mistakes` | S-MSTK | [student-mistakes](./student-pages/student-mistakes.md) | built (mock) | v1 | ⛔ mistake-collection endpoints (Needs lane) |
+| `/student/mistakes` | S-MSTK | [student-mistakes](./student-pages/student-mistakes.md) | built (live) | v1 | — |
+| `/student/mistakes/review` | S-MSTK | [student-mistakes-review](./student-pages/student-mistakes-review.md) | built (live) | v1 | — |
 | `/student/exams` | S-SELF-7 | [student-exams](./student-pages/student-exams.md) | built (mock) | v1 | ⛔ ADR-005 is a 0-byte stub (DOC-017); exam transport contract |
 | `/student/placement` | S-SELF-7 | [student-placement](./student-pages/student-placement.md) | built (mock) | v1 | ⛔ ADR-005 stub (DOC-017); placement contract |
 | `/student/progress` | S-ANL-1,2 | [student-progress](./student-pages/student-progress.md) | built (live) | v1 | own graded attempts; 8/12 full UTC-week windows |
@@ -90,13 +91,13 @@ Analytics (T-ANL-1…4): _not yet mapped._ Every other Teacher area has a contra
 | `/student/lego` | S-SELF-5 | [student-lego](./student-pages/student-lego.md) | built (mock) | v1 | ⛔ DOC-011 corpus + progress contract |
 | `/student/workplace` | S-SELF-6 | [student-workplace](./student-pages/student-workplace.md) | built (mock) | v1 | ⛔ DOC-011 corpus + scorer contract |
 | `/student/foundation` | S-SELF-2,9 | [student-foundation](./student-pages/student-foundation.md) | built | v1 | live 2026-09-16 (catalog + studied-state); audio/PDF/record intentionally unavailable (D4) |
-| `/student/grammar` | S-SELF-3,9 | [student-grammar](./student-pages/student-grammar.md) | contracted (proposed) | — | ⛔ source, schema, API and exercise approval |
+| `/student/grammar` | S-SELF-3,9 | [student-grammar](./student-pages/student-grammar.md) | built | v1 | live 2026-09-16 (catalog/progress/save + reorder practice, option A); media absent (D4) |
 | `/student/invoices` | S-BILL-1 | [student-invoices](./student-pages/student-invoices.md) | built | v1 | — (endpoints defined in [API_STUDENT.md](../../api/API_STUDENT.md) § Billing; dedicated handler per SCOPE-BILL-01) |
 | `/student/invoices/[invoiceId]` | S-BILL-2 | [student-invoice-detail](./student-pages/student-invoice-detail.md) | built | v1 | — (embedded `payments[]`; `new_invoice` notification deep-link target) |
-| `/student/learning-path` | S-SELF-1,9 | [student-learning-path](./student-pages/student-learning-path.md) | contracted (proposed) | — | ⛔ catalog paths, progress reads/writes |
-| `/student/learning-path/[nodeId]` | S-SELF-1,9 | [student-learning-path-node](./student-pages/student-learning-path-node.md) | contracted (proposed) | — | ⛔ catalog read, progress write |
+| `/student/learning-path` | S-SELF-1,9 | [student-learning-path](./student-pages/student-learning-path.md) | built | v1 | live approved Hán Lộ catalog + owned progress; textbook catalogs empty |
+| `/student/learning-path/[nodeId]` | S-SELF-1,9 | [student-learning-path-node](./student-pages/student-learning-path-node.md) | built | v1 | live study, quiz, server grade and prerequisite unlock |
 
-Foundation live since 2026-09-16 (catalog + studied-state); Grammar endpoints live but its UI is still mock-backed. G-practice and media are intentionally absent (deferred / D4).
+Foundation live since 2026-09-16 (catalog + studied-state); Grammar live since 2026-09-16 (catalog/progress/save + reorder practice, option A). Media are intentionally absent (D4).
 
 Every built `/student/**` route now has a contract. The `built (mock)` rows are prototype screens with **no approved backend** — their contracts carry the ⛔ blockers and the corresponding entries in `ai/PROGRESS.md` § "Needs from the other lane"; they must not be wired to invented endpoints.
 

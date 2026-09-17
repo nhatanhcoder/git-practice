@@ -87,6 +87,7 @@ model User {
   notifications    Notification[]        @relation("UserNotifications")
   marketingProfile UserMarketingProfile? @relation("UserMarketingProfile")
   studyProgress    UserStudyProgress[]   @relation("UserStudyProgress")
+  grammarAttempts  GrammarPracticeAttempt[] @relation("GrammarPracticeAttempts")
 
   @@index([status])
   @@index([role, status])
@@ -666,4 +667,29 @@ model UserStudyProgress {
   @@unique([userId, contentKind, contentKey])
   @@index([userId])
   @@map("user_study_progress")
+}
+
+// ============================================================================
+// Grammar reorder-practice attempts — one row per submitted attempt.
+//
+// 02-foundation-grammar.md §1 (option-A port 2026-09-16). Counts are DERIVED by
+// COUNT queries, never stored counters: a retry with the same submissionId
+// returns the stored row instead of inserting (rule 5), and the unique index
+// collapses concurrent duplicates. Practice never writes UserStudyProgress —
+// self-reported study and confirmed practice are separate concepts (§6).
+// ============================================================================
+model GrammarPracticeAttempt {
+  id           String   @id @default(uuid()) @db.Uuid
+  userId       String   @map("user_id") @db.Uuid
+  grammarId    String   @map("grammar_id") @db.VarChar(120)
+  submissionId String   @map("submission_id") @db.Uuid
+  answer       Json
+  correct      Boolean
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  user User @relation("GrammarPracticeAttempts", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, grammarId, submissionId])
+  @@index([userId, grammarId])
+  @@map("grammar_practice_attempts")
 }
