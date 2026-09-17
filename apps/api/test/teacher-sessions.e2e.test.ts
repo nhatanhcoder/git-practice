@@ -11,6 +11,7 @@ import { AppException } from '../dist/src/common/errors/app.exception';
 import { ErrorCode } from '../dist/src/common/errors/error-codes';
 import { PrismaService } from '../dist/src/prisma/prisma.service';
 import bcrypt from 'bcryptjs';
+import { randomUUID } from 'node:crypto';
 
 const PREFIX = 'api/v1';
 
@@ -134,23 +135,25 @@ describe('Teacher Sessions Endpoints (GET /teacher/sessions & Ownership)', () =>
     });
     studentToken = loginS.body.data.accessToken;
 
-    // Ensure Teacher A has a class
-    let cls = await prisma.class.findFirst({ where: { teacherId: teacherIdA } });
-    if (!cls) {
-      cls = await prisma.class.create({
-        data: {
-          teacherId: teacherIdA,
-          name: 'Lớp Giáo Viên A',
-          hskLevel: 3,
-          enrollmentCode: 'TSES' + Math.floor(Math.random() * 9000 + 1000),
-          status: 'active',
-        },
-      });
-    }
+    // Use an isolated class so repeated runs cannot push this suite's session
+    // beyond the first result page with leftover fixtures.
+    const cls = await prisma.class.create({
+      data: {
+        teacherId: teacherIdA,
+        name: 'Lớp Giáo Viên A — teacher sessions e2e',
+        hskLevel: 3,
+        enrollmentCode: randomUUID().slice(0, 8).toUpperCase(),
+        status: 'active',
+      },
+    });
     classAId = cls.id;
   });
 
   after(async () => {
+    if (prisma && classAId) {
+      await prisma.classSession.deleteMany({ where: { classId: classAId } });
+      await prisma.class.deleteMany({ where: { id: classAId } });
+    }
     if (app) await app.close();
   });
 
@@ -175,8 +178,13 @@ describe('Teacher Sessions Endpoints (GET /teacher/sessions & Ownership)', () =>
     createdSessionId = res.body.data.id;
   });
 
-  it('2. Teacher A lists sessions via GET /teacher/sessions and sees the created session', async () => {
-    const res = await req('GET', '/teacher/sessions', undefined, teacherTokenA);
+  it('2. Teacher A lists the isolated class sessions and sees the created session', async () => {
+    const res = await req(
+      'GET',
+      `/teacher/sessions?classId=${classAId}`,
+      undefined,
+      teacherTokenA,
+    );
 
     assert.equal(res.status, 200);
     assert.ok(Array.isArray(res.body.data));
