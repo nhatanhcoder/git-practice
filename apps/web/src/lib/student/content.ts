@@ -5,10 +5,10 @@
  * Mockup mode per docs/prompts/student-product/. No API call anywhere; remove
  * this whole module when the real content endpoints exist.
  *
- * Content that already had a mock module in this repo is NOT duplicated here —
- * pinyin/tones/sandhi/listening/speaking/PDFs come from `foundation-data.ts`,
- * the 214 Kangxi radicals from `radicals-data.ts`, grammar from
- * `grammar-data.ts`, the path from `learning-path-data.ts`.
+ * Content that already had a mock module in this repo was NOT duplicated here.
+ * (The `foundation-data.ts` / `radicals-data.ts` / `grammar-data.ts` /
+ * `learning-path-data.ts` modules were removed in the 2026-09-17 mock cleanup
+ * once live endpoints replaced them.)
  *
  * ⚠️ The prototype this is distilled from ships 940 KB of real content
  * (587 characters, 76 grammar points, 11 exams, 214 radicals). That corpus is
@@ -30,7 +30,6 @@ import type {
   SkillScore,
   StreakDay,
   StreakMilestone,
-  VocabCard,
   WeekDay,
   WritingChar,
 } from "./types";
@@ -107,37 +106,6 @@ export const activity: ActivityItem[] = [
   { id: "a5", kind: "boss", text: "Hạ ải trùm «Chợ Nghĩa Ô»", detail: "3 sao", at: "2026-08-30T10:02:00Z", xp: 250 },
   { id: "a6", kind: "streak", text: "Giữ chuỗi 12 ngày liên tiếp", at: "2026-08-29T22:30:00Z" },
   { id: "a7", kind: "lesson", text: "Hoàn thành bài «Hỏi đường»", detail: "HSK 3 · Chặng 7", at: "2026-08-28T12:15:00Z", xp: 120 },
-];
-
-/* ------------------------------------------------------------------
-   Vocabulary flashcards
------------------------------------------------------------------- */
-
-export const vocabCards: VocabCard[] = [
-  { id: "v1", hanzi: "朋友", pinyin: "péngyou", vi: "bạn bè", level: 1, topic: "Con người", examples: [{ word: "好朋友", pinyin: "hǎo péngyou", vi: "bạn thân" }] },
-  { id: "v2", hanzi: "老师", pinyin: "lǎoshī", vi: "giáo viên", level: 1, topic: "Con người", examples: [{ word: "语文老师", pinyin: "yǔwén lǎoshī", vi: "giáo viên ngữ văn" }] },
-  { id: "v3", hanzi: "学生", pinyin: "xuésheng", vi: "học sinh", level: 1, topic: "Con người", examples: [{ word: "留学生", pinyin: "liúxuéshēng", vi: "du học sinh" }] },
-  { id: "v4", hanzi: "医生", pinyin: "yīshēng", vi: "bác sĩ", level: 1, topic: "Nghề nghiệp", examples: [{ word: "看医生", pinyin: "kàn yīshēng", vi: "đi khám bác sĩ" }] },
-  { id: "v5", hanzi: "商店", pinyin: "shāngdiàn", vi: "cửa hàng", level: 1, topic: "Nơi chốn", examples: [{ word: "去商店", pinyin: "qù shāngdiàn", vi: "đi cửa hàng" }] },
-  { id: "v6", hanzi: "医院", pinyin: "yīyuàn", vi: "bệnh viện", level: 1, topic: "Nơi chốn", examples: [{ word: "在医院", pinyin: "zài yīyuàn", vi: "ở bệnh viện" }] },
-  { id: "v7", hanzi: "喜欢", pinyin: "xǐhuan", vi: "thích", level: 1, topic: "Động từ", examples: [{ word: "很喜欢", pinyin: "hěn xǐhuan", vi: "rất thích" }] },
-  { id: "v8", hanzi: "吃饭", pinyin: "chīfàn", vi: "ăn cơm", level: 1, topic: "Động từ", examples: [{ word: "吃午饭", pinyin: "chī wǔfàn", vi: "ăn trưa" }] },
-  { id: "v9", hanzi: "工作", pinyin: "gōngzuò", vi: "làm việc / công việc", level: 2, topic: "Công việc", examples: [{ word: "找工作", pinyin: "zhǎo gōngzuò", vi: "tìm việc" }] },
-  { id: "v10", hanzi: "帮助", pinyin: "bāngzhù", vi: "giúp đỡ", level: 2, topic: "Động từ", examples: [{ word: "帮助别人", pinyin: "bāngzhù biérén", vi: "giúp người khác" }] },
-  { id: "v11", hanzi: "希望", pinyin: "xīwàng", vi: "hy vọng", level: 2, topic: "Động từ", examples: [{ word: "希望你好", pinyin: "xīwàng nǐ hǎo", vi: "mong bạn khoẻ" }] },
-  { id: "v12", hanzi: "旅游", pinyin: "lǚyóu", vi: "du lịch", level: 2, topic: "Hoạt động", examples: [{ word: "去旅游", pinyin: "qù lǚyóu", vi: "đi du lịch" }] },
-  { id: "v13", hanzi: "便宜", pinyin: "piányi", vi: "rẻ", level: 2, topic: "Tính từ", examples: [{ word: "很便宜", pinyin: "hěn piányi", vi: "rất rẻ" }] },
-  { id: "v14", hanzi: "漂亮", pinyin: "piàoliang", vi: "đẹp", level: 2, topic: "Tính từ", examples: [{ word: "真漂亮", pinyin: "zhēn piàoliang", vi: "đẹp thật" }] },
-  { id: "v15", hanzi: "特别", pinyin: "tèbié", vi: "đặc biệt", level: 3, topic: "Trạng từ", examples: [{ word: "特别好", pinyin: "tèbié hǎo", vi: "đặc biệt tốt" }] },
-  { id: "v16", hanzi: "环境", pinyin: "huánjìng", vi: "môi trường", level: 3, topic: "Xã hội", examples: [{ word: "保护环境", pinyin: "bǎohù huánjìng", vi: "bảo vệ môi trường" }] },
-  { id: "v17", hanzi: "经济", pinyin: "jīngjì", vi: "kinh tế", level: 3, topic: "Xã hội", examples: [{ word: "经济发展", pinyin: "jīngjì fāzhǎn", vi: "phát triển kinh tế" }] },
-  { id: "v18", hanzi: "解决", pinyin: "jiějué", vi: "giải quyết", level: 3, topic: "Động từ", examples: [{ word: "解决问题", pinyin: "jiějué wèntí", vi: "giải quyết vấn đề" }] },
-  { id: "v19", hanzi: "机会", pinyin: "jīhuì", vi: "cơ hội", level: 3, topic: "Danh từ", examples: [{ word: "好机会", pinyin: "hǎo jīhuì", vi: "cơ hội tốt" }] },
-  { id: "v20", hanzi: "计划", pinyin: "jìhuà", vi: "kế hoạch", level: 3, topic: "Danh từ", examples: [{ word: "做计划", pinyin: "zuò jìhuà", vi: "lập kế hoạch" }] },
-  { id: "v21", hanzi: "责任", pinyin: "zérèn", vi: "trách nhiệm", level: 4, topic: "Xã hội", examples: [{ word: "负责任", pinyin: "fù zérèn", vi: "chịu trách nhiệm" }] },
-  { id: "v22", hanzi: "效率", pinyin: "xiàolǜ", vi: "hiệu suất", level: 4, topic: "Công việc", examples: [{ word: "提高效率", pinyin: "tígāo xiàolǜ", vi: "nâng cao hiệu suất" }] },
-  { id: "v23", hanzi: "竞争", pinyin: "jìngzhēng", vi: "cạnh tranh", level: 4, topic: "Công việc", examples: [{ word: "市场竞争", pinyin: "shìchǎng jìngzhēng", vi: "cạnh tranh thị trường" }] },
-  { id: "v24", hanzi: "影响", pinyin: "yǐngxiǎng", vi: "ảnh hưởng", level: 4, topic: "Động từ", examples: [{ word: "受影响", pinyin: "shòu yǐngxiǎng", vi: "bị ảnh hưởng" }] },
 ];
 
 /* ------------------------------------------------------------------

@@ -5,11 +5,12 @@
  *
  * **This file only declares shapes that did not already exist in the repo.**
  * Pinyin initials/finals, tones, sandhi, the 214 Kangxi radicals, listening and
- * speaking cards, PDFs, grammar points and the learning-path nodes all already
- * had mock modules with real content (`foundation-data.ts`, `radicals-data.ts`,
- * `grammar-data.ts`, `learning-path-data.ts`, `mock-user.ts`) — those are reused
- * as-is rather than redeclared here, so there is never a second `GrammarPoint`
- * for the next agent to pick the wrong one of.
+ * speaking cards, PDFs, grammar points and the learning-path nodes used to have
+ * mock modules with real content (`foundation-data.ts`, `radicals-data.ts`,
+ * `grammar-data.ts`, `learning-path-data.ts`, `mock-user.ts`) — removed in the
+ * 2026-09-17 mock cleanup once the live endpoints replaced them; the remaining
+ * mock shapes below back the still-mocked pages (progress, leaderboard, badges,
+ * lego, workplace, writing) and must not be mistaken for wire contracts.
  *
  * The structural rule carried over from the prototype, and worth keeping:
  * **learner state never lives inside a content definition.** `Exam` has no
@@ -83,16 +84,6 @@ export interface WordExample {
   word: string;
   pinyin: string;
   vi: string;
-}
-
-export interface VocabCard {
-  id: string;
-  hanzi: string;
-  pinyin: string;
-  vi: string;
-  level: number;
-  topic: string;
-  examples: WordExample[];
 }
 
 /* ------------------------------------------------------------------
