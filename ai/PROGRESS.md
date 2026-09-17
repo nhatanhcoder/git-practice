@@ -431,6 +431,11 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
 
 ## Off-sprint / spike
 
+- 🔶 (opencode · 2026-09-17) **Student mock cleanup** — branch `chore/student-mock-cleanup`.
+  Delete 5 orphan mock modules (foundation/radicals/grammar/learning-path/lms-data)
+  + unused `vocabCards`/`VocabCard`; update A12, headers, 1 lint suppression.
+  `content.ts`/`store.ts`/rules stay (7 mock pages + shell still consume them).
+
 - ✅ (zcode · 2026-09-14) **WEB-017 final — the /landing prototype removed again (owner's
       recorded "Gỡ trang + redirect" decision governs; re-confirmed by the Task F re-issue with
       the hard constraint "Không để trang public nào còn dữ liệu bịa").** PR #83's restored

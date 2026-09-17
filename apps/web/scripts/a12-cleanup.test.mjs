@@ -14,9 +14,13 @@ import { describe, it } from "node:test";
  *   - the persist layer migrates v1 localStorage (which still carries the old
  *     `vocabBox` key) to v2 by dropping it — otherwise the default merge
  *     re-attaches the stale key as junk state forever;
- *   - everything that IS still consumed stays: `vocabCards`, `advanceBox`,
+ *   - everything that IS still consumed stays: `advanceBox`,
  *     `boxInterval`, `mistakeSeed` (the audit caught its own first pass almost
  *     mislabeling mistakeSeed as dead because the script had excluded store.ts).
+ * 2026-09-17 mock cleanup: `vocabCards`/`VocabCard` had zero consumers (the live
+ * vocabulary path serves its own catalog) and were removed with the five orphan
+ * mock modules (`foundation-data`, `radicals-data`, `grammar-data`,
+ * `learning-path-data`, `lms-data`); the test below pins the removal.
  */
 
 const read = (p) => readFileSync(new URL(p, import.meta.url), "utf8");
@@ -70,8 +74,8 @@ describe("A12 · persist migration to v2", () => {
 });
 
 describe("A12 · still-consumed neighbours survive", () => {
-  it("keeps vocabCards (learning-path lesson quiz uses it)", () => {
-    assert.match(content, /export const vocabCards/);
+  it("vocabCards and VocabCard stay removed (zero consumers since the live catalog)", () => {
+    assert.doesNotMatch(content, /vocabCards/, "vocabCards must not come back");
   });
 
   it("keeps advanceBox (reviewMistake uses it) and boxInterval (dashboard/notebook use it)", () => {
