@@ -1,0 +1,24 @@
+.metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--sp-6); }
+.twoColumns { display: grid; grid-template-columns: minmax(0, .85fr) minmax(0, 1.35fr); gap: var(--sp-5); }
+.tableScroll { max-width: 100%; overflow-x: auto; }
+.heatmap, .scoreTable { width: 100%; border-collapse: separate; border-spacing: 6px; font-size: var(--step--1); }
+.heatmap th, .scoreTable th { color: var(--text-3); font-weight: 600; text-align: left; white-space: nowrap; }
+.heatmap td { min-width: 76px; padding: 12px 8px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-2); color: var(--text-2); text-align: center; font-variant-numeric: tabular-nums; }
+.heatmap td[data-level="1"] { background: color-mix(in srgb, var(--accent) 18%, var(--surface-2)); }
+.heatmap td[data-level="2"] { background: color-mix(in srgb, var(--accent) 34%, var(--surface-2)); }
+.heatmap td[data-level="3"] { background: color-mix(in srgb, var(--accent) 52%, var(--surface-2)); }
+.heatmap td[data-level="4"] { background: color-mix(in srgb, var(--accent) 72%, var(--surface-2)); color: var(--text-1); }
+.skills { display: grid; gap: var(--sp-5); }
+.skill { display: grid; gap: var(--sp-2); }
+.skill > div { display: flex; justify-content: space-between; gap: var(--sp-3); }
+.skill span { color: var(--text-3); font-variant-numeric: tabular-nums; }
+.chart { min-height: 240px; display: grid; grid-template-columns: repeat(12, minmax(34px, 1fr)); align-items: end; gap: 8px; overflow-x: auto; padding-top: var(--sp-4); }
+.chartColumn { min-width: 34px; display: grid; grid-template-rows: 22px 170px 32px; gap: 6px; color: var(--text-3); font-size: 10px; text-align: center; }
+.chartValue { color: var(--text-2); font-variant-numeric: tabular-nums; }
+.chartTrack { position: relative; align-self: stretch; border-bottom: 1px solid var(--line); border-radius: 7px 7px 0 0; background: var(--surface-2); overflow: hidden; }
+.chartTrack span { position: absolute; inset: auto 0 0; border-radius: 7px 7px 0 0; background: linear-gradient(180deg, var(--accent), var(--accent-strong)); }
+.scoreTable { border-spacing: 0; }
+.scoreTable th, .scoreTable td { padding: 10px; border-bottom: 1px solid var(--line); text-align: left; font-variant-numeric: tabular-nums; }
+.noChart { display: flex; align-items: center; gap: 8px; margin-top: var(--sp-3); color: var(--text-3); font-size: var(--step--1); }
+@media (max-width: 820px) { .twoColumns { grid-template-columns: 1fr; } }
+@media (max-width: 560px) { .metrics { grid-template-columns: 1fr; gap: var(--sp-4); } .heatmap { min-width: 420px; } }

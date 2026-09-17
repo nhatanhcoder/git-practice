@@ -1,201 +1,35 @@
 "use client";
 
-/**
- * /student/leaderboard — where you stand.
- *
- * Three periods over one set of rivals; the learner is inserted at their real
- * XP rather than pinned to a flattering position.
- *
- * MOCK(student): the rivals are simulated (`content.rivals`) and their XP comes
- * from a deterministic formula — see `getLeaderboard`. Nobody else is real.
- */
-
-import { useMemo, useState } from "react";
-import { Crown, Medal, TrendingDown, TrendingUp, Trophy } from "lucide-react";
-import {
-  Chip,
-  ErrorState,
-  Metric,
-  PageHead,
-  Panel,
-  SectionHeader,
-  SkeletonPanel,
-} from "@/components/student/primitives";
-import { DemoStateSwitcher, Segmented, type DemoState } from "@/components/student/controls";
-import { useStudentProfile } from "@/lib/student/store";
-import { rivals } from "@/lib/student/content";
-import { getLeaderboard } from "@/lib/student/student-rules";
-import type { LeaderScope } from "@/lib/student/types";
-import { UnavailableState } from "@/components/student/unavailable-state";
-
-const SCOPE_LABEL: Record<LeaderScope, string> = {
-  week: "Tuần này",
-  month: "Tháng này",
-  all: "Mọi thời điểm",
-};
+import { useCallback, useEffect, useState } from "react";
+import { ShieldCheck, Trophy } from "lucide-react";
+import { EmptyState, ErrorState, Metric, PageHead, Panel, SkeletonPanel } from "@/components/student/primitives";
+import { ApiError } from "@/lib/api-client";
+import { fetchLeaderboard, type LeaderboardResponse } from "@/lib/student/gamification-service";
+import styles from "./leaderboard.module.css";
 
 export default function LeaderboardPage() {
-  const [demo, setDemo] = useState<DemoState>("ready");
-  const [scope, setScope] = useState<LeaderScope>("week");
-  const profile = useStudentProfile();
+  const [data, setData] = useState<LeaderboardResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<unknown>(null);
+  const load = useCallback(async () => {
+    setLoading(true); setError(null);
+    try { setData(await fetchLeaderboard()); } catch (reason) { setData(null); setError(reason); }
+    finally { setLoading(false); }
+  }, []);
+  useEffect(() => { void load(); }, [load]);
 
-  const rows = useMemo(
-    () =>
-      getLeaderboard(
-        rivals,
-        {
-          id: profile.id,
-          name: profile.name,
-          initials: profile.initials,
-          currentLevel: profile.currentLevel,
-          xp: profile.xp,
-        },
-        scope,
-      ),
-    [profile, scope],
-  );
-
-  const you = rows.find((r) => r.isYou);
-  const podium = rows.slice(0, 3);
-  const rest = rows.slice(3);
-
-  // Production renders the unavailable state, but only AFTER every hook has run —
-  // an early return above them would make the component conditionally hooked, which
-  // React forbids (A05 fixed this for /mistakes/review; this file follows the same rule).
-  if (process.env.NODE_ENV === "production") {
-    return (
-      <UnavailableState
-        title="Bảng xếp hạng"
-        description="Bảng xếp hạng chưa được kết nối máy chủ dữ liệu trong phiên bản hiện tại. Vui lòng quay lại sau."
-      />
-    );
-  }
-
-  return (
-    <>
-      <PageHead
-        eyebrow="Cộng đồng"
-        title="Bảng xếp hạng"
-        sub="So sánh XP với các học viên cùng cấp độ HSK. Toàn bộ tên và điểm ở đây là dữ liệu demo được sinh cục bộ — bản prototype không có dịch vụ realtime."
-        action={<DemoStateSwitcher value={demo} onChange={setDemo} />}
-      />
-
-      <Panel className="panel--pad">
-        <div className="row gap-4 wrap">
-          <Segmented
-            options={(Object.keys(SCOPE_LABEL) as LeaderScope[]).map((k) => ({
-              value: k,
-              label: SCOPE_LABEL[k],
-            }))}
-            value={scope}
-            onChange={setScope}
-            label="Kỳ xếp hạng"
-          />
-          <div className="grow" />
-          {you ? (
-            <Chip tone="accent">
-              Hạng của bạn: <span className="num">#{you.rank}</span>
-            </Chip>
-          ) : null}
-        </div>
-      </Panel>
-
-      {demo === "loading" ? (
-        <SkeletonPanel rows={6} height={180} />
-      ) : demo === "error" ? (
-        <Panel className="panel--pad">
-          <ErrorState onRetry={() => setDemo("ready")} />
-        </Panel>
-      ) : (
-        <>
-          {/* ---------- Podium ---------- */}
-          <Panel className="panel--pad">
-            <SectionHeader title="Bục vinh danh" sub={SCOPE_LABEL[scope]} />
-            <div className="podium">
-              {[podium[1], podium[0], podium[2]].filter(Boolean).map((r) => (
-                <div
-                  key={r.id}
-                  className={`podium__slot podium__slot--${r.rank}`}
-                  style={r.rank === 1 ? { paddingTop: "var(--sp-6)" } : undefined}
-                >
-                  {r.rank === 1 ? <Crown size={20} style={{ color: "var(--gold-400)" }} /> : null}
-                  <span className="avatar avatar--lg han">{r.initials}</span>
-                  <span className="podium__rank num">#{r.rank}</span>
-                  <span style={{ fontWeight: 650, textAlign: "center" }}>{r.name}</span>
-                  <span style={{ color: "var(--text-3)", fontSize: "var(--step--2)" }}>
-                    HSK {r.level} · <span className="num">{r.xp.toLocaleString("vi-VN")}</span> XP
-                  </span>
-                  {r.isYou ? <Chip tone="accent">Bạn</Chip> : null}
-                </div>
-              ))}
-            </div>
-          </Panel>
-
-          {/* ---------- Your standing ---------- */}
-          {you ? (
-            <Panel className="panel--pad">
-              <div className="grid grid--4">
-                <Metric label="Hạng" value={`#${you.rank}`} icon={<Trophy size={14} />} />
-                <Metric label="XP trong kỳ" value={you.xp.toLocaleString("vi-VN")} />
-                <Metric
-                  label="Thay đổi hạng"
-                  value={you.delta > 0 ? `+${you.delta}` : String(you.delta)}
-                />
-                <Metric label="Tổng người chơi" value={rows.length} />
-              </div>
-            </Panel>
-          ) : null}
-
-          {/* ---------- Full board ---------- */}
-          <Panel>
-            <div className="panel__head">
-              <div>
-                <h2 className="section-title" style={{ fontSize: "var(--step-2)" }}>
-                  Bảng xếp hạng đầy đủ
-                </h2>
-                <p className="section-sub">Từ hạng 4 trở xuống</p>
-              </div>
-            </div>
-            <div className="panel__body panel__body--flush">
-              {rest.map((r) => (
-                <div key={r.id} className={`board-row ${r.isYou ? "is-you" : ""}`}>
-                  <span className="board-row__rank num">#{r.rank}</span>
-                  <span className="avatar han" aria-hidden="true">
-                    {r.initials}
-                  </span>
-                  <span className="grow stack gap-1">
-                    <span style={{ fontWeight: r.isYou ? 700 : 500 }}>
-                      {r.name} {r.isYou ? "(bạn)" : ""}
-                    </span>
-                    <span style={{ color: "var(--text-3)", fontSize: "var(--step--2)" }}>
-                      HSK {r.level}
-                    </span>
-                  </span>
-                  <span
-                    className="row gap-1"
-                    style={{
-                      color: r.delta >= 0 ? "var(--success)" : "var(--danger)",
-                      fontSize: "var(--step--2)",
-                    }}
-                  >
-                    {r.delta >= 0 ? <TrendingUp size={13} /> : <TrendingDown size={13} />}
-                    <span className="num">{Math.abs(r.delta)}</span>
-                  </span>
-                  <span className="num" style={{ width: 84, textAlign: "right", fontWeight: 650 }}>
-                    {r.xp.toLocaleString("vi-VN")}
-                  </span>
-                </div>
-              ))}
-            </div>
-            <div className="panel__foot">
-              <span style={{ color: "var(--text-3)", fontSize: "var(--step--2)" }}>
-                <Medal size={12} style={{ display: "inline" }} /> MOCK: 20 đối thủ là dữ liệu mô
-                phỏng, không phải người dùng thật.
-              </span>
-            </div>
-          </Panel>
-        </>
-      )}
-    </>
-  );
+  return <>
+    <PageHead eyebrow="Kết quả chính thức" title="Bảng xếp hạng" sub="Xếp hạng theo tổng điểm đạt được trên tổng điểm tối đa. Danh tính học viên khác luôn được ẩn." />
+    <Panel className="panel--pad">
+      <div className={styles.notice}><ShieldCheck size={20} /><div><strong>Riêng tư theo mặc định</strong><p>Mỗi học viên dùng một bí danh ổn định. Cần ít nhất 3 bài chính thức đã chấm để tham gia.</p></div></div>
+    </Panel>
+    {loading ? <SkeletonPanel rows={8} height={180} /> : error ? <Panel className="panel--pad"><ErrorState title={error instanceof ApiError && error.isForbidden ? "Bạn không có quyền xem bảng" : "Không tải được bảng xếp hạng"} text="Không hiển thị dữ liệu cũ hoặc đối thủ mô phỏng. Hãy kiểm tra kết nối rồi thử lại." onRetry={() => void load()} /></Panel> : !data || data.eligibleCount === 0 ? <Panel className="panel--pad"><EmptyState icon={<Trophy size={26} />} title="Chưa có học viên đủ điều kiện" text="Bảng sẽ mở khi có học viên hoàn thành ít nhất 3 bài chính thức đã chấm." /></Panel> : <>
+      <Panel className="panel--pad"><div className={styles.metrics}><Metric label="Hạng của bạn" value={data.me ? `#${data.me.rank}` : "Chưa đủ điều kiện"} /><Metric label="Điểm chuẩn hóa" value={data.me ? `${data.me.score.toFixed(2)}%` : "—"} /><Metric label="Học viên đủ điều kiện" value={data.eligibleCount} /></div></Panel>
+      {!data.me ? <Panel className="panel--pad"><p className={styles.partial}>Bạn chưa có đủ 3 bài chính thức đã chấm. Bảng bên dưới vẫn dùng bí danh và không lộ hồ sơ học viên.</p></Panel> : null}
+      <Panel><div className="panel__head"><div><h2 className="section-title">Top 20</h2><p className="section-sub">Điểm cao hơn xếp trước; khi bằng điểm, số bài nhiều hơn xếp trước.</p></div></div><ol className={styles.board}>
+        {data.rows.map((row) => <li key={`${row.rank}-${row.alias}`} className={row.isYou ? styles.you : undefined}><span className={styles.rank}>#{row.rank}</span><span className={styles.alias}>{row.alias}{row.isYou ? <small>Bạn</small> : null}</span><span><strong>{row.score.toFixed(2)}%</strong><small>Điểm</small></span><span><strong>{row.gradedAttempts}</strong><small>Bài đã chấm</small></span></li>)}
+      </ol></Panel>
+      {data.me && data.me.rank > 20 ? <Panel className="panel--pad"><p className={styles.ownRow}><span>Vị trí của bạn</span><strong>#{data.me.rank} · {data.me.score.toFixed(2)}% · {data.me.gradedAttempts} bài</strong></p></Panel> : null}
+    </>}
+  </>;
 }

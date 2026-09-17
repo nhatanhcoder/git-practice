@@ -1975,3 +1975,32 @@ capturing real rating-0 events now and reconciles already-graded wrong question 
 ### 2026-09-15 learning-path completion review note
 
 No new issue ID assigned. S-SELF-1 publishes only the repository-approved Hán Lộ vocabulary corpus. HSK Standard Course and Giáo trình Hán ngữ remain explicit empty states until verified content is supplied; this is recorded product scope, not a hidden mock or implementation defect.
+
+### 2026-09-16 student progress live implementation review
+
+No new issue ID assigned. The live progress slice removes the page's fabricated XP, streak,
+rank, badge and HSK-ladder figures. Existing BUILD-005 still applies to the repository's Node 25
+test command; the focused progress e2e used explicit `.js` imports and passed without changing the
+global test runner.
+
+### 2026-09-16 leaderboard and attempt badges implementation review
+
+No new issue ID assigned. The implemented slice removes named rivals, XP, streak, retention and
+client-computed badge unlocks from both production routes. The wider F16 XP/rank/streak/catalog
+scope remains blocked and is not partially claimed by these four read-only attempt badges.
+### Resolution note — API-018 (2026-09-17)
+
+**Status**: Resolved on `codex/student-progress-live`.
+
+The teacher-sessions suite now creates a unique class for each run, lists the created session
+through that class filter, and deletes both session and class fixtures during teardown. This removes
+the shared-database pagination dependency without changing the production endpoint. The suite passed
+three consecutive isolated runs (6/6 each), followed by the complete API regression run: 33/33 test
+files and 346/346 tests passed.
+
+### 2026-09-17 student analytics main-integration review
+
+No new issue ID assigned. Merging current `origin/main` into the progress/gamification branch
+produced two additive documentation conflicts only. The resolution retained all mistake,
+learning-path and grammar records plus the later analytics records. Full post-merge verification
+passed: API 35/35 files (358 tests), web 235/235 tests, both builds/type-checks, lint and docs.

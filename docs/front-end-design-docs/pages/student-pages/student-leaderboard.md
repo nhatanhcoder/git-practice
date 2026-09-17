@@ -2,18 +2,18 @@
 feature: S-ANL-4, S-GAME-5
 role: student
 route: /student/leaderboard
-status: built (mock — ⛔ backend)
-last_updated: 2026-09-12
+status: built (live)
+last_updated: 2026-09-16
 ---
 
 # Page Contract — Student · Leaderboard (S-ANL-4, S-GAME-5)
 
 ## Purpose
-Show where the learner stands against other learners, ranked by score / streak / retention.
+Show the learner's position in an anonymized ranking based on official graded-attempt score.
 
 ## Access
 - Allowed roles: `student`
-- Ownership rule: would be token-scoped; **no leaderboard endpoint exists** (see Data). Privacy/visibility rules (who may see whom) have never been approved — a leaderboard leaks other users' data by design, so the contract cannot be written from RBAC alone.
+- Privacy rule: peers are stable aliases only; no id, name, email, avatar, content or profile link. The caller may see their own row.
 
 ## Entry points
 - From: Student sidebar → "Bảng xếp hạng"; deep link `/student/leaderboard`
@@ -21,21 +21,21 @@ Show where the learner stands against other learners, ranked by score / streak /
 ## Data
 | Need | Endpoint | Envelope field |
 |---|---|---|
-| ⛔ Ranked aggregation | none defined | — |
+| Ranked aggregation | `GET /api/v1/student/leaderboard` | `data.rows[]`, `data.me`, `data.eligibleCount` |
 
-Blocked on: `API_STUDENT.md` § no-endpoint list ("XP, rank, streak, badges and leaderboard"); S-GAME-5's open questions — real aggregation source and privacy/visibility rules; S-ANL-4 says "aggregates all study activity" but no metric weighting exists. Recorded under "Needs from the other lane". The mock's roster of named rivals must never be presented as real people (`WEB-017`/`WEB-011` family).
+Eligibility requires three official graded attempts. Score is total earned divided by total possible, so assignments with different maxima remain comparable. The API returns top 20 plus the caller's rank.
 
 ## Regions
 1. Page Header: eyebrow "Cộng đồng", title "Bảng xếp hạng"
-2. Podium ("Bục vinh danh") — top three (mock)
-3. Ranked list with metric columns (mock)
+2. Privacy/eligibility explanation
+3. Ranked list with alias, normalized score and graded-attempt count
 4. The signed-in learner's own row
 
 ## States
 - [x] Loading — skeleton
-- [x] Ready — mock content (⛔ no live data)
-- [x] Empty — N/A in the mock
-- [x] Partial — N/A (single dataset)
+- [x] Ready — live anonymized rows
+- [x] Empty — nobody meets the three-attempt threshold
+- [x] Partial — caller is ineligible or outside top 20; `me` explains their state
 - [x] Error — load failure wording
 - [x] Forbidden — handled by Student shell `RequireAuth`
 - [x] Offline / stale — network error wording; no fallback fixtures (WEB-011 family)
@@ -43,7 +43,7 @@ Blocked on: `API_STUDENT.md` § no-endpoint list ("XP, rank, streak, badges and 
 ## Actions
 | Action | Trigger | Result | Error code |
 |---|---|---|---|
-| Switch metric tab | score / streak / retention | refilter mock view (⛔ no live source) | — |
+| Retry | error action | Refetch the single endpoint | auth errors |
 
 ## Out of scope
-Quiz-room live leaderboards (S-QUIZ-3 — separate real-time feature); XP spending (not approved, demo-only per FEATURES_STUDENT).
+Named users, profiles, XP, streak, retention, time filters and quiz-room realtime boards.

@@ -275,9 +275,21 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
       Pre-existing red `pnpm --filter api build` on `origin/main` → **BUILD-004**
       (not fixed, out of scope). Session:
       `ai/context/sessions/2026-09-11-opencode-srs-flow-tests.md`.
-- ⛔ F6.1 Weekly skill heatmap · ⛔ F6.2 Progress chart — names exist in the actor document,
-      but request/response contracts are not approved; no payload was invented
+- ✅ (codex · 2026-09-16) F6.1 Weekly skill heatmap · F6.2 Progress chart — live own-data
+      endpoints and production page implemented on `codex/student-progress-live`; API e2e verifies
+      ownership/RBAC/null/UTC/deleted-question/no-content-leak rules. XP, streak, badge, rank and peer
+      figures remain outside this slice.
       *(if F9–F16 ever land, `SkillScore.skill` widens 3 → 7 values — `PROJECT_KNOWLEDGE.md` §8. Blocked, see Sprint 5b)*
+- ✅ (codex · 2026-09-16) S-ANL-4/S-GAME-5 Leaderboard + S-GAME-4 Badges — live
+      anonymized official-grade ranking (minimum three attempts, top 20 + caller rank) and four
+      server-authoritative attempt badges. API e2e verifies privacy, ownership and RBAC; production
+      pages contain no rivals/XP fixtures or local unlock state. No schema or badge reward added.
+      Full regression on 2026-09-17: API 33/33 files (346 tests), web 233/233 tests, both builds,
+      both type-checks, lint and docs checks pass. The run also closed API-018 by isolating and
+      cleaning the teacher-sessions e2e fixture; no production behavior changed.
+      Rebased integration against `origin/main@0466ba7` on 2026-09-17 preserves grammar,
+      mistakes and learning-path lanes; API 35/35 files (358 tests), web 235/235 tests, both
+      production builds/type-checks, lint and docs checks pass.
 - ⬜ F6.3 Class dashboard (Teacher) · ⬜ F6.4 API Quota Monitoring (Admin)
 - ✅ (zcode · 2026-09-12) **S-BILL-1/2 Student invoice read path — SCOPE-BILL-01 closed.**
       `GET /student/invoices` + `GET /student/invoices/:id` (both defined in `API_STUDENT.md`

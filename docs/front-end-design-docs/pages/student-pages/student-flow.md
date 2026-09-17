@@ -136,7 +136,7 @@ backend dependency — the **Sprint 4** exam engine (`AttemptsModule`), previous
 - ⛔ Assignment/Attempt mistake collection (S-MSTK) — the source data exists (Sprint 4 attempts), no collection contract.
 - ⛔ Exam room / result + placement transport (S-SELF-7) — ADR-005 is a 0-byte stub (DOC-017).
 - ⛔ Analytics response shapes — `GET /student/progress`(+`/chart`) proposed in `04-progress-analytics.md` (unapproved, needs PR #73); no endpoint invented (F6.1/F6.2).
-- ⛔ Gamification — XP, rank/level, streak calendar, badge unlocks, leaderboard aggregation/privacy (S-GAME-1..5, S-ANL-4). No catalog of decisions exists yet; see `04-progress-analytics.md` §16.
+- 🔶 Gamification — leaderboard aggregation/privacy and four attempt badges are live via `05-gamification-analytics.md`; XP, named rank/level, streak and the wider badge catalog remain undefined.
 
 ## Blocked prototype branches — mapped 2026-09-12
 
@@ -150,8 +150,8 @@ edges ⛔ there is no traversal to document beyond list → detail inside each f
 | Phòng thi + kết quả | [student-exams](./student-exams.md) | ADR-005 stub (DOC-017) |
 | Kiểm tra xếp cấp | [student-placement](./student-placement.md) | ADR-005 stub (DOC-017) |
 | Tiến độ học tập | [student-progress](./student-progress.md) | analytics shapes proposed in `04-progress-analytics.md` (unapproved) + PR #73 |
-| Bảng xếp hạng | [student-leaderboard](./student-leaderboard.md) | aggregation + privacy rules (no contract) |
-| Kho huy hiệu | [student-badges](./student-badges.md) | server-authoritative unlocks + XP economy (no contract) |
+| Bảng xếp hạng | [student-leaderboard](./student-leaderboard.md) | live anonymized official-grade aggregate |
+| Kho huy hiệu | [student-badges](./student-badges.md) | live four-badge server-authoritative catalog; wider catalog/XP deferred |
 | Luyện viết chữ | [student-writing](./student-writing.md) | DOC-011 corpus + progress contract |
 | Ghép câu Lego | [student-lego](./student-lego.md) | DOC-011 corpus + progress contract |
 | Mô phỏng công sở | [student-workplace](./student-workplace.md) | DOC-011 corpus + scorer unspecified |

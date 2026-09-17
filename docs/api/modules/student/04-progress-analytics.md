@@ -1,9 +1,9 @@
 ---
 module: student-progress-analytics
-status: proposed — design slice 2026-09-12 (code waits for PR #73, which creates `AttemptAnswer`)
-blocked_by: PR #73 merge (AttemptAnswer table) · streak calendar/timezone rule · XP/badge/leaderboard decisions (§16)
+status: accepted — implemented 2026-09-16
+blocked_by: none for S-ANL-1/2; gamification remains outside this module
 owner: project owner
-last_updated: 2026-09-12
+last_updated: 2026-09-16
 ---
 
 ## 0. Summary
@@ -151,4 +151,4 @@ anything to see). No answer contents in logs.
 | Leaderboard scope/privacy/opt-out | S-ANL-4, S-GAME-5 | product owner | before board code |
 | `skill` widening 3 → 7 if F9–F16 land | heatmap columns | product owner | with catalog scope |
 | Teacher class analytics (T-ANL-1..4) | separate module, not this one | BE owner | own slice |
-| PR #73 merge (AttemptAnswer table) | implementing this module at all | merge review | before code slice |
+| ~~PR #73 merge (AttemptAnswer table)~~ | Resolved — PR #73 merged before implementation | merge review | resolved 2026-09-16 |
