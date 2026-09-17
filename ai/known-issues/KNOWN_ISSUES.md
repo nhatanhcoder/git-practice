@@ -1997,3 +1997,10 @@ through that class filter, and deletes both session and class fixtures during te
 the shared-database pagination dependency without changing the production endpoint. The suite passed
 three consecutive isolated runs (6/6 each), followed by the complete API regression run: 33/33 test
 files and 346/346 tests passed.
+
+### 2026-09-17 student analytics main-integration review
+
+No new issue ID assigned. Merging current `origin/main` into the progress/gamification branch
+produced two additive documentation conflicts only. The resolution retained all mistake,
+learning-path and grammar records plus the later analytics records. Full post-merge verification
+passed: API 35/35 files (358 tests), web 235/235 tests, both builds/type-checks, lint and docs.

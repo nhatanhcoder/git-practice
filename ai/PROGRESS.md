@@ -287,6 +287,9 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
       Full regression on 2026-09-17: API 33/33 files (346 tests), web 233/233 tests, both builds,
       both type-checks, lint and docs checks pass. The run also closed API-018 by isolating and
       cleaning the teacher-sessions e2e fixture; no production behavior changed.
+      Rebased integration against `origin/main@0466ba7` on 2026-09-17 preserves grammar,
+      mistakes and learning-path lanes; API 35/35 files (358 tests), web 235/235 tests, both
+      production builds/type-checks, lint and docs checks pass.
 - ⬜ F6.3 Class dashboard (Teacher) · ⬜ F6.4 API Quota Monitoring (Admin)
 - ✅ (zcode · 2026-09-12) **S-BILL-1/2 Student invoice read path — SCOPE-BILL-01 closed.**
       `GET /student/invoices` + `GET /student/invoices/:id` (both defined in `API_STUDENT.md`
