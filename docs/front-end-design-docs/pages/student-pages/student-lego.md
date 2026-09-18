@@ -2,8 +2,8 @@
 feature: S-SELF-5
 role: student
 route: /student/lego
-status: built (mock — ⛔ backend)
-last_updated: 2026-09-12
+status: built (live)
+last_updated: 2026-09-18
 ---
 
 # Page Contract — Student · Lego Sentence Builder (S-SELF-5)
@@ -13,7 +13,7 @@ Practise word order by dragging role-labelled blocks (S/T/P/A/V/O/C/Q) into a co
 
 ## Access
 - Allowed roles: `student`
-- Ownership rule: would be token-scoped; **no lego progress endpoints exist** (see Data)
+- Ownership rule: attempts/progress are scoped to the authenticated student
 
 ## Entry points
 - From: Student sidebar → "Ghép câu Lego"; deep link `/student/lego`
@@ -21,19 +21,22 @@ Practise word order by dragging role-labelled blocks (S/T/P/A/V/O/C/Q) into a co
 ## Data
 | Need | Endpoint | Envelope field |
 |---|---|---|
-| ⛔ Station/exercise content | none defined | — |
-| ⛔ Progress + stars | none defined | — |
+| Station list + own derived progress | `GET /student/lego` | `data.stations[]` |
+| Shuffled station content | `GET /student/lego/stations/:stationId` | `data.sentences[]` |
+| Server-graded complete attempt | `POST /student/lego/stations/:stationId/attempt` | `data.results[]`, `data.progress` |
 
-Blocked on: the source corpus is outside the repo (`DOC-011` — `lego.json`); self-study progress reads/writes have no approved contract (`API_STUDENT.md` § no-endpoint list; the Foundation/Grammar proposal's D1–D5 decisions cover the same progress-store questions). FEATURES_STUDENT also notes the mock's **XP force-unlock is not approved** — it stays demo-only and must not survive into any real implementation. Recorded under "Needs from the other lane".
+Live since 2026-09-18 under student module 06. The seven-station corpus is
+repository-owned; the server grades canonical block order. XP force-unlock and
+browser-owned stars were removed.
 
 ## Regions
 1. Page Header: eyebrow "Luyện tập", title "Ghép câu Lego"
 2. Station map with unlock states; locked state "Chưa mở trạm nào" until a station is chosen
-3. (⛔ play) sentence builder: target meaning, drag-drop blocks ("Ghép thành câu đúng"), block-colour legend ("Ý nghĩa màu khối") — mock only
+3. Sentence builder: target meaning, role-coloured blocks, complete-station submit and server reveal
 
 ## States
 - [x] Loading — skeleton
-- [x] Ready — mock stations (⛔ no live data)
+- [x] Ready — live station corpus and own derived progress
 - [x] Empty — no unlocked station in the mock's fresh state
 - [x] Partial — N/A (single dataset)
 - [x] Error — load failure wording
@@ -43,8 +46,8 @@ Blocked on: the source corpus is outside the repo (`DOC-011` — `lego.json`); s
 ## Actions
 | Action | Trigger | Result | Error code |
 |---|---|---|---|
-| Enter a station | station card | open the mock builder | — |
-| Force-unlock | XP button | **demo-only, not approved** — must never call a real endpoint | — |
+| Enter a station | unlocked station card | load server-shuffled blocks | `LEGO_STATION_NOT_FOUND` |
+| Submit station | arrange every sentence | server grades exact order and derives stars | `VALIDATION_ERROR` |
 
 ## Out of scope
-Official grading; teacher-assigned lego exercises; XP economy (S-GAME-1, ⛔).
+Official grading, teacher-assigned Lego exercises and XP economy (S-GAME-1, ⛔).

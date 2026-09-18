@@ -1,16 +1,6 @@
 "use client";
 
-/**
- * /student/lego — sentence building by word order.
- *
- * Blocks are colour-coded by grammatical role (S/T/P/A/V/O/C/Q), which is the
- * whole teaching point: Chinese puts time and place *before* the verb, unlike
- * Vietnamese, and seeing the roles line up makes that visible rather than told.
- *
- * MOCK(student): content from `lib/student/content.ts`; stars go to the store.
- */
-
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { ArrowLeft, Check, Lock, Puzzle, RotateCcw, Star, X } from "lucide-react";
 import {
   Bar,
@@ -23,348 +13,200 @@ import {
   SectionHeader,
   SkeletonPanel,
 } from "@/components/student/primitives";
-import { DemoStateSwitcher, type DemoState } from "@/components/student/controls";
 import { useToast } from "@/components/student/toast";
-import { useStudentStore } from "@/lib/student/store";
-import { ROLE_LABEL, legoStations } from "@/lib/student/content";
-import { legoStarsFor, shuffleBlocks, withLegoProgress } from "@/lib/student/student-rules";
-import type { LegoBlock, LegoStation } from "@/lib/student/types";
-import { UnavailableState } from "@/components/student/unavailable-state";
+import {
+  fetchLegoStation,
+  fetchLegoStations,
+  submitLegoStation,
+  type LegoAttemptResult,
+  type LegoBlock,
+  type LegoStationDetail,
+  type LegoStationSummary,
+} from "@/lib/student/lego-service";
+
+const ROLE_LABEL: Record<string, string> = {
+  S: "Chủ ngữ", T: "Thời gian", P: "Nơi chốn", A: "Trạng ngữ",
+  V: "Động từ", O: "Tân ngữ", C: "Bổ ngữ", Q: "Câu hỏi",
+};
+type LoadState = "loading" | "ready" | "error";
 
 export default function LegoPage() {
-  const [demo, setDemo] = useState<DemoState>("ready");
-  const [playing, setPlaying] = useState<LegoStation | null>(null);
-  const [sIdx, setSIdx] = useState(0);
+  const [state, setState] = useState<LoadState>("loading");
+  const [stations, setStations] = useState<LegoStationSummary[]>([]);
+  const [playing, setPlaying] = useState<LegoStationDetail | null>(null);
+  const [playState, setPlayState] = useState<LoadState>("ready");
+  const [sentenceIndex, setSentenceIndex] = useState(0);
   const [slot, setSlot] = useState<LegoBlock[]>([]);
-  const [checked, setChecked] = useState<null | boolean>(null);
-  const [right, setRight] = useState(0);
-  const [finished, setFinished] = useState(false);
-
-  const legoStars = useStudentStore((s) => s.legoStars);
-  const setLegoStars = useStudentStore((s) => s.setLegoStars);
-  const awardXp = useStudentStore((s) => s.awardXp);
-  const logActivity = useStudentStore((s) => s.logActivity);
+  const [answers, setAnswers] = useState<Array<{ sentenceId: string; blockIds: string[] }>>([]);
+  const [result, setResult] = useState<LegoAttemptResult | null>(null);
+  const [submitting, setSubmitting] = useState(false);
   const toast = useToast();
 
-  const stations = useMemo(() => withLegoProgress(legoStations, legoStars), [legoStars]);
+  const load = useCallback(async () => {
+    setState("loading");
+    try {
+      setStations(await fetchLegoStations());
+      setState("ready");
+    } catch {
+      setState("error");
+    }
+  }, []);
 
-  const sentence = playing?.sentences[sIdx] ?? null;
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  const sentence = playing?.sentences[sentenceIndex] ?? null;
   const bank = useMemo(() => {
     if (!sentence) return [];
-    const used = new Set(slot.map((b) => b.id));
-    return (shuffleBlocks(sentence.blocks, sIdx + 11) as LegoBlock[]).filter(
-      (b) => !used.has(b.id),
-    );
-  }, [sentence, slot, sIdx]);
+    const used = new Set(slot.map((block) => block.id));
+    return sentence.blocks.filter((block) => !used.has(block.id));
+  }, [sentence, slot]);
 
-  function startStation(st: LegoStation) {
-    setPlaying(st);
-    setSIdx(0);
-    setSlot([]);
-    setChecked(null);
-    setRight(0);
-    setFinished(false);
-  }
-
-  function check() {
-    if (!sentence) return;
-    const ok = slot.map((b) => b.id).join("|") === sentence.order.join("|");
-    setChecked(ok);
-    if (ok) {
-      setRight((n) => n + 1);
-      awardXp(20, 1);
+  async function startStation(id: string) {
+    setPlayState("loading");
+    setPlaying(null);
+    setResult(null);
+    try {
+      setPlaying(await fetchLegoStation(id));
+      setSentenceIndex(0);
+      setSlot([]);
+      setAnswers([]);
+      setPlayState("ready");
+    } catch {
+      setPlayState("error");
     }
   }
 
-  function next() {
-    if (!playing) return;
-    if (sIdx + 1 >= playing.sentences.length) {
-      const stars = legoStarsFor(right, playing.sentences.length);
-      setLegoStars(playing.id, stars);
-      logActivity({
-        kind: "grammar",
-        text: `Hoàn thành ${playing.name} — ${stars} sao`,
-        xp: 20 * right,
-      });
-      toast(`Xong trạm — ${stars} sao`, "success");
-      setFinished(true);
+  async function saveSentence() {
+    if (!playing || !sentence || slot.length !== sentence.blocks.length) return;
+    const nextAnswers = [
+      ...answers.filter((answer) => answer.sentenceId !== sentence.id),
+      { sentenceId: sentence.id, blockIds: slot.map((block) => block.id) },
+    ];
+    if (sentenceIndex + 1 < playing.sentences.length) {
+      setAnswers(nextAnswers);
+      setSentenceIndex((index) => index + 1);
+      setSlot([]);
       return;
     }
-    setSIdx((n) => n + 1);
-    setSlot([]);
-    setChecked(null);
+    setSubmitting(true);
+    try {
+      const submitted = await submitLegoStation(playing.id, nextAnswers);
+      setResult(submitted);
+      setAnswers(nextAnswers);
+      setStations(await fetchLegoStations());
+      toast(`Máy chủ đã chấm trạm: ${submitted.progress.stars} sao`, "success");
+    } catch {
+      toast("Không nộp được — thứ tự đã xếp vẫn được giữ", "danger");
+    } finally {
+      setSubmitting(false);
+    }
   }
 
-  /* ---------- Playing a station ---------- */
-  if (playing && !finished && sentence) {
-    return (
-      <>
-        <button type="button" className="backlink" onClick={() => setPlaying(null)}>
-          <ArrowLeft size={14} /> Các trạm
-        </button>
-
-        <PageHead
-          title={playing.name}
-          sub={`Câu ${sIdx + 1}/${playing.sentences.length} · đúng ${right} · quy tắc ${sentence.rule}`}
-        />
-
-        <Bar value={(sIdx / playing.sentences.length) * 100} label="Tiến độ trạm" />
-
-        <Panel className="panel--pad">
-          <SectionHeader title="Ghép thành câu đúng" sub={`Nghĩa: ${sentence.vi}`} />
-
-          <div className="stack gap-4">
-            <div
-              className={`lego-answer ${checked === true ? "is-right" : checked === false ? "is-wrong" : ""}`}
-            >
-              {slot.length === 0 ? (
-                <span style={{ color: "var(--text-3)", fontSize: "var(--step--1)" }}>
-                  Bấm các khối bên dưới để xếp câu
-                </span>
-              ) : (
-                slot.map((b, i) => (
-                  <button
-                    key={`${b.id}-${i}`}
-                    type="button"
-                    className={`token token--${b.role}`}
-                    disabled={checked !== null}
-                    onClick={() => setSlot((s) => s.filter((_, idx) => idx !== i))}
-                  >
-                    <span className="han">{b.text}</span>
-                    <small className="pinyin">{b.pinyin}</small>
-                  </button>
-                ))
-              )}
-            </div>
-
-            <div className="lego-bank">
-              {bank.map((b) => (
-                <button
-                  key={b.id}
-                  type="button"
-                  className={`token token--${b.role}`}
-                  disabled={checked !== null}
-                  onClick={() => setSlot((s) => [...s, b])}
-                >
-                  <span className="han">{b.text}</span>
-                  <small className="pinyin">{b.pinyin}</small>
-                </button>
-              ))}
-              {bank.length === 0 ? (
-                <span style={{ color: "var(--text-3)", fontSize: "var(--step--1)" }}>
-                  Đã dùng hết khối
-                </span>
-              ) : null}
-            </div>
-
-            {checked === null ? (
-              <div className="row gap-3">
-                <button
-                  type="button"
-                  className="btn btn--outline"
-                  onClick={() => setSlot([])}
-                  disabled={slot.length === 0}
-                >
-                  <RotateCcw size={16} /> Xếp lại
-                </button>
-                <button
-                  type="button"
-                  className="btn btn--primary grow"
-                  onClick={check}
-                  disabled={slot.length !== sentence.blocks.length}
-                >
-                  Kiểm tra
-                </button>
-              </div>
-            ) : (
-              <>
-                <div className={`verdict ${checked ? "is-right" : "is-wrong"}`}>
-                  <p className="verdict__title">
-                    {checked ? (
-                      <>
-                        <Check size={14} style={{ display: "inline" }} /> Chính xác — +20 XP
-                      </>
-                    ) : (
-                      <>
-                        <X size={14} style={{ display: "inline" }} /> Chưa đúng
-                      </>
-                    )}
-                  </p>
-                  <p className="han" style={{ fontSize: "var(--step-1)" }}>
-                    {sentence.order
-                      .map((id) => sentence.blocks.find((b) => b.id === id)?.text ?? "")
-                      .join("")}
-                  </p>
-                  <p style={{ color: "var(--text-2)", fontSize: "var(--step--1)" }}>
-                    Quy tắc: {sentence.rule}
-                  </p>
-                </div>
-                <button type="button" className="btn btn--primary btn--block" onClick={next}>
-                  {sIdx + 1 >= playing.sentences.length ? "Kết thúc trạm" : "Câu tiếp theo"}
-                </button>
-              </>
-            )}
-          </div>
-        </Panel>
-
-        <Panel className="panel--pad">
-          <SectionHeader title="Ý nghĩa màu khối" sub="Mỗi màu là một thành phần câu" />
-          <div className="role-legend">
-            {Object.entries(ROLE_LABEL).map(([key, label]) => (
-              <span key={key} className="role-legend__item">
-                <span className={`role-legend__key token--${key}`} style={{ borderWidth: 2 }}>
-                  {key}
-                </span>
-                {label}
-              </span>
-            ))}
-          </div>
-        </Panel>
-      </>
-    );
+  function leaveStation() {
+    setPlaying(null);
+    setResult(null);
+    setPlayState("ready");
   }
 
-  /* ---------- Station finished ---------- */
-  if (playing && finished) {
-    const stars = legoStarsFor(right, playing.sentences.length);
+  if (playState === "loading") return <SkeletonPanel rows={5} height={220} />;
+  if (playState === "error") {
+    return <Panel className="panel--pad"><ErrorState onRetry={() => { leaveStation(); void load(); }} /></Panel>;
+  }
+
+  if (playing && result) {
     return (
       <>
-        <button type="button" className="backlink" onClick={() => setPlaying(null)}>
-          <ArrowLeft size={14} /> Các trạm
-        </button>
-        <PageHead title={`Xong ${playing.name}`} sub={`Đúng ${right}/${playing.sentences.length}`} />
+        <button type="button" className="backlink" onClick={leaveStation}><ArrowLeft size={14} /> Các trạm</button>
+        <PageHead title={`Kết quả ${playing.title}`} sub={`Máy chủ chấm đúng ${result.progress.correctCount}/${result.progress.total} câu`} />
         <Panel className="panel--pad">
           <div className="stack gap-5" style={{ alignItems: "center", textAlign: "center" }}>
-            <span className="hero__mark han" aria-hidden="true">
-              {playing.hanzi.slice(0, 1)}
+            <span className="stars" aria-label={`${result.progress.stars} trên 3 sao`}>
+              {[1, 2, 3].map((star) => <Star key={star} size={30} fill={star <= result.progress.stars ? "currentColor" : "none"} />)}
             </span>
-            <span className="stars" aria-label={`${stars} trên 3 sao`}>
-              {[1, 2, 3].map((n) => (
-                <Star key={n} size={26} fill={n <= stars ? "currentColor" : "none"} />
-              ))}
-            </span>
-            <p style={{ color: "var(--text-2)" }}>
-              Xong ván là 1 sao, đúng ≥ 50% được 2 sao, đúng ≥ 80% được 3 sao.
-            </p>
-            <div className="row gap-3 wrap" style={{ justifyContent: "center" }}>
-              <button
-                type="button"
-                className="btn btn--outline"
-                onClick={() => startStation(playing)}
-              >
-                <RotateCcw size={16} /> Chơi lại
-              </button>
-              <button type="button" className="btn btn--primary" onClick={() => setPlaying(null)}>
-                Về danh sách trạm
-              </button>
-            </div>
+            <p style={{ color: "var(--text-2)" }}>1 sao khi nộp đủ · 2 sao từ 50% đúng · 3 sao từ 80% đúng.</p>
+          </div>
+          <div className="stack gap-4" style={{ marginTop: "var(--sp-5)" }}>
+            {result.results.map((item, index) => (
+              <div key={item.sentenceId} className={`verdict ${item.correct ? "is-right" : "is-wrong"}`}>
+                <p className="verdict__title">{item.correct ? <><Check size={14} /> Câu {index + 1} chính xác</> : <><X size={14} /> Câu {index + 1} chưa đúng</>}</p>
+                <p className="han" style={{ fontSize: "var(--step-1)" }}>{item.expectedBlocks.map((block) => block.text).join("")}</p>
+                <p className="pinyin">{item.pinyin}</p>
+                <p style={{ color: "var(--text-2)" }}>Quy tắc: {item.rule}</p>
+              </div>
+            ))}
+          </div>
+          <div className="row gap-3 wrap" style={{ marginTop: "var(--sp-5)", justifyContent: "center" }}>
+            <button type="button" className="btn btn--outline" onClick={() => void startStation(playing.id)}><RotateCcw size={16} /> Luyện lại</button>
+            <button type="button" className="btn btn--primary" onClick={leaveStation}>Về danh sách trạm</button>
           </div>
         </Panel>
       </>
     );
   }
 
-  /* ---------- Station list ---------- */
-  // Production renders the unavailable state, but only AFTER every hook has run —
-  // an early return above them would make the component conditionally hooked, which
-  // React forbids (A05 fixed this for /mistakes/review; this file follows the same rule).
-  if (process.env.NODE_ENV === "production") {
+  if (playing && sentence) {
     return (
-      <UnavailableState
-        title="Ghép câu Lego"
-        description="Chức năng ghép câu Lego chưa được kết nối máy chủ dữ liệu trong phiên bản hiện tại. Vui lòng quay lại sau."
-      />
+      <>
+        <button type="button" className="backlink" onClick={leaveStation}><ArrowLeft size={14} /> Các trạm</button>
+        <PageHead title={playing.title} sub={`Câu ${sentenceIndex + 1}/${playing.sentences.length} · ${playing.focus}`} />
+        <Bar value={(sentenceIndex / playing.sentences.length) * 100} label="Tiến độ trạm" />
+        <Panel className="panel--pad">
+          <SectionHeader title="Ghép thành câu đúng" sub={`Nghĩa: ${sentence.vi}`} />
+          <p style={{ color: "var(--text-3)", marginBottom: "var(--sp-3)" }}>Gợi ý: {sentence.hint}</p>
+          <div className="stack gap-4">
+            <div className="lego-answer">
+              {slot.length === 0 ? <span style={{ color: "var(--text-3)" }}>Bấm các khối bên dưới để xếp câu</span> : slot.map((block, index) => (
+                <button key={block.id} type="button" className={`token token--${block.role}`} onClick={() => setSlot((current) => current.filter((_, itemIndex) => itemIndex !== index))}>
+                  <span className="han">{block.text}</span><small>{block.role}</small>
+                </button>
+              ))}
+            </div>
+            <div className="lego-bank">
+              {bank.map((block) => (
+                <button key={block.id} type="button" className={`token token--${block.role}`} onClick={() => setSlot((current) => [...current, block])}>
+                  <span className="han">{block.text}</span><small>{block.role}</small>
+                </button>
+              ))}
+            </div>
+            <div className="row gap-3">
+              <button type="button" className="btn btn--outline" onClick={() => setSlot([])} disabled={slot.length === 0}><RotateCcw size={16} /> Xếp lại</button>
+              <button type="button" className="btn btn--primary grow" onClick={() => void saveSentence()} disabled={slot.length !== sentence.blocks.length || submitting}>
+                {submitting ? "Máy chủ đang chấm…" : sentenceIndex + 1 === playing.sentences.length ? "Nộp cả trạm" : "Lưu câu và tiếp tục"}
+              </button>
+            </div>
+          </div>
+        </Panel>
+        <Panel className="panel--pad">
+          <SectionHeader title="Ý nghĩa màu khối" />
+          <div className="role-legend">{Object.entries(ROLE_LABEL).map(([key, label]) => <span key={key} className="role-legend__item"><span className={`role-legend__key token--${key}`}>{key}</span>{label}</span>)}</div>
+        </Panel>
+      </>
     );
   }
 
   return (
     <>
-      <PageHead
-        eyebrow="Luyện tập"
-        title="Ghép câu Lego"
-        sub="Luyện trật tự từ tiếng Trung qua các trạm tăng dần độ khó. Khối được tô màu theo vai trò ngữ pháp để bạn nhìn thấy cấu trúc câu."
-        action={<DemoStateSwitcher value={demo} onChange={setDemo} />}
-      />
-
-      {demo === "loading" ? (
-        <SkeletonPanel rows={4} height={180} />
-      ) : demo === "error" ? (
-        <Panel className="panel--pad">
-          <ErrorState onRetry={() => setDemo("ready")} />
-        </Panel>
-      ) : demo === "empty" ? (
-        <Panel className="panel--pad">
-          <EmptyState
-            icon={<Puzzle size={26} />}
-            title="Chưa mở trạm nào"
-            text="Hoàn thành chặng đầu tiên trong lộ trình để mở trạm Lego."
-          />
-        </Panel>
+      <PageHead eyebrow="Luyện tập" title="Ghép câu Lego" sub="Luyện trật tự từ qua bảy trạm. Thứ tự được chấm ở máy chủ; không có XP hoặc đáp án do trình duyệt tự quyết." />
+      {state === "loading" ? <SkeletonPanel rows={4} height={180} /> : state === "error" ? (
+        <Panel className="panel--pad"><ErrorState onRetry={() => void load()} /></Panel>
+      ) : stations.length === 0 ? (
+        <Panel className="panel--pad"><EmptyState icon={<Puzzle size={26} />} title="Chưa có trạm Lego" /></Panel>
       ) : (
         <>
-          <Panel className="panel--pad">
-            <div className="grid grid--3">
-              <Metric label="Trạm" value={stations.length} />
-              <Metric
-                label="Đã mở"
-                value={stations.filter((s) => !s.locked).length}
-              />
-              <Metric
-                label="Tổng sao"
-                value={`${stations.reduce((n, s) => n + s.stars, 0)}/${stations.length * 3}`}
-              />
-            </div>
-          </Panel>
-
+          <Panel className="panel--pad"><div className="grid grid--3"><Metric label="Trạm" value={stations.length} /><Metric label="Đã mở" value={stations.filter((station) => station.progress.unlocked).length} /><Metric label="Tổng sao" value={`${stations.reduce((sum, station) => sum + station.progress.stars, 0)}/${stations.length * 3}`} /></div></Panel>
           <section>
-            <SectionHeader title="Các trạm" sub="Mỗi trạm gồm ba câu theo một quy tắc" />
+            <SectionHeader title="Các trạm" sub="Trạm sau mở khi bạn đã nộp đủ trạm trước" />
             <div className="grid grid--2">
-              {stations.map((st) => (
-                <button
-                  key={st.id}
-                  type="button"
-                  className="examcard"
-                  disabled={st.locked}
-                  onClick={() => startStation(st)}
-                  style={st.locked ? { opacity: 0.55 } : undefined}
-                >
-                  <div className="row gap-3">
-                    <span className="rowitem__icon han" aria-hidden="true">
-                      {st.locked ? <Lock size={16} /> : st.hanzi.slice(0, 1)}
-                    </span>
-                    <span className="stack gap-1 grow" style={{ textAlign: "left" }}>
-                      <span className="examcard__title">{st.name}</span>
-                      <span className="examcard__sub">{st.blurb}</span>
-                    </span>
-                    <span className="stars" aria-label={`${st.stars} trên 3 sao`}>
-                      {[1, 2, 3].map((n) => (
-                        <Star key={n} size={14} fill={n <= st.stars ? "currentColor" : "none"} />
-                      ))}
-                    </span>
-                  </div>
-                  <div className="row gap-2 wrap">
-                    <Chip tone="accent">HSK {st.level}</Chip>
-                    <Chip>{st.rule}</Chip>
-                    <Chip tone="info">{st.sentences.length} câu</Chip>
-                  </div>
+              {stations.map((station) => (
+                <button key={station.id} type="button" className="examcard" disabled={!station.progress.unlocked} onClick={() => void startStation(station.id)} style={!station.progress.unlocked ? { opacity: 0.55 } : undefined}>
+                  <div className="row gap-3"><span className="rowitem__icon han">{station.progress.unlocked ? station.hanziTitle.slice(0, 1) : <Lock size={16} />}</span><span className="stack gap-1 grow" style={{ textAlign: "left" }}><span className="examcard__title">{station.title}</span><span className="examcard__sub">{station.blurb}</span></span><span className="stars">{[1, 2, 3].map((star) => <Star key={star} size={14} fill={star <= station.progress.stars ? "currentColor" : "none"} />)}</span></div>
+                  <div className="row gap-2 wrap"><Chip tone="accent">HSK {station.level}</Chip><Chip>{station.focus}</Chip><Chip tone="info">{station.progress.correctCount}/{station.progress.total} đúng</Chip></div>
                 </button>
               ))}
             </div>
           </section>
-
-          <Panel className="panel--pad">
-            <SectionHeader title="Ý nghĩa màu khối" sub="Mỗi màu là một thành phần câu" />
-            <div className="role-legend">
-              {Object.entries(ROLE_LABEL).map(([key, label]) => (
-                <span key={key} className="role-legend__item">
-                  <span className={`role-legend__key token--${key}`} style={{ borderWidth: 2 }}>
-                    {key}
-                  </span>
-                  {label}
-                </span>
-              ))}
-            </div>
-          </Panel>
         </>
       )}
     </>

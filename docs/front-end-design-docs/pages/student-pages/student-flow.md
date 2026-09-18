@@ -1,6 +1,6 @@
 ---
 status: active
-last_updated: 2026-09-14
+last_updated: 2026-09-18
 ---
 
 # Student Flow Map — SRS & Classes
@@ -152,9 +152,9 @@ edges ⛔ there is no traversal to document beyond list → detail inside each f
 | Tiến độ học tập | [student-progress](./student-progress.md) | analytics shapes proposed in `04-progress-analytics.md` (unapproved) + PR #73 |
 | Bảng xếp hạng | [student-leaderboard](./student-leaderboard.md) | live anonymized official-grade aggregate |
 | Kho huy hiệu | [student-badges](./student-badges.md) | live four-badge server-authoritative catalog; wider catalog/XP deferred |
-| Luyện viết chữ | [student-writing](./student-writing.md) | DOC-011 corpus + progress contract |
-| Ghép câu Lego | [student-lego](./student-lego.md) | DOC-011 corpus + progress contract |
-| Mô phỏng công sở | [student-workplace](./student-workplace.md) | DOC-011 corpus + scorer unspecified |
+| Luyện viết chữ | [student-writing](./student-writing.md) | live: corpus + own explicit-practice marker |
+| Ghép câu Lego | [student-lego](./student-lego.md) | live: server-graded block order + derived stars |
+| Mô phỏng công sở | [student-workplace](./student-workplace.md) | live: ordered model/rubric reveal, no numeric scorer |
 
 Live branches with contracts: SRS (`student-srs`), Classes (`student-classes-list`,
 `student-class-detail`), Assignments (`student-assignments-list`), Attempts

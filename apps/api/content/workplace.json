@@ -1,0 +1,962 @@
+[
+  {
+    "id": "sc-quotation",
+    "kind": "quotation",
+    "channel": "email",
+    "title": "Gửi báo giá cho khách hàng",
+    "hanziTitle": "发送报价单",
+    "partner": "Trần Nhã Đình",
+    "partnerRole": "Trưởng phòng mua hàng · Công ty Hằng Thịnh",
+    "partnerInitial": "陈",
+    "level": 4,
+    "durationMin": 12,
+    "difficulty": "Trung bình",
+    "blurb": "Khách hỏi giá 500 bộ linh kiện. Bạn cần trả lời bằng email tiếng Trung, nêu đơn giá, thời gian giao hàng và điều kiện thanh toán.",
+    "goal": "Viết email báo giá đủ ba thông tin: đơn giá, thời gian giao hàng, điều kiện thanh toán.",
+    "brief": "Bạn là nhân viên kinh doanh. Khách hàng vừa gửi thư hỏi giá cho đơn hàng 500 bộ. Giá công ty đưa ra là 128 tệ/bộ, giao trong 15 ngày, thanh toán 30% trả trước.",
+    "vocabulary": [
+      {
+        "hanzi": "报价单",
+        "pinyin": "bàojiàdān",
+        "vi": "bảng báo giá"
+      },
+      {
+        "hanzi": "单价",
+        "pinyin": "dānjià",
+        "vi": "đơn giá"
+      },
+      {
+        "hanzi": "交货期",
+        "pinyin": "jiāohuòqī",
+        "vi": "thời hạn giao hàng"
+      },
+      {
+        "hanzi": "付款方式",
+        "pinyin": "fùkuǎn fāngshì",
+        "vi": "phương thức thanh toán"
+      },
+      {
+        "hanzi": "预付款",
+        "pinyin": "yùfùkuǎn",
+        "vi": "tiền trả trước"
+      },
+      {
+        "hanzi": "含税",
+        "pinyin": "hánshuì",
+        "vi": "đã bao gồm thuế"
+      }
+    ],
+    "phrases": [
+      {
+        "hanzi": "感谢您的询价",
+        "pinyin": "Gǎnxiè nín de xúnjià",
+        "vi": "Cảm ơn quý công ty đã hỏi giá"
+      },
+      {
+        "hanzi": "现将报价如下",
+        "pinyin": "Xiàn jiāng bàojià rúxià",
+        "vi": "Nay xin báo giá như sau"
+      },
+      {
+        "hanzi": "期待您的回复",
+        "pinyin": "Qīdài nín de huífù",
+        "vi": "Rất mong nhận được hồi âm"
+      }
+    ],
+    "turns": [
+      {
+        "id": "t1",
+        "fromHanzi": "您好！我们计划采购500套配件，麻烦提供一下报价，包括单价和交货期。",
+        "fromPinyin": "Nín hǎo! Wǒmen jìhuà cǎigòu 500 tào pèijiàn, máfan tígōng yíxià bàojià, bāokuò dānjià hé jiāohuòqī.",
+        "fromVi": "Xin chào! Chúng tôi dự định mua 500 bộ linh kiện, phiền bên anh/chị gửi báo giá, gồm đơn giá và thời hạn giao hàng.",
+        "task": "Viết email trả lời: cảm ơn, nêu đơn giá 128 tệ/bộ và thời hạn giao 15 ngày.",
+        "suggestions": [
+          "感谢您的询价。",
+          "每套单价为128元，含税。",
+          "交货期为签约后15个工作日。"
+        ],
+        "model": "陈经理您好！感谢您的询价。现将报价如下：每套单价128元（含税），交货期为签约后15个工作日。期待您的回复。",
+        "modelVi": "Kính gửi chị Trần! Cảm ơn chị đã hỏi giá. Nay xin báo giá như sau: đơn giá 128 tệ/bộ (đã gồm thuế), giao hàng trong 15 ngày làm việc kể từ khi ký hợp đồng. Rất mong nhận được hồi âm.",
+        "keywords": [
+          "128",
+          "单价",
+          "交货",
+          "感谢"
+        ],
+        "corrections": [
+          {
+            "wrong": "价格是128。",
+            "better": "每套单价为128元（含税）。",
+            "why": "Email thương mại cần nêu rõ đơn vị tính và tình trạng thuế."
+          },
+          {
+            "wrong": "你好，报价给你。",
+            "better": "陈经理您好！感谢您的询价。",
+            "why": "Dùng 您 và chức danh khi viết cho khách hàng, không dùng 你."
+          }
+        ]
+      },
+      {
+        "id": "t2",
+        "fromHanzi": "价格稍微高了一点，如果我们订1000套，能不能再优惠一些？",
+        "fromPinyin": "Jiàgé shāowēi gāo le yìdiǎn, rúguǒ wǒmen dìng 1000 tào, néng bu néng zài yōuhuì yìxiē?",
+        "fromVi": "Giá hơi cao một chút, nếu chúng tôi đặt 1000 bộ thì có thể giảm thêm được không?",
+        "task": "Trả lời có điều kiện: đồng ý giảm còn 120 tệ nếu đặt từ 1000 bộ.",
+        "suggestions": [
+          "如果订购量达到1000套，",
+          "单价可以调整为120元。",
+          "这已经是我们的最优惠价格。"
+        ],
+        "model": "感谢您的理解。如果订购量达到1000套，单价可以调整为120元，其他条件不变。这已经是我们能提供的最优惠价格。",
+        "modelVi": "Cảm ơn chị đã thông cảm. Nếu số lượng đặt đạt 1000 bộ, đơn giá có thể điều chỉnh xuống 120 tệ, các điều kiện khác giữ nguyên. Đây đã là mức giá tốt nhất chúng tôi có thể đưa ra.",
+        "keywords": [
+          "1000",
+          "120",
+          "如果",
+          "优惠"
+        ],
+        "corrections": [
+          {
+            "wrong": "好的，给你便宜。",
+            "better": "如果订购量达到1000套，单价可以调整为120元。",
+            "why": "Nhượng bộ trong đàm phán luôn gắn với điều kiện cụ thể."
+          }
+        ]
+      },
+      {
+        "id": "t3",
+        "fromHanzi": "可以。那付款方式怎么安排？",
+        "fromPinyin": "Kěyǐ. Nà fùkuǎn fāngshì zěnme ānpái?",
+        "fromVi": "Được. Vậy phương thức thanh toán sắp xếp thế nào?",
+        "task": "Nêu điều kiện thanh toán: 30% trả trước, 70% thanh toán trước khi giao hàng.",
+        "suggestions": [
+          "付款方式为30%预付款，",
+          "余款在发货前结清。",
+          "我们会尽快寄出合同。"
+        ],
+        "model": "付款方式为签约时支付30%预付款，余款70%在发货前结清。确认后我们会尽快寄出合同，谢谢！",
+        "modelVi": "Phương thức thanh toán: trả trước 30% khi ký hợp đồng, 70% còn lại thanh toán trước khi giao hàng. Sau khi xác nhận chúng tôi sẽ gửi hợp đồng sớm nhất. Xin cảm ơn!",
+        "keywords": [
+          "30",
+          "预付",
+          "余款",
+          "合同"
+        ],
+        "corrections": [
+          {
+            "wrong": "先给钱再发货。",
+            "better": "签约时支付30%预付款，余款在发货前结清。",
+            "why": "Văn phong thương mại cần chính xác về tỷ lệ và mốc thời gian."
+          }
+        ]
+      }
+    ],
+    "rubric": [
+      {
+        "label": "Đủ thông tin",
+        "hint": "Đơn giá, thời gian giao hàng, thanh toán"
+      },
+      {
+        "label": "Kính ngữ",
+        "hint": "Dùng 您 và chức danh đúng cách"
+      },
+      {
+        "label": "Văn phong email",
+        "hint": "Mở thư, thân thư, câu kết"
+      }
+    ]
+  },
+  {
+    "id": "sc-meeting",
+    "kind": "meeting",
+    "channel": "chat",
+    "title": "Họp nhóm buổi sáng",
+    "hanziTitle": "晨会讨论",
+    "partner": "Lý Vĩ",
+    "partnerRole": "Quản lý dự án · Nhóm sản phẩm",
+    "partnerInitial": "李",
+    "level": 4,
+    "durationMin": 10,
+    "difficulty": "Trung bình",
+    "blurb": "Cuộc họp nhanh trên nhóm chat. Bạn báo cáo tiến độ, nêu khó khăn và đề xuất phương án xử lý.",
+    "goal": "Báo cáo tiến độ rõ ràng, nêu được một rủi ro và một đề xuất.",
+    "brief": "Bạn phụ trách phần giao diện của dự án. Tiến độ đạt 70%, đang chậm vì thiếu người kiểm thử. Bạn muốn xin thêm một nhân sự trong hai tuần.",
+    "vocabulary": [
+      {
+        "hanzi": "进度",
+        "pinyin": "jìndù",
+        "vi": "tiến độ"
+      },
+      {
+        "hanzi": "截止日期",
+        "pinyin": "jiézhǐ rìqī",
+        "vi": "hạn chót"
+      },
+      {
+        "hanzi": "人手",
+        "pinyin": "rénshǒu",
+        "vi": "nhân lực"
+      },
+      {
+        "hanzi": "测试",
+        "pinyin": "cèshì",
+        "vi": "kiểm thử"
+      },
+      {
+        "hanzi": "风险",
+        "pinyin": "fēngxiǎn",
+        "vi": "rủi ro"
+      },
+      {
+        "hanzi": "建议",
+        "pinyin": "jiànyì",
+        "vi": "đề xuất"
+      }
+    ],
+    "phrases": [
+      {
+        "hanzi": "目前进度大约完成了70%",
+        "pinyin": "Mùqián jìndù dàyuē wánchéng le 70%",
+        "vi": "Hiện tiến độ hoàn thành khoảng 70%"
+      },
+      {
+        "hanzi": "我这边遇到一个问题",
+        "pinyin": "Wǒ zhèbiān yùdào yí ge wèntí",
+        "vi": "Bên tôi đang gặp một vấn đề"
+      },
+      {
+        "hanzi": "我的建议是…",
+        "pinyin": "Wǒ de jiànyì shì…",
+        "vi": "Đề xuất của tôi là…"
+      }
+    ],
+    "turns": [
+      {
+        "id": "t1",
+        "fromHanzi": "早上好，各位。先同步一下进度吧，界面部分现在怎么样了？",
+        "fromPinyin": "Zǎoshang hǎo, gèwèi. Xiān tóngbù yíxià jìndù ba, jièmiàn bùfen xiànzài zěnmeyàng le?",
+        "fromVi": "Chào buổi sáng cả nhóm. Đồng bộ tiến độ trước nhé, phần giao diện hiện thế nào rồi?",
+        "task": "Báo cáo tiến độ: hoàn thành khoảng 70%, dự kiến xong phần còn lại trong tuần này.",
+        "suggestions": [
+          "目前进度大约完成了70%。",
+          "剩下的部分预计本周内完成。",
+          "设计稿已经全部确认。"
+        ],
+        "model": "早上好！界面部分目前完成了大约70%，设计稿已全部确认，剩下的页面预计本周内可以做完。",
+        "modelVi": "Chào buổi sáng! Phần giao diện hiện hoàn thành khoảng 70%, bản thiết kế đã được duyệt hết, các trang còn lại dự kiến xong trong tuần này.",
+        "keywords": [
+          "70",
+          "进度",
+          "本周",
+          "完成"
+        ],
+        "corrections": [
+          {
+            "wrong": "差不多了。",
+            "better": "目前完成了大约70%。",
+            "why": "Báo cáo trong họp cần con số cụ thể thay vì ước lượng mơ hồ."
+          }
+        ]
+      },
+      {
+        "id": "t2",
+        "fromHanzi": "好的。有什么困难需要支持吗？",
+        "fromPinyin": "Hǎo de. Yǒu shénme kùnnan xūyào zhīchí ma?",
+        "fromVi": "Được. Có khó khăn gì cần hỗ trợ không?",
+        "task": "Nêu rủi ro: thiếu người kiểm thử nên có thể chậm hạn.",
+        "suggestions": [
+          "我这边遇到一个问题：",
+          "测试人手不够，",
+          "可能会影响截止日期。"
+        ],
+        "model": "有的。测试人手不够，如果这周还没有人接手，可能会影响下周的截止日期，这是目前最大的风险。",
+        "modelVi": "Có ạ. Nhân lực kiểm thử không đủ, nếu tuần này vẫn chưa có người tiếp nhận thì có thể ảnh hưởng đến hạn chót tuần sau, đây là rủi ro lớn nhất hiện nay.",
+        "keywords": [
+          "人手",
+          "测试",
+          "风险",
+          "截止"
+        ],
+        "corrections": [
+          {
+            "wrong": "没什么问题。",
+            "better": "测试人手不够，可能会影响截止日期。",
+            "why": "Che giấu rủi ro làm quản lý mất khả năng can thiệp sớm."
+          }
+        ]
+      },
+      {
+        "id": "t3",
+        "fromHanzi": "明白了。你觉得怎么解决比较好？",
+        "fromPinyin": "Míngbai le. Nǐ juéde zěnme jiějué bǐjiào hǎo?",
+        "fromVi": "Hiểu rồi. Bạn thấy giải quyết thế nào thì tốt hơn?",
+        "task": "Đề xuất phương án: xin một người kiểm thử hỗ trợ trong hai tuần.",
+        "suggestions": [
+          "我的建议是…",
+          "临时借调一位测试同事，",
+          "为期两周就够了。"
+        ],
+        "model": "我的建议是从别的组临时借调一位测试同事，为期两周。这样既不影响他们的排期，我们也能按时交付。",
+        "modelVi": "Đề xuất của tôi là mượn tạm một đồng nghiệp kiểm thử từ nhóm khác trong hai tuần. Như vậy vừa không ảnh hưởng lịch của họ, chúng ta cũng kịp bàn giao đúng hạn.",
+        "keywords": [
+          "建议",
+          "两周",
+          "测试",
+          "借调"
+        ],
+        "corrections": [
+          {
+            "wrong": "你们想办法吧。",
+            "better": "我的建议是临时借调一位测试同事，为期两周。",
+            "why": "Nêu vấn đề nên đi kèm phương án, đó là kỳ vọng cơ bản trong họp."
+          }
+        ]
+      }
+    ],
+    "rubric": [
+      {
+        "label": "Tiến độ có số liệu",
+        "hint": "Nêu phần trăm và mốc thời gian"
+      },
+      {
+        "label": "Nêu rủi ro",
+        "hint": "Chỉ ra khó khăn cụ thể"
+      },
+      {
+        "label": "Có đề xuất",
+        "hint": "Kèm phương án xử lý"
+      }
+    ]
+  },
+  {
+    "id": "sc-email",
+    "kind": "email",
+    "channel": "email",
+    "title": "Email xin dời lịch giao hàng",
+    "hanziTitle": "请求延期交付",
+    "partner": "Vương Kiến Quốc",
+    "partnerRole": "Giám đốc vận hành · Đối tác",
+    "partnerInitial": "王",
+    "level": 5,
+    "durationMin": 12,
+    "difficulty": "Khó",
+    "blurb": "Nhà máy chậm nguyên liệu. Bạn phải viết thư xin lùi ngày giao ba ngày mà vẫn giữ được thiện chí của đối tác.",
+    "goal": "Xin lỗi, nêu lý do, đề xuất mốc mới và phương án bù đắp.",
+    "brief": "Đơn hàng lẽ ra giao ngày 20. Nguyên liệu về chậm nên sớm nhất là ngày 23. Bạn có thể đề nghị giao trước một phần hàng vào ngày 20.",
+    "vocabulary": [
+      {
+        "hanzi": "延期",
+        "pinyin": "yánqī",
+        "vi": "gia hạn, lùi hạn"
+      },
+      {
+        "hanzi": "原材料",
+        "pinyin": "yuáncáiliào",
+        "vi": "nguyên vật liệu"
+      },
+      {
+        "hanzi": "给您添麻烦",
+        "pinyin": "gěi nín tiān máfan",
+        "vi": "làm phiền quý vị"
+      },
+      {
+        "hanzi": "分批交付",
+        "pinyin": "fēnpī jiāofù",
+        "vi": "giao hàng theo đợt"
+      },
+      {
+        "hanzi": "谅解",
+        "pinyin": "liàngjiě",
+        "vi": "thông cảm, lượng thứ"
+      },
+      {
+        "hanzi": "如期",
+        "pinyin": "rúqī",
+        "vi": "đúng hạn"
+      }
+    ],
+    "phrases": [
+      {
+        "hanzi": "非常抱歉给您添麻烦",
+        "pinyin": "Fēicháng bàoqiàn gěi nín tiān máfan",
+        "vi": "Vô cùng xin lỗi vì đã làm phiền quý vị"
+      },
+      {
+        "hanzi": "恳请贵公司谅解",
+        "pinyin": "Kěnqǐng guì gōngsī liàngjiě",
+        "vi": "Kính mong quý công ty thông cảm"
+      },
+      {
+        "hanzi": "我们将全力保证质量",
+        "pinyin": "Wǒmen jiāng quánlì bǎozhèng zhìliàng",
+        "vi": "Chúng tôi sẽ dốc sức bảo đảm chất lượng"
+      }
+    ],
+    "turns": [
+      {
+        "id": "t1",
+        "fromHanzi": "您好，这批货还是20号交付吧？我们下游客户已经排好了档期。",
+        "fromPinyin": "Nín hǎo, zhè pī huò háishi 20 hào jiāofù ba? Wǒmen xiàyóu kèhù yǐjīng páihǎo le dàngqī.",
+        "fromVi": "Xin chào, lô hàng này vẫn giao ngày 20 chứ? Khách hàng phía dưới của chúng tôi đã xếp lịch rồi.",
+        "task": "Viết thư xin lỗi và thông báo phải lùi sang ngày 23 vì nguyên liệu về chậm.",
+        "suggestions": [
+          "非常抱歉给您添麻烦。",
+          "由于原材料到货延迟，",
+          "交付日期需要推迟到23号。"
+        ],
+        "model": "王总您好！非常抱歉给您添麻烦。由于上游原材料到货延迟，这批货最快只能在23号交付，比原计划晚三天。",
+        "modelVi": "Kính gửi anh Vương! Vô cùng xin lỗi vì đã làm phiền anh. Do nguyên liệu đầu vào về chậm, lô hàng này sớm nhất chỉ có thể giao vào ngày 23, muộn hơn kế hoạch ba ngày.",
+        "keywords": [
+          "抱歉",
+          "原材料",
+          "23",
+          "延"
+        ],
+        "corrections": [
+          {
+            "wrong": "货晚了，没办法。",
+            "better": "非常抱歉给您添麻烦。由于原材料到货延迟…",
+            "why": "Tin xấu phải mở bằng lời xin lỗi rồi mới nêu nguyên nhân khách quan."
+          }
+        ]
+      },
+      {
+        "id": "t2",
+        "fromHanzi": "这样我们很被动。有没有补救的办法？",
+        "fromPinyin": "Zhèyàng wǒmen hěn bèidòng. Yǒu méiyǒu bǔjiù de bànfǎ?",
+        "fromVi": "Như vậy chúng tôi rất bị động. Có cách nào bù đắp không?",
+        "task": "Đề xuất giao trước một phần hàng vào đúng ngày 20.",
+        "suggestions": [
+          "我们可以分批交付。",
+          "20号先交付60%，",
+          "剩余部分23号补齐。"
+        ],
+        "model": "我们可以分批交付：20号先交付60%的货，让贵公司先应付急单，剩余部分23号一次补齐，运费由我们承担。",
+        "modelVi": "Chúng tôi có thể giao theo đợt: ngày 20 giao trước 60% để quý công ty kịp xử lý đơn gấp, phần còn lại giao bù đủ vào ngày 23, cước vận chuyển do chúng tôi chịu.",
+        "keywords": [
+          "分批",
+          "60",
+          "23",
+          "运费"
+        ],
+        "corrections": [
+          {
+            "wrong": "只能等23号。",
+            "better": "20号先交付60%，剩余部分23号补齐。",
+            "why": "Luôn đưa ra ít nhất một phương án bù đắp thay vì chỉ báo tin xấu."
+          }
+        ]
+      },
+      {
+        "id": "t3",
+        "fromHanzi": "可以接受。请把新的交付计划正式发我一份。",
+        "fromPinyin": "Kěyǐ jiēshòu. Qǐng bǎ xīn de jiāofù jìhuà zhèngshì fā wǒ yí fèn.",
+        "fromVi": "Chấp nhận được. Phiền anh/chị gửi chính thức cho tôi bản kế hoạch giao hàng mới.",
+        "task": "Viết câu kết: xác nhận sẽ gửi kế hoạch trong hôm nay và cảm ơn sự thông cảm.",
+        "suggestions": [
+          "今天下班前发给您。",
+          "恳请贵公司谅解。",
+          "再次感谢您的支持。"
+        ],
+        "model": "好的，新的交付计划我今天下班前正式发给您。恳请贵公司谅解，再次感谢您的理解与支持。",
+        "modelVi": "Vâng, bản kế hoạch giao hàng mới tôi sẽ gửi chính thức trước giờ tan làm hôm nay. Kính mong quý công ty thông cảm, một lần nữa cảm ơn sự thấu hiểu và ủng hộ của anh.",
+        "keywords": [
+          "今天",
+          "发",
+          "谅解",
+          "感谢"
+        ],
+        "corrections": [
+          {
+            "wrong": "知道了。",
+            "better": "新的交付计划我今天下班前正式发给您。",
+            "why": "Câu kết cần cam kết mốc thời gian cụ thể."
+          }
+        ]
+      }
+    ],
+    "rubric": [
+      {
+        "label": "Lời xin lỗi",
+        "hint": "Mở thư bằng thái độ nhận trách nhiệm"
+      },
+      {
+        "label": "Lý do khách quan",
+        "hint": "Nêu nguyên nhân ngắn gọn"
+      },
+      {
+        "label": "Phương án bù đắp",
+        "hint": "Có mốc mới và cam kết"
+      }
+    ]
+  },
+  {
+    "id": "sc-interview",
+    "kind": "interview",
+    "channel": "chat",
+    "title": "Phỏng vấn xin việc",
+    "hanziTitle": "求职面试",
+    "partner": "Chu Mẫn",
+    "partnerRole": "Trưởng phòng nhân sự · Công ty Minh Đạt",
+    "partnerInitial": "周",
+    "level": 5,
+    "durationMin": 15,
+    "difficulty": "Khó",
+    "blurb": "Vòng phỏng vấn tiếng Trung cho vị trí nhân viên kinh doanh quốc tế. Giới thiệu bản thân, nói về điểm mạnh và trả lời câu hỏi về mức lương.",
+    "goal": "Giới thiệu bản thân mạch lạc, nêu điểm mạnh có dẫn chứng và trả lời khéo về lương.",
+    "brief": "Bạn có ba năm kinh nghiệm kinh doanh, từng phụ trách thị trường Quảng Châu, doanh số tăng 40% trong năm ngoái. Mức lương mong muốn 15–18 triệu.",
+    "vocabulary": [
+      {
+        "hanzi": "自我介绍",
+        "pinyin": "zìwǒ jièshào",
+        "vi": "giới thiệu bản thân"
+      },
+      {
+        "hanzi": "工作经验",
+        "pinyin": "gōngzuò jīngyàn",
+        "vi": "kinh nghiệm làm việc"
+      },
+      {
+        "hanzi": "业绩",
+        "pinyin": "yèjì",
+        "vi": "thành tích, doanh số"
+      },
+      {
+        "hanzi": "优势",
+        "pinyin": "yōushì",
+        "vi": "thế mạnh"
+      },
+      {
+        "hanzi": "期望薪资",
+        "pinyin": "qīwàng xīnzī",
+        "vi": "mức lương mong muốn"
+      },
+      {
+        "hanzi": "团队合作",
+        "pinyin": "tuánduì hézuò",
+        "vi": "làm việc nhóm"
+      }
+    ],
+    "phrases": [
+      {
+        "hanzi": "很高兴有机会参加这次面试",
+        "pinyin": "Hěn gāoxìng yǒu jīhuì cānjiā zhè cì miànshì",
+        "vi": "Rất vui khi có cơ hội tham gia buổi phỏng vấn"
+      },
+      {
+        "hanzi": "我有三年的销售经验",
+        "pinyin": "Wǒ yǒu sān nián de xiāoshòu jīngyàn",
+        "vi": "Tôi có ba năm kinh nghiệm kinh doanh"
+      },
+      {
+        "hanzi": "我对贵公司的发展很感兴趣",
+        "pinyin": "Wǒ duì guì gōngsī de fāzhǎn hěn gǎn xìngqù",
+        "vi": "Tôi rất quan tâm tới sự phát triển của quý công ty"
+      }
+    ],
+    "turns": [
+      {
+        "id": "t1",
+        "fromHanzi": "你好，请先简单做个自我介绍吧。",
+        "fromPinyin": "Nǐ hǎo, qǐng xiān jiǎndān zuò ge zìwǒ jièshào ba.",
+        "fromVi": "Chào bạn, mời bạn giới thiệu ngắn gọn về bản thân.",
+        "task": "Giới thiệu tên, số năm kinh nghiệm và lĩnh vực phụ trách.",
+        "suggestions": [
+          "很高兴有机会参加这次面试。",
+          "我有三年的销售经验，",
+          "主要负责广州市场。"
+        ],
+        "model": "周经理您好，很高兴有机会参加这次面试。我叫阮明英，有三年国际销售经验，主要负责广州市场的客户开发。",
+        "modelVi": "Chào chị Chu, rất vui khi có cơ hội tham gia buổi phỏng vấn này. Tôi tên Nguyễn Minh Anh, có ba năm kinh nghiệm kinh doanh quốc tế, chủ yếu phụ trách phát triển khách hàng tại thị trường Quảng Châu.",
+        "keywords": [
+          "介绍",
+          "经验",
+          "负责",
+          "高兴"
+        ],
+        "corrections": [
+          {
+            "wrong": "我叫明英，我很好。",
+            "better": "我叫阮明英，有三年国际销售经验。",
+            "why": "Giới thiệu trong phỏng vấn cần gắn với kinh nghiệm nghề nghiệp."
+          }
+        ]
+      },
+      {
+        "id": "t2",
+        "fromHanzi": "你觉得自己最大的优势是什么？",
+        "fromPinyin": "Nǐ juéde zìjǐ zuì dà de yōushì shì shénme?",
+        "fromVi": "Bạn thấy thế mạnh lớn nhất của mình là gì?",
+        "task": "Nêu một thế mạnh kèm dẫn chứng bằng con số.",
+        "suggestions": [
+          "我最大的优势是…",
+          "去年我负责的区域业绩增长了40%。",
+          "我习惯用数据说话。"
+        ],
+        "model": "我最大的优势是能把客户关系转化成实际业绩。去年我负责的广州区域业绩增长了40%，其中一半来自老客户复购。",
+        "modelVi": "Thế mạnh lớn nhất của tôi là biến quan hệ khách hàng thành doanh số thực tế. Năm ngoái khu vực Quảng Châu tôi phụ trách tăng trưởng 40%, một nửa đến từ khách cũ mua lại.",
+        "keywords": [
+          "优势",
+          "40",
+          "业绩",
+          "客户"
+        ],
+        "corrections": [
+          {
+            "wrong": "我很努力，很认真。",
+            "better": "去年我负责的区域业绩增长了40%。",
+            "why": "Thế mạnh cần dẫn chứng đo được, tránh tính từ chung chung."
+          }
+        ]
+      },
+      {
+        "id": "t3",
+        "fromHanzi": "你的期望薪资是多少？",
+        "fromPinyin": "Nǐ de qīwàng xīnzī shì duōshao?",
+        "fromVi": "Mức lương mong muốn của bạn là bao nhiêu?",
+        "task": "Đưa ra khoảng lương và để ngỏ khả năng trao đổi thêm.",
+        "suggestions": [
+          "我的期望薪资是…",
+          "当然也可以再沟通。",
+          "我更看重长期的发展空间。"
+        ],
+        "model": "我的期望薪资在1500万到1800万越南盾之间，具体也可以根据岗位职责再沟通。比起起薪，我更看重长期的发展空间。",
+        "modelVi": "Mức lương tôi mong muốn trong khoảng 15 đến 18 triệu đồng, cụ thể có thể trao đổi thêm theo trách nhiệm công việc. So với lương khởi điểm, tôi coi trọng không gian phát triển dài hạn hơn.",
+        "keywords": [
+          "薪资",
+          "沟通",
+          "发展",
+          "万"
+        ],
+        "corrections": [
+          {
+            "wrong": "越多越好。",
+            "better": "我的期望薪资在1500万到1800万之间，也可以再沟通。",
+            "why": "Trả lời về lương nên có khoảng cụ thể kèm thái độ cởi mở."
+          }
+        ]
+      }
+    ],
+    "rubric": [
+      {
+        "label": "Mạch lạc",
+        "hint": "Có mở đầu, nội dung, kết"
+      },
+      {
+        "label": "Dẫn chứng",
+        "hint": "Có số liệu hoặc ví dụ"
+      },
+      {
+        "label": "Thái độ chuyên nghiệp",
+        "hint": "Kính ngữ và giọng điệu phù hợp"
+      }
+    ]
+  },
+  {
+    "id": "sc-negotiation",
+    "kind": "meeting",
+    "channel": "chat",
+    "title": "Đàm phán giá và thời hạn thanh toán",
+    "hanziTitle": "价格与账期谈判",
+    "partner": "Trần Vĩ",
+    "partnerRole": "Giám đốc mua hàng",
+    "partnerInitial": "陈",
+    "level": 6,
+    "durationMin": 20,
+    "difficulty": "Khó",
+    "blurb": "Khách đòi giảm giá 10% và kéo dài công nợ. Giữ biên lợi nhuận mà không làm hỏng thương vụ.",
+    "goal": "Từ chối mức giảm giá ban đầu, đưa ra điều kiện đổi lại, và chốt được một phương án.",
+    "brief": "Đối tác đã mua hàng của bạn hai năm và giờ muốn giảm 10% đơn giá kèm công nợ 60 ngày. Bạn được phép giảm tối đa 4%, và chỉ nới công nợ nếu sản lượng cam kết tăng. Trao đổi diễn ra trên nhóm chat công việc.",
+    "vocabulary": [
+      {
+        "hanzi": "单价",
+        "pinyin": "dānjià",
+        "vi": "đơn giá"
+      },
+      {
+        "hanzi": "账期",
+        "pinyin": "zhàngqī",
+        "vi": "kỳ hạn thanh toán, công nợ"
+      },
+      {
+        "hanzi": "利润空间",
+        "pinyin": "lìrùn kōngjiān",
+        "vi": "biên lợi nhuận"
+      },
+      {
+        "hanzi": "年采购量",
+        "pinyin": "nián cǎigòuliàng",
+        "vi": "sản lượng mua hàng năm"
+      },
+      {
+        "hanzi": "让步",
+        "pinyin": "ràngbù",
+        "vi": "nhượng bộ"
+      }
+    ],
+    "phrases": [
+      {
+        "hanzi": "这个价格确实有难度。",
+        "pinyin": "Zhège jiàgé quèshí yǒu nándù.",
+        "vi": "Mức giá này thật sự khó cho chúng tôi."
+      },
+      {
+        "hanzi": "如果……我们可以考虑……",
+        "pinyin": "Rúguǒ…… wǒmen kěyǐ kǎolǜ……",
+        "vi": "Nếu… chúng tôi có thể cân nhắc…"
+      },
+      {
+        "hanzi": "我们各让一步。",
+        "pinyin": "Wǒmen gè ràng yí bù.",
+        "vi": "Hai bên mỗi bên nhượng một bước."
+      }
+    ],
+    "turns": [
+      {
+        "id": "sc-negotiation-t1",
+        "fromHanzi": "今年成本压力大，单价能不能降百分之十？",
+        "fromPinyin": "Jīnnián chéngběn yālì dà, dānjià néng bu néng jiàng bǎi fēn zhī shí?",
+        "fromVi": "Năm nay áp lực chi phí lớn, đơn giá có thể giảm 10% được không?",
+        "task": "Từ chối mức 10% một cách mềm mỏng, nêu lý do, và mở đường cho phương án khác.",
+        "suggestions": [
+          "这个价格确实有难度",
+          "我们的利润空间……",
+          "不过我们可以……"
+        ],
+        "model": "陈总您好，百分之十确实有难度，我们目前的利润空间不到百分之八。不过我理解贵司的成本压力，我们可以一起看看别的方式。",
+        "modelVi": "Chào anh Trần, mức 10% thật sự khó, biên lợi nhuận hiện tại của chúng tôi chưa tới 8%. Nhưng tôi hiểu áp lực chi phí bên anh, hai bên cùng xem hướng khác nhé.",
+        "keywords": [
+          "难度",
+          "利润空间",
+          "理解"
+        ],
+        "corrections": [
+          {
+            "wrong": "不可能",
+            "better": "这个价格确实有难度",
+            "why": "Từ chối thẳng đóng luôn cuộc đàm phán; cách nói mềm giữ cửa thương lượng."
+          },
+          {
+            "wrong": "你要的太多了",
+            "better": "这个幅度超出了我们的承受范围",
+            "why": "Nói về giới hạn của mình, không phán xét yêu cầu của đối tác."
+          }
+        ]
+      },
+      {
+        "id": "sc-negotiation-t2",
+        "fromHanzi": "那你们能给到多少？账期也希望延到六十天。",
+        "fromPinyin": "Nà nǐmen néng gěi dào duōshao? Zhàngqī yě xīwàng yán dào liùshí tiān.",
+        "fromVi": "Vậy bên bạn cho được bao nhiêu? Công nợ cũng mong kéo dài tới 60 ngày.",
+        "task": "Đưa con số cụ thể và gắn nhượng bộ với một điều kiện đổi lại.",
+        "suggestions": [
+          "我们可以让到百分之四",
+          "如果年采购量……",
+          "我们可以考虑账期……"
+        ],
+        "model": "单价我们可以让到百分之四。如果贵司的年采购量能提高到三万件，账期我们可以考虑延到六十天。这样我们各让一步。",
+        "modelVi": "Đơn giá chúng tôi có thể giảm tới 4%. Nếu sản lượng mua hàng năm của bên anh tăng lên 30.000 sản phẩm, chúng tôi có thể cân nhắc kéo công nợ lên 60 ngày. Như vậy mỗi bên nhượng một bước.",
+        "keywords": [
+          "百分之四",
+          "年采购量",
+          "账期"
+        ],
+        "corrections": [
+          {
+            "wrong": "账期可以随便",
+            "better": "账期可以延到六十天，前提是……",
+            "why": "Nhượng bộ không kèm điều kiện sẽ bị coi là mức sàn mới cho lần sau."
+          },
+          {
+            "wrong": "我回去问问",
+            "better": "这个幅度我可以现在确认",
+            "why": "Trì hoãn liên tục làm mất đà đàm phán khi bạn vốn có quyền quyết trong khung cho phép."
+          }
+        ]
+      },
+      {
+        "id": "sc-negotiation-t3",
+        "fromHanzi": "可以，那就按这个方案。请把新的报价单发我。",
+        "fromPinyin": "Kěyǐ, nà jiù àn zhège fāng’àn. Qǐng bǎ xīn de bàojiàdān fā wǒ.",
+        "fromVi": "Được, vậy theo phương án này. Gửi tôi bảng báo giá mới nhé.",
+        "task": "Xác nhận lại các điều khoản đã chốt và hẹn thời điểm gửi tài liệu.",
+        "suggestions": [
+          "我确认一下",
+          "今天下班前发给您",
+          "感谢您的支持"
+        ],
+        "model": "好的，我确认一下：单价下调百分之四，账期六十天，年采购量三万件。新的报价单今天下班前发给您。感谢陈总一直以来的支持。",
+        "modelVi": "Vâng, tôi xác nhận lại: đơn giá giảm 4%, công nợ 60 ngày, sản lượng năm 30.000 sản phẩm. Bảng báo giá mới tôi gửi anh trước giờ tan làm hôm nay. Cảm ơn anh Trần đã luôn ủng hộ.",
+        "keywords": [
+          "确认",
+          "报价单",
+          "感谢"
+        ],
+        "corrections": [
+          {
+            "wrong": "好的好的",
+            "better": "好的，我确认一下条款",
+            "why": "Chốt đàm phán phải nhắc lại điều khoản, tránh hiểu khác nhau về sau."
+          },
+          {
+            "wrong": "尽快发给你",
+            "better": "今天下班前发给您",
+            "why": "尽快 không phải một mốc thời gian; nêu hạn cụ thể mới tạo được cam kết."
+          }
+        ]
+      }
+    ],
+    "rubric": [
+      {
+        "label": "Giữ giới hạn",
+        "hint": "Không vượt mức giảm 4% được phép."
+      },
+      {
+        "label": "Có đánh đổi",
+        "hint": "Mỗi nhượng bộ đi kèm một điều kiện."
+      },
+      {
+        "label": "Chốt rõ ràng",
+        "hint": "Nhắc lại điều khoản và hẹn mốc thời gian."
+      }
+    ]
+  },
+  {
+    "id": "sc-complaint",
+    "kind": "email",
+    "channel": "email",
+    "title": "Trả lời khiếu nại giao hàng chậm",
+    "hanziTitle": "延迟交货投诉",
+    "partner": "Trương Kiến Quốc",
+    "partnerRole": "Quản lý mua hàng",
+    "partnerInitial": "张",
+    "level": 6,
+    "durationMin": 20,
+    "difficulty": "Khó",
+    "blurb": "Khách giận vì hàng trễ hai tuần. Nhận lỗi, giải thích nguyên nhân và đưa phương án — không né tránh.",
+    "goal": "Viết thư xin lỗi có phương án bồi thường cụ thể mà vẫn giữ được quan hệ hợp tác.",
+    "brief": "Lô hàng linh kiện giao trễ mười bốn ngày do nhà máy thiếu nguyên liệu. Khách đã gửi thư phàn nàn và nhắc tới điều khoản phạt trong hợp đồng. Bạn phụ trách chăm sóc khách hàng và phải trả lời trong hôm nay.",
+    "vocabulary": [
+      {
+        "hanzi": "延迟",
+        "pinyin": "yánchí",
+        "vi": "trì hoãn"
+      },
+      {
+        "hanzi": "交货",
+        "pinyin": "jiāohuò",
+        "vi": "giao hàng"
+      },
+      {
+        "hanzi": "违约金",
+        "pinyin": "wéiyuējīn",
+        "vi": "tiền phạt vi phạm hợp đồng"
+      },
+      {
+        "hanzi": "补偿方案",
+        "pinyin": "bǔcháng fāng’àn",
+        "vi": "phương án bồi thường"
+      },
+      {
+        "hanzi": "给您带来不便",
+        "pinyin": "gěi nín dàilái búbiàn",
+        "vi": "gây bất tiện cho quý khách"
+      }
+    ],
+    "phrases": [
+      {
+        "hanzi": "非常抱歉给您带来不便。",
+        "pinyin": "Fēicháng bàoqiàn gěi nín dàilái búbiàn.",
+        "vi": "Vô cùng xin lỗi vì đã gây bất tiện cho quý khách."
+      },
+      {
+        "hanzi": "经核实，原因是……",
+        "pinyin": "Jīng héshí, yuányīn shì……",
+        "vi": "Sau khi xác minh, nguyên nhân là…"
+      },
+      {
+        "hanzi": "我们提出如下补偿方案：",
+        "pinyin": "Wǒmen tíchū rúxià bǔcháng fāng’àn:",
+        "vi": "Chúng tôi đề xuất phương án bồi thường như sau:"
+      }
+    ],
+    "turns": [
+      {
+        "id": "sc-complaint-t1",
+        "fromHanzi": "这批货已经延迟了两周，我们的产线被迫停工，请给一个说法。",
+        "fromPinyin": "Zhè pī huò yǐjīng yánchí le liǎng zhōu, wǒmen de chǎnxiàn bèi pò tínggōng, qǐng gěi yí gè shuōfa.",
+        "fromVi": "Lô hàng này đã trễ hai tuần, dây chuyền của chúng tôi buộc phải dừng, đề nghị bên bạn giải thích.",
+        "task": "Xin lỗi trước, nêu nguyên nhân đã xác minh, và hứa mốc thời gian cụ thể.",
+        "suggestions": [
+          "非常抱歉给您带来不便",
+          "经核实，原因是……",
+          "预计……前完成交付"
+        ],
+        "model": "张经理您好，非常抱歉给您带来不便。经核实，延迟的原因是上游原料供应中断。目前生产已恢复，预计本周五前完成全部交付。",
+        "modelVi": "Chào anh Trương, vô cùng xin lỗi vì sự bất tiện này. Sau khi xác minh, nguyên nhân chậm trễ là nguồn nguyên liệu đầu vào bị gián đoạn. Hiện sản xuất đã khôi phục, dự kiến hoàn tất giao hàng trước thứ Sáu tuần này.",
+        "keywords": [
+          "抱歉",
+          "原因",
+          "交付"
+        ],
+        "corrections": [
+          {
+            "wrong": "这不是我们的错",
+            "better": "责任在我方，我们会承担",
+            "why": "Đổ lỗi trong thư khiếu nại làm hỏng quan hệ; nhận trách nhiệm rồi mới giải thích."
+          },
+          {
+            "wrong": "可能快了吧",
+            "better": "预计本周五前完成交付",
+            "why": "Khách cần một mốc thời gian xác định, không cần phỏng đoán."
+          }
+        ]
+      },
+      {
+        "id": "sc-complaint-t2",
+        "fromHanzi": "按合同，你们需要支付违约金。这部分怎么处理？",
+        "fromPinyin": "Àn hétong, nǐmen xūyào zhīfù wéiyuējīn. Zhè bùfen zěnme chǔlǐ?",
+        "fromVi": "Theo hợp đồng, bên bạn phải trả tiền phạt. Phần này xử lý thế nào?",
+        "task": "Thừa nhận điều khoản, đưa phương án bồi thường cụ thể gồm ít nhất hai lựa chọn.",
+        "suggestions": [
+          "我们尊重合同条款",
+          "我们提出如下补偿方案：",
+          "您可以选择……"
+        ],
+        "model": "我们尊重合同条款，愿意承担相应责任。我们提出如下补偿方案：一是按合同支付违约金；二是本批货物折扣百分之五，并免除下批运费。您可以选择其中一种。",
+        "modelVi": "Chúng tôi tôn trọng điều khoản hợp đồng và sẵn sàng chịu trách nhiệm tương ứng. Chúng tôi đề xuất phương án bồi thường như sau: một là trả tiền phạt theo hợp đồng; hai là giảm 5% lô hàng này và miễn phí vận chuyển lô kế tiếp. Anh có thể chọn một trong hai.",
+        "keywords": [
+          "合同",
+          "违约金",
+          "补偿方案"
+        ],
+        "corrections": [
+          {
+            "wrong": "违约金太多了，不行",
+            "better": "违约金方面，我们希望能协商",
+            "why": "Từ chối thẳng dễ đẩy sang tranh chấp; nên mở hướng thương lượng."
+          },
+          {
+            "wrong": "我们给你便宜一点",
+            "better": "本批货物可享受百分之五的折扣",
+            "why": "Con số rõ ràng mới là một phương án, câu mơ hồ thì không."
+          }
+        ]
+      }
+    ],
+    "rubric": [
+      {
+        "label": "Nhận trách nhiệm",
+        "hint": "Xin lỗi trước, không đổ lỗi cho bên thứ ba."
+      },
+      {
+        "label": "Có phương án",
+        "hint": "Nêu con số và mốc thời gian cụ thể."
+      },
+      {
+        "label": "Giữ quan hệ",
+        "hint": "Kết thư mở đường cho hợp tác tiếp theo."
+      }
+    ]
+  }
+]

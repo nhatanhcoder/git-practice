@@ -1,0 +1,1421 @@
+{
+  "sentences": [
+    {
+      "id": "lg-1",
+      "level": 1,
+      "blocks": [
+        {
+          "id": "lg-1-b0",
+          "text": "我",
+          "role": "S"
+        },
+        {
+          "id": "lg-1-b1",
+          "text": "是",
+          "role": "V"
+        },
+        {
+          "id": "lg-1-b2",
+          "text": "学生",
+          "role": "O"
+        }
+      ],
+      "pinyin": "Wǒ shì xuésheng.",
+      "vi": "Tôi là học sinh.",
+      "hint": "Câu định danh đơn giản nhất: A + 是 + B.",
+      "rule": "Chủ ngữ → Động từ → Tân ngữ",
+      "xp": 20
+    },
+    {
+      "id": "lg-2",
+      "level": 1,
+      "blocks": [
+        {
+          "id": "lg-2-b0",
+          "text": "他",
+          "role": "S"
+        },
+        {
+          "id": "lg-2-b1",
+          "text": "喝",
+          "role": "V"
+        },
+        {
+          "id": "lg-2-b2",
+          "text": "咖啡",
+          "role": "O"
+        }
+      ],
+      "pinyin": "Tā hē kāfēi.",
+      "vi": "Anh ấy uống cà phê.",
+      "hint": "Không cần thêm trợ từ nào cho câu trần thuật ngắn.",
+      "rule": "Chủ ngữ → Động từ → Tân ngữ",
+      "xp": 20
+    },
+    {
+      "id": "lg-3",
+      "level": 1,
+      "blocks": [
+        {
+          "id": "lg-3-b0",
+          "text": "我",
+          "role": "S"
+        },
+        {
+          "id": "lg-3-b1",
+          "text": "明天",
+          "role": "T"
+        },
+        {
+          "id": "lg-3-b2",
+          "text": "去",
+          "role": "V"
+        },
+        {
+          "id": "lg-3-b3",
+          "text": "北京",
+          "role": "O"
+        }
+      ],
+      "pinyin": "Wǒ míngtiān qù Běijīng.",
+      "vi": "Ngày mai tôi đi Bắc Kinh.",
+      "hint": "Thời gian đứng trước động từ, khác hẳn tiếng Việt.",
+      "rule": "Chủ ngữ → Thời gian → Động từ → Tân ngữ",
+      "xp": 25
+    },
+    {
+      "id": "lg-4",
+      "level": 1,
+      "blocks": [
+        {
+          "id": "lg-4-b0",
+          "text": "你",
+          "role": "S"
+        },
+        {
+          "id": "lg-4-b1",
+          "text": "是",
+          "role": "V"
+        },
+        {
+          "id": "lg-4-b2",
+          "text": "老师",
+          "role": "O"
+        },
+        {
+          "id": "lg-4-b3",
+          "text": "吗",
+          "role": "Q"
+        }
+      ],
+      "pinyin": "Nǐ shì lǎoshī ma?",
+      "vi": "Bạn là giáo viên phải không?",
+      "hint": "吗 luôn nằm ở cuối câu hỏi đúng/sai.",
+      "rule": "Câu trần thuật → 吗 ở cuối",
+      "xp": 25
+    },
+    {
+      "id": "lg-5",
+      "level": 1,
+      "blocks": [
+        {
+          "id": "lg-5-b0",
+          "text": "我",
+          "role": "S"
+        },
+        {
+          "id": "lg-5-b1",
+          "text": "不",
+          "role": "A"
+        },
+        {
+          "id": "lg-5-b2",
+          "text": "喝",
+          "role": "V"
+        },
+        {
+          "id": "lg-5-b3",
+          "text": "茶",
+          "role": "O"
+        }
+      ],
+      "pinyin": "Wǒ bù hē chá.",
+      "vi": "Tôi không uống trà.",
+      "hint": "不 đứng ngay trước động từ nó phủ định.",
+      "rule": "Phó từ phủ định đứng trước động từ",
+      "xp": 25
+    },
+    {
+      "id": "lg-6",
+      "level": 2,
+      "blocks": [
+        {
+          "id": "lg-6-b0",
+          "text": "他",
+          "role": "S"
+        },
+        {
+          "id": "lg-6-b1",
+          "text": "在",
+          "role": "P"
+        },
+        {
+          "id": "lg-6-b2",
+          "text": "图书馆",
+          "role": "P"
+        },
+        {
+          "id": "lg-6-b3",
+          "text": "学习",
+          "role": "V"
+        }
+      ],
+      "pinyin": "Tā zài túshūguǎn xuéxí.",
+      "vi": "Anh ấy học ở thư viện.",
+      "hint": "Cụm 在 + nơi chốn đứng trước động từ chính.",
+      "rule": "Chủ ngữ → Nơi chốn → Động từ",
+      "xp": 30
+    },
+    {
+      "id": "lg-7",
+      "level": 2,
+      "blocks": [
+        {
+          "id": "lg-7-b0",
+          "text": "我们",
+          "role": "S"
+        },
+        {
+          "id": "lg-7-b1",
+          "text": "每天",
+          "role": "T"
+        },
+        {
+          "id": "lg-7-b2",
+          "text": "早上",
+          "role": "T"
+        },
+        {
+          "id": "lg-7-b3",
+          "text": "跑步",
+          "role": "V"
+        }
+      ],
+      "pinyin": "Wǒmen měitiān zǎoshang pǎobù.",
+      "vi": "Chúng tôi chạy bộ mỗi sáng.",
+      "hint": "Thời gian đi từ đơn vị lớn đến đơn vị nhỏ.",
+      "rule": "Thời gian lớn → thời gian nhỏ → Động từ",
+      "xp": 30
+    },
+    {
+      "id": "lg-8",
+      "level": 2,
+      "blocks": [
+        {
+          "id": "lg-8-b0",
+          "text": "她",
+          "role": "S"
+        },
+        {
+          "id": "lg-8-b1",
+          "text": "昨天",
+          "role": "T"
+        },
+        {
+          "id": "lg-8-b2",
+          "text": "在",
+          "role": "P"
+        },
+        {
+          "id": "lg-8-b3",
+          "text": "家",
+          "role": "P"
+        },
+        {
+          "id": "lg-8-b4",
+          "text": "看",
+          "role": "V"
+        },
+        {
+          "id": "lg-8-b5",
+          "text": "电视",
+          "role": "O"
+        }
+      ],
+      "pinyin": "Tā zuótiān zài jiā kàn diànshì.",
+      "vi": "Hôm qua cô ấy xem tivi ở nhà.",
+      "hint": "Thứ tự cố định: thời gian rồi mới đến nơi chốn.",
+      "rule": "Chủ ngữ → Thời gian → Nơi chốn → Động từ → Tân ngữ",
+      "xp": 35
+    },
+    {
+      "id": "lg-9",
+      "level": 2,
+      "blocks": [
+        {
+          "id": "lg-9-b0",
+          "text": "我",
+          "role": "S"
+        },
+        {
+          "id": "lg-9-b1",
+          "text": "跟",
+          "role": "A"
+        },
+        {
+          "id": "lg-9-b2",
+          "text": "朋友",
+          "role": "A"
+        },
+        {
+          "id": "lg-9-b3",
+          "text": "一起",
+          "role": "A"
+        },
+        {
+          "id": "lg-9-b4",
+          "text": "吃饭",
+          "role": "V"
+        }
+      ],
+      "pinyin": "Wǒ gēn péngyou yìqǐ chīfàn.",
+      "vi": "Tôi ăn cơm cùng bạn.",
+      "hint": "Cụm giới từ 跟…一起 đứng trước động từ.",
+      "rule": "Cụm giới từ đứng trước động từ",
+      "xp": 35
+    },
+    {
+      "id": "lg-10",
+      "level": 2,
+      "blocks": [
+        {
+          "id": "lg-10-b0",
+          "text": "今天",
+          "role": "T"
+        },
+        {
+          "id": "lg-10-b1",
+          "text": "比",
+          "role": "A"
+        },
+        {
+          "id": "lg-10-b2",
+          "text": "昨天",
+          "role": "A"
+        },
+        {
+          "id": "lg-10-b3",
+          "text": "热",
+          "role": "V"
+        }
+      ],
+      "pinyin": "Jīntiān bǐ zuótiān rè.",
+      "vi": "Hôm nay nóng hơn hôm qua.",
+      "hint": "Cấu trúc so sánh: A + 比 + B + tính từ, không thêm 很.",
+      "rule": "A → 比 → B → Tính từ",
+      "xp": 35
+    },
+    {
+      "id": "lg-11",
+      "level": 2,
+      "blocks": [
+        {
+          "id": "lg-11-b0",
+          "text": "我",
+          "role": "S"
+        },
+        {
+          "id": "lg-11-b1",
+          "text": "吃",
+          "role": "V"
+        },
+        {
+          "id": "lg-11-b2",
+          "text": "了",
+          "role": "Q"
+        },
+        {
+          "id": "lg-11-b3",
+          "text": "两碗饭",
+          "role": "O"
+        }
+      ],
+      "pinyin": "Wǒ chī le liǎng wǎn fàn.",
+      "vi": "Tôi đã ăn hai bát cơm.",
+      "hint": "了 đứng ngay sau động từ để chỉ hành động hoàn thành.",
+      "rule": "Động từ → 了 → Tân ngữ",
+      "xp": 35
+    },
+    {
+      "id": "lg-12",
+      "level": 2,
+      "blocks": [
+        {
+          "id": "lg-12-b0",
+          "text": "他",
+          "role": "S"
+        },
+        {
+          "id": "lg-12-b1",
+          "text": "去",
+          "role": "V"
+        },
+        {
+          "id": "lg-12-b2",
+          "text": "过",
+          "role": "Q"
+        },
+        {
+          "id": "lg-12-b3",
+          "text": "中国",
+          "role": "O"
+        }
+      ],
+      "pinyin": "Tā qù guo Zhōngguó.",
+      "vi": "Anh ấy từng đến Trung Quốc.",
+      "hint": "过 chỉ kinh nghiệm đã trải qua, đứng sau động từ.",
+      "rule": "Động từ → 过 → Tân ngữ",
+      "xp": 35
+    },
+    {
+      "id": "lg-13",
+      "level": 2,
+      "blocks": [
+        {
+          "id": "lg-13-b0",
+          "text": "我",
+          "role": "S"
+        },
+        {
+          "id": "lg-13-b1",
+          "text": "还",
+          "role": "A"
+        },
+        {
+          "id": "lg-13-b2",
+          "text": "没",
+          "role": "A"
+        },
+        {
+          "id": "lg-13-b3",
+          "text": "写",
+          "role": "V"
+        },
+        {
+          "id": "lg-13-b4",
+          "text": "作业",
+          "role": "O"
+        }
+      ],
+      "pinyin": "Wǒ hái méi xiě zuòyè.",
+      "vi": "Tôi vẫn chưa làm bài tập.",
+      "hint": "还没 dùng cho việc chưa xảy ra, không dùng 不.",
+      "rule": "Phó từ → Phủ định → Động từ → Tân ngữ",
+      "xp": 40
+    },
+    {
+      "id": "lg-14",
+      "level": 2,
+      "blocks": [
+        {
+          "id": "lg-14-b0",
+          "text": "妈妈",
+          "role": "S"
+        },
+        {
+          "id": "lg-14-b1",
+          "text": "正在",
+          "role": "A"
+        },
+        {
+          "id": "lg-14-b2",
+          "text": "做",
+          "role": "V"
+        },
+        {
+          "id": "lg-14-b3",
+          "text": "饭",
+          "role": "O"
+        },
+        {
+          "id": "lg-14-b4",
+          "text": "呢",
+          "role": "Q"
+        }
+      ],
+      "pinyin": "Māma zhèngzài zuò fàn ne.",
+      "vi": "Mẹ đang nấu cơm.",
+      "hint": "正在…呢 bao lấy động từ để nhấn mạnh hành động đang diễn ra.",
+      "rule": "正在 → Động từ → 呢",
+      "xp": 40
+    },
+    {
+      "id": "lg-15",
+      "level": 2,
+      "blocks": [
+        {
+          "id": "lg-15-b0",
+          "text": "我",
+          "role": "S"
+        },
+        {
+          "id": "lg-15-b1",
+          "text": "想",
+          "role": "A"
+        },
+        {
+          "id": "lg-15-b2",
+          "text": "买",
+          "role": "V"
+        },
+        {
+          "id": "lg-15-b3",
+          "text": "一件衣服",
+          "role": "O"
+        }
+      ],
+      "pinyin": "Wǒ xiǎng mǎi yí jiàn yīfu.",
+      "vi": "Tôi muốn mua một cái áo.",
+      "hint": "Động từ năng nguyện 想 đứng trước động từ chính.",
+      "rule": "Động từ năng nguyện → Động từ chính → Tân ngữ",
+      "xp": 35
+    },
+    {
+      "id": "lg-16",
+      "level": 3,
+      "blocks": [
+        {
+          "id": "lg-16-b0",
+          "text": "他",
+          "role": "S"
+        },
+        {
+          "id": "lg-16-b1",
+          "text": "汉语",
+          "role": "O"
+        },
+        {
+          "id": "lg-16-b2",
+          "text": "说",
+          "role": "V"
+        },
+        {
+          "id": "lg-16-b3",
+          "text": "得",
+          "role": "Q"
+        },
+        {
+          "id": "lg-16-b4",
+          "text": "很流利",
+          "role": "C"
+        }
+      ],
+      "pinyin": "Tā Hànyǔ shuō de hěn liúlì.",
+      "vi": "Anh ấy nói tiếng Trung rất trôi chảy.",
+      "hint": "Có tân ngữ thì đưa tân ngữ lên trước cụm 说得.",
+      "rule": "Tân ngữ → Động từ → 得 → Bổ ngữ trình độ",
+      "xp": 45
+    },
+    {
+      "id": "lg-17",
+      "level": 3,
+      "blocks": [
+        {
+          "id": "lg-17-b0",
+          "text": "我",
+          "role": "S"
+        },
+        {
+          "id": "lg-17-b1",
+          "text": "听",
+          "role": "V"
+        },
+        {
+          "id": "lg-17-b2",
+          "text": "懂",
+          "role": "C"
+        },
+        {
+          "id": "lg-17-b3",
+          "text": "了",
+          "role": "Q"
+        }
+      ],
+      "pinyin": "Wǒ tīng dǒng le.",
+      "vi": "Tôi đã nghe hiểu rồi.",
+      "hint": "懂 là bổ ngữ kết quả, dính liền ngay sau động từ.",
+      "rule": "Động từ → Bổ ngữ kết quả → 了",
+      "xp": 40
+    },
+    {
+      "id": "lg-18",
+      "level": 3,
+      "blocks": [
+        {
+          "id": "lg-18-b0",
+          "text": "他",
+          "role": "S"
+        },
+        {
+          "id": "lg-18-b1",
+          "text": "跑",
+          "role": "V"
+        },
+        {
+          "id": "lg-18-b2",
+          "text": "得",
+          "role": "Q"
+        },
+        {
+          "id": "lg-18-b3",
+          "text": "比我",
+          "role": "C"
+        },
+        {
+          "id": "lg-18-b4",
+          "text": "快",
+          "role": "C"
+        }
+      ],
+      "pinyin": "Tā pǎo de bǐ wǒ kuài.",
+      "vi": "Anh ấy chạy nhanh hơn tôi.",
+      "hint": "So sánh nằm bên trong bổ ngữ trình độ.",
+      "rule": "Động từ → 得 → 比 + đối tượng → Tính từ",
+      "xp": 50
+    },
+    {
+      "id": "lg-19",
+      "level": 3,
+      "blocks": [
+        {
+          "id": "lg-19-b0",
+          "text": "请",
+          "role": "A"
+        },
+        {
+          "id": "lg-19-b1",
+          "text": "把",
+          "role": "A"
+        },
+        {
+          "id": "lg-19-b2",
+          "text": "门",
+          "role": "O"
+        },
+        {
+          "id": "lg-19-b3",
+          "text": "关",
+          "role": "V"
+        },
+        {
+          "id": "lg-19-b4",
+          "text": "上",
+          "role": "C"
+        }
+      ],
+      "pinyin": "Qǐng bǎ mén guān shàng.",
+      "vi": "Làm ơn đóng cửa lại.",
+      "hint": "Câu chữ 把 bắt buộc có thành phần bổ sung sau động từ.",
+      "rule": "把 → Tân ngữ → Động từ → Bổ ngữ",
+      "xp": 50
+    },
+    {
+      "id": "lg-20",
+      "level": 3,
+      "blocks": [
+        {
+          "id": "lg-20-b0",
+          "text": "这本书",
+          "role": "S"
+        },
+        {
+          "id": "lg-20-b1",
+          "text": "被",
+          "role": "A"
+        },
+        {
+          "id": "lg-20-b2",
+          "text": "他",
+          "role": "A"
+        },
+        {
+          "id": "lg-20-b3",
+          "text": "借",
+          "role": "V"
+        },
+        {
+          "id": "lg-20-b4",
+          "text": "走了",
+          "role": "C"
+        }
+      ],
+      "pinyin": "Zhè běn shū bèi tā jiè zǒu le.",
+      "vi": "Cuốn sách này bị anh ấy mượn mất rồi.",
+      "hint": "Câu bị động 被 cũng cần bổ ngữ sau động từ.",
+      "rule": "Đối tượng → 被 → Chủ thể → Động từ → Bổ ngữ",
+      "xp": 50
+    },
+    {
+      "id": "lg-21",
+      "level": 3,
+      "blocks": [
+        {
+          "id": "lg-21-b0",
+          "text": "虽然",
+          "role": "A"
+        },
+        {
+          "id": "lg-21-b1",
+          "text": "很累",
+          "role": "C"
+        },
+        {
+          "id": "lg-21-b2",
+          "text": "但是",
+          "role": "A"
+        },
+        {
+          "id": "lg-21-b3",
+          "text": "他",
+          "role": "S"
+        },
+        {
+          "id": "lg-21-b4",
+          "text": "还在",
+          "role": "A"
+        },
+        {
+          "id": "lg-21-b5",
+          "text": "工作",
+          "role": "V"
+        }
+      ],
+      "pinyin": "Suīrán hěn lèi, dànshì tā hái zài gōngzuò.",
+      "vi": "Tuy rất mệt nhưng anh ấy vẫn đang làm việc.",
+      "hint": "Cặp liên từ 虽然…但是… mở đầu hai vế.",
+      "rule": "虽然 + vế 1 → 但是 + vế 2",
+      "xp": 50
+    },
+    {
+      "id": "lg-22",
+      "level": 3,
+      "blocks": [
+        {
+          "id": "lg-22-b0",
+          "text": "因为",
+          "role": "A"
+        },
+        {
+          "id": "lg-22-b1",
+          "text": "下雨",
+          "role": "V"
+        },
+        {
+          "id": "lg-22-b2",
+          "text": "所以",
+          "role": "A"
+        },
+        {
+          "id": "lg-22-b3",
+          "text": "我们",
+          "role": "S"
+        },
+        {
+          "id": "lg-22-b4",
+          "text": "没去",
+          "role": "V"
+        }
+      ],
+      "pinyin": "Yīnwèi xiàyǔ, suǒyǐ wǒmen méi qù.",
+      "vi": "Vì trời mưa nên chúng tôi đã không đi.",
+      "hint": "Nguyên nhân đứng trước, kết quả theo sau.",
+      "rule": "因为 + nguyên nhân → 所以 + kết quả",
+      "xp": 45
+    },
+    {
+      "id": "lg-23",
+      "level": 3,
+      "blocks": [
+        {
+          "id": "lg-23-b0",
+          "text": "只要",
+          "role": "A"
+        },
+        {
+          "id": "lg-23-b1",
+          "text": "你",
+          "role": "S"
+        },
+        {
+          "id": "lg-23-b2",
+          "text": "努力",
+          "role": "V"
+        },
+        {
+          "id": "lg-23-b3",
+          "text": "就",
+          "role": "A"
+        },
+        {
+          "id": "lg-23-b4",
+          "text": "会",
+          "role": "A"
+        },
+        {
+          "id": "lg-23-b5",
+          "text": "成功",
+          "role": "V"
+        }
+      ],
+      "pinyin": "Zhǐyào nǐ nǔlì, jiù huì chénggōng.",
+      "vi": "Chỉ cần bạn cố gắng thì sẽ thành công.",
+      "hint": "就 luôn đứng trước động từ ở vế sau.",
+      "rule": "只要 + điều kiện → 就 + kết quả",
+      "xp": 50
+    },
+    {
+      "id": "lg-24",
+      "level": 3,
+      "blocks": [
+        {
+          "id": "lg-24-b0",
+          "text": "他",
+          "role": "S"
+        },
+        {
+          "id": "lg-24-b1",
+          "text": "不但",
+          "role": "A"
+        },
+        {
+          "id": "lg-24-b2",
+          "text": "会",
+          "role": "A"
+        },
+        {
+          "id": "lg-24-b3",
+          "text": "说",
+          "role": "V"
+        },
+        {
+          "id": "lg-24-b4",
+          "text": "汉语",
+          "role": "O"
+        },
+        {
+          "id": "lg-24-b5",
+          "text": "而且",
+          "role": "A"
+        },
+        {
+          "id": "lg-24-b6",
+          "text": "说",
+          "role": "V"
+        },
+        {
+          "id": "lg-24-b7",
+          "text": "得很好",
+          "role": "C"
+        }
+      ],
+      "pinyin": "Tā búdàn huì shuō Hànyǔ, érqiě shuō de hěn hǎo.",
+      "vi": "Anh ấy không những biết nói tiếng Trung mà còn nói rất hay.",
+      "hint": "Cặp tăng tiến 不但…而且… giữ cùng một chủ ngữ.",
+      "rule": "不但 + vế 1 → 而且 + vế 2",
+      "xp": 55
+    },
+    {
+      "id": "lg-25",
+      "level": 3,
+      "blocks": [
+        {
+          "id": "lg-25-b0",
+          "text": "越",
+          "role": "A"
+        },
+        {
+          "id": "lg-25-b1",
+          "text": "学",
+          "role": "V"
+        },
+        {
+          "id": "lg-25-b2",
+          "text": "越",
+          "role": "A"
+        },
+        {
+          "id": "lg-25-b3",
+          "text": "有意思",
+          "role": "C"
+        }
+      ],
+      "pinyin": "Yuè xué yuè yǒu yìsi.",
+      "vi": "Càng học càng thú vị.",
+      "hint": "Cấu trúc 越…越… lặp lại đúng hai lần.",
+      "rule": "越 + Động từ → 越 + Tính từ",
+      "xp": 45
+    },
+    {
+      "id": "lg-26",
+      "level": 1,
+      "blocks": [
+        {
+          "id": "lg-26-b0",
+          "text": "我",
+          "role": "S"
+        },
+        {
+          "id": "lg-26-b1",
+          "text": "喝",
+          "role": "V"
+        },
+        {
+          "id": "lg-26-b2",
+          "text": "水",
+          "role": "O"
+        }
+      ],
+      "pinyin": "Wǒ hē shuǐ.",
+      "vi": "Tôi uống nước.",
+      "hint": "Câu ba thành phần cơ bản nhất.",
+      "rule": "Chủ ngữ → Động từ → Tân ngữ",
+      "xp": 20
+    },
+    {
+      "id": "lg-27",
+      "level": 1,
+      "blocks": [
+        {
+          "id": "lg-27-b0",
+          "text": "他",
+          "role": "S"
+        },
+        {
+          "id": "lg-27-b1",
+          "text": "不",
+          "role": "A"
+        },
+        {
+          "id": "lg-27-b2",
+          "text": "去",
+          "role": "V"
+        }
+      ],
+      "pinyin": "Tā bú qù.",
+      "vi": "Anh ấy không đi.",
+      "hint": "Phó từ phủ định đứng ngay trước động từ.",
+      "rule": "Phủ định 不 đứng trước động từ",
+      "xp": 20
+    },
+    {
+      "id": "lg-28",
+      "level": 1,
+      "blocks": [
+        {
+          "id": "lg-28-b0",
+          "text": "这",
+          "role": "S"
+        },
+        {
+          "id": "lg-28-b1",
+          "text": "是",
+          "role": "V"
+        },
+        {
+          "id": "lg-28-b2",
+          "text": "我的书",
+          "role": "O"
+        }
+      ],
+      "pinyin": "Zhè shì wǒ de shū.",
+      "vi": "Đây là sách của tôi.",
+      "hint": "Định ngữ sở hữu dùng 的 đứng trước danh từ.",
+      "rule": "Định ngữ + 的 + danh từ",
+      "xp": 20
+    },
+    {
+      "id": "lg-29",
+      "level": 1,
+      "blocks": [
+        {
+          "id": "lg-29-b0",
+          "text": "你",
+          "role": "S"
+        },
+        {
+          "id": "lg-29-b1",
+          "text": "好",
+          "role": "V"
+        },
+        {
+          "id": "lg-29-b2",
+          "text": "吗",
+          "role": "Q"
+        }
+      ],
+      "pinyin": "Nǐ hǎo ma?",
+      "vi": "Bạn khoẻ không?",
+      "hint": "Trợ từ nghi vấn 吗 luôn đứng cuối câu.",
+      "rule": "Trợ từ nghi vấn đứng cuối câu",
+      "xp": 20
+    },
+    {
+      "id": "lg-30",
+      "level": 2,
+      "blocks": [
+        {
+          "id": "lg-30-b0",
+          "text": "我",
+          "role": "S"
+        },
+        {
+          "id": "lg-30-b1",
+          "text": "明天",
+          "role": "T"
+        },
+        {
+          "id": "lg-30-b2",
+          "text": "去",
+          "role": "V"
+        },
+        {
+          "id": "lg-30-b3",
+          "text": "北京",
+          "role": "O"
+        }
+      ],
+      "pinyin": "Wǒ míngtiān qù Běijīng.",
+      "vi": "Ngày mai tôi đi Bắc Kinh.",
+      "hint": "Thời gian đứng sau chủ ngữ, trước động từ — không để cuối câu như tiếng Việt.",
+      "rule": "Chủ ngữ → Thời gian → Động từ → Tân ngữ",
+      "xp": 30
+    },
+    {
+      "id": "lg-31",
+      "level": 2,
+      "blocks": [
+        {
+          "id": "lg-31-b0",
+          "text": "他",
+          "role": "S"
+        },
+        {
+          "id": "lg-31-b1",
+          "text": "在",
+          "role": "P"
+        },
+        {
+          "id": "lg-31-b2",
+          "text": "家",
+          "role": "P"
+        },
+        {
+          "id": "lg-31-b3",
+          "text": "看书",
+          "role": "V"
+        }
+      ],
+      "pinyin": "Tā zài jiā kàn shū.",
+      "vi": "Anh ấy đọc sách ở nhà.",
+      "hint": "Cụm nơi chốn với 在 đứng trước động từ chính.",
+      "rule": "Chủ ngữ → 在 + nơi chốn → Động từ",
+      "xp": 30
+    },
+    {
+      "id": "lg-32",
+      "level": 2,
+      "blocks": [
+        {
+          "id": "lg-32-b0",
+          "text": "我",
+          "role": "S"
+        },
+        {
+          "id": "lg-32-b1",
+          "text": "每天",
+          "role": "T"
+        },
+        {
+          "id": "lg-32-b2",
+          "text": "六点",
+          "role": "T"
+        },
+        {
+          "id": "lg-32-b3",
+          "text": "起床",
+          "role": "V"
+        }
+      ],
+      "pinyin": "Wǒ měitiān liù diǎn qǐchuáng.",
+      "vi": "Ngày nào tôi cũng dậy lúc sáu giờ.",
+      "hint": "Hai trạng ngữ thời gian: đơn vị lớn đứng trước đơn vị nhỏ.",
+      "rule": "Thời gian lớn → thời gian nhỏ → động từ",
+      "xp": 30
+    },
+    {
+      "id": "lg-33",
+      "level": 2,
+      "blocks": [
+        {
+          "id": "lg-33-b0",
+          "text": "她",
+          "role": "S"
+        },
+        {
+          "id": "lg-33-b1",
+          "text": "汉语",
+          "role": "O"
+        },
+        {
+          "id": "lg-33-b2",
+          "text": "说得",
+          "role": "V"
+        },
+        {
+          "id": "lg-33-b3",
+          "text": "很好",
+          "role": "C"
+        }
+      ],
+      "pinyin": "Tā Hànyǔ shuō de hěn hǎo.",
+      "vi": "Cô ấy nói tiếng Trung rất giỏi.",
+      "hint": "Khi có bổ ngữ trình độ, tân ngữ được đưa lên trước động từ.",
+      "rule": "Tân ngữ đảo lên trước khi có bổ ngữ 得",
+      "xp": 40
+    },
+    {
+      "id": "lg-34",
+      "level": 3,
+      "blocks": [
+        {
+          "id": "lg-34-b0",
+          "text": "我",
+          "role": "S"
+        },
+        {
+          "id": "lg-34-b1",
+          "text": "把",
+          "role": "A"
+        },
+        {
+          "id": "lg-34-b2",
+          "text": "作业",
+          "role": "O"
+        },
+        {
+          "id": "lg-34-b3",
+          "text": "做完了",
+          "role": "V"
+        }
+      ],
+      "pinyin": "Wǒ bǎ zuòyè zuò wán le.",
+      "vi": "Tôi đã làm xong bài tập.",
+      "hint": "Câu chữ 把 đưa tân ngữ lên trước động từ để nhấn kết quả xử lý.",
+      "rule": "Chủ ngữ → 把 + tân ngữ → động từ + kết quả",
+      "xp": 40
+    },
+    {
+      "id": "lg-35",
+      "level": 3,
+      "blocks": [
+        {
+          "id": "lg-35-b0",
+          "text": "这本书",
+          "role": "S"
+        },
+        {
+          "id": "lg-35-b1",
+          "text": "被",
+          "role": "A"
+        },
+        {
+          "id": "lg-35-b2",
+          "text": "他",
+          "role": "O"
+        },
+        {
+          "id": "lg-35-b3",
+          "text": "借走了",
+          "role": "V"
+        }
+      ],
+      "pinyin": "Zhè běn shū bèi tā jiè zǒu le.",
+      "vi": "Quyển sách này bị anh ấy mượn mất rồi.",
+      "hint": "Câu bị động với 被: người chịu tác động đứng đầu câu.",
+      "rule": "Đối tượng → 被 + tác nhân → động từ",
+      "xp": 40
+    },
+    {
+      "id": "lg-36",
+      "level": 3,
+      "blocks": [
+        {
+          "id": "lg-36-b0",
+          "text": "如果",
+          "role": "A"
+        },
+        {
+          "id": "lg-36-b1",
+          "text": "明天下雨",
+          "role": "S"
+        },
+        {
+          "id": "lg-36-b2",
+          "text": "我们",
+          "role": "S"
+        },
+        {
+          "id": "lg-36-b3",
+          "text": "就不去",
+          "role": "V"
+        }
+      ],
+      "pinyin": "Rúguǒ míngtiān xià yǔ, wǒmen jiù bú qù.",
+      "vi": "Nếu mai mưa thì chúng tôi không đi.",
+      "hint": "Cặp 如果…就… nối vế điều kiện với vế kết quả.",
+      "rule": "Liên từ điều kiện đi thành cặp",
+      "xp": 50
+    },
+    {
+      "id": "lg-37",
+      "level": 3,
+      "blocks": [
+        {
+          "id": "lg-37-b0",
+          "text": "他",
+          "role": "S"
+        },
+        {
+          "id": "lg-37-b1",
+          "text": "比",
+          "role": "A"
+        },
+        {
+          "id": "lg-37-b2",
+          "text": "我",
+          "role": "O"
+        },
+        {
+          "id": "lg-37-b3",
+          "text": "高",
+          "role": "C"
+        }
+      ],
+      "pinyin": "Tā bǐ wǒ gāo.",
+      "vi": "Anh ấy cao hơn tôi.",
+      "hint": "Câu so sánh với 比: không thêm 很 trước tính từ.",
+      "rule": "A + 比 + B + tính từ",
+      "xp": 40
+    },
+    {
+      "id": "lg-38",
+      "level": 3,
+      "blocks": [
+        {
+          "id": "lg-38-b0",
+          "text": "我",
+          "role": "S"
+        },
+        {
+          "id": "lg-38-b1",
+          "text": "一边",
+          "role": "A"
+        },
+        {
+          "id": "lg-38-b2",
+          "text": "吃饭",
+          "role": "V"
+        },
+        {
+          "id": "lg-38-b3",
+          "text": "一边",
+          "role": "A"
+        },
+        {
+          "id": "lg-38-b4",
+          "text": "看电视",
+          "role": "V"
+        }
+      ],
+      "pinyin": "Wǒ yìbiān chī fàn yìbiān kàn diànshì.",
+      "vi": "Tôi vừa ăn cơm vừa xem tivi.",
+      "hint": "Hai hành động xảy ra đồng thời, mỗi vế một 一边.",
+      "rule": "Cặp 一边…一边… cho hành động đồng thời",
+      "xp": 50
+    },
+    {
+      "id": "lg-39",
+      "level": 3,
+      "blocks": [
+        {
+          "id": "lg-39-b0",
+          "text": "这里",
+          "role": "P"
+        },
+        {
+          "id": "lg-39-b1",
+          "text": "的",
+          "role": "A"
+        },
+        {
+          "id": "lg-39-b2",
+          "text": "东西",
+          "role": "S"
+        },
+        {
+          "id": "lg-39-b3",
+          "text": "都很便宜",
+          "role": "C"
+        }
+      ],
+      "pinyin": "Zhèlǐ de dōngxi dōu hěn piányi.",
+      "vi": "Đồ ở đây đều rất rẻ.",
+      "hint": "Phó từ 都 tổng kết đứng sau chủ ngữ, trước tính từ.",
+      "rule": "Chủ ngữ → 都 → vị ngữ",
+      "xp": 40
+    },
+    {
+      "id": "lg-40",
+      "level": 3,
+      "blocks": [
+        {
+          "id": "lg-40-b0",
+          "text": "我",
+          "role": "S"
+        },
+        {
+          "id": "lg-40-b1",
+          "text": "从来",
+          "role": "A"
+        },
+        {
+          "id": "lg-40-b2",
+          "text": "没",
+          "role": "A"
+        },
+        {
+          "id": "lg-40-b3",
+          "text": "去过",
+          "role": "V"
+        },
+        {
+          "id": "lg-40-b4",
+          "text": "上海",
+          "role": "O"
+        }
+      ],
+      "pinyin": "Wǒ cónglái méi qùguo Shànghǎi.",
+      "vi": "Tôi chưa từng đến Thượng Hải.",
+      "hint": "Trải nghiệm phủ định dùng 没…过, không dùng 不.",
+      "rule": "Phó từ → phủ định → động từ + 过",
+      "xp": 50
+    }
+  ],
+  "stations": [
+    {
+      "id": "st-1",
+      "level": 1,
+      "title": "Trạm 1 · Câu nền móng",
+      "hanziTitle": "基本句",
+      "focus": "Chủ ngữ – Động từ – Tân ngữ",
+      "blurb": "Năm câu ngắn nhất của HSK 1: học đặt đúng ba khối cơ bản.",
+      "sentenceIds": [
+        "lg-1",
+        "lg-2",
+        "lg-3",
+        "lg-4",
+        "lg-5"
+      ]
+    },
+    {
+      "id": "st-2",
+      "level": 2,
+      "title": "Trạm 2 · Thời gian & nơi chốn",
+      "hanziTitle": "时间地点",
+      "focus": "Thời gian trước nơi chốn, cả hai trước động từ",
+      "blurb": "Chỗ người Việt sai nhiều nhất: trạng ngữ phải đứng trước động từ.",
+      "sentenceIds": [
+        "lg-6",
+        "lg-7",
+        "lg-8",
+        "lg-9",
+        "lg-10"
+      ]
+    },
+    {
+      "id": "st-3",
+      "level": 2,
+      "title": "Trạm 3 · Trợ từ 了 · 过 · 呢",
+      "hanziTitle": "助词",
+      "focus": "Vị trí của trợ từ quanh động từ",
+      "blurb": "Đặt 了, 过, 呢 đúng chỗ để diễn tả hoàn thành, kinh nghiệm và tiếp diễn.",
+      "sentenceIds": [
+        "lg-11",
+        "lg-12",
+        "lg-13",
+        "lg-14",
+        "lg-15"
+      ]
+    },
+    {
+      "id": "st-4",
+      "level": 3,
+      "title": "Trạm 4 · Bổ ngữ",
+      "hanziTitle": "补语",
+      "focus": "Bổ ngữ kết quả và bổ ngữ trình độ",
+      "blurb": "Chuỗi 得 và các bổ ngữ đi liền sau động từ chính.",
+      "sentenceIds": [
+        "lg-16",
+        "lg-17",
+        "lg-18",
+        "lg-19",
+        "lg-20"
+      ]
+    },
+    {
+      "id": "st-5",
+      "level": 3,
+      "title": "Trạm 5 · Câu phức",
+      "hanziTitle": "复句",
+      "focus": "Các cặp liên từ thường gặp",
+      "blurb": "Ghép hai vế câu bằng 虽然…但是, 因为…所以, 不但…而且.",
+      "sentenceIds": [
+        "lg-21",
+        "lg-22",
+        "lg-23",
+        "lg-24",
+        "lg-25"
+      ]
+    },
+    {
+      "id": "st-6",
+      "level": 2,
+      "title": "Trạng ngữ và thứ tự thời gian",
+      "hanziTitle": "时间状语",
+      "focus": "Thời gian và nơi chốn",
+      "blurb": "Đặt đúng chỗ cho thời gian và nơi chốn — lỗi trật tự phổ biến nhất của người Việt học tiếng Trung.",
+      "sentenceIds": [
+        "lg-30",
+        "lg-31",
+        "lg-32",
+        "lg-33",
+        "lg-34"
+      ]
+    },
+    {
+      "id": "st-7",
+      "level": 3,
+      "title": "Câu chữ 把, 被 và so sánh",
+      "hanziTitle": "把字句与被字句",
+      "focus": "Cấu trúc đặc biệt",
+      "blurb": "Ba kiểu câu đảo trật tự quen thuộc của tiếng Trung, luyện tới khi thành phản xạ.",
+      "sentenceIds": [
+        "lg-34",
+        "lg-35",
+        "lg-36",
+        "lg-37",
+        "lg-38"
+      ]
+    }
+  ]
+}
