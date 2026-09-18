@@ -16,7 +16,7 @@ Show the learner's position in an anonymized ranking based on official graded-at
 - Privacy rule: peers are stable aliases only; no id, name, email, avatar, content or profile link. The caller may see their own row.
 
 ## Entry points
-- From: Student sidebar → "Bảng xếp hạng"; deep link `/student/leaderboard`
+- From: avatar account menu → "Bảng xếp hạng"; deep link `/student/leaderboard`
 
 ## Data
 | Need | Endpoint | Envelope field |

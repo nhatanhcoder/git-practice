@@ -16,7 +16,7 @@ Show the badges the learner has earned and the full badge catalog with unlock co
 - Ownership rule: token-scoped; server reads only `studentId=currentUser.id`
 
 ## Entry points
-- From: Student sidebar → "Kho huy hiệu"; deep link `/student/badges`
+- From: avatar account menu → "Kho huy hiệu"; deep link `/student/badges`
 
 ## Data
 | Need | Endpoint | Envelope field |

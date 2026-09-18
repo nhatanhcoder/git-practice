@@ -434,6 +434,17 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
 
 ## Off-sprint / spike
 
+- ✅ (opencode · 2026-09-18) **Student nav restructure** — branch
+  `codex/student-nav-restructure` (owner-approved plan 2026-09-18): 3 rail groups
+  (Lớp học / Tự luyện / Kho kiến thức) + avatar account menu (mistakes, progress,
+  badges, leaderboard, invoices) + real streak in avatar via
+  `GET /student/flashcards/stats` (null → "—", error → retry); streak HUD removed
+  from both topbars. No new routes/APIs. Verified FULL LANE: web build, type-check,
+  238/238 unit, eslint clean, check-docs 9/9, new nav PW spec 3/3 (+2 by-design
+  skips), A02-1 green, desktop + 375px screenshots read. XP/rank mock stays in
+  profile header (recorded debt, out of scope). Session:
+  `ai/context/sessions/2026-09-18-opencode-student-nav.md`.
+
 - 🔶 (opencode · 2026-09-17) **Student mock cleanup** — branch `chore/student-mock-cleanup`.
   Delete 5 orphan mock modules (foundation/radicals/grammar/learning-path/lms-data)
   + unused `vocabCards`/`VocabCard`; update A12, headers, 1 lint suppression.

@@ -16,7 +16,7 @@ Show the learner's own graded-attempt progress: the skill×week heatmap, skill b
 - Ownership rule: token-scoped; every query filters `studentId === currentUser.id`
 
 ## Entry points
-- From: Student sidebar → "Tiến độ học tập"; deep link `/student/progress`
+- From: avatar account menu → "Tiến độ học tập"; deep link `/student/progress`
 
 ## Data
 | Need | Endpoint | Envelope field |

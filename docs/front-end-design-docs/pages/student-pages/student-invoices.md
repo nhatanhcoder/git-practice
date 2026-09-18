@@ -17,7 +17,7 @@ View the learner's own tuition invoices (period, total, paid, outstanding, statu
 - On denial: Student shell `RequireAuth` redirects to login
 
 ## Entry points
-- From: Student sidebar → "Học phí"; Student Dashboard → "Học phí" quick link
+- From: avatar account menu → "Học phí"; Student Dashboard → "Học phí" quick link
 - Deep link: yes (`/student/invoices`)
 
 ## Data

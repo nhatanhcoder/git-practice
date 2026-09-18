@@ -62,9 +62,12 @@ test.describe("A02 demo isolation & production gating", () => {
     const desktop = (testInfo.project.use.viewport?.width ?? 1280) >= 768;
     if (desktop) {
       await expect(page.locator(".userchip__text > span:last-child")).toHaveText("Học viên");
-      // Mock XP/streak must not surface as the account's own progress.
+      // Mock XP/streak must not surface as the account's own progress. XP still
+      // renders 0 from the prod profile; the streak HUD was removed from the
+      // topbar entirely (its only honest home is the avatar menu, fed by the
+      // SRS stats endpoint — see student-nav-restructure.spec.ts).
       await expect(page.locator(".hud__stat--xp .num")).toHaveText("0");
-      await expect(page.locator(".hud__stat--streak .num").first()).toHaveText("0");
+      await expect(page.locator(".hud__stat--streak")).toHaveCount(0);
     }
 
     await shot(page, "demo-switch-hidden", testInfo.project.name);

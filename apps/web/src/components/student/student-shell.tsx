@@ -51,6 +51,7 @@ import { useDisplayIdentity } from "@/lib/student/identity";
 import { useStudentPreferences } from "@/lib/student/preferences";
 import { useAuthStore } from "@/lib/auth/auth-store";
 import { fetchUnreadCount } from "@/lib/student/notifications-service";
+import { fetchSrsStats } from "@/lib/student/flashcards-service";
 import {
   MISTAKES_REVIEW_ROUTE,
   MISTAKES_ROUTE,
@@ -64,29 +65,36 @@ interface NavItem {
   icon: ReactNode;
 }
 
-export const PRIMARY_NAV: NavItem[] = [
+export const HOME_NAV: NavItem[] = [
   { to: "/student", label: "Trang chủ", short: "Trang chủ", icon: <Home size={18} /> },
-  { to: "/student/classes", label: "Lớp của tôi", short: "Lớp học", icon: <School size={18} /> },
-  { to: "/student/assignments", label: "Bài tập được giao", short: "Bài tập", icon: <ClipboardList size={18} /> },
-  { to: "/student/invoices", label: "Hóa đơn học phí", short: "Học phí", icon: <ReceiptText size={18} /> },
-  { to: "/student/learning-path", label: "Lộ trình HSK", short: "Lộ trình", icon: <Map size={18} /> },
-  { to: SRS_ROUTE, label: "Từ vựng Flashcard", short: "Từ vựng", icon: <Sparkles size={18} /> },
-  { to: "/student/grammar", label: "Ngữ pháp", short: "Ngữ pháp", icon: <BookOpen size={18} /> },
-  { to: "/student/foundation", label: "Nền tảng", short: "Nền tảng", icon: <Blocks size={18} /> },
 ];
 
-export const SECONDARY_NAV: NavItem[] = [
+export const CLASS_NAV: NavItem[] = [
+  { to: "/student/classes", label: "Lớp của tôi", short: "Lớp học", icon: <School size={18} /> },
+  { to: "/student/assignments", label: "Bài tập được giao", short: "Bài tập", icon: <ClipboardList size={18} /> },
+];
+
+export const PRACTICE_NAV: NavItem[] = [
+  { to: "/student/learning-path", label: "Lộ trình HSK", short: "Lộ trình", icon: <Map size={18} /> },
+  { to: "/student/placement", label: "Kiểm tra xếp cấp", short: "Xếp cấp", icon: <Target size={18} /> },
   { to: "/student/exams", label: "Phòng thi HSK", short: "Thi thử", icon: <GraduationCap size={18} /> },
-  { to: MISTAKES_ROUTE, label: "Sổ tay lỗi sai", short: "Lỗi sai", icon: <NotebookPen size={18} /> },
   { to: "/student/writing", label: "Luyện viết chữ", short: "Viết chữ", icon: <PenTool size={18} /> },
   { to: "/student/lego", label: "Ghép câu Lego", short: "Ghép câu", icon: <Puzzle size={18} /> },
   { to: "/student/workplace", label: "Mô phỏng công sở", short: "Công sở", icon: <Briefcase size={18} /> },
 ];
 
-export const ACHIEVEMENT_NAV: NavItem[] = [
-  { to: "/student/leaderboard", label: "Bảng xếp hạng", short: "Xếp hạng", icon: <Trophy size={18} /> },
+export const LIBRARY_NAV: NavItem[] = [
+  { to: SRS_ROUTE, label: "Từ vựng Flashcard", short: "Từ vựng", icon: <Sparkles size={18} /> },
+  { to: "/student/grammar", label: "Ngữ pháp", short: "Ngữ pháp", icon: <BookOpen size={18} /> },
+  { to: "/student/foundation", label: "Nền tảng", short: "Nền tảng", icon: <Blocks size={18} /> },
+];
+
+export const ACCOUNT_NAV: NavItem[] = [
+  { to: MISTAKES_ROUTE, label: "Sổ tay lỗi sai", short: "Lỗi sai", icon: <NotebookPen size={18} /> },
   { to: "/student/progress", label: "Tiến độ học tập", short: "Tiến độ", icon: <TrendingUp size={18} /> },
   { to: "/student/badges", label: "Kho huy hiệu", short: "Huy hiệu", icon: <Medal size={18} /> },
+  { to: "/student/leaderboard", label: "Bảng xếp hạng", short: "Xếp hạng", icon: <Trophy size={18} /> },
+  { to: "/student/invoices", label: "Hóa đơn học phí", short: "Học phí", icon: <ReceiptText size={18} /> },
 ];
 
 // Module 07 mailbox — every role reads its own; the shell bell links here. Kept out of
@@ -97,21 +105,27 @@ export const NOTIFICATIONS_NAV: NavItem[] = [
 ];
 
 const ALL_NAV_ITEMS = [
-  ...PRIMARY_NAV,
-  ...SECONDARY_NAV,
-  ...ACHIEVEMENT_NAV,
+  ...HOME_NAV,
+  ...CLASS_NAV,
+  ...PRACTICE_NAV,
+  ...LIBRARY_NAV,
+  ...ACCOUNT_NAV,
   ...NOTIFICATIONS_NAV,
 ];
 
 /**
- * The bottom bar shows four destinations plus "Thêm", not the whole primary group.
+ * The bottom bar shows four destinations plus "Thêm", not the whole class group.
  *
  * At 375px each tab gets viewport/(n+1) pixels, so the Vietnamese labels start wrapping
  * and colliding once there are more than five: adding two class-related entries to the
  * rail squeezed every tab to 47px and broke "Ngữ pháp" across the icon next to it.
  * Nothing is lost — the sheet below lists every group in full.
  */
-const TABBAR_NAV = PRIMARY_NAV.slice(0, 4);
+const TABBAR_NAV: NavItem[] = [
+  ...HOME_NAV,
+  ...CLASS_NAV,
+  PRACTICE_NAV[0],
+];
 
 /**
  * Longer prefixes first, so `/student/exams/e-h3-1` matches "Phòng thi HSK"
@@ -173,7 +187,21 @@ export function StudentShell({ children }: { children: ReactNode }) {
   const [profileOpen, setProfileOpen] = useState(false);
   const [navigatingTo, setNavigatingTo] = useState<string | null>(null);
   const [unreadCount, setUnreadCount] = useState<number | null>(null);
+  // Real streak, loaded lazily when the account menu opens (the topbar HUD
+  // never shows it: a missing value must read "—", never the mock store's 0).
+  const [streak, setStreak] = useState<{ status: "idle" | "loading" | "ready" | "error"; value: number | null }>({
+    status: "idle",
+    value: null,
+  });
   const title = titleFor(pathname);
+
+  function loadStreak() {
+    setStreak((prev) => (prev.status === "loading" ? prev : { status: "loading", value: prev.value }));
+    void fetchSrsStats().then(
+      (stats) => setStreak({ status: "ready", value: stats.streak }),
+      () => setStreak({ status: "error", value: null }),
+    );
+  }
 
   // Module 07 bell: poll unread every 60s while the shell is mounted (DEBT-002 —
   // polling is the acknowledged delivery channel until Sprint 6 realtime). A failed
@@ -239,7 +267,7 @@ export function StudentShell({ children }: { children: ReactNode }) {
   useEffect(() => {
     let timer = 0;
     let index = 0;
-    const routes = [...ALL_NAV_ITEMS.map((item) => item.to), "/student/placement"];
+    const routes = ALL_NAV_ITEMS.map((item) => item.to);
 
     const warmNext = () => {
       const route = routes[index];
@@ -390,9 +418,9 @@ export function StudentShell({ children }: { children: ReactNode }) {
             </Link>
 
             <div className="rail__nav">
-              {navGroup("Học tập", PRIMARY_NAV)}
-              {navGroup("Luyện tập", SECONDARY_NAV)}
-              {navGroup("Thành tích", ACHIEVEMENT_NAV)}
+              {navGroup("Lớp học", CLASS_NAV)}
+              {navGroup("Tự luyện", PRACTICE_NAV)}
+              {navGroup("Kho kiến thức", LIBRARY_NAV)}
             </div>
 
             <div className="rail__foot">
@@ -401,7 +429,10 @@ export function StudentShell({ children }: { children: ReactNode }) {
                 className="userchip"
                 aria-label={identity.ready ? `Hồ sơ của ${identity.name}` : "Hồ sơ học viên"}
                 aria-haspopup="dialog"
-                onClick={() => setProfileOpen(true)}
+                onClick={() => {
+                  setProfileOpen(true);
+                  loadStreak();
+                }}
               >
                 {identity.ready ? (
                   <>
@@ -459,11 +490,6 @@ export function StudentShell({ children }: { children: ReactNode }) {
 
               <div className="hud">
                 {displayToggles()}
-                <span className="hud__stat hud__stat--streak" title="Chuỗi ngày học liên tiếp">
-                  <Flame size={15} />
-                  <span className="num">{profile.streakDays}</span>
-                  <span className="sr-only">ngày chuỗi liên tiếp</span>
-                </span>
                 <span className="hud__stat hud__stat--xp" title="Tổng điểm kinh nghiệm">
                   <Zap size={15} />
                   <span className="num">{profile.xp.toLocaleString("vi-VN")}</span>
@@ -487,10 +513,20 @@ export function StudentShell({ children }: { children: ReactNode }) {
               </Link>
               <h1 className="mobilebar__title grow truncate">{title}</h1>
               {displayToggles(true)}
-              <span className="hud__stat hud__stat--streak" style={{ height: 30 }}>
-                <Flame size={14} />
-                <span className="num">{profile.streakDays}</span>
-              </span>
+              <button
+                type="button"
+                className="btn btn--ghost btn--icon"
+                aria-label={identity.ready ? `Hồ sơ của ${identity.name}` : "Hồ sơ học viên"}
+                aria-haspopup="dialog"
+                onClick={() => {
+                  setProfileOpen(true);
+                  loadStreak();
+                }}
+              >
+                <span className="avatar han" style={{ width: 30, height: 30, fontSize: 15 }} aria-hidden="true">
+                  {identity.ready ? identity.initials : ""}
+                </span>
+              </button>
               {bellBtn}
               {themeBtn}
             </header>
@@ -530,22 +566,35 @@ export function StudentShell({ children }: { children: ReactNode }) {
           </nav>
 
           <Sheet open={sheetOpen} onClose={() => setSheetOpen(false)} title="Tất cả khu vực học">
-            <div className="sheet__grid">
-              {ALL_NAV_ITEMS.map((item) => (
-                <Link
-                  key={item.to}
-                  href={item.to}
-                  className={`sheet__item ${isActive(pathname, item.to) ? "is-active" : ""}`}
-                  onMouseEnter={() => router.prefetch(item.to)}
-                  onFocus={() => router.prefetch(item.to)}
-                >
-                  {item.icon}
-                  {/* WEB-020: both spellings render; the per-tile container query in
-                      components.css shows whichever fits on one line, so a narrow tile
-                      reads the short label instead of wrapping and stretching its row. */}
-                  <span className="sheet__label">{item.label}</span>
-                  <span className="sheet__label--short">{item.short}</span>
-                </Link>
+            <div className="stack gap-4">
+              {(
+                [
+                  ["Lớp học", CLASS_NAV],
+                  ["Tự luyện", PRACTICE_NAV],
+                  ["Kho kiến thức", LIBRARY_NAV],
+                ] as Array<[string, NavItem[]]>
+              ).map(([heading, items]) => (
+                <div key={heading} className="stack gap-2">
+                  <p className="rail__group">{heading}</p>
+                  <div className="sheet__grid">
+                    {items.map((item) => (
+                      <Link
+                        key={item.to}
+                        href={item.to}
+                        className={`sheet__item ${isActive(pathname, item.to) ? "is-active" : ""}`}
+                        onMouseEnter={() => router.prefetch(item.to)}
+                        onFocus={() => router.prefetch(item.to)}
+                      >
+                        {item.icon}
+                        {/* WEB-020: both spellings render; the per-tile container query in
+                            components.css shows whichever fits on one line, so a narrow tile
+                            reads the short label instead of wrapping and stretching its row. */}
+                        <span className="sheet__label">{item.label}</span>
+                        <span className="sheet__label--short">{item.short}</span>
+                      </Link>
+                    ))}
+                  </div>
+                </div>
               ))}
             </div>
           </Sheet>
@@ -595,6 +644,37 @@ export function StudentShell({ children }: { children: ReactNode }) {
                   </>
                 )}
               </div>
+              <div className="row gap-3 wrap" aria-label="Chuỗi ngày học">
+                <span className="hud__stat hud__stat--streak" title="Chuỗi ngày học liên tiếp">
+                  <Flame size={15} />
+                  <span className="num">
+                    {streak.status === "ready" ? (streak.value ?? "—") : streak.status === "error" ? "Chưa tải được" : "…"}
+                  </span>
+                  <span className="sr-only">ngày chuỗi liên tiếp</span>
+                </span>
+                <span style={{ color: "var(--text-3)", fontSize: "var(--step--2)" }}>
+                  {streak.status === "error" ? (
+                    <button type="button" className="btn btn--ghost btn--sm" onClick={loadStreak}>
+                      Thử lại
+                    </button>
+                  ) : (
+                    "Chuỗi ngày học"
+                  )}
+                </span>
+              </div>
+              <nav className="stack gap-2" aria-label="Tài khoản của tôi">
+                {ACCOUNT_NAV.map((item) => (
+                  <Link
+                    key={item.to}
+                    href={item.to}
+                    className={`rowitem ${isActive(pathname, item.to) ? "is-active" : ""}`}
+                    onClick={() => setProfileOpen(false)}
+                  >
+                    <span className="rowitem__icon">{item.icon}</span>
+                    <span className="grow" style={{ fontWeight: 600 }}>{item.label}</span>
+                  </Link>
+                ))}
+              </nav>
               {process.env.NODE_ENV !== "production" && (
                 <>
                   <p style={{ color: "var(--text-3)", fontSize: "var(--step--1)" }}>

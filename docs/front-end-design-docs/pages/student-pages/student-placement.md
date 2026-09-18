@@ -16,7 +16,7 @@ Let a new learner take a placement test that recommends a starting HSK level, th
 - Ownership rule: would be token-scoped; **no placement endpoints exist** (see Data)
 
 ## Entry points
-- From: Student sidebar → "Kiểm tra xếp cấp" (in the mobile "Thêm" sheet); deep link `/student/placement`
+- From: rail "Tự luyện" → "Kiểm tra xếp cấp"; deep link `/student/placement`
 
 ## Data
 | Need | Endpoint | Envelope field |
