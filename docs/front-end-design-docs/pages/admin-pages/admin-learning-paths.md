@@ -63,3 +63,5 @@ Blocked on: none — all three defined in [API_ADMIN.md](../../../api/API_ADMIN.
 - No deleting a path, and no bulk approve / bulk reject.
 - No suspend / restore on the list — those live on the detail, where the full content is visible.
 - No student-progress figures on this screen; review is about content, not outcomes.
+
+Spec: [../../specs/admin-pages/admin-learning-paths.spec.md](../../specs/admin-pages/admin-learning-paths.spec.md) — written 2026-09-19, `ready-for-design`. Contract stays `contracted`: no mockup yet.

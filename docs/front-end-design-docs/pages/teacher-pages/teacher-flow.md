@@ -164,6 +164,64 @@ Drawers/modals are nodes **without** a route change (flow-map vocabulary).
 
 ---
 
+## 3c. v3 tree — Learning Catalog (2026-09-19)
+
+Written from the three v3 contracts, which were produced by the same flow-mapper pass. Endpoints
+are defined in `API_TEACHER.md` § Learning Catalog — **none is implemented yet** (Slice 1); none is
+marked `⛔` because `⛔` means "absent from `docs/api/`", which is not the case.
+
+```
+/teacher/learning-paths  Learning Paths (own)       GET /teacher/learning-paths
+│
+├── "Tạo lộ trình" → Modal → Detail (new path)        POST /teacher/learning-paths
+├── row menu → Xoá (no published unit, no learners) → Confirm → List
+│                                                     DELETE /teacher/learning-paths/:pathId
+└── Row click
+    ▼
+    /teacher/learning-paths/[pathId]  Path Detail     GET /teacher/learning-paths/:pathId
+    │   (rejected → admin reason shown above the fold, no route change)
+    │   (pending_review / suspended → frozen banner, all writes disabled)
+    │
+    ├── "Sửa" → Modal → same                          PATCH /teacher/learning-paths/:pathId
+    ├── "Tự soạn" → creates a lesson
+    │     ▼
+    │     /teacher/learning-paths/[pathId]/units/[unitId]  Lesson Editor
+    │     │                                            GET /teacher/learning-paths/:pathId
+    │     ├── "Lưu" → same                            PATCH /teacher/learning-units/:unitId
+    │     ├── "Publish" → Confirm → same              POST /teacher/learning-units/:unitId/publish
+    │     ├── "Bỏ publish" → Confirm → same           POST /teacher/learning-units/:unitId/unpublish
+    │     ├── "Xoá bài học" → Confirm → Detail        DELETE /teacher/learning-units/:unitId
+    │     └── Back → Detail
+    ├── "Chọn từ catalog" → Picker Modal (no route change)
+    │     └── confirm → creates a reference lesson    GET /teacher/learning-units
+    │                                                 POST /teacher/learning-paths/:pathId/units
+    ├── drag / move row → reorder (no route change)   PATCH /teacher/learning-paths/:pathId/units/reorder
+    ├── row toggle → publish / unpublish (same endpoints as the editor)
+    └── "Gửi duyệt" → Confirm → same (status flips)   POST /teacher/learning-paths/:pathId/submit
+```
+
+### v3 transition table
+
+| # | From | Action | To | API | Errors |
+|---|---|---|---|---|---|
+| 27 | `/teacher/learning-paths` | create | detail (new) | `POST /teacher/learning-paths` | `VALIDATION_ERROR` |
+| 28 | `/teacher/learning-paths` | delete (draft, unpublished only) | same | `DELETE /teacher/learning-paths/:pathId` | `LEARNING_PATH_HAS_PUBLISHED_UNITS` |
+| 29 | `/teacher/learning-paths` | open | detail | `GET /teacher/learning-paths/:pathId` | `LEARNING_PATH_NOT_FOUND` |
+| 30 | path detail | edit title/description | same | `PATCH /teacher/learning-paths/:pathId` | `LEARNING_PATH_FROZEN` |
+| 31 | path detail | add authored lesson | unit editor | `POST /teacher/learning-paths/:pathId/units` | `LEARNING_PATH_FROZEN`, `VALIDATION_ERROR` |
+| 32 | path detail | add reference lesson | same | `GET /teacher/learning-units`, `POST /teacher/learning-paths/:pathId/units` | `LEARNING_UNIT_REFERENCE_INVALID` |
+| 33 | path detail | reorder lessons | same | `PATCH /teacher/learning-paths/:pathId/units/reorder` | `LEARNING_UNIT_ORDER_INVALID` |
+| 34 | path detail | publish / unpublish lesson | same | `POST /teacher/learning-units/:unitId/publish`, `POST /teacher/learning-units/:unitId/unpublish` | `LEARNING_UNIT_PUBLISHED_IMMUTABLE`, `LEARNING_PATH_FROZEN` |
+| 35 | path detail | submit for review | same (Chờ duyệt) | `POST /teacher/learning-paths/:pathId/submit` | `LEARNING_PATH_EMPTY`, `LEARNING_PATH_INVALID_STATUS` |
+| 36 | unit editor | save words | same | `PATCH /teacher/learning-units/:unitId` | `LEARNING_UNIT_PUBLISHED_IMMUTABLE`, `LEARNING_PATH_FROZEN` |
+| 37 | unit editor | delete lesson | path detail | `DELETE /teacher/learning-units/:unitId` | `LEARNING_UNIT_PUBLISHED_IMMUTABLE` |
+
+**What this role does not get, on purpose:** no approve/reject control anywhere in the Teacher
+area (admin only), no editing a published lesson's words (that is what unpublish-then-new-lesson
+exists for), no free-order mode for a path, and no student preview.
+
+---
+
 ## 4. Entity state transitions driven by this flow
 
 ```
@@ -179,6 +237,17 @@ Session  scheduled ──submit (topic+times+attendance)──► completed_pend
                  they do not change the status enum
 
 Attempt  in_progress ──submit (student)──► submitted ──grade──► graded
+
+LearningPath  draft ──submit──► pending_review ──approve (admin)──► approved ──suspend──► suspended
+                 ▲                    │                                  ▲                 │
+                 └─── rejected ◄──────┘ (admin reject)                   └───── restore ────┘
+
+learning_unit  draft ──publish──► published ──unpublish──► unpublished ──publish──► published
+                    (publish requires the parent path to be `approved`)
+
+A published unit's words never change. Learner progress is keyed by the unit's slug and stores the
+answers given, so an edit behind it is unverifiable — correction is a new unit plus an unpublish of
+the old one. `slug` and `curriculumKey` are immutable for the same reason.
 ```
 
 Lesson has no status enum in this slice — only `orderIndex`. Reordering is a position change,

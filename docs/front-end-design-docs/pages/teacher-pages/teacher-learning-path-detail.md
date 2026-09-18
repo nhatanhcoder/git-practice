@@ -71,3 +71,5 @@ Blocked on: none — all defined in [API_TEACHER.md](../../../api/API_TEACHER.md
 - No editing a **published** lesson's words from here; the row offers unpublish, not edit.
 - No deleting a `pending_review` path, and no bulk publish.
 - No student preview and no XP/points display for a path.
+
+Spec: [../../specs/teacher-pages/teacher-learning-path-detail.spec.md](../../specs/teacher-pages/teacher-learning-path-detail.spec.md) — written 2026-09-19, `ready-for-design`. Contract stays `contracted`: no mockup yet.

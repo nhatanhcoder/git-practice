@@ -165,6 +165,52 @@ Header avatar ──► /admin/profile  My Profile
 
 ---
 
+## 5b. Learning Catalog moderation (2026-09-19)
+
+Written from the two v3 contracts. Endpoints are defined in `API_ADMIN.md` § Learning Catalog —
+moderation; **none is implemented yet** (Slice 1), and none is marked `⛔` because `⛔` means
+"absent from `docs/api/`", which is not the case.
+
+```
+/admin/learning-paths  Review Queue              GET /admin/learning-paths
+│   (tabs: Chờ duyệt · Đã duyệt · Bị từ chối · Tạm ẩn · Tất cả)
+│
+├── "Duyệt" → Confirm → row leaves queue          PATCH /admin/learning-paths/:pathId/approve
+├── "Từ chối" → Modal (reason required) → row leaves queue
+│                                                 PATCH /admin/learning-paths/:pathId/reject
+├── row click
+│   ▼
+│   /admin/learning-paths/[pathId]  Path Review   GET /admin/learning-paths/:pathId
+│   │   (lesson preview expands inline — no route change, no modal)
+│   ├── "Duyệt" → Confirm → same                  PATCH /admin/learning-paths/:pathId/approve
+│   ├── "Từ chối" → Modal (reason required) → same PATCH /admin/learning-paths/:pathId/reject
+│   ├── "Tạm ẩn" (approved) → Confirm → same      PATCH /admin/learning-paths/:pathId/suspend
+│   ├── "Khôi phục" (suspended) → Confirm → same  PATCH /admin/learning-paths/:pathId/restore
+│   └── lesson row "Gỡ" → Confirm → row marked đã gỡ
+│                                    PATCH /admin/learning-units/:unitId/unpublish
+└── tab "Bài học đã publish" → flat lesson list   GET /admin/learning-units
+    └── row "Gỡ" → Confirm → same endpoint as above
+```
+
+### v3 transition table
+
+| # | From | Action | To | API | Errors |
+|---|---|---|---|---|---|
+| 21 | `/admin/learning-paths` | approve | same (row leaves) | `PATCH /admin/learning-paths/:pathId/approve` | `LEARNING_PATH_EMPTY`, `LEARNING_PATH_INVALID_STATUS` |
+| 22 | `/admin/learning-paths` | reject (reason required) | same (row leaves) | `PATCH /admin/learning-paths/:pathId/reject` | `LEARNING_PATH_REJECTION_REASON_REQUIRED` |
+| 23 | `/admin/learning-paths` | open | `/admin/learning-paths/[pathId]` | `GET /admin/learning-paths/:pathId` | `LEARNING_PATH_NOT_FOUND` |
+| 24 | path review | approve | same | `PATCH /admin/learning-paths/:pathId/approve` | `LEARNING_PATH_EMPTY`, `LEARNING_PATH_INVALID_STATUS` |
+| 25 | path review | reject (reason required) | same | `PATCH /admin/learning-paths/:pathId/reject` | `LEARNING_PATH_REJECTION_REASON_REQUIRED` |
+| 26 | path review | suspend | same | `PATCH /admin/learning-paths/:pathId/suspend` | `LEARNING_PATH_INVALID_STATUS` |
+| 27 | path review | restore | same | `PATCH /admin/learning-paths/:pathId/restore` | `LEARNING_PATH_INVALID_STATUS` |
+| 28 | path review / published-lessons tab | unpublish a lesson | same | `PATCH /admin/learning-units/:unitId/unpublish` | `LEARNING_PATH_INVALID_STATUS` |
+
+**What admin does not get, on purpose:** no authoring (create/edit/delete of a path, a lesson or a
+word), no bulk approve or reject, and no student-outcome figures on either screen — review is about
+content, not results.
+
+---
+
 ## 6. Full transition table
 
 | # | From | Action | To | API | Errors |
@@ -208,6 +254,14 @@ PayrollPeriod draft ──finalize──► finalized ──pay──► paid
 
 StudentInvoice unpaid ──payment < total──► partially_paid ──payment──► paid
                      └──────void──────► void
+
+LearningPath  pending_review ──approve──► approved ──suspend──► suspended
+                     │                                            │
+                     └──reject──► rejected (teacher resubmits)     └──restore──► approved
+
+learning_unit published ──unpublish (admin, any path)──► unpublished
+              (nothing is deleted: words and learner progress survive, so restore shows
+               students exactly the units that were published before)
 ```
 
 Invoice status is **recomputed server-side** on every payment. The UI renders the

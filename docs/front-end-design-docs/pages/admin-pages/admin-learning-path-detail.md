@@ -68,3 +68,5 @@ Blocked on: none — all defined in [API_ADMIN.md](../../../api/API_ADMIN.md) §
 - No editing the title, description, words or ordering — admin reviews, never authors.
 - No delete, and no "approve all lessons" bulk action.
 - No per-learner progress or completion figures on this screen.
+
+Spec: [../../specs/admin-pages/admin-learning-path-detail.spec.md](../../specs/admin-pages/admin-learning-path-detail.spec.md) — written 2026-09-19, `ready-for-design`. Contract stays `contracted`: no mockup yet.

@@ -61,3 +61,5 @@ Blocked on: none — all three defined in [API_TEACHER.md](../../../api/API_TEAC
 - No approve / reject / suspend here — those are admin actions (`/admin/learning-paths`).
 - No lesson authoring on this screen; that lives in the detail and the unit editor.
 - No student-facing preview of a path, and no "publish all" bulk action.
+
+Spec: [../../specs/teacher-pages/teacher-learning-paths.spec.md](../../specs/teacher-pages/teacher-learning-paths.spec.md) — written 2026-09-19, `ready-for-design`. The contract stays `contracted`: no mockup exists yet, so `designed` would overstate it.

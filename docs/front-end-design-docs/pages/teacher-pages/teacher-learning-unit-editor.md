@@ -66,3 +66,5 @@ Blocked on: none — all defined in [API_TEACHER.md](../../../api/API_TEACHER.md
 - No audio, no images, no rich text.
 - No editing a `reference` lesson's words: the words belong to the referenced unit.
 - No submitting the parent path from here.
+
+Spec: [../../specs/teacher-pages/teacher-learning-unit-editor.spec.md](../../specs/teacher-pages/teacher-learning-unit-editor.spec.md) — written 2026-09-19, `ready-for-design`. Contract stays `contracted`: no mockup yet.
