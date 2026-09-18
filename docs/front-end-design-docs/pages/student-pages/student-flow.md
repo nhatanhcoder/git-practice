@@ -61,7 +61,7 @@ last_updated: 2026-09-18
 ```text
 /student  Dashboard
 │
-└── Sidebar: Học phí
+└── Avatar menu: Học phí
     ▼
     /student/invoices  Hóa đơn học phí           GET /api/v1/student/invoices
     ├── Chọn hóa đơn → chi tiết
@@ -294,7 +294,7 @@ Assignment-grade transition. Missing contracts: catalog path read, curriculum re
 self-study progress read/write — all under API_STUDENT §83.
 
 ### Task B — live mistake notebook
-Student sidebar -> /student/mistakes (GET list) -> /student/mistakes/review (GET pending session) -> POST /student/mistakes/:id/review -> server feedback -> next/finish. No local progress or XP writes.
+Avatar menu -> /student/mistakes (GET list) -> /student/mistakes/review (GET pending session) -> POST /student/mistakes/:id/review -> server feedback -> next/finish. No local progress or XP writes.
 
 ## Live vocabulary learning path — 2026-09-15
 
