@@ -383,6 +383,12 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
 - ⬜ Widen the `skill` / `skillType` enums 3 → 7 (`grammar`, `character`, `speaking`,
       `pronunciation`) — affects `Assignment.skillType`, `SkillScore.skill`, `Question.skill`
 - ⬜ Answer the 4 remaining open questions in `PROJECT_KNOWLEDGE.md` §8.10; class relationship resolved
+- 🔶 (zcode · 2026-09-19) **Teacher-authored learning catalog → Admin duyệt (ô ⛔ của ADR-016 §2).**
+      Contract-first slice, **docs only chưa có code**: ADR-017 + spec teacher `07-learning-catalog`
+      + spec admin `09-learning-catalog-moderation` + RBAC + error codes + Page Contract cho 5 màn.
+      Owner chốt 2026-09-19: phạm vi **toàn nền tảng**, duyệt **path 1 lần**, GV **tự publish từng
+      unit** sau khi path approved, admin gỡ được; nội dung **GV tự nhập hoặc tham chiếu unit đã
+      publish**. Branch `docs/learning-catalog-adr`. BE/FE là các slice sau, chưa bắt đầu.
 - **DoD**: a learner can go pronunciation → grammar → character → Lego → mock exam, with
       XP/streak/badges updating correctly
 
