@@ -1251,3 +1251,9 @@ are accepted and implemented; 02 is implemented but its spec status is in confli
 - ✅ (codex · 2026-09-15) **S-SELF-1 live vocabulary learning path** — published 1,119 approved Hán Lộ words as 143 immutable units across HSK 1–9; added student-owned, revision-safe study/quiz/completion progress and connected both production pages. Textbook curricula remain honestly empty pending verified content. API lifecycle passed three independent DB rounds; production browser lifecycle passed three rounds on desktop and 375px. Branch `codex/student-learning-path-live`.
 
 - ✅ (opencode · 2026-09-16) **Merged lanes #88 + #87 + #86** (owner-directed) onto main with lane-branch resolutions, all CI-green before merge: #88 learning-path (2 additive conflicts resolved in-lane-worktree; e2e 5/5 + PW 2/2 re-verified on the merge), #87 mistakes (11 additive conflicts; builds + e2e 3/3 + PW 2/2 re-verified), #86 landing removal (+lockfile sync + 1 lint fix; web build + landing unit 7/7 + PW 10/10). Incident: one #87 resolution batch landed on the wrong branch and was reset + redone (check-docs caught it). Records: `ai/context/sessions/2026-09-16-opencode-merge-lanes.md`.
+
+- 🔶 (codex · 2026-09-18) **S-SELF-4/5/6 live practice integration** — owner-approved
+  Writing → Lego → Workplace implementation on `codex/student-practice-live`. Scope is
+  file-backed approved corpus plus student-owned `UserStudyProgress`; no migration, Auth,
+  RBAC, money, AI grading, synthetic numeric score, or production XP behavior. Contract,
+  implementation, feature tests, production web build, RECORD, push, and PR are in progress.
