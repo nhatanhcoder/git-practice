@@ -2030,7 +2030,8 @@ approved network escalation.
 
 > ⚠️ All nine Teacher screens are **fully mocked** — no API call anywhere. `built` here means the
 > screen exists and renders, not that the feature works. **The Teacher backend has no module spec
-> either** — see [`docs/api/modules/_INDEX.md` § 11](../../api/modules/_INDEX.md).
+> either** — see `docs/api/modules/_INDEX.md` § 11. (The original line links that path relative to
+> `pages/_INDEX.md`, which is why it is quoted here as plain text rather than as a link.)
 
 The second sentence has been false since 2026-09-03, when
 `docs/api/modules/teacher/` landed (6 modules, then 7 on 2026-09-19). It now sits directly under
