@@ -128,12 +128,19 @@ mistaken for API contracts:
 
 - learning catalog and curriculum paths;
 - teacher-selected supplemental practice and completion visibility;
-- character writing, Lego and workplace progress;
 - platform mock exams (F13 papers — `/student/exams` is served from `mock_test` assignments +
   the attempt lifecycle meanwhile); placement moved to its own module on 2026-09-13
   (`modules/student/04-placement.md`: `GET/POST /student/placement`);
 - XP, named ranks and streaks; leaderboard and four attempt badges moved to module `05-gamification-analytics.md`;
 - display preferences and cross-device progress sync.
+
+## Writing, Lego and Workplace — approved 2026-09-18
+
+The bounded S-SELF-4/5/6 live contract is defined in
+[module 06](modules/student/06-writing-lego-workplace.md): file-backed reviewed
+content, token-scoped `UserStudyProgress`, server-graded Lego order, Writing
+practice without fake handwriting scoring, and Workplace model/rubric reveal
+without keyword, numeric or AI grading. No schema migration is part of it.
 
 ⛔ Define these in Student/Teacher module specs before adding endpoints. Do not copy the
 prototype's `/api/progress` routes into production by default.

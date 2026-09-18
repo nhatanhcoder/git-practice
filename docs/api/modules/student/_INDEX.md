@@ -1,7 +1,7 @@
 ---
 title: Backend Module Specs — Student
 status: active
-last_updated: 2026-09-16
+last_updated: 2026-09-18
 ---
 
 # Backend Module Specs — Student
@@ -15,13 +15,15 @@ last_updated: 2026-09-16
 | 3 | Word bank (S-SRS-6/7) | `02-word-bank.md` | ✅ `implemented 2026-09-12` | 8 | none for this slice — full click-to-save surface arrives with the content screens (§16) |
 | 4 | Placement (Task C) | [04-placement.md](04-placement.md) | 🔶 proposed → owner-directed to code 2026-09-13 | 8 | paper depth capped by the question bank (F13/DOC-011 adjacency in §16-Q3) |
 | 5 | Leaderboard + Attempt Badges | [05-gamification-analytics.md](05-gamification-analytics.md) | ✅ implemented 2026-09-16 | 8 | none for bounded slice |
+| 6 | Writing + Lego + Workplace | [06-writing-lego-workplace.md](06-writing-lego-workplace.md) | 🔶 accepted — implementation in progress 2026-09-18 | 10 | none for bounded slice |
 
 Numbering note: the Foundation/Grammar proposal holds `02` by publication order (2026-09-10);
 the word bank kept its own `02-` file name to avoid renaming a linked doc, so student
 module numbering is by row, not filename.
 
 The remaining self-study, drill, gamification and analytics capabilities are accepted product
-scope under ADR-016 but do not yet have transport contracts. Add modules here before coding them.
+scope under ADR-016 but do not yet have transport contracts. Writing, Lego and Workplace left
+that list on 2026-09-18 under module 6. Add a module here before coding any other capability.
 Placement left that list on 2026-09-13 (module 4). Platform mock exams (F13) stay contract-less —
 `/student/exams` is served from `mock_test` assignments + the attempt lifecycle, not from F13 papers.
 

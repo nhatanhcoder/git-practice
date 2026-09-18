@@ -1,6 +1,6 @@
 ---
 status: active
-last_updated: 2026-09-14
+last_updated: 2026-09-18
 ---
 
 # ⚠️ API_ERROR_CODES.md — Standardised Error Responses
@@ -190,6 +190,19 @@ progress record.
 | Code | HTTP | Description |
 |------|------|-------|
 | `PLACEMENT_NO_QUESTIONS` | 409 | The question bank has no eligible band-1 question, so a paper cannot be served or graded |
+
+### Self-study practice errors — agreed 2026-09-18
+
+Registered with [student module 06](modules/student/06-writing-lego-workplace.md).
+Invalid permutations, blank replies and out-of-order workplace turns use the
+existing `VALIDATION_ERROR`; they do not need feature-specific codes.
+
+| Code | HTTP | Description |
+|------|------|-------------|
+| `WRITING_CHAR_NOT_FOUND` | 404 | No writing character with that source id exists |
+| `LEGO_STATION_NOT_FOUND` | 404 | No Lego station with that source id exists |
+| `WORKPLACE_SCENARIO_NOT_FOUND` | 404 | No workplace scenario with that source id exists |
+| `WORKPLACE_TURN_NOT_FOUND` | 404 | No turn with that id exists in the selected scenario |
 
 ### Notification Errors (NOTIFICATION_*)
 
