@@ -34,9 +34,9 @@ export class StudentWorkplaceController {
     @CurrentUser() user: AuthenticatedUser,
     @Param('scenarioId') scenarioId: string,
     @Param('turnId') turnId: string,
-    @Body() _dto: RevealWorkplaceTurnDto,
+    @Body() dto: RevealWorkplaceTurnDto,
   ) {
+    void dto;
     return this.workplace.reveal(user.id, scenarioId, turnId);
   }
 }
-

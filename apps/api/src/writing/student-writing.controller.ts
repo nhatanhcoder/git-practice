@@ -39,8 +39,9 @@ export class StudentWritingController {
   save(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') id: string,
-    @Body() _dto: SaveWritingProgressDto,
+    @Body() dto: SaveWritingProgressDto,
   ) {
+    void dto;
     return this.writing.markPractised(user.id, id);
   }
 }

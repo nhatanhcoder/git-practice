@@ -27,11 +27,12 @@ export function readContentJson<T>(
   try {
     value = JSON.parse(readFileSync(file, 'utf8')) as unknown;
   } catch (error) {
-    throw new Error(`${filename} is not valid JSON: ${(error as Error).message}`);
+    throw new Error(`${filename} is not valid JSON: ${(error as Error).message}`, {
+      cause: error,
+    });
   }
   if (!validate(value)) {
     throw new Error(`${filename} does not match the accepted corpus shape`);
   }
   return value;
 }
-
