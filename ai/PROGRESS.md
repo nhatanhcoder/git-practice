@@ -366,13 +366,16 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
   (production-gate unit test rewritten for the live contract; NFD pinyin
   folding replacing the lint-flagged char class). Session:
   `ai/context/sessions/2026-09-16-opencode-grammar-port.md`.
-- ⛔ F11 Character writing (stroke-order animation, canvas practice, radical breakdown)
-- ⛔ F12 Lego sentence builder (7 stations, drag-drop with S/T/P/A/V/O/C/Q roles, endless mode)
+- ✅ F11 Character writing (587-character live corpus, optional detailed paths for 59,
+      canvas practice and student-owned explicit-practice marker; no fake handwriting score)
+- ✅ F12 Lego sentence builder (7 live stations, S/T/P/A/V/O/C/Q blocks,
+      server-graded complete attempts and derived stars; no XP force-unlock)
 - ⛔ F13 HSK mock exams (11 exams / 161 questions, real timers, skill breakdown → `SkillScore`)
       — meanwhile (Task C 2026-09-13) `/student/exams` serves the room from `mock_test`
       assignments + the attempt lifecycle; the F13 catalog itself still has no contract and no
       corpus (DOC-011)
-- ⛔ F14 Workplace roleplay (6 scenarios, multi-turn, keyword scoring)
+- ✅ F14 Workplace roleplay (6 live multi-turn scenarios; write-before-reveal model/rubric
+      comparison, private turn completion; keyword/numeric/AI scoring intentionally absent)
 - ⛔ F15 Learning path (2 curricula, topic map, side quests, 3 bosses)
 - ⛔ F16 Gamification (XP, 9 named levels, 6 imperial-exam ranks, streaks, 20 badges, leaderboard)
 - ⛔ Contract-first entity/module design for catalog, personal progress, supplemental practice
@@ -1252,8 +1255,11 @@ are accepted and implemented; 02 is implemented but its spec status is in confli
 
 - ✅ (opencode · 2026-09-16) **Merged lanes #88 + #87 + #86** (owner-directed) onto main with lane-branch resolutions, all CI-green before merge: #88 learning-path (2 additive conflicts resolved in-lane-worktree; e2e 5/5 + PW 2/2 re-verified on the merge), #87 mistakes (11 additive conflicts; builds + e2e 3/3 + PW 2/2 re-verified), #86 landing removal (+lockfile sync + 1 lint fix; web build + landing unit 7/7 + PW 10/10). Incident: one #87 resolution batch landed on the wrong branch and was reset + redone (check-docs caught it). Records: `ai/context/sessions/2026-09-16-opencode-merge-lanes.md`.
 
-- 🔶 (codex · 2026-09-18) **S-SELF-4/5/6 live practice integration** — owner-approved
-  Writing → Lego → Workplace implementation on `codex/student-practice-live`. Scope is
-  file-backed approved corpus plus student-owned `UserStudyProgress`; no migration, Auth,
-  RBAC, money, AI grading, synthetic numeric score, or production XP behavior. Contract,
-  implementation, feature tests, production web build, RECORD, push, and PR are in progress.
+- ✅ (codex · 2026-09-18) **S-SELF-4/5/6 live practice integration** — Writing,
+  Lego and Workplace are live on `codex/student-practice-live` using the adopted repository
+  corpora plus student-owned `UserStudyProgress`; no migration/Auth/RBAC/money change.
+  Removed fake handwriting/keyword scores and XP authority; Lego grades canonical order on
+  the server; Workplace reveals reviewed comparison material only after a reply. Verified:
+  service tests 3/3, real-DB API/RBAC lifecycle 4/4, web regression 3/3, API build, production
+  web build, lint and check-docs. Session:
+  `ai/context/sessions/2026-09-18-codex-student-practice-live.md`.

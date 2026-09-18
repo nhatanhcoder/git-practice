@@ -2004,3 +2004,14 @@ No new issue ID assigned. Merging current `origin/main` into the progress/gamifi
 produced two additive documentation conflicts only. The resolution retained all mistake,
 learning-path and grammar records plus the later analytics records. Full post-merge verification
 passed: API 35/35 files (358 tests), web 235/235 tests, both builds/type-checks, lint and docs.
+
+### 2026-09-18 S-SELF-4/5/6 live-practice review
+
+No new issue ID assigned. The Writing, Lego and Workplace portions of `DOC-011`
+are now repository-owned and live under student module 06. `DOC-011` remains open
+for the other external corpora; this slice does not claim to close it globally.
+Writing detailed path data honestly covers 59 of 587 characters and falls back to
+the reviewed named-stroke order. Workplace intentionally retains no learner reply
+text and exposes no numeric/keyword/AI score. The first full API-suite attempt was
+blocked by sandbox network access; the focused real-DB lifecycle passed 4/4 after
+approved network escalation.

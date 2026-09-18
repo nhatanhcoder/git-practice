@@ -2,8 +2,8 @@
 feature: S-SELF-6
 role: student
 route: /student/workplace
-status: built (mock — ⛔ backend)
-last_updated: 2026-09-12
+status: built (live)
+last_updated: 2026-09-18
 ---
 
 # Page Contract — Student · Workplace Simulator (S-SELF-6)
@@ -13,7 +13,7 @@ Practise Chinese workplace conversations in role-played scenarios with multi-tur
 
 ## Access
 - Allowed roles: `student`
-- Ownership rule: would be token-scoped; **no workplace content or progress endpoints exist** (see Data)
+- Ownership rule: revealed turns/progress are scoped to the authenticated student
 
 ## Entry points
 - From: Student sidebar → "Mô phỏng công sở"; deep link `/student/workplace`
@@ -21,21 +21,24 @@ Practise Chinese workplace conversations in role-played scenarios with multi-tur
 ## Data
 | Need | Endpoint | Envelope field |
 |---|---|---|
-| ⛔ Scenario content | none defined | — |
-| ⛔ Turn evaluation / progress | none defined | — |
+| Scenario list + own completion | `GET /student/workplace` | `data.scenarios[]` |
+| Scenario briefing/turn prompts | `GET /student/workplace/:scenarioId` | `data` (models withheld) |
+| Submit reply + reveal comparison | `POST /student/workplace/:scenarioId/turns/:turnId/reveal` | `data.model`, `data.corrections` |
 
 Routes covered: `/student/workplace` (scenario list) and `/student/workplace/[scenarioId]` (one scenario's conversation).
 
-Blocked on: the source corpus is outside the repo (`DOC-011` — `workplace.json`, 6 scenarios); FEATURES_STUDENT states the **production scorer is "not yet specified"** — keyword scoring in the mock is not a contract; self-study progress reads/writes have no approved transport (`API_STUDENT.md` § no-endpoint list, D1–D5 questions). Recorded under "Needs from the other lane".
+Live since 2026-09-18 under student module 06. Six scenarios are repository-owned.
+The learner must write before model/corrections are revealed; numeric, keyword and
+AI scoring are intentionally absent.
 
 ## Regions
 1. Page Header: eyebrow "Luyện tập", title "Mô phỏng công sở"
 2. Scenario list ("Tình huống") with level/role filters; empty-filter state "Không có kịch bản nào khớp"
-3. (⛔ conversation, per scenario) multi-turn dialogue, model answer/rubric — mock only
+3. Multi-turn dialogue with post-submit model/rubric comparison
 
 ## States
 - [x] Loading — skeleton
-- [x] Ready — mock scenarios (⛔ no live data)
+- [x] Ready — live scenarios and own turn completion
 - [x] Empty — filtered list can be empty
 - [x] Partial — N/A (single dataset)
 - [x] Error — load failure wording
@@ -45,7 +48,8 @@ Blocked on: the source corpus is outside the repo (`DOC-011` — `workplace.json
 ## Actions
 | Action | Trigger | Result | Error code |
 |---|---|---|---|
-| Open a scenario | scenario card | navigate to `/student/workplace/[scenarioId]` (mock conversation) | — |
+| Open a scenario | scenario card | navigate to live `/student/workplace/[scenarioId]` | `WORKPLACE_SCENARIO_NOT_FOUND` |
+| Reveal comparison | submit nonblank reply in order | persist turn completion and show model/corrections | `WORKPLACE_TURN_NOT_FOUND`, `VALIDATION_ERROR` |
 
 ## Out of scope
-Official grading; AI conversation scoring (no approved scorer contract); teacher-assigned scenarios.
+Official/numeric grading, AI conversation scoring, reply retention and teacher-assigned scenarios.

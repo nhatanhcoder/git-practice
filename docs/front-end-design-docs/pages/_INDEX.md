@@ -1,7 +1,7 @@
 ---
 status: active
 owner: Nhật
-last_updated: 2026-09-16
+last_updated: 2026-09-18
 ---
 
 # Page Contracts — Index
@@ -87,9 +87,9 @@ Analytics (T-ANL-1…4): _not yet mapped._ Every other Teacher area has a contra
 | `/student/progress` | S-ANL-1,2 | [student-progress](./student-pages/student-progress.md) | built (live) | v1 | own graded attempts; 8/12 full UTC-week windows |
 | `/student/leaderboard` | S-ANL-4, S-GAME-5 | [student-leaderboard](./student-pages/student-leaderboard.md) | built (live) | v1 | anonymized official-grade aggregate; top 20 + caller |
 | `/student/badges` | S-GAME-4 | [student-badges](./student-pages/student-badges.md) | built (live) | v1 | four server-computed official-attempt badges |
-| `/student/writing` | S-SELF-4 | [student-writing](./student-pages/student-writing.md) | built (mock) | v1 | ⛔ DOC-011 corpus + progress contract |
-| `/student/lego` | S-SELF-5 | [student-lego](./student-pages/student-lego.md) | built (mock) | v1 | ⛔ DOC-011 corpus + progress contract |
-| `/student/workplace` | S-SELF-6 | [student-workplace](./student-pages/student-workplace.md) | built (mock) | v1 | ⛔ DOC-011 corpus + scorer contract |
+| `/student/writing` | S-SELF-4 | [student-writing](./student-pages/student-writing.md) | built (live) | v1 | optional detailed strokes cover 59/587; honest named-stroke fallback |
+| `/student/lego` | S-SELF-5 | [student-lego](./student-pages/student-lego.md) | built (live) | v1 | — |
+| `/student/workplace` | S-SELF-6 | [student-workplace](./student-pages/student-workplace.md) | built (live) | v1 | model/rubric comparison only; no numeric/AI score |
 | `/student/foundation` | S-SELF-2,9 | [student-foundation](./student-pages/student-foundation.md) | built | v1 | live 2026-09-16 (catalog + studied-state); audio/PDF/record intentionally unavailable (D4) |
 | `/student/grammar` | S-SELF-3,9 | [student-grammar](./student-pages/student-grammar.md) | built | v1 | live 2026-09-16 (catalog/progress/save + reorder practice, option A); media absent (D4) |
 | `/student/invoices` | S-BILL-1 | [student-invoices](./student-pages/student-invoices.md) | built | v1 | — (endpoints defined in [API_STUDENT.md](../../api/API_STUDENT.md) § Billing; dedicated handler per SCOPE-BILL-01) |

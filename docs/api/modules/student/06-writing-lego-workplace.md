@@ -1,6 +1,6 @@
 ---
 module: student-writing-lego-workplace
-status: accepted — owner-approved implementation 2026-09-18
+status: implemented 2026-09-18
 blocked_by: none for this bounded slice
 owner: project owner
 last_updated: 2026-09-18
@@ -109,4 +109,3 @@ within a known scenario returns `WORKPLACE_TURN_NOT_FOUND` 404.
 - frontend tests prove production pages call live services and contain no fixture,
   XP, fake handwriting score or workplace keyword-score path;
 - `pnpm --filter web build` and `node scripts/check-docs.mjs` must pass.
-
