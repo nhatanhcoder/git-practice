@@ -46,6 +46,16 @@ Teachers can **create and manage content** (classes, lessons, questions, assignm
 - 🔒 Read their own PayrollPeriod
 - 🔒 Read their own TeacherPayRate
 
+### Learning Catalog (own paths only)
+- 🔒 Create / edit / delete their own `LearningPath` and its lessons
+- 🔒 Submit an own path for review; publish / unpublish an own lesson once the path is `approved`
+- 🔒 Reference a published catalog unit — no edit right over it
+- ❌ Cannot read or write another teacher's path or lessons (`LEARNING_PATH_ACCESS_DENIED`)
+- ❌ Cannot approve, reject, suspend or restore a path — those are admin-only
+- ❌ Cannot edit or delete a **published** lesson's words (`LEARNING_UNIT_PUBLISHED_IMMUTABLE`)
+- ❌ Cannot write into a path while it is `pending_review` or `suspended` (`LEARNING_PATH_FROZEN`)
+- ❌ No write to any student progress, SRS, Flashcard or Attempt row
+
 ### Users
 - ❌ Cannot read another user's profile
 - 🔒 Own profile only

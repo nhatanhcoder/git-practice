@@ -139,6 +139,36 @@
 
 ---
 
+## 📖 Learning Catalog
+
+> **Added 2026-09-19** with [ADR-017](../../shared/decisions/017-teacher-authored-learning-catalog.md),
+> closing the `⛔ contract needed` cell that `RBAC_MATRIX.md` had been carrying for
+> `LearningCatalog | author / publish`. This *is* the "how does a teacher author/publish the
+> catalog" question ADR-016 §2 left open.
+>
+> The teacher authors the path; **admin approves it once**; after that the teacher publishes each
+> lesson themselves. Scope is the platform catalog — every student sees an approved path, with no
+> enrollment required. Admin can remove any published lesson.
+
+| # | Feature | Priority | Notes |
+|---|---------|----------|-------|
+| T-LCAT-1 | Create a learning path (`draft`) and edit its title / description | 🔴 Must | Owned by the creating teacher; no other teacher can see or touch it |
+| T-LCAT-2 | Author a lesson inside a path — title, HSK 1–9 level, 1–8 vocabulary words | 🔴 Must | Created as `draft`; the words become the auto-generated quiz |
+| T-LCAT-3 | Add a lesson that **references** an already published catalog unit | 🟡 Should | References only — the unit's words are never copied (ADR-016 §2) |
+| T-LCAT-4 | Submit the path for admin review | 🔴 Must | Needs ≥ 1 lesson; the path is frozen while waiting |
+| T-LCAT-5 | Publish / unpublish an own lesson once the path is approved | 🔴 Must | Publish requires the path to still be `approved` |
+| T-LCAT-6 | Reorder lessons within a path | 🟡 Should | Full reorder only — a partial payload is rejected |
+| T-LCAT-7 | Delete a path that was never published and has no learners | 🟡 Should | Otherwise it stays; there is no destructive delete |
+| T-LCAT-8 | See review status and, when rejected, the admin's reason | 🔴 Must | Rejected paths stay editable and can be resubmitted |
+
+> ⚠️ **A published lesson's words cannot be edited.** Learner progress is stored against the lesson
+> and keeps the answers a learner gave; changing the words afterwards makes recorded scores
+> unverifiable. Correcting a published lesson means publishing a new lesson and unpublishing the
+> old one. This is the same rule the corpus importer already follows, and it is the one authoring
+> constraint a teacher will actually notice.
+
+---
+
 ## 🔔 Notifications Received
 
 | Notification type | Trigger |

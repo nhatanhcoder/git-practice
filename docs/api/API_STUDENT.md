@@ -167,3 +167,29 @@ POST /student/learning-path/:slug/start
 POST /student/learning-path/:slug/study
 POST /student/learning-path/:slug/answers
 POST /student/learning-path/:slug/complete
+
+### Teacher-authored paths become visible here — added 2026-09-19
+
+[ADR-017](../shared/decisions/017-teacher-authored-learning-catalog.md) lets teachers author
+learning paths that admin approves. Once approved, a path joins the **same** catalog this endpoint
+already serves: scope is the platform catalog, so no enrollment is needed and no new progress
+store exists.
+
+**Additive only — nothing above changes.** `?curriculum=` still defaults to `hanlo_vocabulary`, and
+every existing response shape stays as it is (the module spec keeps its 12 invariants untouched).
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/api/v1/student/learning-path/curricula` | Curricula the student may browse: the built-in `hanlo_vocabulary` plus every `approved` teacher path (`{key, title, unitCount, completed}`) |
+
+Rules that carry over unchanged from the module contract:
+
+- Only units whose path is `approved` **and** whose own `published` flag is true are listed or
+  readable. A `suspended` path and its units disappear from the catalog — the same rule as an
+  unpublished unit today (LP-10).
+- A unit whose referenced source has been unpublished renders as an honest unavailable node, never
+  as a silently missing one.
+- Progress stays keyed by `unitSlug` in `user_learning_progress`. Suspend or unpublish hides
+  content; it never deletes progress, and restoring shows the same state as before.
+- Unlock order (LP-02) applies to teacher paths exactly as it does to `hanlo_vocabulary`.
+

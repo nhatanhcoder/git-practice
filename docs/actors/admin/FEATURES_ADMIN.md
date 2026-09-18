@@ -72,6 +72,29 @@
 
 ---
 
+## 📖 Learning Catalog Moderation
+
+> **Added 2026-09-19** with [ADR-017](../../shared/decisions/017-teacher-authored-learning-catalog.md).
+> Teachers author learning paths; an admin approves a path **once**, after which the teacher
+> publishes each lesson themselves. Because the approval gate runs only once, the admin's ability to
+> **remove a published lesson at any time** is the control that keeps it meaningful — a path
+> approved while thin must not become a hole.
+>
+> Admin reviews content; admin never writes it. No endpoint here creates, edits or deletes content.
+
+| # | Feature | Priority | Notes |
+|---|---------|----------|-------|
+| A-LCAT-1 | Review queue of paths submitted by teachers | 🔴 Must | Filter by status and teacher; oldest submission first |
+| A-LCAT-2 | Approve a submitted path | 🔴 Must | Only from `pending_review`; requires ≥ 1 lesson |
+| A-LCAT-3 | Reject a submitted path with a required reason | 🔴 Must | Reason 10–2000 chars; the teacher sees it and can resubmit |
+| A-LCAT-4 | Suspend / restore an approved path | 🟡 Should | Suspend hides it from students without deleting anything; restore puts back exactly what was published |
+| A-LCAT-5 | Find and unpublish any published lesson | 🔴 Must | Works even while its path stays `approved` — the compensating control for a one-time gate |
+
+> ⚠️ Suspend and unpublish **delete nothing**. Learner progress is never removed, so restoring a
+> path shows students the same state they had before.
+
+---
+
 ## 🔔 Notifications Received
 
 | Notification type | Trigger |

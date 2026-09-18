@@ -1,6 +1,6 @@
 ---
 status: implemented
-last_updated: 2026-09-15
+last_updated: 2026-09-19
 ---
 # S-SELF-1 — Vocabulary learning path
 ## 0. Approval and boundaries
@@ -78,3 +78,33 @@ learn/save/reload/complete, failure/stale/duplicate, isolation/locked/deleted/of
 ## 16. Limits
 HSK bands inherited from approved source, not a claim of official curriculum alignment.
 No grammar/audio invented. No textbook publication or global personal-level gating in this slice.
+
+## 17. Addendum — teacher-authored paths share this contract (added 2026-09-19)
+
+[ADR-017](../../../shared/decisions/017-teacher-authored-learning-catalog.md) lets a teacher author a
+learning path and publish its units once an admin has approved the path. Those units enter **this**
+catalog; they do not get a second contract, a second progress store or a second quiz format.
+
+**Nothing in §0–§16 changes.** `?curriculum=` still defaults to `hanlo_vocabulary`, every existing
+response shape stays byte-identical, and the 12 invariants above apply to a teacher unit exactly as
+they apply to a corpus unit. What is added:
+
+- `GET /api/v1/student/learning-path/curricula` — the curricula a student may browse: the built-in
+  `hanlo_vocabulary` plus every **approved** teacher path. Additive endpoint; the catalog and
+  progress endpoints are untouched.
+- Visibility is `path.status = approved` **and** `unit.published = true`. A `suspended` path and its
+  units leave the catalog under the same rule as an unpublished unit — LP-10 already states that an
+  absent catalog returns empty, never generated content, and this is the same situation.
+- A lesson whose **referenced** source unit has been unpublished renders as an honest unavailable
+  node; it is never silently dropped. This follows `WEB-011`'s lesson: the screen must be able to
+  say it cannot show something.
+- Unlock order stays LP-02 (first unit of a level available, later units need the previous one
+  completed). Teacher paths do not get a free-order mode.
+- Suspend or unpublish hides content and **never** deletes `user_learning_progress`. Restoring the
+  path shows the student the same state as before, because progress is keyed by `unitSlug` and the
+  slug of a published unit never changes.
+
+New errors raised by these paths are the authoring/moderation family in §9 of
+[teacher 07](../teacher/07-learning-catalog.md) and
+[admin 09](../09-learning-catalog-moderation.md); no student-facing code is added to §9 above.
+

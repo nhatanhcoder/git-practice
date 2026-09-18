@@ -117,3 +117,44 @@ matrix has not been extended — that edit touches RBAC and needs owner approval
 |--------|------|-------------|
 | GET | `/api/v1/teacher/payroll` | List own payroll periods |
 | GET | `/api/v1/teacher/payroll/:id` | Payroll period detail |
+
+---
+
+## Learning Catalog
+
+> Added 2026-09-19 with [ADR-017](../shared/decisions/017-teacher-authored-learning-catalog.md),
+> which closes the `⛔ contract needed` cell of `ADR-016` §2 and the matching
+> `RBAC_MATRIX.md` row. Module spec:
+> [07-learning-catalog.md](./modules/teacher/07-learning-catalog.md).
+> **Teacher authors, admin approves once, then the teacher publishes each lesson.**
+> Scope is the platform catalog — every student sees an approved path (ADR-017 §2).
+> The `LEARNING_PATH_*` codes are *proposed, not agreed* in `API_ERROR_CODES.md`.
+
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/api/v1/teacher/learning-paths` | Create a path (`draft`) |
+| GET | `/api/v1/teacher/learning-paths` | List own paths (`?status=&page=`) |
+| GET | `/api/v1/teacher/learning-paths/:pathId` | Path detail + its units |
+| PATCH | `/api/v1/teacher/learning-paths/:pathId` | Update `title` / `description` |
+| DELETE | `/api/v1/teacher/learning-paths/:pathId` | Delete — only with no published unit and no recorded progress |
+| POST | `/api/v1/teacher/learning-paths/:pathId/submit` | Submit for review (`draft`/`rejected` → `pending_review`), requires ≥ 1 unit |
+| PATCH | `/api/v1/teacher/learning-paths/:pathId/units/reorder` | Reorder units — payload must be the complete `1..N` permutation |
+| POST | `/api/v1/teacher/learning-paths/:pathId/units` | Create a unit (always `draft`) |
+| GET | `/api/v1/teacher/learning-units` | List published units available to **reference** (`?level=&curriculum=&page=`) |
+| PATCH | `/api/v1/teacher/learning-units/:unitId` | Update a `draft` / `unpublished` unit |
+| DELETE | `/api/v1/teacher/learning-units/:unitId` | Delete a `draft` / `unpublished` unit |
+| POST | `/api/v1/teacher/learning-units/:unitId/publish` | `draft`/`unpublished` → `published` — the path must be `approved` |
+| POST | `/api/v1/teacher/learning-units/:unitId/unpublish` | `published` → `unpublished`, student progress untouched |
+
+**Rules that are not negotiable** (full list in the module spec §4):
+
+- Ownership is a **service-layer predicate** on `path.ownerId` (unit ownership derives from its
+  parent path). A missing owner argument **denies**, it does not skip the check — `API-009`.
+- A path in `pending_review` or `suspended` is **frozen**: no write of any kind.
+- A **published unit's `words` are immutable**. Progress is keyed by `unitSlug` and stores the
+  answers given; editing content behind it makes recorded scores unverifiable. Correction is a new
+  unit + unpublish the old one — the same rule the CLI importer already follows.
+- `reorder` must be the complete permutation, validated before any write, so it can never collide
+  with the `(curriculum, level, order)` unique index — the `API-008` trap.
+- A `reference` unit **references** a published unit; it never copies its `words` (ADR-016 §2).
+- This module never writes `user_learning_progress`, SRS, Flashcard or Attempt rows.

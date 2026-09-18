@@ -438,3 +438,27 @@ export function handleApiError(error: AxiosError) {
 | LEARNING_UNIT_LOCKED | 403 | Previous unit not completed |
 | LEARNING_PROGRESS_CONFLICT | 409 | Stale revision, not started or already completed |
 | LEARNING_STEP_INVALID | 400 | Study/answer/completion precondition fails |
+
+## Learning catalog — teacher authoring + admin moderation — **proposed, not agreed** 2026-09-19
+
+> ⛔ **proposed, not agreed.** Proposed 2026-09-19 with
+> [ADR-017](../shared/decisions/017-teacher-authored-learning-catalog.md) and the two module specs
+> ([teacher 07](./modules/teacher/07-learning-catalog.md), [admin 09](./modules/09-learning-catalog-moderation.md)).
+> **No BE owner has signed these off, so they are not usable in code yet** — a slice that needs them
+> must get the sign-off first, exactly like the `LESSON_*` family did on 2026-09-01 → 2026-09-03.
+> Every branch below is a rule already stated in one of those two specs; none is invented here.
+
+| Code | HTTP | Description |
+|---|---|---|
+| `LEARNING_PATH_NOT_FOUND` | 404 | Path does not exist, or is not yours — the two are deliberately indistinguishable |
+| `LEARNING_PATH_ACCESS_DENIED` | 403 | Path exists but is not owned by the calling teacher |
+| `LEARNING_PATH_INVALID_STATUS` | 409 | Transition not legal from the current status, including a lost race between two actors |
+| `LEARNING_PATH_FROZEN` | 409 | Write attempted while the path is `pending_review` or `suspended` |
+| `LEARNING_PATH_EMPTY` | 409 | Approval attempted on a path that has no unit at all |
+| `LEARNING_PATH_REJECTION_REASON_REQUIRED` | 400 | `rejectionReason` missing, whitespace-only, shorter than 10 or longer than 2000 chars |
+| `LEARNING_PATH_HAS_PUBLISHED_UNITS` | 409 | Delete attempted on a path that has a published unit or recorded student progress |
+| `LEARNING_UNIT_PUBLISHED_IMMUTABLE` | 409 | Content edit or delete attempted on a published unit — publish a new unit instead |
+| `LEARNING_UNIT_ORDER_INVALID` | 400 | Reorder payload is not the complete `1..N` permutation of the path's units |
+| `LEARNING_UNIT_NOT_OWNED` | 403 | Unit's parent path is not owned by the calling teacher |
+| `LEARNING_UNIT_REFERENCE_INVALID` | 409 | Reference target does not exist or is not published |
+

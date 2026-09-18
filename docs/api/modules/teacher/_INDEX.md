@@ -1,13 +1,14 @@
 ---
 title: Backend Module Specs — Teacher
 status: active
-last_updated: 2026-09-03
+last_updated: 2026-09-19
 ---
 
 # Backend Module Specs — Teacher
 
-> Backend specifications for the **Teacher area** — 6 modules, 36 endpoints. Written 2026-09-03
-> by opencode from the verbatim sources (see each file's §0). **These are specs, not code.**
+> Backend specifications for the **Teacher area** — 7 modules, 49 endpoints. Written 2026-09-03
+> by opencode from the verbatim sources (see each file's §0); **T7 added 2026-09-19** (zcode) with
+> ADR-017. **These are specs, not code.**
 > Companion set: `docs/api/modules/` (Admin, 8 modules).
 >
 > Scope settled by the owner 2026-09-03:
@@ -30,10 +31,19 @@ last_updated: 2026-09-03
 | T4 | Attempts + Grading | `04-attempts-grading.md` | 🔶 proposed | 4 | 8 (INV-TGRD) | per-question max not modeled (Q2); AI unparked 2026-09-12 |
 | T5 | Sessions (teacher side) | `05-sessions.md` | 🔶 proposed | 6 | 9 (INV-TSES) | Q-SES-2 (re-submit after reject) |
 | T6 | Income (read-only) | `06-income.md` | 🔶 proposed | 2 | 4 (INV-TINC) | — (reads stored data only) |
+| T7 | Learning Catalog (authoring) | [07-learning-catalog.md](07-learning-catalog.md) | 🔶 proposed | 13 | 14 (INV-LCAT) | `LEARNING_PATH_*` codes *proposed, not agreed* — sign-off needed before Slice 1 |
 
 46 new invariants, each with a test line in its module's §15 — the invariant gate.
 Inherited invariants (INV-CLASS-*, INV-SESSION-*, INV-PAYROLL-*) are referenced, never
 redefined.
+
+T7 was added 2026-09-19 with
+[ADR-017](../../../shared/decisions/017-teacher-authored-learning-catalog.md), which closes the
+`LearningCatalog | author / publish` cell `RBAC_MATRIX.md` had held as `⛔ contract needed`. Its
+admin counterpart is a root-set module,
+[09-learning-catalog-moderation.md](../09-learning-catalog-moderation.md) — the pair is split by
+role exactly like Attempts (teacher T4 + student 03) is. Its 14 invariants are still counted
+separately: the "46" above is the original six-module total.
 
 ## 2. Dependency order
 

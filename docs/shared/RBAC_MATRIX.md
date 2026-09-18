@@ -60,7 +60,9 @@ last_updated: 2026-09-14
 | **Flashcard** | read / study | ❌ | ❌ | ✅ |
 | **UserFlashcardState** | read / update own | ❌ | ❌ | 🔒 |
 | **LearningCatalog** | read published units | 👁️ | 👁️ | 👁️ |
-| **LearningCatalog** | author / publish | ⛔ contract needed | ⛔ contract needed | ❌ |
+| **LearningCatalog** | author / publish own path + own units | ❌ | ✅ (own; publish only while the path is `approved`) | ❌ |
+| **LearningCatalog** | review: approve / reject / suspend / restore a path | ✅ | ❌ | ❌ |
+| **LearningCatalog** | unpublish any published unit, on any path | ✅ | 🔒 (own units only) | ❌ |
 | **SupplementalPractice** | assign catalog unit to own class | ❌ | 🔒 | ❌ |
 | **SupplementalPractice** | read / complete | ❌ | 👁️ (own active class) | 🔒 (own active enrollment) |
 | **SelfStudyProgress** | read / update own | ❌ | ❌ | 🔒 |
@@ -112,3 +114,24 @@ Student may read and review own rows only; system captures real failures. Teache
 ## Vocabulary learning path — approved 2026-09-15
 
 Student may read published vocabulary catalog and read/start/study/answer/complete own unit progress. Locked content requires prior completion. Teacher/admin cannot call student learning-path routes. Catalog publication uses an operator CLI, not a new public permission.
+
+## Teacher-authored learning catalog — approved 2026-09-19
+
+Supersedes the last sentence of the section above: the operator CLI is **no longer the only** way a
+catalog entry is published. Per [ADR-017](../shared/decisions/017-teacher-authored-learning-catalog.md):
+
+- A **teacher** creates and owns a `LearningPath`, authors units in it, submits it for review, and —
+  once approved — **publishes each unit themselves**. Ownership is a service-layer predicate on the
+  path owner; unit rights derive from the parent path. A teacher never touches another teacher's
+  path (`LEARNING_PATH_ACCESS_DENIED`).
+- An **admin** approves, rejects (with a reason), suspends and restores paths, and may
+  **unpublish any published unit on any path** — including one published after its path was
+  approved. Admin has no authoring right, and no endpoint lets an admin edit content.
+- Scope is the **platform catalog**: an approved path is visible to every student, with no
+  enrollment requirement (ADR-017 §2).
+- Students gain no new permission: the same read/study rules and the same `unitSlug`-keyed progress
+  apply, whether a unit comes from the CLI corpus or from a teacher. Suspend or unpublish hides
+  content and never deletes progress.
+- Catalog publication by CLI remains valid for the built-in `hanlo_vocabulary` corpus; it is now one
+  producer among two.
+
