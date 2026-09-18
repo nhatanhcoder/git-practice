@@ -384,11 +384,18 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
       `pronunciation`) — affects `Assignment.skillType`, `SkillScore.skill`, `Question.skill`
 - ⬜ Answer the 4 remaining open questions in `PROJECT_KNOWLEDGE.md` §8.10; class relationship resolved
 - 🔶 (zcode · 2026-09-19) **Teacher-authored learning catalog → Admin duyệt (ô ⛔ của ADR-016 §2).**
-      Contract-first slice, **docs only chưa có code**: ADR-017 + spec teacher `07-learning-catalog`
-      + spec admin `09-learning-catalog-moderation` + RBAC + error codes + Page Contract cho 5 màn.
-      Owner chốt 2026-09-19: phạm vi **toàn nền tảng**, duyệt **path 1 lần**, GV **tự publish từng
-      unit** sau khi path approved, admin gỡ được; nội dung **GV tự nhập hoặc tham chiếu unit đã
-      publish**. Branch `docs/learning-catalog-adr`. BE/FE là các slice sau, chưa bắt đầu.
+      **Slice 0 xong — docs only, chưa có dòng code nào.** Owner chốt 2026-09-19: phạm vi **toàn nền
+      tảng**, duyệt **path 1 lần**, GV **tự publish từng unit** sau khi path approved, admin gỡ
+      được; nội dung **GV tự nhập hoặc tham chiếu unit đã publish**. Branch `docs/learning-catalog-adr`.
+      Đã viết: ADR-017 · spec teacher `07-learning-catalog` (13 endpoint, INV-LCAT-01..14) · spec
+      admin `09-learning-catalog-moderation` (8 endpoint, INV-LMOD-01..12) · family
+      `LEARNING_PATH_*` (11 code, *proposed*) · RBAC + PERMISSIONS + FEATURES hai vai · addendum
+      §17 cho spec student 05 (additive, 12 invariant cũ nguyên vẹn) · 5 Page Contract + 5 layer spec
+      + 2 nhánh flow map v3. `check:docs` 9/9. Filed `DOC-018` + `DEBT-008` while writing.
+      ⛔ **Slice 1 (BE) bị chặn cho tới khi family `LEARNING_PATH_*` được ký** — code *proposed*
+      không được dùng trong code chạy. Ràng buộc đã ghi trong ADR-017 §6: unit đã publish thì
+      `words` bất biến, vì tiến độ học viên khoá theo `unitSlug` và lưu đáp án đã trả lời.
+      Slice 1–4 (BE, FE teacher, FE admin, FE student) chưa bắt đầu.
 - **DoD**: a learner can go pronunciation → grammar → character → Lego → mock exam, with
       XP/streak/badges updating correctly
 
