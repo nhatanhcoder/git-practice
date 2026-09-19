@@ -23,7 +23,7 @@ là CLI `apps/api/scripts/learning-path-import.ts`).
 | Table / Collection | Read/Write | Notes |
 |---|---|---|
 | `LearningPath` (Postgres) | Read + Write | Tạo path, sửa `title`/`description`, ghi `status` khi submit. Không ghi các cột audit duyệt (`reviewedById`, `reviewedAt`, `rejectionReason`) — đó là quyền của admin (module 09) |
-| `learning_units` (Mongo) | Read + Write | Tạo/sửa/xoá unit `draft`, đổi `published` khi publish/unpublish, ghi `slug`, `pathId`, `authorId`, `sourceHash`, `order`. **Không sửa `words` của unit đã `published`** (INV-LCAT-07) |
+| `learning_units` (Mongo) | Read + Write | Tạo/sửa/xoá unit `draft`, đổi `published` khi publish/unpublish, ghi `slug`, `pathId`, `authorId`, `sourceHash`, `order`, `firstPublishedAt`. **Không sửa `words` của unit đã từng `published`** (INV-LCAT-07) |
 | `user_learning_progress` (Mongo) | Read only | Chỉ đọc để chặn xoá path đã có người học (INV-LCAT-11). Không bao giờ ghi |
 | `Notification` (Postgres) | Write | INSERT `learning_path_submitted` khi submit (fan-out cho mọi admin) |
 
@@ -117,6 +117,9 @@ INV-LCAT-06: Unit tạo ra luôn ở `draft`; **publish chỉ khi path đang `ap
 INV-LCAT-07: Unit đã từng `published` là **bất biến về nội dung**: cả `published`
 và `unpublished` đều không cho `PATCH`/`DELETE`, trả `LEARNING_UNIT_PUBLISHED_IMMUTABLE`.
 Sửa = tạo unit mới rồi unpublish unit cũ; unit `unpublished` chỉ có thể republish nguyên vẹn.
+Mongo lưu `firstPublishedAt` nội bộ: set đúng một lần khi publish lần đầu, không xoá khi
+unpublish. `firstPublishedAt != null` là predicate phân biệt unit `unpublished` với `draft`;
+field này không đi ra wire.
 INV-LCAT-08: `slug` sinh một lần khi tạo và **không bao giờ đổi** (tiến độ học viên khoá theo
 `slug`). `curriculumKey` cũng bất biến sau khi tạo.
 INV-LCAT-09: `reorder` chỉ chấp nhận permutation hoàn chỉnh `1..N`; payload sai bị từ chối trước
@@ -234,7 +237,8 @@ Không có side effect nào khác: không XP, không SRS, không enrollment, kh�
 
 - Migration Postgres thêm model `LearningPath` + enum `LearningPathStatus`, và thêm 4 giá trị vào
   enum `NotificationType`.
-- Mongo: `learning_units` thêm `pathId?`, `authorId?`, và **nới enum `curriculum`** (hiện cứng
+- Mongo: `learning_units` thêm `pathId?`, `authorId?`, `kind?`, `referenceSlug?`,
+  `firstPublishedAt?`, và **nới enum `curriculum`** (hiện cứng
   `["hanlo_vocabulary"]`) để nhận `curriculumKey` của path. Giá trị hop lệ được validate ở service
   theo Postgres, không hard-code trong schema.
 - `sourceHash` đang `required`: unit do giáo viên nhập **derive SHA-256 từ chính payload**

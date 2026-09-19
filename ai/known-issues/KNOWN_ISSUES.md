@@ -2082,7 +2082,7 @@ spec requires reading the screen as built, and several contracts are themselves 
 
 **Severity**: High
 **Sprint**: 5b
-**Status**: Open — found 2026-09-19 before Learning Catalog Slice 1A migration
+**Status**: Resolved 2026-09-19 — owner approved `firstPublishedAt` for Slice 1A
 
 **Description**: `learning_units` currently persists only `published: boolean`. Both a new draft
 and a unit that was published and later unpublished therefore have `published = false`. ADR-017
@@ -2096,4 +2096,5 @@ prevents `DELETE LearningPath` from reliably detecting a unit that was published
 **Needs decision**: approve one persisted discriminator in the Mongo contract. Recommended:
 nullable internal `firstPublishedAt` set once on first publish and never cleared; alternative:
 replace the boolean with a three-value publication-state field and migrate every existing reader.
-No field is added until the owner approves one option.
+Owner selected the recommended `firstPublishedAt` option. The Slice 1A contract and Mongo schema
+now carry that field; service enforcement remains part of dependent backend Slice 1B.

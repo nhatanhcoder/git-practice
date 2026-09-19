@@ -7,7 +7,7 @@
 - Reconciled ownership as 404 only for missing paths and 403 for paths owned by another teacher.
 
 **In progress** (and why it's unfinished):
-- Postgres/Mongo migration is not written because the Mongo persistence contract cannot represent INV-LCAT-07 after unpublish.
+- Postgres/Mongo migration implementation and verification after owner approval of `firstPublishedAt`.
 
 **Contract/temporary decisions to preserve**:
 - Submit and approve each require at least one unit; maximum 100 units per path.
@@ -19,7 +19,7 @@
 - None.
 
 **Blocker / needs follow-up**:
-- API-019: owner must approve a persisted Mongo discriminator for draft versus unpublished.
+- None for Slice 1A.
 
 **Next steps**:
 - After approval, amend the module contract in its own commit, add the Prisma/Mongo schema migration, run the full migration verification lane, record, and open the migration PR.
