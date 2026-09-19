@@ -392,8 +392,8 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
       `LEARNING_PATH_*` (11 code, *proposed*) · RBAC + PERMISSIONS + FEATURES hai vai · addendum
       §17 cho spec student 05 (additive, 12 invariant cũ nguyên vẹn) · 5 Page Contract + 5 layer spec
       + 2 nhánh flow map v3. `check:docs` 9/9. Filed `DOC-018` + `DEBT-008` while writing.
-      ⛔ **Slice 1 (BE) bị chặn cho tới khi family `LEARNING_PATH_*` được ký** — code *proposed*
-      không được dùng trong code chạy. Ràng buộc đã ghi trong ADR-017 §6: unit đã publish thì
+      ✅ Owner sign-off family `LEARNING_PATH_*` và các default §16 ngày 2026-09-19; Gate 2 đã mở.
+      Ràng buộc đã ghi trong ADR-017 §6: unit đã publish thì
       `words` bất biến, vì tiến độ học viên khoá theo `unitSlug` và lưu đáp án đã trả lời.
       Slice 1–4 (BE, FE teacher, FE admin, FE student) chưa bắt đầu.
 - 🔶 (codex · 2026-09-19) **Teacher-authored Learning Catalog — Slice 1A migration.**

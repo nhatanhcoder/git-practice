@@ -134,15 +134,15 @@ Gỡ unit (Mongo) là một document update độc lập, **sau** khi Postgres �
 
 | Nhánh lỗi | HTTP | Code | Code status |
 |---|---|---|---|
-| Path không tồn tại | 404 | `LEARNING_PATH_NOT_FOUND` | proposed |
-| Chuyển trạng thái không hợp lệ / đã bị người khác đổi trước | 409 | `LEARNING_PATH_INVALID_STATUS` | proposed |
-| Approve khi path chưa có unit nào | 409 | `LEARNING_PATH_EMPTY` | proposed |
-| Thiếu hoặc sai `rejectionReason` | 400 | `LEARNING_PATH_REJECTION_REASON_REQUIRED` | proposed |
+| Path không tồn tại | 404 | `LEARNING_PATH_NOT_FOUND` | agreed 2026-09-19 |
+| Chuyển trạng thái không hợp lệ / đã bị người khác đổi trước | 409 | `LEARNING_PATH_INVALID_STATUS` | agreed 2026-09-19 |
+| Approve khi path chưa có unit nào | 409 | `LEARNING_PATH_EMPTY` | agreed 2026-09-19 |
+| Thiếu hoặc sai `rejectionReason` | 400 | `LEARNING_PATH_REJECTION_REASON_REQUIRED` | agreed 2026-09-19 |
 | Unit không tồn tại hoặc chưa từng publish | 404 | LEARNING_UNIT_NOT_FOUND | đã có (module student) |
-| Unit đã `unpublished` từ trước | 409 | `LEARNING_PATH_INVALID_STATUS` | proposed |
+| Unit đã `unpublished` từ trước | 409 | `LEARNING_PATH_INVALID_STATUS` | agreed 2026-09-19 |
 
-Không dùng code nào khác. Toàn bộ family `LEARNING_PATH_*` là **proposed, not agreed** cho tới khi
-có người ký; code *proposed* chưa được dùng trong code chạy.
+Không dùng code nào khác. Toàn bộ family `LEARNING_PATH_*` đã được owner
+**agreed 2026-09-19** cho Slice 1.
 
 ## 10. Side effects & notifications
 
@@ -211,6 +211,6 @@ unit, một path `approved` có unit đã publish, một giáo viên khác khôn
 
 | Question | What it blocks | Owner | Decide by |
 |---|---|---|---|
-| Admin có cần xem **lịch sử** các lần duyệt (nhiều vòng reject → approve) không, hay chỉ trạng thái hiện tại? | Chỉ là hiển thị; bản đầu ghi trạng thái hiện tại + audit gần nhất | Project owner | trước Slice 3 |
-| Suspend có nên kèm lý do gửi cho giáo viên như reject không? | Nội dung notification; mặc định **không** ở bản đầu | Project owner | trước Slice 1 |
-| Có cần một hàng đợi riêng cho unit bị gỡ (để giáo viên biết vì sao) không? | Không chặn | — | — |
+| Admin có cần xem **lịch sử** các lần duyệt (nhiều vòng reject → approve) không, hay chỉ trạng thái hiện tại? | **RESOLVED v1:** chỉ trạng thái + audit gần nhất | Project owner | owner-approved 2026-09-19 |
+| Suspend có nên kèm lý do gửi cho giáo viên như reject không? | **RESOLVED v1:** không | Project owner | owner-approved 2026-09-19 |
+| Có cần một hàng đợi riêng cho unit bị gỡ (để giáo viên biết vì sao) không? | **RESOLVED v1:** không; trạng thái unit là nguồn sự thật | Project owner | owner-approved 2026-09-19 |

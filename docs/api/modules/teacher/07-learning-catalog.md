@@ -40,8 +40,8 @@ là CLI `apps/api/scripts/learning-path-import.ts`).
 | PATCH | `/api/v1/teacher/learning-paths/:pathId/units/reorder` | teacher | Đổi thứ tự unit — payload phải là permutation 1..N | proposed |
 | POST | `/api/v1/teacher/learning-paths/:pathId/units` | teacher | Tạo unit trong path (luôn ở `draft`) | proposed |
 | GET | `/api/v1/teacher/learning-units` | teacher | List unit đã publish để **tham chiếu** — `?level=&curriculum=&page=` | proposed |
-| PATCH | `/api/v1/teacher/learning-units/:unitId` | teacher | Sửa unit `draft` / `unpublished` | proposed |
-| DELETE | `/api/v1/teacher/learning-units/:unitId` | teacher | Xoá unit `draft` / `unpublished` | proposed |
+| PATCH | `/api/v1/teacher/learning-units/:unitId` | teacher | Sửa unit `draft`; unit đã từng publish là bất biến | proposed |
+| DELETE | `/api/v1/teacher/learning-units/:unitId` | teacher | Xoá unit `draft`; unit đã từng publish không được xoá | proposed |
 | POST | `/api/v1/teacher/learning-units/:unitId/publish` | teacher | `draft`/`unpublished` → `published` — path phải `approved` | proposed |
 | POST | `/api/v1/teacher/learning-units/:unitId/unpublish` | teacher | `published` → `unpublished`, giữ nguyên tiến độ học viên | proposed |
 
@@ -68,6 +68,9 @@ là CLI `apps/api/scripts/learning-path-import.ts`).
 | `level` | number | yes | HSK 1–9 |
 | `words` | `{hanzi, pinyin, meaning}[]` | chỉ khi `authored` | 1–8 phần tử; `hanzi` không rỗng; không trùng `hanzi` trong cùng unit |
 | `referenceSlug` | string | chỉ khi `reference` | Phải là unit đang `published` |
+
+Mỗi path có tối đa **100 unit**. Request tạo unit thứ 101 trả `VALIDATION_ERROR`
+trước khi ghi Mongo.
 
 **`PATCH /teacher/learning-units/:unitId`** — `title?`, `level?`, `words?`. `kind`, `referenceSlug`,
 `slug`, `pathId` là bất biến sau khi tạo.
@@ -111,16 +114,18 @@ atomically trên `status` nguồn.
 INV-LCAT-05: Không có đường nào để giáo viên tự chuyển path sang `approved`; `approved` chỉ do
 admin (module 09).
 INV-LCAT-06: Unit tạo ra luôn ở `draft`; **publish chỉ khi path đang `approved`**.
-INV-LCAT-07: Unit `published` là **bất biến về nội dung**: `PATCH`/`DELETE` trả
-`LEARNING_UNIT_PUBLISHED_IMMUTABLE`. Sửa = tạo unit mới rồi unpublish unit cũ.
+INV-LCAT-07: Unit đã từng `published` là **bất biến về nội dung**: cả `published`
+và `unpublished` đều không cho `PATCH`/`DELETE`, trả `LEARNING_UNIT_PUBLISHED_IMMUTABLE`.
+Sửa = tạo unit mới rồi unpublish unit cũ; unit `unpublished` chỉ có thể republish nguyên vẹn.
 INV-LCAT-08: `slug` sinh một lần khi tạo và **không bao giờ đổi** (tiến độ học viên khoá theo
 `slug`). `curriculumKey` cũng bất biến sau khi tạo.
 INV-LCAT-09: `reorder` chỉ chấp nhận permutation hoàn chỉnh `1..N`; payload sai bị từ chối trước
 khi ghi, để không bao giờ đâm vào unique index `(curriculum, level, order)`.
 INV-LCAT-10: Unit `reference` **không sao chép** `words`; nó trỏ tới `referenceSlug` và chỉ được
-trỏ tới unit đang `published` (ADR-016 §2, ADR-017 §3).
-INV-LCAT-11: `DELETE` path chỉ hợp lệ khi chưa có unit `published` **và** chưa có bản ghi
-`user_learning_progress` nào cho các unit của path.
+trỏ tới unit đang `published` của path nguồn không `suspended` (ADR-016 §2, ADR-017 §3).
+INV-LCAT-11: `DELETE` path chỉ hợp lệ khi path còn `draft`/`rejected`, chưa có unit đã
+từng `published` **và** chưa có bản ghi `user_learning_progress` nào cho các unit của path.
+Path đã `approved` không hard-delete; admin dùng `suspend`.
 INV-LCAT-12: Mọi response chỉ chứa dữ liệu của chính giáo viên gọi API; không lộ `ownerId` của
 người khác, không lộ `sourceHash`.
 INV-LCAT-13: Module này không ghi `user_learning_progress`, SRS, Flashcard hay Attempt.
@@ -160,7 +165,7 @@ learning_unit
   draft ──publish──► published ──unpublish──► unpublished ──publish──► published
 ```
 
-- Giáo viên ghi được: `draft`, `rejected` (path); `draft`, `unpublished` (unit). Path `approved`:
+- Giáo viên ghi được: `draft`, `rejected` (path); chỉ `draft` (nội dung unit). Path `approved`:
   giáo viên thêm được unit mới và publish, sửa `title`/`description` (Q2), nhưng không sửa unit đã
   published.
 - Chỉ admin đi được các cạnh vào/ra `approved` và `suspended`.
@@ -188,19 +193,19 @@ learning_unit
 
 | Nhánh lỗi | HTTP | Code | Code status |
 |---|---|---|---|
-| Path không tồn tại / không phải của mình (che giấu sự tồn tại) | 404 | `LEARNING_PATH_NOT_FOUND` | proposed |
-| Path tồn tại nhưng không thuộc giáo viên gọi API | 403 | `LEARNING_PATH_ACCESS_DENIED` | proposed |
-| Chuyển trạng thái không hợp lệ (kể cả hai admin/giáo viên chạy song song) | 409 | `LEARNING_PATH_INVALID_STATUS` | proposed |
-| Ghi vào path đang `pending_review`/`suspended` | 409 | `LEARNING_PATH_FROZEN` | proposed |
-| Sửa/xoá unit đang `published` | 409 | `LEARNING_UNIT_PUBLISHED_IMMUTABLE` | proposed |
-| Reorder không phải permutation `1..N` | 400 | `LEARNING_UNIT_ORDER_INVALID` | proposed |
-| Unit không thuộc giáo viên gọi API | 403 | `LEARNING_UNIT_NOT_OWNED` | proposed |
-| Tham chiếu tới unit không published / không tồn tại | 409 | `LEARNING_UNIT_REFERENCE_INVALID` | proposed |
-| Xoá path còn unit published hoặc đã có tiến độ | 409 | `LEARNING_PATH_HAS_PUBLISHED_UNITS` | proposed |
+| Path không tồn tại | 404 | `LEARNING_PATH_NOT_FOUND` | agreed 2026-09-19 |
+| Path tồn tại nhưng không thuộc giáo viên gọi API | 403 | `LEARNING_PATH_ACCESS_DENIED` | agreed 2026-09-19 |
+| Chuyển trạng thái không hợp lệ (kể cả hai admin/giáo viên chạy song song) | 409 | `LEARNING_PATH_INVALID_STATUS` | agreed 2026-09-19 |
+| Ghi vào path đang `pending_review`/`suspended` | 409 | `LEARNING_PATH_FROZEN` | agreed 2026-09-19 |
+| Sửa/xoá unit đã từng `published` | 409 | `LEARNING_UNIT_PUBLISHED_IMMUTABLE` | agreed 2026-09-19 |
+| Reorder không phải permutation `1..N` | 400 | `LEARNING_UNIT_ORDER_INVALID` | agreed 2026-09-19 |
+| Unit không thuộc giáo viên gọi API | 403 | `LEARNING_UNIT_NOT_OWNED` | agreed 2026-09-19 |
+| Tham chiếu tới unit không published / không tồn tại | 409 | `LEARNING_UNIT_REFERENCE_INVALID` | agreed 2026-09-19 |
+| Xoá path còn unit đã từng publish hoặc đã có tiến độ | 409 | `LEARNING_PATH_HAS_PUBLISHED_UNITS` | agreed 2026-09-19 |
 
 Không dùng code nào khác. LEARNING_UNIT_NOT_FOUND (404) và LEARNING_UNIT_LOCKED (403) đã có từ
-module student và giữ nguyên nghĩa phía học viên. Cả family mới là **proposed, not agreed** cho tới
-khi có người ký — theo luật của registry, code *proposed* chưa được dùng trong code chạy.
+module student và giữ nguyên nghĩa phía học viên. Cả family mới đã được owner
+**agreed 2026-09-19** cho Slice 1.
 
 ## 10. Side effects & notifications
 
@@ -263,11 +268,11 @@ Không có side effect nào khác: không XP, không SRS, không enrollment, kh�
 | INV-LCAT-04 | service + integration | `submit` từ `draft`/`rejected`; path 0 unit ⇒ từ chối; hai submit song song ⇒ một thắng |
 | INV-LCAT-05 | integration | Không endpoint nào của giáo viên đưa path sang `approved` |
 | INV-LCAT-06 | integration | Publish khi path `draft`/`pending_review`/`suspended` ⇒ từ chối |
-| INV-LCAT-07 | integration | `PATCH`/`DELETE` unit published ⇒ 409; `words` không đổi trong DB |
+| INV-LCAT-07 | integration | `PATCH`/`DELETE` unit published hoặc unpublished ⇒ 409; `words` không đổi trong DB |
 | INV-LCAT-08 | service | `slug` sinh một lần, không đổi qua mọi lần sửa và publish |
 | INV-LCAT-09 | service (pure) | Partial/duplicate/out-of-range reorder ⇒ từ chối; DB không đổi |
-| INV-LCAT-10 | integration | Reference tới unit unpublished ⇒ 409; `words` của unit tham chiếu không bị copy |
-| INV-LCAT-11 | integration (real DB) | Xoá path có unit published hoặc có progress ⇒ 409 |
+| INV-LCAT-10 | integration | Reference tới unit unpublished hoặc thuộc path suspended ⇒ 409; `words` không bị copy |
+| INV-LCAT-11 | integration (real DB) | Xoá path approved, có unit đã publish, hoặc có progress ⇒ 409 |
 | INV-LCAT-12 | integration | Payload không chứa `sourceHash`/`ownerId` người khác |
 | INV-LCAT-13 | integration | Không collection/table tiến độ nào bị ghi bởi module này |
 | INV-LCAT-14 | integration (real DB) | `unpublish` giữ nguyên `user_learning_progress`; publish lại thấy đúng trạng thái cũ |
@@ -277,7 +282,7 @@ Không có side effect nào khác: không XP, không SRS, không enrollment, kh�
 | Question | What it blocks | Owner | Decide by |
 |---|---|---|---|
 | `submit` cần ≥ 1 unit (INV-LCAT-04) — mạnh hơn plan đã duyệt, để admin không duyệt vỏ rỗng | Không chặn code; là lựa chọn thiết kế đã ghi | Project owner | đã chốt trong spec này 2026-09-19 |
-| Giới hạn số unit mỗi path | Không chặn; đề xuất 100 nếu chưa ai phản đối | Project owner | trước Slice 1 |
-| Giáo viên có được **xoá** path đang `approved` mà chưa có tiến độ không? | Hành vi nút xoá trên UI | Project owner | trước Slice 2 |
-| Reference có được trỏ tới unit của path `suspended` không? | Không chặn; mặc định là **không** (phải `published` và path nguồn không `suspended`) | Project owner | trước Slice 1 |
-| Trộn hai loại unit trong một path có cần admin thấy rõ ở hàng đợi duyệt? | Chỉ là hiển thị; mặc định có | — | — |
+| Giới hạn số unit mỗi path | **RESOLVED:** 100; unit thứ 101 → `VALIDATION_ERROR` | Project owner | owner-approved 2026-09-19 |
+| Giáo viên có được **xoá** path đang `approved` mà chưa có tiến độ không? | **RESOLVED:** không hard-delete sau approve; dùng suspend | Project owner | owner-approved 2026-09-19 |
+| Reference có được trỏ tới unit của path `suspended` không? | **RESOLVED:** không | Project owner | owner-approved 2026-09-19 |
+| Trộn hai loại unit trong một path có cần admin thấy rõ ở hàng đợi duyệt? | **RESOLVED:** có trong v1 | Project owner | owner-approved 2026-09-19 |

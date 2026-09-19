@@ -39,7 +39,7 @@ machine, so they share one module.
 | 6 | Billing (rate+invoice+payment) | `06-billing.md` | ✅ `accepted` | 34 | — |
 | 7 | Notifications | `07-notifications.md` | 🔶 `implemented 2026-09-12` — 4 mailbox endpoints + register/approve/suspend/new_invoice producers live; `deadline_reminder`/`graded`/`session_submitted_for_review` producers + partial-unique migration still open (spec frontmatter) | 21 | DEBT-002 (60s polling) · 4 of 11 types wait on other lanes |
 | 8 | Dashboard / Reporting | `08-dashboard.md` | ✅ `accepted` | 14 | — |
-| 9 | Learning Catalog — moderation | [09-learning-catalog-moderation.md](09-learning-catalog-moderation.md) | 🔶 `proposed` 2026-09-19 | 12 | `LEARNING_PATH_*` codes *proposed, not agreed*; teacher counterpart is [teacher T7](teacher/07-learning-catalog.md) |
+| 9 | Learning Catalog — moderation | [09-learning-catalog-moderation.md](09-learning-catalog-moderation.md) | 🔶 `proposed` 2026-09-19 | 12 | `LEARNING_PATH_*` agreed 2026-09-19; Slice 1A in progress; teacher counterpart is [teacher T7](teacher/07-learning-catalog.md) |
 
 **168 invariants total** in modules 1–8. Module 9 adds 12 more (not folded into that total — it is
 newer than the count and its codes are not yet signed off). Each invariant has at least one line in
