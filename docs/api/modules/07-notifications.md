@@ -1,9 +1,9 @@
 ---
 module: Notifications
-status: implemented (2026-09-12, branch `feat/student-notifications`) — the 4 mailbox endpoints, the `NOTIFICATION_NOT_FOUND` code and the register/approve/suspend/new_invoice producers are live per this spec's §2/§3/§5/§7/§8 recommendations. Still proposed, NOT coded: `session_submitted_for_review` producer (needs the teacher submit endpoint), `deadline_reminder` (scheduler unowned), `graded` (Sprint 4), the partial-unique anti-duplicate migration (§8 — callers' guarded updates carry INV-NOTIF-12 for now), and the composite/partial indexes (§11 — the seed dev table is tiny; measure before indexing). Endpoints were approved as part of the owner's 2026-09-12 student completion wave; the open §16 defaults picked in that approval: FE builds sentences from type+payload (no message column), no senderId, admin fan-out to every active admin, `read-all` → `{updated}`, `unread-count` kept as its own endpoint, `PATCH /:id/read` → 200 with the record.
+status: implemented (updated 2026-09-19, branch `codex/learning-catalog-migration`) — the 4 mailbox endpoints, the `NOTIFICATION_NOT_FOUND` code and existing producers are live. The 4 ADR-017 Learning Catalog enum values, reference type and FE sentence/deep-link map are implemented in Slice 1A; their producers remain pending Slice 1B. Still open: `deadline_reminder` scheduler, the partial-unique anti-duplicate migration (§8), and the composite/partial indexes (§11). FE builds sentences from type+payload (no message column), there is no senderId, admin fan-out targets every active admin, `read-all` → `{updated}`, `unread-count` stays separate, and `PATCH /:id/read` → 200 with the record.
 blocked_by: DEBT-002 60s polling (acknowledged; realtime is Sprint 6 scope) · several legacy producers remain lane-owned (§10.1) · 4 Learning Catalog producers wait on Slice 1B
 owner: -
-last_updated: 2026-09-12
+last_updated: 2026-09-19
 ---
 
 ## 0. Summary
