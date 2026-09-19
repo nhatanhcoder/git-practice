@@ -5,9 +5,13 @@
 > `DEBT-###`, `SCOPE-##`. **Never renumber and never reuse an ID** — check the list below before
 > assigning one. (A 2026-08-31 chat session, working from a stale copy, reissued `API-003`,
 > `DOC-006`, `DOC-007` and `SCOPE-01` for unrelated problems; those were renumbered on merge.)
-> Last reviewed: 2026-09-08 against `origin/main` at `99a511c` (API-015/API-016 added, API-005
-> resolved, DOC-006 narrowed against ADR-015; highest ids in use on active branches checked:
-> `API-014`/`DOC-015` on `docs/admin-api-test-plan`, `WEB-018` on `feat/a05-srs-routes`).
+> Last reviewed: 2026-09-19 against `origin/main` at `1c24348` (added `DOC-018` and `DEBT-008`;
+> highest ids in use across **every** local and remote ref checked before assigning — `DOC-017` and
+> `DEBT-007` were the maxima, so `DOC-018`/`DEBT-008` are the next free numbers and no merge
+> reconciliation is pending for this slice). Previous review: 2026-09-08 against `origin/main` at
+> `99a511c` (API-015/API-016 added, API-005 resolved, DOC-006 narrowed against ADR-015; highest ids
+> in use on active branches checked: `API-014`/`DOC-015` on `docs/admin-api-test-plan`, `WEB-018` on
+> `feat/a05-srs-routes`).
 
 ---
 
@@ -2015,3 +2019,59 @@ the reviewed named-stroke order. Workplace intentionally retains no learner repl
 text and exposes no numeric/keyword/AI score. The first full API-suite attempt was
 blocked by sandbox network access; the focused real-DB lifecycle passed 4/4 after
 approved network escalation.
+
+### [DOC-018] `pages/_INDEX.md` still tells the next agent the Teacher backend has no module spec
+
+**Severity**: Low
+**Sprint**: —
+**Status**: Open — found 2026-09-19 while adding three Teacher rows to the same table
+
+**Description**: `docs/front-end-design-docs/pages/_INDEX.md` line 66 ends the Teacher table with:
+
+> ⚠️ All nine Teacher screens are **fully mocked** — no API call anywhere. `built` here means the
+> screen exists and renders, not that the feature works. **The Teacher backend has no module spec
+> either** — see `docs/api/modules/_INDEX.md` § 11. (The original line links that path relative to
+> `pages/_INDEX.md`, which is why it is quoted here as plain text rather than as a link.)
+
+The second sentence has been false since 2026-09-03, when
+`docs/api/modules/teacher/` landed (6 modules, then 7 on 2026-09-19). It now sits directly under
+**13** Teacher page rows and tells a reader that the specs they need to build those screens do not
+exist. The "fully mocked" half of the same block is separately stale — `/teacher/assignments`,
+`/teacher/questions`, `/teacher/sessions`, `/teacher/income` all have live endpoints today; the
+`Blocked on` column of each row states the real status.
+
+**Impact**: an agent following the pipeline ("read the contract + spec before writing code") reads
+this line, concludes there is nothing to read, and rebuilds from the feature doc — the exact
+behaviour the pipeline exists to prevent.
+
+**Fix Plan**: re-word the block to point at `docs/api/modules/teacher/_INDEX.md` and drop the
+blanket "fully mocked" claim in favour of the per-row `Blocked on` column. Not fixed in the
+2026-09-19 slice because that slice's rows already state their own state, and rewriting a
+nine-screen status claim to be accurate needs its own verification pass over those nine screens.
+
+---
+
+### [DEBT-008] No Teacher page ever went through page-designer — `specs/teacher-pages/` did not exist
+
+**Severity**: Medium
+**Sprint**: —
+**Status**: Open — found 2026-09-19; the 3 new learning-catalog screens are the first to have specs
+
+**Description**: `docs/front-end-design-docs/specs/` contains `_DESIGN-SYSTEM.md`, `admin-pages/`
+(13 specs) and `student-pages/` (8 specs) — and, until this slice, **no `teacher-pages/`
+directory at all**. All ten pre-existing Teacher page contracts (the returned Teacher/UI work from
+2026-08-28 through 2026-09-11) were written by flow-mapper and then built, with no page-designer
+step in between: none of those contracts carries a `Spec:` link, and there is no spec file for any
+of them.
+
+**Impact**: the missing layer is the one holding §3 API mapping (region/action → endpoint →
+envelope field → error code) and the §6 sample data that covers nulls and every enum value. Its
+absence is why several Teacher contracts still read `error codes TODO` and why the pipeline's
+"read contract + spec" step had nothing to read for half the app. Design review of those screens
+also cannot cite a spec, so `design_baseline` on them is a claim with no document behind it.
+
+**Fix Plan**: run page-designer over the ten existing Teacher contracts, one screen per commit,
+starting with the three whose error codes are already `TODO`. Do not attempt it in a batch — each
+spec requires reading the screen as built, and several contracts are themselves stale (see
+`DOC-018`). The new learning-catalog screens are not affected: their specs were written in the
+2026-09-19 slice.

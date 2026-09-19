@@ -36,6 +36,13 @@ Admins hold the **highest privileges** on the platform, with two exceptions: an 
 - ❌ Cannot create, edit, or delete (these are Teacher permissions)
 - 👁️ Read classes and student rosters (read-only audit, for session review and payroll calculation)
 
+### Learning Catalog (moderation only)
+- ✅ Approve / reject a submitted `LearningPath` (any teacher), suspend / restore an approved one
+- ✅ Unpublish **any** published lesson on **any** path — including one published after its path was approved
+- 👁️ Read every path and its lessons, including `draft` ones
+- ❌ Cannot create, edit or delete a path or a lesson, and cannot change a lesson's words
+- ❌ Cannot edit a published lesson's content — only remove it from view
+
 ---
 
 ## NestJS Guard

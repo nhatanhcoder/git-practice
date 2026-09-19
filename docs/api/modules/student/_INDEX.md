@@ -36,4 +36,4 @@ this slice takes `04` so the two never collide whatever merges first.
 - [Foundation and Grammar source audit](foundation-grammar-source-audit.md) — audited 2026-09-10; content adoption and media remain blocked.
 
 - [04-mistakes](04-mistakes.md) — S-MSTK, implemented; Task B owner approval 2026-09-13; 8 invariants.
-- [05-learning-path](05-learning-path.md) — ✅ implemented vocabulary-first catalog and owned progress; 12 invariants.
+- [05-learning-path](05-learning-path.md) — ✅ implemented vocabulary-first catalog and owned progress; 12 invariants. **§17 addendum 2026-09-19**: teacher-authored paths (ADR-017) join this same catalog — additive, no invariant or response shape changed. The authoring/moderation specs live outside this set: [teacher 07](../teacher/07-learning-catalog.md) + [admin 09](../09-learning-catalog-moderation.md).
