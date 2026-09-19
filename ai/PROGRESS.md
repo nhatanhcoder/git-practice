@@ -396,6 +396,10 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
       không được dùng trong code chạy. Ràng buộc đã ghi trong ADR-017 §6: unit đã publish thì
       `words` bất biến, vì tiến độ học viên khoá theo `unitSlug` và lưu đáp án đã trả lời.
       Slice 1–4 (BE, FE teacher, FE admin, FE student) chưa bắt đầu.
+- 🔶 (codex · 2026-09-19) **Teacher-authored Learning Catalog — Slice 1A migration.**
+      Owner đã duyệt phạm vi DB schema + RBAC qua yêu cầu triển khai ngày 2026-09-19.
+      Lane này chỉ nhận migration Postgres/Mongo schema và phần contract sign-off bắt buộc;
+      backend runtime sẽ bắt đầu sau khi migration PR merge theo `multi-agent-workflow.md`.
 - **DoD**: a learner can go pronunciation → grammar → character → Lego → mock exam, with
       XP/streak/badges updating correctly
 
