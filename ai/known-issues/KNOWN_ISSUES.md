@@ -2075,3 +2075,26 @@ starting with the three whose error codes are already `TODO`. Do not attempt it 
 spec requires reading the screen as built, and several contracts are themselves stale (see
 `DOC-018`). The new learning-catalog screens are not affected: their specs were written in the
 2026-09-19 slice.
+
+---
+
+### [API-019] Learning-unit storage cannot distinguish draft from unpublished
+
+**Severity**: High
+**Sprint**: 5b
+**Status**: Resolved 2026-09-19 — owner approved `firstPublishedAt` for Slice 1A
+
+**Description**: `learning_units` currently persists only `published: boolean`. Both a new draft
+and a unit that was published and later unpublished therefore have `published = false`. ADR-017
+§6 and INV-LCAT-07 require any unit that has ever been published to remain content-immutable,
+while a new draft must remain editable. The current schema cannot enforce both rules.
+
+**Impact**: implementing the service against the current model would either allow historical
+content to be edited behind recorded learner progress, or make every new draft immutable. It also
+prevents `DELETE LearningPath` from reliably detecting a unit that was published in the past.
+
+**Needs decision**: approve one persisted discriminator in the Mongo contract. Recommended:
+nullable internal `firstPublishedAt` set once on first publish and never cleared; alternative:
+replace the boolean with a three-value publication-state field and migrate every existing reader.
+Owner selected the recommended `firstPublishedAt` option. The Slice 1A contract and Mongo schema
+now carry that field; service enforcement remains part of dependent backend Slice 1B.
