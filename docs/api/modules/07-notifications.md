@@ -1,7 +1,7 @@
 ---
 module: Notifications
 status: implemented (2026-09-12, branch `feat/student-notifications`) — the 4 mailbox endpoints, the `NOTIFICATION_NOT_FOUND` code and the register/approve/suspend/new_invoice producers are live per this spec's §2/§3/§5/§7/§8 recommendations. Still proposed, NOT coded: `session_submitted_for_review` producer (needs the teacher submit endpoint), `deadline_reminder` (scheduler unowned), `graded` (Sprint 4), the partial-unique anti-duplicate migration (§8 — callers' guarded updates carry INV-NOTIF-12 for now), and the composite/partial indexes (§11 — the seed dev table is tiny; measure before indexing). Endpoints were approved as part of the owner's 2026-09-12 student completion wave; the open §16 defaults picked in that approval: FE builds sentences from type+payload (no message column), no senderId, admin fan-out to every active admin, `read-all` → `{updated}`, `unread-count` kept as its own endpoint, `PATCH /:id/read` → 200 with the record.
-blocked_by: DEBT-002 60s polling (acknowledged; realtime is Sprint 6 scope) · producers for 4 of 11 types depend on lanes that have no endpoint yet (§10.1)
+blocked_by: DEBT-002 60s polling (acknowledged; realtime is Sprint 6 scope) · several legacy producers remain lane-owned (§10.1) · 4 Learning Catalog producers wait on Slice 1B
 owner: -
 last_updated: 2026-09-12
 ---
@@ -75,7 +75,7 @@ Not proposed: `POST /notifications` (a client must never create its own — RBAC
 | `page` | int | no | ≥ 1, default `1` (API_CONVENTIONS.md) |
 | `limit` | int | no | ≥ 1, default `20`, proposed cap `50` — the bell dropdown only needs `limit=6` (⚠️ cap is **proposed**, API_CONVENTIONS doesn't prescribe) |
 | `isRead` | boolean | no | **proposed**. Not sent = both read and unread. `false` = unread only |
-| `type` | enum string | no | **proposed**. ∈ the 11 enum values of ENTITY_NOTIFICATION.md. Out-of-enum value → `VALIDATION_ERROR`, not silently ignored |
+| `type` | enum string | no | ∈ 15 values: 11 base values of ENTITY_NOTIFICATION.md + 4 Learning Catalog values agreed in ADR-017. Out-of-enum value → `VALIDATION_ERROR`, not silently ignored |
 
 **PATCH /notifications/:id/read** — path param `id` (uuid, malformed → `VALIDATION_ERROR`). No body.
 
@@ -100,7 +100,7 @@ group" — **not proposed** for v1; adds surface the UI doesn't need yet.)
 | `id` | uuid | no | |
 | `type` | enum (11 values) | no | Full list in §10 |
 | `referenceId` | string | yes | ID of the referenced entity |
-| `referenceType` | string | yes | ∈ `assignment` \| `attempt` \| `invoice` \| `session`. ⚠️ **no `user` value** → the 4 `account_*`/`*_registration` types must use `null` |
+| `referenceType` | string | yes | ∈ `assignment` \| `attempt` \| `invoice` \| `session` \| `learning_path`. ⚠️ **no `user` value** → the 4 `account_*`/`*_registration` types must use `null` |
 | `isRead` | bool | no | |
 | `readAt` | DateTime UTC ISO 8601 | yes | `null` when `isRead=false` |
 | `payload` | object (jsonb) | yes | Extra data, e.g. `{ "rejectionReason": "..." }` |
@@ -136,8 +136,8 @@ pagination).
 | **INV-NOTIF-06** | `unreadCount` **always equals** the count `GET /notifications?isRead=false` reports (`meta.total`) at the same instant — the two endpoints derive from **the same** `userId = me AND isRead = false` condition; there are no two definitions of "unread". |
 | **INV-NOTIF-07** | After `PATCH /notifications/read-all` returns, every notification **existing at the time the statement ran** for that user has `isRead = true`; notifications created afterwards remain `false` and that is correct behavior, not a bug. |
 | **INV-NOTIF-08** | No path lets a client create a `Notification`: no POST endpoint, and the create service is only callable server-side by business modules. Teacher/Student can never create a notification for anyone. |
-| **INV-NOTIF-09** | `type` always belongs to exactly the 11 enum values of ENTITY_NOTIFICATION.md; no value outside the list is ever written to the DB (in particular **no** `payroll_*`, `password_changed`, `account_activated`, `invoice_paid`). |
-| **INV-NOTIF-10** | `referenceType` ∈ `{assignment, attempt, invoice, session}` or `null`; no invented value is written. When `referenceType = null`, FE must not infer a deep-link from `referenceId`. |
+| **INV-NOTIF-09** | `type` always belongs to exactly the 15 registered enum values; no value outside the list is ever written to the DB (in particular **no** `payroll_*`, `password_changed`, `account_activated`, `invoice_paid`). |
+| **INV-NOTIF-10** | `referenceType` ∈ `{assignment, attempt, invoice, session, learning_path}` or `null`; no invented value is written. When `referenceType = null`, FE must not infer a deep-link from `referenceId`. |
 | **INV-NOTIF-11** | Each row belongs to **exactly one** recipient (`userId` NOT NULL, valid FK); no "broadcast to all" row. Sending to N admins = **N separate rows**. |
 | **INV-NOTIF-12** | A business event produces **at most one** notification per **each** recipient: a repeated or retried operation of the same event creates no second row. |
 | **INV-NOTIF-13** | The notification INSERT and the business action producing it are in **the same transaction**: no "account approved but no notification" and no "notification for something that never happened". |
@@ -345,8 +345,8 @@ side effect.** No mail, no webhook, no business table touched.
 
 ### 10.1 Full table: who produces, which type, sent to whom
 
-Source: `ENTITY_NOTIFICATION.md` § Notification Types (11 types) + business rules of the related
-entities.
+Source: `ENTITY_NOTIFICATION.md` § Notification Types (11 base types) + 4 Learning Catalog
+types agreed in ADR-017 and the business rules of the related entities.
 
 | # | `type` | Module / producing action | Recipient (`userId`) | `referenceId` / `referenceType` | `payload` | Producer path status |
 |---|---|---|---|---|---|---|
@@ -361,9 +361,14 @@ entities.
 | 9 | `new_assignment` | **Assignments (Teacher lane)** — teacher publishes an assignment | **every** `active` student in the class (fan-out by class size) | `assignment.id` / `assignment` | — | ⛔ no `API_TEACHER.md`, no endpoint |
 | 10 | `deadline_reminder` | **Scheduler** — cron fires at `dueDate − 24h` | students who haven't submitted that assignment | `assignment.id` / `assignment` | — | ⛔ **no module owns the scheduler**; no doc on cron, on the "not submitted" filter, or on duplicate-send prevention |
 | 11 | `graded` | **Grading (Teacher lane)** — teacher finishes grading | `attempt.studentId` | `attempt.id` / `attempt` | — | ⛔ no endpoint yet (T-GRADE-*, Sprint 4) |
+| 12 | `learning_path_submitted` | **Learning Catalog Teacher** — teacher submits a path | every active admin | `path.id` / `learning_path` | — | 🔶 contract agreed; producer belongs to Slice 1B |
+| 13 | `learning_path_approved` | **Learning Catalog Admin** — admin approves a path | owning teacher | `path.id` / `learning_path` | — | 🔶 contract agreed; producer belongs to Slice 1B |
+| 14 | `learning_path_rejected` | **Learning Catalog Admin** — admin rejects a path | owning teacher | `path.id` / `learning_path` | `{ "rejectionReason": "<verbatim>" }` | 🔶 contract agreed; producer belongs to Slice 1B |
+| 15 | `learning_path_suspended` | **Learning Catalog Admin** — admin suspends a path | owning teacher | `path.id` / `learning_path` | — | 🔶 contract agreed; producer belongs to Slice 1B |
 
-**Read this table over time**: 6 of 11 types have a defined producer path (1,2,3,4,7,8), the rest
-depend on lanes with no API docs. Meaning: even if the 4 endpoints in §2 get approved and coded,
+**Read this table over time**: the four Learning Catalog rows have agreed producer contracts but
+remain uncoded until Slice 1B. Several legacy rows still depend on other lanes. Meaning: even if
+the 4 mailbox endpoints in §2 are coded,
 the **student** mailbox is almost empty (only `account_approved`/`account_suspended`/
 `new_invoice`), because the 3 student-facing types (`new_assignment`, `deadline_reminder`,
 `graded`) all lack a source.
@@ -454,7 +459,7 @@ Constraints and indexes included:
 - CHECK `("isRead" = false AND "readAt" IS NULL) OR ("isRead" = true AND "readAt" IS NOT NULL)` —
   turns INV-NOTIF-04 into a DB constraint instead of an app-layer promise. **Proposed, not in any
   doc.**
-- CHECK `referenceType IN ('assignment','attempt','invoice','session') OR referenceType IS NULL` —
+- CHECK `referenceType IN ('assignment','attempt','invoice','session','learning_path') OR referenceType IS NULL` —
   locks INV-NOTIF-10 at the DB layer. **Proposed.**
 - The two indexes in §11 (main index + partial index for unread).
 - Partial unique anti-duplicate: **proposed**, awaiting the type-list decision (§8).
@@ -532,8 +537,8 @@ no merge.
 | INV-NOTIF-06 | real DB | Across several datasets (0 / 1 / 25 unread, mixed with read): `unreadCount` == `meta.total` of `?isRead=false` == `COUNT` run directly on the DB. Repeat **after** each read-marking operation |
 | INV-NOTIF-07 | real DB (concurrency) | Seed 10 unread → call `read-all` → `updated=10`, `unreadCount=0`, every row `isRead=true`. Race variant: while `read-all` runs, create 1 new notification → assert the new one **stays unread** and no error. Call `read-all` a second time → `updated=0` |
 | INV-NOTIF-08 | integration | Walk registered routes → no `POST /notifications`. Try `POST` → 404/405. Assert the create service is wired to no controller |
-| INV-NOTIF-09 | real DB | After running all modules' integration suites: `SELECT DISTINCT type FROM "Notification"` ⊆ exactly the 11 enum values. Try creating with a made-up type via the service → rejected by the DB enum |
-| INV-NOTIF-10 | real DB | `SELECT DISTINCT "referenceType"` ⊆ `{assignment, attempt, invoice, session, NULL}`. An `account_approved` notification → `referenceType IS NULL` and the response suggests no deep-link |
+| INV-NOTIF-09 | real DB | After running all modules' integration suites: `SELECT DISTINCT type FROM "Notification"` ⊆ exactly the 15 enum values. Try creating with a made-up type via the service → rejected by the DB enum |
+| INV-NOTIF-10 | real DB | `SELECT DISTINCT "referenceType"` ⊆ `{assignment, attempt, invoice, session, learning_path, NULL}`. An `account_approved` notification → `referenceType IS NULL`; a Learning Catalog notification deep-links by path id |
 | INV-NOTIF-11 | real DB | Register with 2 admins present → **exactly 2** rows, each with a different `userId`, same `type`, same `referenceId`; no row with `userId IS NULL` |
 | INV-NOTIF-12 | real DB (concurrency) | Fire 2 concurrent approve requests on the same `:userId` → exactly **1** `account_approved` row. Call approve a second time (sequential) → no second row. Repeat for session reject and invoice creation |
 | INV-NOTIF-13 | real DB | Force the `Notification` INSERT to fail (mock/constraint) in the approve flow → assert `User.status` **is still the old value** (rollback) and no orphan notification row. Reverse: force the business UPDATE to fail → no notification written |
@@ -556,15 +561,15 @@ test the empty mailbox → `data: []`, `total: 0`, `unreadCount: 0` (not 404, no
 | **DEBT-002 — notifications are 60s polling, not realtime.** Status: *Won't Fix (Sprint 6 scope)*, severity Low. No WebSocket, no SSE, no push | (a) Max delivery latency 60s + jitter — every "instant alert" promise is wrong; (b) `unread-count` becomes the system's highest-frequency query (§11) and shapes the whole index strategy; (c) the badge can lag up to 60s after a user acts in another tab; (d) if Sprint 6 enables realtime, §7 must upgrade to a real outbox and §11/§14 must be rewritten. **Do not** design the module as if realtime is imminent | - | acknowledged; revisit at Sprint 6 |
 | **Where does notification text live?** ENTITY_NOTIFICATION.md has **no `message`/`title` column**; `PROJECT_KNOWLEDGE.md` section 15 has `message`, `data`, `recipientId`, `senderId` — two different models for the same table | Blocks §3 DTO and all display: either FE builds sentences from `type`+`payload` (i18n keys on FE; BE can't change wording without an FE deploy), or add a column (migration + change every write site). Also blocks the `senderId` question right below | - | before coding the list |
 | **No `senderId`** — unknown **who** caused the event | "Which admin approved", "which teacher submitted" can't be derived. Showing the triggerer's name forces denormalizing into `payload` at creation (§11), so this decision locks the `payload` shape for many types | - | together with the row above |
-| **`referenceType` has no `user` value** (enum only `assignment`/`attempt`/`invoice`/`session`) | Blocks deep-linking of 4 types: `account_approved`, `account_suspended`, `new_teacher_registration`, `new_student_registration` — exactly the types admins need to click through to `/admin/users/[id]`. Temporarily `null` (§10.1), i.e. the admin bell has items that can't be clicked | - | before coding deep-links |
+| **`referenceType` has no `user` value** (enum has `assignment`/`attempt`/`invoice`/`session`/`learning_path`) | Blocks deep-linking of 4 types: `account_approved`, `account_suspended`, `new_teacher_registration`, `new_student_registration` — exactly the types admins need to click through to `/admin/users/[id]`. Temporarily `null` (§10.1), i.e. the admin bell has items that can't be clicked | - | before coding user deep-links |
 | **RBAC contradicts for admin**: "Notification · read own" row but Admin cell ✅ (= own + others) | Blocks asserting INV-NOTIF-05. The spec currently picks the narrow reading (admin reads only theirs); if the wide reading is locked, an endpoint accepting `userId` must be added, leak tests added, and §13 rewritten | - | before coding |
 | **Admin fan-out: all admins or one admin?** Applies to `new_teacher_registration`, `new_student_registration`, `session_submitted_for_review` | Blocks §10.1: with 3 admins, every registration spawns 3 rows and **all 3 see the same todo item** — no "already handled" mechanism, so 2 people click approve and 1 gets a 409 (spec 02 §8). Also blocks table-size estimates | - | before coding register |
 | **No retention/archive policy.** Append-only, no delete, no expiry (§6) | The table grows unbounded; "View all" paginates over an ever-growing set; unknown when partitioning or an archive table is needed | - | before go-live |
 | **Which types get UNIQUE anti-duplicate protection** (§8) — `deadline_reminder` and `graded` can legitimately repeat, the rest can't | Blocks the partial-unique migration; without it INV-NOTIF-12 is only indirectly guaranteed by the callers' guarded UPDATEs | - | before migration |
 | **Response shape of `read-all` and `unread-count`** (`{updated}` / `{unreadCount}`), and whether to **drop** `unread-count` for `meta.total` from the list (§11) | Blocks the FE contract; directly affects per-person polling requests/min | - | before coding |
 | **`PATCH /:id/read` returns 200 with the record or 204?** | Blocks §3 DTO; 204 loses `readAt` on FE and forces a list refetch | - | before coding |
-| **Who owns the scheduler for `deadline_reminder`?** No document defines the cron, the "student hasn't submitted" filter, or duplicate prevention on job re-runs | Blocks 1 of 11 types; also the only type not produced by a user action ⇒ needs different infrastructure (job runner, anti-parallel-run lock) | - | before Sprint 4 |
-| **6 of 11 types have no producer path** (§10.1: `new_assignment`, `deadline_reminder`, `graded`, `session_submitted_for_review` + `new_invoice`'s dependencies) | The **student** mailbox is almost empty in the early phase; if FE designs the dropdown assuming all kinds of notifications exist, the empty state must be redone | - | before designing the bell UI |
+| **Who owns the scheduler for `deadline_reminder`?** No document defines the cron, the "student hasn't submitted" filter, or duplicate prevention on job re-runs | Blocks 1 of 15 types; also the only type not produced by a user action ⇒ needs different infrastructure (job runner, anti-parallel-run lock) | - | before Sprint 4 |
+| **Several legacy types still have no live producer path** (§10.1: `new_assignment`, `deadline_reminder`, `graded` and dependency-owned paths) | The **student** mailbox remains sparse; UI must keep its verified empty state | - | before closing the owning lanes |
 | **What's in the `payload` of `new_invoice` and `account_suspended`?** (amount/due date; lock reason — FE forces input but `User` has no storage column, spec 02 §16) | Blocks §10.1 and INV-NOTIF-15 (putting amounts into `payload` is putting financial data into unencrypted jsonb) | - | before coding Billing/suspend |
 | **Rate limit for the polling endpoint group** and the 429 error code | Blocks §13; currently unlimited — a broken client can loop `unread-count` forever | - | before go-live |
 

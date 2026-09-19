@@ -6,7 +6,7 @@ import { apiRequest } from "../api-client";
  * The API deliberately returns NO display text (no `message` column exists in
  * ENTITY_NOTIFICATION.md — owner decision §16: FE builds the sentence from `type` +
  * `payload`, so wording changes never need a BE deploy). Every sentence below is keyed by
- * the 11-value enum; an unknown type renders a neutral fallback instead of crashing the
+ * the notification enum; an unknown type renders a neutral fallback instead of crashing the
  * bell for one bad row.
  */
 
@@ -14,7 +14,7 @@ export interface NotificationItem {
   id: string;
   type: string;
   referenceId: string | null;
-  referenceType: "assignment" | "attempt" | "invoice" | "session" | null;
+  referenceType: "assignment" | "attempt" | "invoice" | "session" | "learning_path" | null;
   isRead: boolean;
   readAt: string | null;
   payload: Record<string, unknown> | null;
@@ -77,6 +77,11 @@ export function notificationHref(item: NotificationItem): string | null {
       return null;
     case "session":
       return null;
+    case "learning_path":
+      if (!item.referenceId) return null;
+      return item.type === "learning_path_submitted"
+        ? `/admin/learning-paths/${item.referenceId}`
+        : `/teacher/learning-paths/${item.referenceId}`;
     default:
       return null;
   }
@@ -126,6 +131,14 @@ export function notificationSentence(item: NotificationItem): Sentence {
         text: role === "teacher" ? "Có giáo viên mới đăng ký, chờ phê duyệt." : "Có học viên mới đăng ký, chờ phê duyệt.",
         scope: "Người dùng",
       };
+    case "learning_path_submitted":
+      return { text: "Có lộ trình học mới đang chờ duyệt.", scope: "Lộ trình học" };
+    case "learning_path_approved":
+      return { text: "Lộ trình học của bạn đã được duyệt.", scope: "Lộ trình học" };
+    case "learning_path_rejected":
+      return { text: "Lộ trình học của bạn bị từ chối — xem lý do trong chi tiết.", scope: "Lộ trình học" };
+    case "learning_path_suspended":
+      return { text: "Lộ trình học của bạn đã bị tạm ẩn.", scope: "Lộ trình học" };
     default:
       return { text: "Bạn có một thông báo mới.", scope: "Thông báo" };
   }

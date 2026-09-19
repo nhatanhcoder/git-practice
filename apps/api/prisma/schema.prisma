@@ -88,6 +88,9 @@ model User {
   marketingProfile UserMarketingProfile? @relation("UserMarketingProfile")
   studyProgress    UserStudyProgress[]   @relation("UserStudyProgress")
   grammarAttempts  GrammarPracticeAttempt[] @relation("GrammarPracticeAttempts")
+  learningPathsOwned     LearningPath[] @relation("LearningPathOwner")
+  learningPathsReviewed  LearningPath[] @relation("LearningPathReviewer")
+  learningPathsSuspended LearningPath[] @relation("LearningPathSuspender")
 
   @@index([status])
   @@index([role, status])
@@ -376,8 +379,22 @@ enum NotificationType {
   session_rejected
   new_teacher_registration
   new_student_registration
+  learning_path_submitted
+  learning_path_approved
+  learning_path_rejected
+  learning_path_suspended
 
   @@map("notification_type")
+}
+
+enum LearningPathStatus {
+  draft
+  pending_review
+  approved
+  rejected
+  suspended
+
+  @@map("learning_path_status")
 }
 
 model ClassSession {
@@ -539,6 +556,32 @@ model Notification {
   @@index([userId])
   @@index([type])
   @@map("notifications")
+}
+
+model LearningPath {
+  id              String             @id @default(uuid()) @db.Uuid
+  ownerId         String             @map("owner_id") @db.Uuid
+  title           String             @db.VarChar(300)
+  description     String?            @db.Text
+  curriculumKey   String             @unique @map("curriculum_key")
+  status          LearningPathStatus @default(draft)
+  submittedAt     DateTime?          @map("submitted_at")
+  reviewedById    String?            @map("reviewed_by_id") @db.Uuid
+  reviewedAt      DateTime?          @map("reviewed_at")
+  rejectionReason String?            @map("rejection_reason") @db.Text
+  suspendedById   String?            @map("suspended_by_id") @db.Uuid
+  suspendedAt     DateTime?          @map("suspended_at")
+  createdAt       DateTime           @default(now()) @map("created_at")
+  updatedAt       DateTime           @updatedAt @map("updated_at")
+
+  owner     User  @relation("LearningPathOwner", fields: [ownerId], references: [id], onDelete: Restrict)
+  reviewer  User? @relation("LearningPathReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+  suspender User? @relation("LearningPathSuspender", fields: [suspendedById], references: [id], onDelete: SetNull)
+
+  @@index([ownerId, status])
+  @@index([status])
+  @@index([reviewedById, reviewedAt])
+  @@map("learning_paths")
 }
 
 // ============================================================================

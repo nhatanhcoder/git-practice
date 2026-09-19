@@ -5,9 +5,10 @@ import { ErrorCode } from '../common/errors/error-codes';
 import { NotificationsRepository } from './notifications.repository';
 
 /**
- * The 11 values of `ENTITY_NOTIFICATION.md`, mirrored one-to-one by the Postgres enum
+ * The 11 base values of `ENTITY_NOTIFICATION.md` plus 4 Learning Catalog values from ADR-017,
+ * mirrored one-to-one by the Postgres enum
  * `notification_type` (INV-NOTIF-09). This is the single source the DTO filter, the
- * create-path validation and the docs derive from — a 12th value here without a migration
+ * create-path validation and the docs derive from — an unregistered value here without a migration
  * would fail at the DB enum, by design.
  */
 export const NOTIFICATION_TYPES = [
@@ -22,12 +23,16 @@ export const NOTIFICATION_TYPES = [
   'session_rejected',
   'new_teacher_registration',
   'new_student_registration',
+  'learning_path_submitted',
+  'learning_path_approved',
+  'learning_path_rejected',
+  'learning_path_suspended',
 ] as const;
 
 export type NotificationTypeName = (typeof NOTIFICATION_TYPES)[number];
 
 /** INV-NOTIF-10: the only deep-linkable reference types; `null` for account-level events. */
-const REFERENCE_TYPES = ['assignment', 'attempt', 'invoice', 'session'] as const;
+const REFERENCE_TYPES = ['assignment', 'attempt', 'invoice', 'session', 'learning_path'] as const;
 
 export type ReferenceTypeName = (typeof REFERENCE_TYPES)[number];
 
