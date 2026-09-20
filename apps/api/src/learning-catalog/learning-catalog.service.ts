@@ -14,11 +14,12 @@ import { NotificationsService } from '../notifications/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
 import type {
   AdminLearningPathQuery,
+  AdminPublishedLearningUnitQuery,
   CreateLearningPathDto,
   CreateLearningUnitDto,
-  PublishedLearningUnitQuery,
   ReorderLearningUnitItemDto,
   TeacherLearningPathQuery,
+  TeacherPublishedLearningUnitQuery,
   UpdateLearningPathDto,
   UpdateLearningUnitDto,
 } from './dto/learning-catalog.dto';
@@ -328,13 +329,16 @@ export class LearningCatalogService {
     return this.unpublishUnit(unit, adminId);
   }
 
-  async listPublishedUnits(query: PublishedLearningUnitQuery, includeSuspended = false) {
+  async listPublishedUnits(
+    query: TeacherPublishedLearningUnitQuery | AdminPublishedLearningUnitQuery,
+    includeSuspended = false,
+  ) {
     const page = query.page ?? 1;
     const filter: FilterQuery<LearningUnitDocument> = { published: true };
-    if (query.level) filter.level = query.level;
-    if (query.curriculum) filter.curriculum = query.curriculum;
-    if (query.teacherId) filter.authorId = query.teacherId;
-    if (query.pathId) filter.pathId = query.pathId;
+    if ('level' in query && query.level) filter.level = query.level;
+    if ('curriculum' in query && query.curriculum) filter.curriculum = query.curriculum;
+    if ('teacherId' in query && query.teacherId) filter.authorId = query.teacherId;
+    if ('pathId' in query && query.pathId) filter.pathId = query.pathId;
     if (!includeSuspended) {
       const approved = await this.prisma.learningPath.findMany({
         where: { status: 'approved' },
@@ -359,7 +363,7 @@ export class LearningCatalogService {
   async listAdminPaths(query: AdminLearningPathQuery) {
     const page = query.page ?? 1;
     const where: Prisma.LearningPathWhereInput = {
-      ...(query.status ? { status: query.status } : {}),
+      status: query.status ?? 'pending_review',
       ...(query.teacherId ? { ownerId: query.teacherId } : {}),
     };
     const [total, paths] = await this.prisma.$transaction([

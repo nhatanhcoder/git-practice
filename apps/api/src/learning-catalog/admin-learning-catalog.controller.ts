@@ -2,7 +2,7 @@ import { Body, Controller, Get, Param, Patch, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { CurrentUser, type AuthenticatedUser } from '../common/decorators/current-user.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
-import { AdminLearningPathQuery, EmptyBodyDto, PublishedLearningUnitQuery, RejectLearningPathDto } from './dto/learning-catalog.dto';
+import { AdminLearningPathQuery, AdminPublishedLearningUnitQuery, EmptyBodyDto, RejectLearningPathDto } from './dto/learning-catalog.dto';
 import { LearningCatalogService } from './learning-catalog.service';
 
 @ApiTags('admin/learning-catalog')
@@ -46,7 +46,7 @@ export class AdminLearningCatalogController {
   }
 
   @Get('learning-units')
-  publishedUnits(@Query() query: PublishedLearningUnitQuery) {
+  publishedUnits(@Query() query: AdminPublishedLearningUnitQuery) {
     return this.service.listPublishedUnits(query, true);
   }
 
