@@ -291,6 +291,16 @@ export default function MistakesPage() {
         icon: <CheckCircle2 size={16} />,
         className: "srs-stat--reviews",
       },
+      {
+        id: "saved-reviewed",
+        label: "Đã ôn từ đã lưu",
+        value:
+          stats && stats.savedWords !== undefined && stats.reviewedSavedWords !== undefined
+            ? `${stats.reviewedSavedWords}/${stats.savedWords}`
+            : "—",
+        icon: <Layers3 size={16} />,
+        className: "srs-stat--saved-reviewed",
+      },
     ],
     [stats],
   );

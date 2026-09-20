@@ -457,6 +457,16 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
 
 ## Off-sprint / spike
 
+- ✅ (opencode · 2026-09-19) **SRS reviewed-saved-words count** — branch
+  `feat/srs-saved-review-count` (PR #97). Stats gains `savedWords` +
+  `reviewedSavedWords` (saved hanzi with ≥1 review, joined via catalog; orphan
+  hanzi counts as saved, never reviewed); FE tile "Đã ôn X/Y" on flashcards page
+  (+srs-stat--saved-reviewed). INV-SRS-13 e2e. Verified: api build, 7/7 SRS e2e,
+  word-bank + flow suites 10/10, web build + type-check, 238/235+ unit, eslint,
+  check-docs 9/9, browser tile 2/2 viewports. Debug note: teardown "hang" was a
+  `$in` typo (Mongo operator in a Prisma call) in after() — app.close() never ran;
+  fixed + bank cleanup restored. Dashboard tiles untouched (follow-up).
+
 - ✅ (opencode · 2026-09-18) **Student nav restructure** — branch
   `codex/student-nav-restructure` (owner-approved plan 2026-09-18): 3 rail groups
   (Lớp học / Tự luyện / Kho kiến thức) + avatar account menu (mistakes, progress,

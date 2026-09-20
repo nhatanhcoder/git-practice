@@ -31,6 +31,8 @@ export type SrsStats = {
   matureCards: number;
   retentionRate: number;
   totalReviews: number;
+  savedWords: number;
+  reviewedSavedWords: number;
   streak: number | null;
 };
 

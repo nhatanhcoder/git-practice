@@ -33,8 +33,12 @@ contract.
 Browse query: `hskLevel` integer 1–9 required; `page` positive integer default 1; `limit` 1–100
 default 20. Review request: `{ rating: 0 | 3 | 4 | 5 }`. Card responses expose Mongo `_id` as
 `id` and may include the caller's state; they never expose another user's id or state. Stats:
-`totalCards`, `dueToday`, `matureCards`, `retentionRate`, `totalReviews`, and `streak: null` until
-the product timezone rule is accepted.
+`totalCards`, `dueToday`, `matureCards`, `retentionRate`, `totalReviews`, `savedWords`,
+`reviewedSavedWords`, and `streak: null` until the product timezone rule is accepted.
+`savedWords` counts the caller's word-bank rows; `reviewedSavedWords` counts saved hanzi
+with a review state carrying ≥1 review (joined through the catalog — a saved hanzi with
+no catalog card counts as saved, never as reviewed). Both are additive fields; the
+previous six are unchanged.
 
 ## 4. Business rules (invariants)
 
@@ -52,6 +56,7 @@ the product timezone rule is accepted.
 | INV-SRS-10 | First review creates state; later reviews update the same state |
 | INV-SRS-11 | Retention is correct reviews divided by total reviews, zero when no reviews |
 | INV-SRS-12 | Missing/malformed card ids return `FLASHCARD_NOT_FOUND` |
+| INV-SRS-13 | Stats `savedWords` counts the caller's word-bank rows; `reviewedSavedWords` counts saved hanzi with ≥1 review, ownership-scoped |
 
 ## 5. Ownership / RBAC
 
@@ -124,6 +129,7 @@ catalog row is missing. Do not log vocabulary answers as sensitive user activity
 | INV-SRS-10 | e2e | first review creates state |
 | INV-SRS-11 | e2e | one correct review produces 100% retention |
 | INV-SRS-12 | e2e | malformed id maps to registry code |
+| INV-SRS-13 | e2e | stats counts saved words and reviewed-saved words per owner |
 
 ## 16. Unresolved
 
