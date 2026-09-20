@@ -20,6 +20,7 @@ import { DashboardModule } from './dashboard/dashboard.module';
 import { FlashcardsModule } from './flashcards/flashcards.module';
 import { WordBankModule } from './word-bank/word-bank.module';
 import { LearningPathModule } from './learning-path/learning-path.module';
+import { LearningCatalogModule } from './learning-catalog/learning-catalog.module';
 import { PlacementModule } from './placement/placement.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { FoundationModule } from './foundation/foundation.module';
@@ -51,6 +52,7 @@ import { RolesGuard } from './common/guards/roles.guard';
     WordBankModule,
     PlacementModule,
     LearningPathModule,
+    LearningCatalogModule,
     NotificationsModule,
     FoundationModule,
     GrammarModule,
