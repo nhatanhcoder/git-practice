@@ -457,6 +457,11 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
 
 ## Off-sprint / spike
 
+- 🔶 (opencode · 2026-09-19) **SRS reviewed-saved-words count** — branch
+  `feat/srs-saved-review-count`. Stats gains `savedWords` + `reviewedSavedWords`
+  (saved hanzi with ≥1 review, joined via catalog); FE tile "Đã ôn X/Y".
+  Dashboard untouched (follow-up).
+
 - ✅ (opencode · 2026-09-18) **Student nav restructure** — branch
   `codex/student-nav-restructure` (owner-approved plan 2026-09-18): 3 rail groups
   (Lớp học / Tự luyện / Kho kiến thức) + avatar account menu (mistakes, progress,
