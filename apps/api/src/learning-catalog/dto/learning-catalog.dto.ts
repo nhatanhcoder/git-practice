@@ -137,7 +137,7 @@ export class AdminLearningPathQuery extends TeacherLearningPathQuery {
   teacherId?: string;
 }
 
-export class PublishedLearningUnitQuery {
+export class TeacherPublishedLearningUnitQuery {
   @IsOptional()
   @Type(() => Number)
   @IsInt()
@@ -150,6 +150,14 @@ export class PublishedLearningUnitQuery {
   @Length(1, 100)
   curriculum?: string;
 
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  page = 1;
+}
+
+export class AdminPublishedLearningUnitQuery {
   @IsOptional()
   @IsString()
   teacherId?: string;

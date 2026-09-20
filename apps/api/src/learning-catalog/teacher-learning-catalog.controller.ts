@@ -6,7 +6,7 @@ import {
   CreateLearningPathDto,
   CreateLearningUnitDto,
   EmptyBodyDto,
-  PublishedLearningUnitQuery,
+  TeacherPublishedLearningUnitQuery,
   ReorderLearningUnitItemDto,
   TeacherLearningPathQuery,
   UpdateLearningPathDto,
@@ -69,7 +69,7 @@ export class TeacherLearningCatalogController {
   }
 
   @Get('learning-units')
-  publishedUnits(@Query() query: PublishedLearningUnitQuery) {
+  publishedUnits(@Query() query: TeacherPublishedLearningUnitQuery) {
     return this.service.listPublishedUnits(query);
   }
 
