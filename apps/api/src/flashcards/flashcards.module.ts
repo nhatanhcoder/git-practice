@@ -6,6 +6,10 @@ import {
   UserFlashcardState,
   UserFlashcardStateSchema,
 } from '../mongodb/schemas/user-flashcard-state.schema';
+import {
+  UserSavedWord,
+  UserSavedWordSchema,
+} from '../mongodb/schemas/user-saved-word.schema';
 import { FlashcardsService } from './flashcards.service';
 import { StudentFlashcardsController } from './student-flashcards.controller';
 
@@ -14,6 +18,7 @@ import { StudentFlashcardsController } from './student-flashcards.controller';
     MongooseModule.forFeature([
       { name: Flashcard.name, schema: FlashcardSchema },
       { name: UserFlashcardState.name, schema: UserFlashcardStateSchema },
+      { name: UserSavedWord.name, schema: UserSavedWordSchema },
     ]),
   ],
   controllers: [StudentFlashcardsController],

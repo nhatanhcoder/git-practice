@@ -9,6 +9,10 @@ import {
   UserFlashcardState,
   type UserFlashcardStateDocument,
 } from '../mongodb/schemas/user-flashcard-state.schema';
+import {
+  UserSavedWord,
+  type UserSavedWordDocument,
+} from '../mongodb/schemas/user-saved-word.schema';
 import type { ListFlashcardsQuery } from './dto/list-flashcards.query';
 import type { PublicSrsRating } from './dto/review-flashcard.dto';
 import { calculateSm2 } from './sm2';
@@ -20,6 +24,8 @@ export class FlashcardsService {
     @InjectModel(Flashcard.name) private readonly flashcards: Model<FlashcardDocument>,
     @InjectModel(UserFlashcardState.name)
     private readonly states: Model<UserFlashcardStateDocument>,
+    @InjectModel(UserSavedWord.name)
+    private readonly savedWords: Model<UserSavedWordDocument>,
   ) {}
 
   async browse(userId: string, query: ListFlashcardsQuery) {
@@ -112,12 +118,50 @@ export class FlashcardsService {
     const totalReviews = states.reduce((sum, state) => sum + state.totalReviews, 0);
     const correctReviews = states.reduce((sum, state) => sum + state.correctReviews, 0);
 
+    // Reviewed-saved-words: the count is based on the learner's saved words,
+    // not on review states. A saved hanzi counts as reviewed when a review
+    // state with ≥1 review exists for the catalog card carrying that hanzi.
+    // Saved hanzi with no catalog card are counted as saved but never as
+    // reviewed (they cannot be reviewed — honest denominator).
+    const saved = await this.savedWords.find({ userId }).select({ hanzi: 1 }).lean();
+    const savedHanzi = [...new Set(saved.map((row) => row.hanzi))];
+    let reviewedSavedWords = 0;
+    if (savedHanzi.length > 0) {
+      const cards = await this.flashcards
+        .find({ hanzi: { $in: savedHanzi } })
+        .select({ _id: 1, hanzi: 1 })
+        .lean();
+      const hanziToIds = new Map<string, string[]>();
+      for (const card of cards) {
+        const key = String(card.hanzi);
+        const list = hanziToIds.get(key) ?? [];
+        list.push(String(card._id));
+        hanziToIds.set(key, list);
+      }
+      const matchedIds = [...hanziToIds.values()].flat();
+      if (matchedIds.length > 0) {
+        const reviewedIds = new Set(
+          (
+            await this.states
+              .find({ userId, flashcardId: { $in: matchedIds }, totalReviews: { $gt: 0 } })
+              .select({ flashcardId: 1 })
+              .lean()
+          ).map((state) => String(state.flashcardId)),
+        );
+        reviewedSavedWords = savedHanzi.filter((hanzi) =>
+          (hanziToIds.get(hanzi) ?? []).some((id) => reviewedIds.has(id)),
+        ).length;
+      }
+    }
+
     return {
       totalCards: states.length,
       dueToday: states.filter((state) => state.nextReviewDate <= now).length,
       matureCards: states.filter((state) => state.intervalDays >= 21).length,
       retentionRate: totalReviews ? Math.round((correctReviews / totalReviews) * 100) : 0,
       totalReviews,
+      savedWords: savedHanzi.length,
+      reviewedSavedWords,
       // Product timezone is still unresolved. Returning an explicit null keeps the
       // contract honest instead of silently defining a UTC or server-local streak.
       streak: null,

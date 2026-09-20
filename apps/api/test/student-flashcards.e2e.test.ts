@@ -141,6 +141,7 @@ after(async () => {
     select: { id: true },
   });
   await mongo.collection('user_mistakes').deleteMany({ userId: { $in: users.map((u) => u.id) } });
+  await mongo.collection('user_saved_words').deleteMany({ userId: { $in: users.map((u) => u.id) } });
   await prisma.refreshToken.deleteMany({ where: { userId: { in: users.map((u) => u.id) } } });
   await prisma.user.deleteMany({ where: { email: { in: OWNED_EMAILS } } });
   await app.close();
@@ -215,6 +216,33 @@ describe('Student SRS flashcards', () => {
 
     const other = await req('GET', '/student/flashcards/stats', undefined, otherToken);
     assert.equal(other.body.data.totalCards, 0);
+  });
+
+  it('counts reviewed words against saved words per owner (INV-SRS-13)', async () => {
+    // Save the reviewed catalog card plus one hanzi with no catalog card.
+    const saveReviewed = await req(
+      'POST',
+      '/student/word-bank',
+      { hanzi: '学习', pinyin: 'xuéxí', meaning: 'học tập', sourceType: 'flashcard_browser' },
+      studentToken,
+    );
+    assert.equal(saveReviewed.status, 201);
+    const saveOrphan = await req(
+      'POST',
+      '/student/word-bank',
+      { hanzi: '诶哦', pinyin: 'ēi ó', meaning: 'từ không có trong kho', sourceType: 'other' },
+      studentToken,
+    );
+    assert.equal(saveOrphan.status, 201);
+
+    const mine = await req('GET', '/student/flashcards/stats', undefined, studentToken);
+    assert.equal(mine.status, 200);
+    assert.equal(mine.body.data.savedWords, 2);
+    assert.equal(mine.body.data.reviewedSavedWords, 1);
+
+    const other = await req('GET', '/student/flashcards/stats', undefined, otherToken);
+    assert.equal(other.body.data.savedWords, 0);
+    assert.equal(other.body.data.reviewedSavedWords, 0);
   });
 
   it('maps a malformed or missing id to FLASHCARD_NOT_FOUND', async () => {
