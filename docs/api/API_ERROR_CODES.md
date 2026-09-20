@@ -434,7 +434,7 @@ export function handleApiError(error: AxiosError) {
 
 | Code | HTTP | Meaning |
 |---|---|---|
-| LEARNING_UNIT_NOT_FOUND | 404 | Invalid or unpublished unit |
+| `LEARNING_UNIT_NOT_FOUND` | 404 | Invalid or unpublished unit |
 | LEARNING_UNIT_LOCKED | 403 | Previous unit not completed |
 | LEARNING_PROGRESS_CONFLICT | 409 | Stale revision, not started or already completed |
 | LEARNING_STEP_INVALID | 400 | Study/answer/completion precondition fails |
