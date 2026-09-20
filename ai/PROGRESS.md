@@ -406,6 +406,10 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
       additive migration, Mongo authoring fields/indexes, notification registry + FE sentences/deep-links.
       Verify: Prisma validate/generate + shadow diff (`No difference detected`), API 365/365,
       web scripts 238/238, API build, web build, check-docs 9/9. Slice 1B chờ migration PR merge.
+- 🔶 (codex · 2026-09-20) **Teacher-authored Learning Catalog — Slice 1B backend runtime.**
+      Branch `codex/learning-catalog-backend`, based on `main` after PR #96 merged green.
+      Scope: 13 teacher endpoints, 8 admin moderation endpoints, student catalog visibility,
+      notification side effects, ownership/state invariants, and complete API regression tests.
 - **DoD**: a learner can go pronunciation → grammar → character → Lego → mock exam, with
       XP/streak/badges updating correctly
 
