@@ -458,7 +458,7 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
 ## Off-sprint / spike
 
 - ✅ (opencode · 2026-09-19) **SRS reviewed-saved-words count** — branch
-  `feat/srs-saved-review-count`. Stats gains `savedWords` +
+  `feat/srs-saved-review-count` (PR #97). Stats gains `savedWords` +
   `reviewedSavedWords` (saved hanzi with ≥1 review, joined via catalog; orphan
   hanzi counts as saved, never reviewed); FE tile "Đã ôn X/Y" on flashcards page
   (+srs-stat--saved-reviewed). INV-SRS-13 e2e. Verified: api build, 7/7 SRS e2e,
