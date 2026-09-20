@@ -410,6 +410,13 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
       Branch `codex/learning-catalog-backend`, based on `main` after PR #96 merged green.
       Scope: 13 teacher endpoints, 8 admin moderation endpoints, student catalog visibility,
       notification side effects, ownership/state invariants, and complete API regression tests.
+      Runtime complete: role-prefixed controllers, exact DTO whitelist, ownership predicates,
+      atomic path transitions + notifications, immutable published units, reference resolution,
+      student curricula/visibility, moderation/restore audit, and 12-test invariant suite.
+      Static verification passes: API build + type-check, workspace lint, web build, web scripts
+      238/238, check-docs 9/9. **Not yet counted as complete:** the 12 real-DB tests were all
+      cancelled in `before` with Prisma `P1001` because Docker Desktop 4.83 crashes before local
+      Postgres starts (`BUILD-006`). No invariant is being reported as passing from that run.
 - **DoD**: a learner can go pronunciation → grammar → character → Lego → mock exam, with
       XP/streak/badges updating correctly
 

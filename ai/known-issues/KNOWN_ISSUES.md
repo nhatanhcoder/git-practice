@@ -2098,3 +2098,28 @@ nullable internal `firstPublishedAt` set once on first publish and never cleared
 replace the boolean with a three-value publication-state field and migrate every existing reader.
 Owner selected the recommended `firstPublishedAt` option. The Slice 1A contract and Mongo schema
 now carry that field; service enforcement remains part of dependent backend Slice 1B.
+
+---
+
+### [BUILD-006] Docker Desktop 4.83 crashes before starting the local Postgres container
+
+**Severity**: High (local verification only; production code is unaffected)
+**Sprint**: 5b
+**Status**: Open — reproduced 2026-09-20 on the Windows development host
+
+**Description**: Docker Desktop exits while initialising its Inference manager because the stale
+reparse-point `C:\Users\nhata\AppData\Local\Docker\run\dockerInference` cannot be removed. The
+backend log reports `starting services: initializing Inference manager ... The file cannot be
+accessed by the system`; `localhost:5432` consequently has no listener and Prisma returns `P1001`.
+Disabling `EnableDockerAI`, stopping Docker processes, terminating the `docker-desktop` WSL distro,
+and attempting to rename/remove the exact socket did not release the reparse-point.
+
+**Impact**: the 12-test Learning Catalog real-DB suite is discovered but cancelled in its `before`
+hook because `PrismaService.onModuleInit()` cannot reach Postgres. API build/type-check, workspace
+lint, web tests/build and docs checks remain runnable and pass, but they do not prove the database
+permission/state transitions.
+
+**Fix Plan**: reboot Windows or repair/reset Docker Desktop so the stale socket is recreated, then
+run `docker compose up -d`, `pnpm --filter api exec prisma migrate deploy`, and the complete API
+suite. Factory reset was deliberately not triggered because it would delete local Docker data and
+requires separate human authorisation.
