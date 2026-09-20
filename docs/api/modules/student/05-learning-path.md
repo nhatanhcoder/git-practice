@@ -1,6 +1,6 @@
 ---
 status: implemented
-last_updated: 2026-09-19
+last_updated: 2026-09-20
 ---
 # S-SELF-1 — Vocabulary learning path
 ## 0. Approval and boundaries
@@ -23,7 +23,9 @@ Source snapshots are vocabulary content, never new Flashcard rows or private tea
 All paths under /api/v1/student/learning-path; all success responses wrapped in data.
 GET ?curriculum=hanlo_vocabulary&level=1&page=1 (page size 12):
 {curriculum,level,units,total,completed,page,totalPages}. Unit summary:
-{slug,title,level,order,wordCount,state:locked|available|in_progress|completed}.
+{slug,title,level,order,wordCount,state:locked|available|in_progress|completed|unavailable}.
+`unavailable` is emitted only for a published reference node whose source is no longer visible;
+the node stays in the ordered catalog and its detail endpoint returns `LEARNING_UNIT_NOT_FOUND`.
 GET /:slug: {unit:{slug,title,level,order,words:[{hanzi,pinyin,meaning}]},
 progress:null|{status,studyIndex,answers:string[],revision,bestScore,lastScore,completedAt},
 quiz:[{prompt,options:[{id,text}]}],nextSlug,result:null|{score,total,passed,feedback:[{hanzi,meaning,correct}]} }.
@@ -96,8 +98,9 @@ they apply to a corpus unit. What is added:
   units leave the catalog under the same rule as an unpublished unit — LP-10 already states that an
   absent catalog returns empty, never generated content, and this is the same situation.
 - A lesson whose **referenced** source unit has been unpublished renders as an honest unavailable
-  node; it is never silently dropped. This follows `WEB-011`'s lesson: the screen must be able to
-  say it cannot show something.
+  node (`state: "unavailable"`, `wordCount: 0`); it is never silently dropped. Its detail endpoint
+  returns `LEARNING_UNIT_NOT_FOUND`. This follows `WEB-011`'s lesson: the screen must be able to say
+  it cannot show something.
 - Unlock order stays LP-02 (first unit of a level available, later units need the previous one
   completed). Teacher paths do not get a free-order mode.
 - Suspend or unpublish hides content and **never** deletes `user_learning_progress`. Restoring the
@@ -107,4 +110,3 @@ they apply to a corpus unit. What is added:
 New errors raised by these paths are the authoring/moderation family in §9 of
 [teacher 07](../teacher/07-learning-catalog.md) and
 [admin 09](../09-learning-catalog-moderation.md); no student-facing code is added to §9 above.
-

@@ -1,6 +1,6 @@
 ---
 module: Learning Catalog — Admin moderation
-status: proposed
+status: implemented — runtime complete 2026-09-20; real-DB verification pending BUILD-006
 blocked_by: -
 owner: -
 last_updated: 2026-09-19
@@ -29,14 +29,14 @@ notification.
 
 | Method | Path | Role | Description | Status |
 |---|---|---|---|---|
-| GET | `/api/v1/admin/learning-paths` | admin | List mọi path — `?status=&teacherId=&page=` | proposed |
-| GET | `/api/v1/admin/learning-paths/:pathId` | admin | Chi tiết path + unit + audit kiểm duyệt | proposed |
-| PATCH | `/api/v1/admin/learning-paths/:pathId/approve` | admin | `pending_review` → `approved` | proposed |
-| PATCH | `/api/v1/admin/learning-paths/:pathId/reject` | admin | `pending_review` → `rejected`, bắt buộc `rejectionReason` | proposed |
-| PATCH | `/api/v1/admin/learning-paths/:pathId/suspend` | admin | `approved` → `suspended` | proposed |
-| PATCH | `/api/v1/admin/learning-paths/:pathId/restore` | admin | `suspended` → `approved` | proposed |
-| GET | `/api/v1/admin/learning-units` | admin | List unit đã publish trên mọi path — `?teacherId=&pathId=&page=` | proposed |
-| PATCH | `/api/v1/admin/learning-units/:unitId/unpublish` | admin | Gỡ một unit đã publish, kể cả khi path đang `approved` | proposed |
+| GET | `/api/v1/admin/learning-paths` | admin | List mọi path — `?status=&teacherId=&page=` | implemented |
+| GET | `/api/v1/admin/learning-paths/:pathId` | admin | Chi tiết path + unit + audit kiểm duyệt | implemented |
+| PATCH | `/api/v1/admin/learning-paths/:pathId/approve` | admin | `pending_review` → `approved` | implemented |
+| PATCH | `/api/v1/admin/learning-paths/:pathId/reject` | admin | `pending_review` → `rejected`, bắt buộc `rejectionReason` | implemented |
+| PATCH | `/api/v1/admin/learning-paths/:pathId/suspend` | admin | `approved` → `suspended` | implemented |
+| PATCH | `/api/v1/admin/learning-paths/:pathId/restore` | admin | `suspended` → `approved` | implemented |
+| GET | `/api/v1/admin/learning-units` | admin | List unit đã publish trên mọi path — `?teacherId=&pathId=&page=` | implemented |
+| PATCH | `/api/v1/admin/learning-units/:unitId/unpublish` | admin | Gỡ một unit đã publish, kể cả khi path đang `approved` | implemented |
 
 Response của 4 endpoint chuyển trạng thái trả về chính bản ghi path sau khi đổi (cùng shape với
 teacher detail) — theo pattern `PATCH /admin/sessions/:id/reject`.
