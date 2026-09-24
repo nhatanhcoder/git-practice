@@ -457,6 +457,8 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
 
 ## Off-sprint / spike
 
+- 🔶 (codex · 2026-09-24) Class supplemental learning v1 + Student assigned-grammar filter + Teacher single-session calendar. Approved scope: link existing published units/grammar points to a class lesson with active-enrollment visibility; wire read/create sessions only. No teacher-authored grammar, recurrence, reschedule/cancel or payroll formula change. Branch `codex/class-content-schedule-v1`.
+
 - ✅ (opencode · 2026-09-19) **SRS reviewed-saved-words count** — branch
   `feat/srs-saved-review-count` (PR #97). Stats gains `savedWords` +
   `reviewedSavedWords` (saved hanzi with ≥1 review, joined via catalog; orphan
