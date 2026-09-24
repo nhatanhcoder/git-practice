@@ -2191,3 +2191,27 @@ The Teacher section of `docs/front-end-design-docs/pages/_INDEX.md` no longer cl
 all Teacher screens are mocked or that Teacher backend module specs do not exist. The
 per-route rows now carry their individual live/blocked state; this is an append-only
 resolution note rather than an edit to the original issue.
+
+---
+
+### [DOC-020] Teacher lesson reorder request shape differs between module spec and live API
+
+**Severity**: Medium
+**Sprint**: —
+**Status**: Open — found 2026-09-24 during Teacher lesson reliability fix
+
+**Description**: Teacher module `01-classes-lessons.md` §3.11 describes the reorder
+request as a bare array of `{ id, orderIndex }`, while the running
+`ReorderLessonsDto` requires `{ items: [{ id, orderIndex }] }`. The Teacher lessons
+Page Contract also labels create/update responses as `data.lesson`; the API envelope
+wraps the returned Lesson directly in `data`. Existing frontend code sends `{ items }`
+and reads direct `data`, consistent with implementation but not these documents.
+
+**Impact**: an agent coding from the documents alone would send a rejected reorder or
+parse a successful create/update as empty. The current v1 reliability fix changes
+error handling only and does not redefine the transport.
+
+**Fix plan**: BE owner reconcile the transport contract to the tested API or change the
+API and clients together; do not silently alter one side. ID scan: `DOC-019` was
+allocated earlier this session; `DOC-018` was the previous max across local + remote
+refs on 2026-09-24.
