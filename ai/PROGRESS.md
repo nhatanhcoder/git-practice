@@ -457,7 +457,8 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
 
 ## Off-sprint / spike
 
-- 🔶 (codex · 2026-09-24) Class supplemental learning v1 + Student assigned-grammar filter + Teacher single-session calendar. Approved scope: link existing published units/grammar points to a class lesson with active-enrollment visibility; wire read/create sessions only. No teacher-authored grammar, recurrence, reschedule/cancel or payroll formula change. Branch `codex/class-content-schedule-v1`.
+- ✅ (codex · 2026-09-24) Teacher teaching schedule v1: live own-session GET + one-off POST with required topic, week agenda, active owned-class picker, truthful loading/error/empty states; removed in-memory lifecycle actions. Lesson create/edit/delete/reorder no longer report success on API failure; reorder rolls back. Branch `codex/class-content-schedule-v1`.
+- ⛔ (codex · 2026-09-24 · API-020) Class-lesson supplemental attach + Student assigned-grammar filter are NOT IMPLEMENTED: ADR-016 leaves relation, transport, content-kind/revision and permission details undecided; no approved endpoint or schema. Needs owner-approved contract before DB/RBAC/API code. No teacher-authored grammar, recurrence, reschedule/cancel or payroll change was made.
 
 - ✅ (opencode · 2026-09-19) **SRS reviewed-saved-words count** — branch
   `feat/srs-saved-review-count` (PR #97). Stats gains `savedWords` +
