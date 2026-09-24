@@ -123,3 +123,8 @@ payroll authority was inferred.
 **Remaining**: `API-020` class supplements/assigned Grammar are still NOT IMPLEMENTED;
 `API-021` direct-session validation/contract drift is open; `API-023` server-wide
 idempotency needs a separately approved transport/schema decision. No merge/deploy.
+
+**Post-push CI on `9717d74`**: `check-docs`, `web-quality` and `api-quality` all passed.
+The isolated CI Postgres/Mongo API run passed 367/367 tests, including the new
+same-date, one-row-page test in both sort directions. This verifies the CI database
+scope; it does not retroactively make the local DB test a run.
