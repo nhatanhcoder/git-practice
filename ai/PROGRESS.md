@@ -458,6 +458,7 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
 ## Off-sprint / spike
 
 - ✅ (codex · 2026-09-24) Teacher teaching schedule v1: live own-session GET + one-off POST with required topic, week agenda, active owned-class picker, truthful loading/error/empty states; removed in-memory lifecycle actions. Lesson create/edit/delete/reorder no longer report success on API failure; reorder rolls back. Branch `codex/class-content-schedule-v1`.
+- ✅ (codex · 2026-09-24 · PR #98 review follow-up) Uncertain session POST result now blocks blind retry and reloads the target week; Teacher session pagination uses a deterministic date+ID order; lesson save/delete dialogs cannot be dismissed mid-request; Teacher schedule spec status corrected. Focused browser tests cover both viewports. Server-wide create idempotency remains ⛔ (`API-023`); no schema, RBAC or payroll formula changed.
 - ⛔ (codex · 2026-09-24 · API-020) Class-lesson supplemental attach + Student assigned-grammar filter are NOT IMPLEMENTED: ADR-016 leaves relation, transport, content-kind/revision and permission details undecided; no approved endpoint or schema. Needs owner-approved contract before DB/RBAC/API code. No teacher-authored grammar, recurrence, reschedule/cancel or payroll change was made.
 
 - ✅ (opencode · 2026-09-19) **SRS reviewed-saved-words count** — branch

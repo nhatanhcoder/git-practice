@@ -3,7 +3,7 @@ page: Teacher · Teaching schedule
 route: /teacher/sessions
 contract: ../../pages/teacher-pages/teacher-sessions.md
 requires: _DESIGN-SYSTEM.md
-status: ready-for-design
+status: built
 design_baseline: v1
 last_updated: 2026-09-24
 ---
@@ -109,9 +109,13 @@ The same badge mapping must handle `completed_pending`, `approved` and `rejected
 
 - Period/filter changes invalidate the old request and reload server data. Do not flash a
   previous class's schedule as the new filter's result.
-- Create uses a single POST. On success close modal, refetch visible sessions and then
-  confirm; on error keep form data and explain the failure. Keyboard users can operate
-  period navigation, filters and modal in visual order.
+- Create uses a single POST. On confirmed success close modal, refetch visible sessions
+  and then confirm. A definitive 4xx rejection keeps the editable draft. A missing
+  response or 5xx leaves the result unknown: close the form, reload the target week,
+  warn against retry, and disable create for this page instance. The warning remains
+  even if the list reloads, because a GET cannot identify a particular POST without
+  an idempotency key. Keyboard users can operate period navigation, filters and modal
+  in visual order; the modal cannot dismiss while submission is pending.
 - Status and actual times are read-only; no drag-to-reschedule, recurrence or fake submit.
 
 ## 10. Do NOT

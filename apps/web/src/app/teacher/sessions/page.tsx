@@ -88,6 +88,7 @@ export default function TeacherSessionsPage() {
   const [draft, setDraft] = useState<SessionDraft>(initialDraft(""));
   const [fieldErrors, setFieldErrors] = useState<ReturnType<typeof validateSessionDraft>>({});
   const [createError, setCreateError] = useState("");
+  const [createOutcomeUnknown, setCreateOutcomeUnknown] = useState(false);
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState("");
   const savingRef = useRef(false);
@@ -147,7 +148,7 @@ export default function TeacherSessionsPage() {
   }, [toast]);
 
   const activeClasses = useMemo(() => classes.filter((item) => item.status === "active"), [classes]);
-  const canCreate = classesState === "ready" && activeClasses.length > 0;
+  const canCreate = classesState === "ready" && activeClasses.length > 0 && !createOutcomeUnknown;
   const days = useMemo(() => {
     const ordered = [...sessions].sort((a, b) =>
       a.scheduledDate.localeCompare(b.scheduledDate) ||
@@ -215,6 +216,7 @@ export default function TeacherSessionsPage() {
       setTotal(refreshed.total);
       setAgendaState("ready");
       setCreating(false);
+      setCreateOutcomeUnknown(false);
       setToast("Đã tạo buổi học.");
     } catch (error) {
       if (postSucceeded) {
@@ -227,7 +229,9 @@ export default function TeacherSessionsPage() {
         setTotal(0);
         setAgendaState("error");
         setAgendaError("Buổi học đã được tạo, nhưng chưa tải lại được lịch. Hãy thử tải lại.");
-      } else {
+      } else if (error instanceof ApiError && error.statusCode >= 400 && error.statusCode < 500 && error.statusCode !== 408 && error.statusCode !== 429) {
+        // A definite client rejection leaves the draft editable. A lost response or
+        // server error does not prove the insert failed and must not invite another POST.
         if (error instanceof ApiError && error.code === "VALIDATION_ERROR" && error.details) {
           const serverFields: ReturnType<typeof validateSessionDraft> = {};
           for (const field of ["classId", "scheduledDate", "scheduledStart", "scheduledEnd", "topic"] as const) {
@@ -236,6 +240,13 @@ export default function TeacherSessionsPage() {
           setFieldErrors(serverFields);
         }
         setCreateError(error instanceof Error ? error.message : "Không tạo được buổi học.");
+      } else {
+        setCreateOutcomeUnknown(true);
+        setCreating(false);
+        setAnchorDate(draft.scheduledDate);
+        setClassFilter("");
+        setStatusFilter("");
+        setAgendaRetry((value) => value + 1);
       }
     } finally {
       savingRef.current = false;
@@ -303,6 +314,16 @@ export default function TeacherSessionsPage() {
           <AlertCircle size={19} aria-hidden="true" />
           <span>{classesState === "forbidden" ? "Không có quyền tải danh sách lớp. Chưa thể tạo buổi học." : "Không tải được danh sách lớp. Lịch vẫn có thể xem, nhưng chưa thể tạo buổi học."}</span>
           <button onClick={() => setClassesRetry((value) => value + 1)}>Thử lại</button>
+        </div>
+      )}
+
+      {createOutcomeUnknown && (
+        <div className={styles.errorBanner} role="alert">
+          <AlertCircle size={19} aria-hidden="true" />
+          <div>
+            <strong>Chưa xác nhận được kết quả tạo buổi học</strong>
+            <span>Máy chủ có thể đã lưu buổi học. Hãy kiểm tra lịch vừa tải lại hoặc liên hệ quản trị viên; đừng gửi lại yêu cầu. Nút tạo buổi học được khóa trong trang này.</span>
+          </div>
         </div>
       )}
 
@@ -379,6 +400,7 @@ export default function TeacherSessionsPage() {
           label="Tạo buổi học"
           onClose={() => { if (!savingRef.current) setCreating(false); }}
           closeOnBackdrop={!saving}
+          closeDisabled={saving}
           backdropClassName={styles.modalBackdrop}
           panelClassName={styles.modal}
         >

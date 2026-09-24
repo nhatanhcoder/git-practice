@@ -86,3 +86,60 @@ test("Teacher sees own live agenda and creates one planned session", async ({ pa
     topic: "Ôn ngữ pháp HSK 3",
   });
 });
+
+test("lost create response never offers a blind second POST", async ({ page }, testInfo) => {
+  let postCount = 0;
+  let created = false;
+  await page.route("**/api/v1/**", async (route) => {
+    const path = new URL(route.request().url()).pathname;
+    const reply = (status: number, body: unknown) => route.fulfill({
+      status, contentType: "application/json", body: JSON.stringify(body),
+    });
+    if (path.endsWith("/auth/refresh")) {
+      await reply(200, { data: { accessToken: "test-teacher-token" } });
+    } else if (path.endsWith("/auth/me")) {
+      await reply(200, { data: {
+        id: teacherId, email: "teacher@example.test", role: "teacher", status: "active",
+        nickname: "Giáo viên", avatarUrl: null,
+        createdAt: "2026-09-01T00:00:00.000Z", lastLoginAt: null,
+      } });
+    } else if (path.endsWith("/teacher/classes")) {
+      await reply(200, { data: [{
+        id: classId, name: "Lớp HSK 3", hskLevel: 3, status: "active",
+        enrollmentCode: "HSK3ABCD", studentCount: 0,
+      }] });
+    } else if (path.endsWith("/teacher/sessions") && route.request().method() === "POST") {
+      postCount += 1;
+      created = true; // The server committed, but the client never receives its response.
+      await route.abort("failed");
+    } else if (path.endsWith("/teacher/sessions") && route.request().method() === "GET") {
+      const data = created ? [{
+        id: sessionId, classId, className: "Lớp HSK 3", scheduledDate: "2026-09-24",
+        scheduledStart: "19:00", scheduledEnd: "20:30", actualStart: null, actualEnd: null,
+        topic: "Ôn ngữ pháp HSK 3", notes: null, status: "scheduled", rejectionReason: null,
+        payrollPeriodId: null,
+        attendanceSummary: { present: 0, absentExcused: 0, absentUnexcused: 0, total: 0 },
+        createdAt: "2026-09-24T10:00:00.000Z", updatedAt: "2026-09-24T10:00:00.000Z",
+      }] : [];
+      await reply(200, { data, meta: { total: data.length, page: 1, limit: 100, totalPages: 1 } });
+    } else {
+      throw new Error(`Unexpected API call: ${route.request().method()} ${path}`);
+    }
+  });
+
+  await page.goto("/teacher/sessions");
+  await page.getByRole("button", { name: "Tạo buổi học" }).first().click();
+  const form = page.locator("form");
+  await form.locator("select").selectOption(classId);
+  await form.locator('input[type="date"]').fill("2026-09-24");
+  await form.locator('input[type="time"]').nth(0).fill("19:00");
+  await form.locator('input[type="time"]').nth(1).fill("20:30");
+  await form.locator('input:not([type])').fill("Ôn ngữ pháp HSK 3");
+  await form.getByRole("button", { name: "Tạo buổi học" }).click();
+
+  await expect(page.getByText("Chưa xác nhận được kết quả tạo buổi học")).toBeVisible();
+  await expect(page.getByText("Ôn ngữ pháp HSK 3")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Tạo buổi học" }).first()).toBeDisabled();
+  await page.screenshot({ path: testInfo.outputPath("unknown-create.png"), fullPage: true });
+  expect(postCount).toBe(1);
+});

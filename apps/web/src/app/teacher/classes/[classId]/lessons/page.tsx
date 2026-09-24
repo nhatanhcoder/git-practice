@@ -379,7 +379,8 @@ export default function TeacherLessonsPage({
       {editing && (
         <Overlay
           label={editing.lesson ? "Sửa bài học" : "Thêm bài học"}
-          onClose={() => setEditing(null)}
+          onClose={() => { if (!mutationPending) setEditing(null); }}
+          closeDisabled={mutationPending}
           backdropClassName={styles.modalBackdrop}
           panelClassName={styles.modal}
         >
@@ -432,11 +433,11 @@ export default function TeacherLessonsPage({
               </fieldset>
               {mutationError && <p className={styles.mutationError} role="alert">{mutationError}</p>}
               <div className={styles.modalActions}>
-                <button type="button" className={styles.cancelButton} onClick={() => setEditing(null)}>
+                <button type="button" className={styles.cancelButton} onClick={() => setEditing(null)} disabled={mutationPending}>
                   Hủy
                 </button>
                 <button type="submit" className={styles.primaryButton} disabled={!valid || mutationPending}>
-                  {editing.lesson ? "Lưu thay đổi" : "Thêm bài học"}
+                  {mutationPending ? "Đang lưu..." : editing.lesson ? "Lưu thay đổi" : "Thêm bài học"}
                 </button>
               </div>
             </form>
@@ -448,7 +449,8 @@ export default function TeacherLessonsPage({
           description={"Bài học «" + deleting.title + "» sẽ bị xoá khỏi danh sách. Hành động này không thể hoàn tác."}
           confirmLabel="Xoá bài học"
           danger
-          onClose={() => setDeleting(null)}
+          pending={mutationPending}
+          onClose={() => { if (!mutationPending) setDeleting(null); }}
           onConfirm={handleDelete}
         >
           {mutationError && <p className={styles.mutationError} role="alert">{mutationError}</p>}

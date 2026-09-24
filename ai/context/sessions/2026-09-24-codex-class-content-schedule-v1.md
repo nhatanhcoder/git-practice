@@ -78,3 +78,48 @@ implemented only the portion with an existing transport contract.
 2. BE owner reconcile `API-021` and `DOC-020`; settle archived-class scheduling before
    changing server validation, and keep payroll formula unchanged unless separately approved.
 3. Review the PR for this read/create + reliability slice; no merge/deploy was performed.
+
+## PR #98 review follow-up — 2026-09-24
+
+**Approval**: the owner replied “fix luôn đi” to the named scope: client mitigation for
+uncertain session creation without schema/payroll-formula changes, plus stable list order,
+pending lesson-dialog behavior and spec status correction. No broader DB/Auth/RBAC or
+payroll authority was inferred.
+
+**Changes**:
+
+- An ambiguous session POST outcome (lost response/network/5xx/408/429) now closes the
+  create form, reloads the target teaching week, displays a persistent warning and
+  disables further create actions for this page instance. A definitive 4xx rejection
+  remains editable; confirmed POST + failed GET still reports creation. This is a
+  UI guard, not a server idempotency guarantee (`API-023`, open).
+- GET `/teacher/sessions` orders by `scheduledDate` plus unique `id` in the requested
+  direction for deterministic offset pages. A real-DB e2e case was added for tied
+  dates and one-row pages in both directions.
+- Teacher lesson create/edit/delete dialogs disable cancellation while a mutation
+  is pending, keep Escape/backdrop from dismissing and show pending feedback. The
+  schedule spec status changed from `ready-for-design` to `built`; no baseline bump.
+- Review findings were appended to `KNOWN_ISSUES.md` as `WEB-025/026`, `API-022/023`,
+  `DOC-021`; prior entries were not rewritten. IDs were scanned across local and
+  refreshed remote refs before allocation.
+
+**Verification**:
+
+- `pnpm --filter web build`: passed; root build not run.
+- `pnpm --filter api exec prisma generate` then `pnpm --filter api build`: passed;
+  the initial build without a generated local client failed for that environment
+  reason, not a source error. No schema/DB was changed.
+- `node --test apps/web/scripts/*.test.mjs`: 242/242 passed.
+- `pnpm --filter web lint`: passed.
+- Focused production Playwright: 8/8 passed at 1280px and 375px. The aborted-response
+  test simulates a server commit and verifies no second POST; lesson tests hold
+  save/delete requests open and verify Hủy/Escape cannot close the dialog. Desktop
+  and mobile screenshots of the warning and pending modal were captured and read.
+- `node scripts/check-docs.mjs`: 9/9 passed; `git diff --check`: passed.
+- API e2e with PostgreSQL: **NOT RUN locally** — this worktree has no `.env` and
+  Docker is unavailable. CI's isolated Postgres/Mongo lane is expected to run it
+  after push; until it passes, the pagination DB test is not counted as passing.
+
+**Remaining**: `API-020` class supplements/assigned Grammar are still NOT IMPLEMENTED;
+`API-021` direct-session validation/contract drift is open; `API-023` server-wide
+idempotency needs a separately approved transport/schema decision. No merge/deploy.

@@ -66,7 +66,12 @@ the `meta.total`/`totalPages` truthfully; never treat the first page as the whol
 | Create | “Tạo buổi học” | Validate class, calendar date, nonempty topic and `end > start`; POST once, refetch GET after success | `CLASS_ACCESS_DENIED`, `VALIDATION_ERROR` |
 
 No mutation may show success before the POST confirms. The API's `scheduledDate` anchors
-payroll period under ADR-012, but this screen does not compute or edit pay.
+payroll period under ADR-012, but this screen does not compute or edit pay. If POST
+has no definitive response (network failure, timeout or 5xx), the result is unknown:
+close the form, reload the target week's agenda, show an explicit warning and disable
+further create requests in this page instance. A confirmed 4xx rejection keeps the
+draft editable; a confirmed POST followed by a failed GET reports creation, not failure.
+This client guard does not replace server idempotency (`API-023`).
 
 ## Out of scope / conflicts
 

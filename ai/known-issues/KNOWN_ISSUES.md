@@ -2215,3 +2215,89 @@ error handling only and does not redefine the transport.
 API and clients together; do not silently alter one side. ID scan: `DOC-019` was
 allocated earlier this session; `DOC-018` was the previous max across local + remote
 refs on 2026-09-24.
+
+---
+
+### [WEB-025] Uncertain Teacher session POST invited a duplicate retry
+
+**Severity**: High
+**Sprint**: —
+**Status**: Mitigated in PR #98 review follow-up, 2026-09-24
+
+**Description**: the first live schedule UI kept its create form open after any POST
+failure. A committed insert followed by a lost response was treated as a failed
+insert, so the user could submit the same payable session twice.
+
+**Resolution**: a definitive 4xx rejection keeps the draft editable; a network,
+timeout or 5xx result closes the form, reloads the target week, warns that the
+outcome is unknown and disables further create actions in the page instance.
+This prevents a blind in-page retry, not duplicates from another client or reload;
+the server gap is `API-023`. Regression tested with a committed-then-aborted HTTP
+response on desktop and 375px.
+
+---
+
+### [API-022] Teacher session pagination had unstable same-date boundaries
+
+**Severity**: Medium
+**Sprint**: —
+**Status**: Fixed in PR #98 review follow-up, 2026-09-24
+
+**Description**: GET `/teacher/sessions` sorted only by `scheduledDate`, so offset
+pages could duplicate or omit rows when more sessions shared a date than fit one
+page. Client-side sorting could not recover omitted rows.
+
+**Resolution**: order by scheduled date and unique session ID in the same requested
+direction. The Teacher sessions API test now requests one-row pages for same-date
+sessions in both sort directions. Local real-DB test status is recorded in the session
+file; a passing build alone does not prove the DB test.
+
+---
+
+### [WEB-026] Teacher lesson dialog could close after mutation began
+
+**Severity**: Medium
+**Sprint**: —
+**Status**: Fixed in PR #98 review follow-up, 2026-09-24
+
+**Description**: save/delete could complete after a user clicked Hủy or Escape,
+making cancellation appear to succeed before the list changed.
+
+**Resolution**: while a mutation is pending, disable Hủy/confirm/close controls
+and block backdrop/Escape dismissal while retaining focus inside the overlay.
+The dialog closes on confirmed success; errors remain visible in the dialog.
+Browser regression covers save and delete at both viewports.
+
+---
+
+### [DOC-021] Teacher schedule spec status lagged behind built route
+
+**Severity**: Low
+**Sprint**: —
+**Status**: Fixed in PR #98 review follow-up, 2026-09-24
+
+**Description**: the schedule spec still said `ready-for-design` while the Page
+Contract and index both said `built`.
+
+**Resolution**: spec frontmatter now says `built`; baseline version was not bumped.
+
+---
+
+### [API-023] Session create has no server idempotency key
+
+**Severity**: High
+**Sprint**: —
+**Status**: Open — found during PR #98 review, 2026-09-24
+
+**Description**: `teacherCreateSession` inserts unconditionally and the ClassSession
+schema has no idempotency key or unique scheduling constraint. The UI mitigation in
+`WEB-025` only prevents a blind second POST within one page instance. A reload,
+second tab or other API client can still repeat a committed request after a lost
+response and create duplicate sessions that may later enter payroll.
+
+**Needs decision**: separately approve the server contract and any schema migration
+for an idempotency key (request scope, expiry/replay response and conflict semantics),
+then test against a real DB. No server-wide guarantee is claimed by PR #98. ID scan:
+after fetching origin on 2026-09-24, maximum IDs across local and remote refs were
+`WEB-024`, `API-021` and `DOC-020`; this follow-up allocated `WEB-025/026`,
+`API-022/023` and `DOC-021` without reuse.
