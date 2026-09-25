@@ -406,6 +406,14 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
       additive migration, Mongo authoring fields/indexes, notification registry + FE sentences/deep-links.
       Verify: Prisma validate/generate + shadow diff (`No difference detected`), API 365/365,
       web scripts 238/238, API build, web build, check-docs 9/9. Slice 1B chờ migration PR merge.
+- 🔶 (opencode · 2026-09-25) **Teacher Learning Catalog FE — màn 1 `/teacher/learning-paths`.**
+      Branch `feat/teacher-learning-catalog` (worktree `../Real-teacher-catalog`).
+      Lane flip: `apps/web/**` là lane của codex; solo agent, flip ghi ở đây theo
+      `multi-agent-workflow.md` §1. Pipeline build-screen, một màn một lượt: màn 1
+      (plan → approval → code → verify → record → PR) trước, màn 2–3 sau.
+      Backend runtime (Slice 1B, `codex/learning-catalog-backend`) chưa merge — FE bám
+      contract `07-learning-catalog` accepted, không bịa endpoint; thiếu endpoint khi code
+      sẽ ghi `// MOCK(<FEATURE>)` + `Needs from the other lane`, không fabricate success.
 - **DoD**: a learner can go pronunciation → grammar → character → Lego → mock exam, with
       XP/streak/badges updating correctly
 
