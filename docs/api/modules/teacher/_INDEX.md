@@ -1,7 +1,7 @@
 ---
 title: Backend Module Specs — Teacher
 status: active
-last_updated: 2026-09-19
+last_updated: 2026-09-25
 ---
 
 # Backend Module Specs — Teacher
@@ -31,7 +31,7 @@ last_updated: 2026-09-19
 | T4 | Attempts + Grading | `04-attempts-grading.md` | 🔶 proposed | 4 | 8 (INV-TGRD) | per-question max not modeled (Q2); AI unparked 2026-09-12 |
 | T5 | Sessions (teacher side) | `05-sessions.md` | 🔶 proposed | 6 | 9 (INV-TSES) | Q-SES-2 (re-submit after reject) |
 | T6 | Income (read-only) | `06-income.md` | 🔶 proposed | 2 | 4 (INV-TINC) | — (reads stored data only) |
-| T7 | Learning Catalog (authoring) | [07-learning-catalog.md](07-learning-catalog.md) | 🟠 implemented; real-DB verify blocked by BUILD-006 | 13 | 14 (INV-LCAT) | Runtime + tests coded 2026-09-20; do not count invariant suite as passing until Postgres is restored |
+| T7 | Learning Catalog (authoring) | [07-learning-catalog.md](07-learning-catalog.md) | ✅ implemented; real-DB verified 2026-09-25 | 13 | 14 (INV-LCAT) | 12/12 shared catalog invariant cases pass against PostgreSQL + MongoDB |
 
 46 new invariants, each with a test line in its module's §15 — the invariant gate.
 Inherited invariants (INV-CLASS-*, INV-SESSION-*, INV-PAYROLL-*) are referenced, never

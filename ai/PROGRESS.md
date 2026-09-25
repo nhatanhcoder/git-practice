@@ -406,17 +406,19 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
       additive migration, Mongo authoring fields/indexes, notification registry + FE sentences/deep-links.
       Verify: Prisma validate/generate + shadow diff (`No difference detected`), API 365/365,
       web scripts 238/238, API build, web build, check-docs 9/9. Slice 1B chờ migration PR merge.
-- 🔶 (codex · 2026-09-20) **Teacher-authored Learning Catalog — Slice 1B backend runtime.**
+- ✅ (codex · 2026-09-25) **Teacher-authored Learning Catalog — Slice 1B backend runtime.**
       Branch `codex/learning-catalog-backend`, based on `main` after PR #96 merged green.
       Scope: 13 teacher endpoints, 8 admin moderation endpoints, student catalog visibility,
       notification side effects, ownership/state invariants, and complete API regression tests.
       Runtime complete: role-prefixed controllers, exact DTO whitelist, ownership predicates,
       atomic path transitions + notifications, immutable published units, reference resolution,
       student curricula/visibility, moderation/restore audit, and 12-test invariant suite.
-      Static verification passes: API build + type-check, workspace lint, web build, web scripts
-      238/238, check-docs 9/9. **Not yet counted as complete:** the 12 real-DB tests were all
-      cancelled in `before` with Prisma `P1001` because Docker Desktop 4.83 crashes before local
-      Postgres starts (`BUILD-006`). No invariant is being reported as passing from that run.
+      Verified after rebasing onto current `origin/main`: migration deployed to local `hsk_dev`;
+      the shared Teacher/Admin/Student catalog invariant suite passes **12/12** against real
+      PostgreSQL + isolated MongoDB; API build + type-check, workspace lint, web build and
+      check-docs pass. The test was corrected to use the project's flat error envelope and
+      explicit `.js` imports under current Node. Full local regression reached an unrelated,
+      pre-existing pay-rate assertion (22/23 in that file); CI's clean DB run is the merge gate.
 - **DoD**: a learner can go pronunciation → grammar → character → Lego → mock exam, with
       XP/streak/badges updating correctly
 

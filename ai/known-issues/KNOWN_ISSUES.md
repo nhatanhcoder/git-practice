@@ -2123,3 +2123,9 @@ permission/state transitions.
 run `docker compose up -d`, `pnpm --filter api exec prisma migrate deploy`, and the complete API
 suite. Factory reset was deliberately not triggered because it would delete local Docker data and
 requires separate human authorisation.
+
+**Resolution note (2026-09-25)**: the project databases are reachable again on localhost without
+resetting Docker data. Migration `20260920120000_add_learning_catalog_moderation_audit` deployed
+successfully and the Learning Catalog real-DB invariant suite passed 12/12 against PostgreSQL and
+an isolated Mongo database. BUILD-006 no longer blocks the catalog slice; this note is appended so
+the original incident record remains unchanged.

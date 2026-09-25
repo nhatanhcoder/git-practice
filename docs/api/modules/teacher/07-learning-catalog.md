@@ -1,9 +1,9 @@
 ---
 module: Learning Catalog — Teacher authoring
-status: implemented — runtime complete 2026-09-20; real-DB verification pending BUILD-006
+status: implemented — real-DB verified 2026-09-25
 blocked_by: -
 owner: -
-last_updated: 2026-09-19
+last_updated: 2026-09-25
 ---
 
 ## 0. Summary
