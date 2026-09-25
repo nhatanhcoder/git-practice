@@ -417,8 +417,10 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
       the shared Teacher/Admin/Student catalog invariant suite passes **12/12** against real
       PostgreSQL + isolated MongoDB; API build + type-check, workspace lint, web build and
       check-docs pass. The test was corrected to use the project's flat error envelope and
-      explicit `.js` imports under current Node. Full local regression reached an unrelated,
-      pre-existing pay-rate assertion (22/23 in that file); CI's clean DB run is the merge gate.
+      explicit `.js` imports under current Node. CI now runs Mongo as a single-node replica set
+      (required by atomic catalog reorder) and its isolated API suite passes **378/378**; web-quality
+      and check-docs also pass. The local pay-rate assertion was caused by reused `hsk_dev` state,
+      not a clean-DB regression.
 - **DoD**: a learner can go pronunciation → grammar → character → Lego → mock exam, with
       XP/streak/badges updating correctly
 
