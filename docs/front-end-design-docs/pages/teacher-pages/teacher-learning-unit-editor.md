@@ -2,7 +2,7 @@
 feature: T-LCAT-2, T-LCAT-5
 role: teacher
 route: /teacher/learning-paths/[pathId]/units/[unitId]
-status: contracted
+status: built
 last_updated: 2026-09-19
 ---
 
@@ -67,4 +67,4 @@ Blocked on: none — all defined in [API_TEACHER.md](../../../api/API_TEACHER.md
 - No editing a `reference` lesson's words: the words belong to the referenced unit.
 - No submitting the parent path from here.
 
-Spec: [../../specs/teacher-pages/teacher-learning-unit-editor.spec.md](../../specs/teacher-pages/teacher-learning-unit-editor.spec.md) — written 2026-09-19, `ready-for-design`. Contract stays `contracted`: no mockup yet.
+Spec: [../../specs/teacher-pages/teacher-learning-unit-editor.spec.md](../../specs/teacher-pages/teacher-learning-unit-editor.spec.md) — written 2026-09-19, `ready-for-design`. Built 2026-09-25 on `feat/teacher-learning-catalog` against this contract; no mockup was produced.

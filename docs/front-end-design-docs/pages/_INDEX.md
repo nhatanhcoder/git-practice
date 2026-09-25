@@ -60,9 +60,9 @@ and Income. **Analytics (T-ANL-1…4) is the only FEATURES_TEACHER area still un
 | `/teacher/grading` | T-GRADE-1..5 | [teacher-grading](./teacher-pages/teacher-grading.md) | built | v1 | error codes TODO |
 | `/teacher/sessions` | T-SES-1..7 | [teacher-sessions](./teacher-pages/teacher-sessions.md) | built | v1 | error codes TODO |
 | `/teacher/income` | T-INC-1,2,3 | [teacher-income](./teacher-pages/teacher-income.md) | built | v1 | none — both endpoints defined |
-| `/teacher/learning-paths` | T-LCAT-1,4,7,8 | [teacher-learning-paths](./teacher-pages/teacher-learning-paths.md) | contracted | — | `LEARNING_PATH_*` codes *proposed, not agreed*; backend not built (Slice 1) |
-| `/teacher/learning-paths/[pathId]` | T-LCAT-2,3,4,5,6,8 | [teacher-learning-path-detail](./teacher-pages/teacher-learning-path-detail.md) | contracted | — | same — endpoints defined, code not written |
-| `/teacher/learning-paths/[pathId]/units/[unitId]` | T-LCAT-2,5 | [teacher-learning-unit-editor](./teacher-pages/teacher-learning-unit-editor.md) | contracted | — | same — endpoints defined, code not written |
+| `/teacher/learning-paths` | T-LCAT-1,4,7,8 | [teacher-learning-paths](./teacher-pages/teacher-learning-paths.md) | built | v1 | `LEARNING_PATH_*` agreed 2026-09-19; FE live on contract, backend runtime (Slice 1B) unmerged |
+| `/teacher/learning-paths/[pathId]` | T-LCAT-2,3,4,5,6,8 | [teacher-learning-path-detail](./teacher-pages/teacher-learning-path-detail.md) | built | v1 | same — endpoints defined, FE coded, backend runtime unmerged |
+| `/teacher/learning-paths/[pathId]/units/[unitId]` | T-LCAT-2,5 | [teacher-learning-unit-editor](./teacher-pages/teacher-learning-unit-editor.md) | built | v1 | same — endpoints defined, FE coded, backend runtime unmerged |
 
 Analytics (T-ANL-1…4): _not yet mapped._ Every other Teacher area has a contract above.
 

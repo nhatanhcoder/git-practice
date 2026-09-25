@@ -207,6 +207,25 @@ export async function resolveOne(
             : `/student/attempts/${attemptId}/result`,
       };
     }
+    case "teacherLearningPath":
+    case "teacherLearningUnit": {
+      // Catalog list shape is `data.items[]` (contract), not a flat array.
+      const token = await tokenFor(request, apiBase, "teacher");
+      const list = await api(request, apiBase, "GET", "/teacher/learning-paths", token);
+      if (list.status !== 200) throw new Error(`sweep list /teacher/learning-paths failed: HTTP ${list.status}`);
+      const items = Array.isArray(list.body?.data?.items) ? list.body.data.items : [];
+      const pathId = items[0]?.id as string | undefined;
+      if (!pathId) return fail("seeded teacher owns no learning path (Slice 1B runtime)");
+      if (screen.resolve === "teacherLearningPath") {
+        return { path: `/teacher/learning-paths/${pathId}` };
+      }
+      const detail = await api(request, apiBase, "GET", `/teacher/learning-paths/${pathId}`, token);
+      if (detail.status !== 200) throw new Error(`sweep path detail failed: HTTP ${detail.status}`);
+      const units = Array.isArray(detail.body?.data?.units) ? detail.body.data.units : [];
+      const unitId = units[0]?.id as string | undefined;
+      if (!unitId) return fail("learning path has no units (Slice 1B runtime)");
+      return { path: `/teacher/learning-paths/${pathId}/units/${unitId}` };
+    }
     default:
       return fail(`unknown resolver "${screen.resolve}"`);
   }

@@ -14,6 +14,7 @@ import {
   GraduationCap,
   LayoutDashboard,
   Menu,
+  Route,
   Wallet,
   X,
 } from "lucide-react";
@@ -32,6 +33,7 @@ const nav = [
   { href: "/teacher/assignments", label: "Bài tập & Đề", icon: ClipboardList },
   { href: "/teacher/grading", label: "Chấm bài", icon: FileCheck },
   { href: "/teacher/sessions", label: "Buổi học & Điểm danh", icon: CalendarDays },
+  { href: "/teacher/learning-paths", label: "Lộ trình học", icon: Route },
   { href: "/teacher/income", label: "Thu nhập", icon: Wallet },
 ];
 
