@@ -8,12 +8,12 @@ import { NestFactory } from '@nestjs/core';
 import { getConnectionToken } from '@nestjs/mongoose';
 import bcrypt from 'bcryptjs';
 import type { Connection } from 'mongoose';
-import { AppModule } from '../dist/src/app.module';
-import { AppException } from '../dist/src/common/errors/app.exception';
-import { ErrorCode } from '../dist/src/common/errors/error-codes';
-import { GlobalExceptionFilter } from '../dist/src/common/filters/global-exception.filter';
-import { EnvelopeInterceptor } from '../dist/src/common/interceptors/envelope.interceptor';
-import { PrismaService } from '../dist/src/prisma/prisma.service';
+import { AppModule } from '../dist/src/app.module.js';
+import { AppException } from '../dist/src/common/errors/app.exception.js';
+import { ErrorCode } from '../dist/src/common/errors/error-codes.js';
+import { GlobalExceptionFilter } from '../dist/src/common/filters/global-exception.filter.js';
+import { EnvelopeInterceptor } from '../dist/src/common/interceptors/envelope.interceptor.js';
+import { PrismaService } from '../dist/src/prisma/prisma.service.js';
 
 const fixture = randomUUID().slice(0, 8);
 const mongoName = `hsk_catalog_test_${fixture}`;
@@ -173,15 +173,15 @@ describe('Teacher-authored Learning Catalog invariants', () => {
   it('INV-LCAT-04/03/05 and notification producer: submit is guarded, atomic and freezes teacher writes', async () => {
     const empty = await request('POST', `/teacher/learning-paths/${pathA.id}/submit`, teacherA.token, {});
     assert.equal(empty.status, 409);
-    assert.equal(empty.body.error.code, 'LEARNING_PATH_EMPTY');
+    assert.equal(empty.body.code, 'LEARNING_PATH_EMPTY');
     const created = await request('POST', `/teacher/learning-paths/${pathA.id}/units`, teacherA.token, authored('Chào hỏi'));
     assert.equal(created.status, 201, JSON.stringify(created.body));
     unitA = created.data;
     const submitted = await request('POST', `/teacher/learning-paths/${pathA.id}/submit`, teacherA.token, {});
     assert.equal(submitted.status, 200);
     assert.equal(submitted.data.status, 'pending_review');
-    assert.equal((await request('PATCH', `/teacher/learning-paths/${pathA.id}`, teacherA.token, { title: 'Đang review' })).body.error.code, 'LEARNING_PATH_FROZEN');
-    assert.equal((await request('POST', `/teacher/learning-paths/${pathA.id}/units`, teacherA.token, authored('Không được tạo'))).body.error.code, 'LEARNING_PATH_FROZEN');
+    assert.equal((await request('PATCH', `/teacher/learning-paths/${pathA.id}`, teacherA.token, { title: 'Đang review' })).body.code, 'LEARNING_PATH_FROZEN');
+    assert.equal((await request('POST', `/teacher/learning-paths/${pathA.id}/units`, teacherA.token, authored('Không được tạo'))).body.code, 'LEARNING_PATH_FROZEN');
     assert.equal(
       await prisma.notification.count({
         where: { type: 'learning_path_submitted', referenceId: pathA.id, userId: { in: [adminA.id, adminB.id] } },
@@ -214,7 +214,7 @@ describe('Teacher-authored Learning Catalog invariants', () => {
     const stored = await mongo.collection('learning_units').findOne({ slug: unitA.slug });
     assert.ok(stored?.firstPublishedAt);
     const originalWords = stored?.words;
-    assert.equal((await request('PATCH', `/teacher/learning-units/${unitA.id}`, teacherA.token, { title: 'Không được sửa' })).body.error.code, 'LEARNING_UNIT_PUBLISHED_IMMUTABLE');
+    assert.equal((await request('PATCH', `/teacher/learning-units/${unitA.id}`, teacherA.token, { title: 'Không được sửa' })).body.code, 'LEARNING_UNIT_PUBLISHED_IMMUTABLE');
     assert.equal((await request('DELETE', `/teacher/learning-units/${unitA.id}`, teacherA.token)).status, 409);
     await mongo.collection('user_learning_progress').insertOne({
       userId: student.id,
@@ -242,7 +242,7 @@ describe('Teacher-authored Learning Catalog invariants', () => {
       { id: second.data.id, order: 1 },
     ]);
     assert.equal(invalid.status, 400);
-    assert.equal(invalid.body.error.code, 'LEARNING_UNIT_ORDER_INVALID');
+    assert.equal(invalid.body.code, 'LEARNING_UNIT_ORDER_INVALID');
     const valid = await request('PATCH', `/teacher/learning-paths/${pathA.id}/units/reorder`, teacherA.token, [
       { id: unitA.id, order: 2 },
       { id: second.data.id, order: 1 },
@@ -287,7 +287,7 @@ describe('Teacher-authored Learning Catalog invariants', () => {
       referenceSlug: unitB.slug,
     });
     assert.equal(blocked.status, 409);
-    assert.equal(blocked.body.error.code, 'LEARNING_UNIT_REFERENCE_INVALID');
+    assert.equal(blocked.body.code, 'LEARNING_UNIT_REFERENCE_INVALID');
   });
 
   it('INV-LMOD-03/12: reject reason is exact, visible to owner and only owner can resubmit', async () => {
@@ -296,7 +296,7 @@ describe('Teacher-authored Learning Catalog invariants', () => {
     await request('POST', `/teacher/learning-paths/${created.data.id}/submit`, teacherA.token, {});
     const invalid = await request('PATCH', `/admin/learning-paths/${created.data.id}/reject`, adminA.token, { rejectionReason: '   ' });
     assert.equal(invalid.status, 400);
-    assert.equal(invalid.body.error.code, 'LEARNING_PATH_REJECTION_REASON_REQUIRED');
+    assert.equal(invalid.body.code, 'LEARNING_PATH_REJECTION_REASON_REQUIRED');
     const rejected = await request('PATCH', `/admin/learning-paths/${created.data.id}/reject`, adminA.token, { rejectionReason: 'Nội dung cần rõ hơn' });
     assert.equal(rejected.status, 200);
     const owner = await request('GET', `/teacher/learning-paths/${created.data.id}`, teacherA.token);
@@ -314,7 +314,7 @@ describe('Teacher-authored Learning Catalog invariants', () => {
     await mongo.collection('user_learning_progress').insertOne({ userId: student.id, unitSlug: progressUnit.slug, status: 'in_progress' });
     const blocked = await request('DELETE', `/teacher/learning-paths/${progressPath.id}`, teacherA.token);
     assert.equal(blocked.status, 409);
-    assert.equal(blocked.body.error.code, 'LEARNING_PATH_HAS_PUBLISHED_UNITS');
+    assert.equal(blocked.body.code, 'LEARNING_PATH_HAS_PUBLISHED_UNITS');
     const clean = (await request('POST', '/teacher/learning-paths', teacherA.token, { title: 'Draft xoá được' })).data;
     assert.equal((await request('DELETE', `/teacher/learning-paths/${clean.id}`, teacherA.token)).status, 200);
   });
