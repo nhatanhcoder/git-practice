@@ -1,7 +1,7 @@
 ---
 status: active
 owner: Nhật
-last_updated: 2026-09-18
+last_updated: 2026-09-25
 ---
 
 # Page Contracts — Index
@@ -40,8 +40,8 @@ last_updated: 2026-09-18
 | `/admin/pay-rates` | A-PAY-1 | [admin-pay-rates](./admin-pages/admin-pay-rates.md) | built | v2 | no list endpoint; unit basis undecided |
 | `/admin/monitoring` | A-DASH-3 | [admin-monitoring](./admin-pages/admin-monitoring.md) | built | v2 | **all of it** — see contract |
 | `/admin/profile` | A-AUTH-4,5,6 | [admin-profile](./admin-pages/admin-profile.md) | built | v1 | — (endpoints defined in [API_AUTH.md](../../api/API_AUTH.md)) |
-| `/admin/learning-paths` | A-LCAT-1,2,3,5 | [admin-learning-paths](./admin-pages/admin-learning-paths.md) | contracted | — | `LEARNING_PATH_*` codes *proposed, not agreed*; backend not built (Slice 1) |
-| `/admin/learning-paths/[pathId]` | A-LCAT-2,3,4 | [admin-learning-path-detail](./admin-pages/admin-learning-path-detail.md) | contracted | — | same — endpoints defined, code not written |
+| `/admin/learning-paths` | A-LCAT-1,2,3,5 | [admin-learning-paths](./admin-pages/admin-learning-paths.md) | contracted | — | backend implemented + real-DB verified 2026-09-25; frontend not built |
+| `/admin/learning-paths/[pathId]` | A-LCAT-2,3,4 | [admin-learning-path-detail](./admin-pages/admin-learning-path-detail.md) | contracted | — | backend implemented + real-DB verified; frontend not built |
 
 ## Teacher
 
@@ -60,9 +60,9 @@ and Income. **Analytics (T-ANL-1…4) is the only FEATURES_TEACHER area still un
 | `/teacher/grading` | T-GRADE-1..5 | [teacher-grading](./teacher-pages/teacher-grading.md) | built | v1 | error codes TODO |
 | `/teacher/sessions` | T-SES-1..7 | [teacher-sessions](./teacher-pages/teacher-sessions.md) | built | v1 | error codes TODO |
 | `/teacher/income` | T-INC-1,2,3 | [teacher-income](./teacher-pages/teacher-income.md) | built | v1 | none — both endpoints defined |
-| `/teacher/learning-paths` | T-LCAT-1,4,7,8 | [teacher-learning-paths](./teacher-pages/teacher-learning-paths.md) | contracted | — | `LEARNING_PATH_*` codes *proposed, not agreed*; backend not built (Slice 1) |
-| `/teacher/learning-paths/[pathId]` | T-LCAT-2,3,4,5,6,8 | [teacher-learning-path-detail](./teacher-pages/teacher-learning-path-detail.md) | contracted | — | same — endpoints defined, code not written |
-| `/teacher/learning-paths/[pathId]/units/[unitId]` | T-LCAT-2,5 | [teacher-learning-unit-editor](./teacher-pages/teacher-learning-unit-editor.md) | contracted | — | same — endpoints defined, code not written |
+| `/teacher/learning-paths` | T-LCAT-1,4,7,8 | [teacher-learning-paths](./teacher-pages/teacher-learning-paths.md) | contracted | — | backend implemented + real-DB verified 2026-09-25; frontend not built |
+| `/teacher/learning-paths/[pathId]` | T-LCAT-2,3,4,5,6,8 | [teacher-learning-path-detail](./teacher-pages/teacher-learning-path-detail.md) | contracted | — | backend implemented + real-DB verified; frontend not built |
+| `/teacher/learning-paths/[pathId]/units/[unitId]` | T-LCAT-2,5 | [teacher-learning-unit-editor](./teacher-pages/teacher-learning-unit-editor.md) | contracted | — | backend implemented + real-DB verified; frontend not built |
 
 Analytics (T-ANL-1…4): _not yet mapped._ Every other Teacher area has a contract above.
 
