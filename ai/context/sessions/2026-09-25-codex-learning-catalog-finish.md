@@ -16,14 +16,16 @@ last_updated: 2026-09-25
 - Ran the shared Teacher/Admin/Student Learning Catalog invariant suite against real PostgreSQL
   and an isolated Mongo database: 12/12 passed, zero cancelled.
 - API build, API type-check, workspace lint, web production build and check-docs passed.
+- PR #99 CI passed: API **378/378** on isolated PostgreSQL plus a single-node Mongo replica set;
+  `web-quality` and `check-docs` passed as well.
 
 ## Verification boundary
 
 - The 12 catalog cases cover INV-LCAT-01..14, INV-LMOD-01..12, role denial, ownership,
   concurrency, notifications, immutability, reference behavior and Student visibility.
 - A sequential local full-suite attempt stopped in the unrelated payroll/billing test file at
-  `GET /admin/pay-rates`: 22/23 cases in that file passed. Money code was not changed because it is
-  outside the approved scope. The clean CI database run remains the full-regression merge gate.
+  `GET /admin/pay-rates`: 22/23 cases in that file passed because local `hsk_dev` retained prior
+  state. Money code was not changed. The isolated CI run subsequently passed all 378 API cases.
 - On Windows, the package wildcard and multi-file `tsx` invocation only ran the first test file;
   those partial runs are not reported as full-suite passes.
 
@@ -33,6 +35,9 @@ last_updated: 2026-09-25
 - Teacher ownership is enforced in the service layer; Admin alone performs moderation.
 - Published unit content remains immutable, and suspend/unpublish never deletes learner progress.
 - Error responses remain the project-wide flat envelope (`body.code`), not nested errors.
+- Mongo CI now mirrors the transaction capability required by production: `rs0` is the only
+  connection override accepted by the CI database safety guard; remote/developer targets and
+  additional query parameters remain rejected.
 
 ## Remaining work
 
