@@ -120,6 +120,7 @@ export function Overlay({
   backdropClassName,
   panelClassName,
   closeOnBackdrop = true,
+  closeDisabled = false,
   children,
 }: {
   label: string;
@@ -127,19 +128,26 @@ export function Overlay({
   backdropClassName: string;
   panelClassName: string;
   closeOnBackdrop?: boolean;
+  closeDisabled?: boolean;
   children: ReactNode;
 }) {
-  const panelRef = useOverlay<HTMLDivElement>(onClose);
-  const onBackdrop = useBackdropClose(onClose);
+  const guardedClose = () => { if (!closeDisabled) onClose(); };
+  const panelRef = useOverlay<HTMLDivElement>(guardedClose);
+  const onBackdrop = useBackdropClose(guardedClose);
   return (
     <div
       className={backdropClassName}
       role="dialog"
       aria-modal="true"
       aria-label={label}
-      onMouseDown={closeOnBackdrop ? onBackdrop : undefined}
+      onMouseDown={closeOnBackdrop && !closeDisabled ? onBackdrop : undefined}
     >
-      <div ref={panelRef} className={panelClassName}>
+      <div ref={panelRef} className={panelClassName} onKeyDownCapture={(event) => {
+        if (closeDisabled && event.key === "Escape") {
+          event.preventDefault();
+          event.stopPropagation();
+        }
+      }}>
         {children}
       </div>
     </div>
@@ -151,22 +159,30 @@ function ModalFrame({
   onClose,
   children,
   wide,
+  closeDisabled = false,
 }: {
   title: string;
   onClose: () => void;
   children: ReactNode;
   wide?: boolean;
+  closeDisabled?: boolean;
 }) {
   // C3: Escape + focus trap + focus restore now come from the shared hook, replacing the
   // Escape-only listener this component used to declare inline.
-  const panelRef = useOverlay<HTMLDivElement>(onClose);
-  const onBackdrop = useBackdropClose(onClose);
+  const guardedClose = () => { if (!closeDisabled) onClose(); };
+  const panelRef = useOverlay<HTMLDivElement>(guardedClose);
+  const onBackdrop = useBackdropClose(guardedClose);
   return (
-    <div className={styles.modalBackdrop} role="dialog" aria-modal="true" aria-label={title} onMouseDown={onBackdrop}>
-      <div ref={panelRef} className={styles.modal + (wide ? " " + styles.modalWide : "")}>
+    <div className={styles.modalBackdrop} role="dialog" aria-modal="true" aria-label={title} onMouseDown={!closeDisabled ? onBackdrop : undefined}>
+      <div ref={panelRef} className={styles.modal + (wide ? " " + styles.modalWide : "")} onKeyDownCapture={(event) => {
+        if (closeDisabled && event.key === "Escape") {
+          event.preventDefault();
+          event.stopPropagation();
+        }
+      }}>
         <div className={styles.modalHead}>
           <h2>{title}</h2>
-          <button className={styles.modalClose} onClick={onClose} aria-label="Đóng">
+          <button className={styles.modalClose} onClick={guardedClose} aria-label="Đóng" disabled={closeDisabled}>
             <X size={18} />
           </button>
         </div>
@@ -302,6 +318,7 @@ export function ConfirmModal({
   description,
   confirmLabel,
   danger,
+  pending = false,
   onClose,
   onConfirm,
   children,
@@ -310,20 +327,21 @@ export function ConfirmModal({
   description: string;
   confirmLabel: string;
   danger?: boolean;
+  pending?: boolean;
   onClose: () => void;
   onConfirm: () => void;
   children?: ReactNode;
 }) {
   return (
-    <ModalFrame title={title} onClose={onClose}>
+    <ModalFrame title={title} onClose={onClose} closeDisabled={pending}>
       <p className={styles.confirmText}>{description}</p>
       {children}
       <div className={styles.modalActions}>
-        <button type="button" className={styles.cancelButton} onClick={onClose}>
+        <button type="button" className={styles.cancelButton} onClick={onClose} disabled={pending}>
           Hủy
         </button>
-        <button type="button" className={danger ? styles.dangerButton : styles.primaryButton} onClick={onConfirm}>
-          {confirmLabel}
+        <button type="button" className={danger ? styles.dangerButton : styles.primaryButton} onClick={onConfirm} disabled={pending}>
+          {pending ? "Đang xử lý..." : confirmLabel}
         </button>
       </div>
     </ModalFrame>

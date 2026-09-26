@@ -11,6 +11,15 @@
 .ghostButton:hover{border-color:var(--accent);color:var(--accent)}
 .ghostDanger{display:inline-flex;height:32px;align-items:center;padding:0 12px;border:1px solid var(--red-200);border-radius:6px;background:var(--surface);color:var(--danger);font-size:12px;font-weight:600;cursor:pointer}
 .ghostDanger:hover{background:var(--red-50)}
+.periodCard{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:16px;padding:16px;border:1px solid var(--border);border-radius:8px;background:var(--surface);box-shadow:0 1px 2px color-mix(in srgb, var(--primary) 5%, transparent)}
+.periodHeading{display:flex;align-items:center;gap:12px;color:var(--accent)}
+.periodHeading div{display:flex;flex-direction:column;gap:2px}
+.periodHeading span{color:var(--muted);font-size:12px}
+.periodHeading strong{color:var(--text);font-family:Lexend,sans-serif;font-size:15px;font-weight:600;font-variant-numeric:tabular-nums}
+.periodActions{display:flex;align-items:center;gap:8px}
+.periodActions button{display:inline-flex;min-height:38px;align-items:center;justify-content:center;gap:5px;padding:0 12px;border:1px solid var(--slate-300);border-radius:6px;background:var(--surface);color:var(--text);font-size:13px;font-weight:600;cursor:pointer}
+.periodActions button:hover:not(:disabled){border-color:var(--accent);color:var(--accent)}
+.periodActions button:disabled{cursor:not-allowed;opacity:.5}
 .filterCard{display:grid;grid-template-columns:minmax(200px,1fr) minmax(150px,.7fr) auto;align-items:end;gap:14px;margin-bottom:16px;padding:16px;border:1px solid var(--border);border-radius:8px;background:var(--surface);box-shadow:0 1px 2px color-mix(in srgb, var(--primary) 5%, transparent)}
 .selectField{display:flex;min-width:0;flex-direction:column;gap:6px}
 .fieldLabel{color:var(--muted);font-size:12px;font-weight:600}
@@ -22,7 +31,14 @@
 .errorBanner div{display:flex;flex:1;flex-direction:column}
 .errorBanner span{color:var(--red-900);font-size:13px}
 .errorBanner button{padding:7px 13px;border:1px solid var(--red-200);border-radius:6px;background:var(--surface);color:var(--red-700);font-weight:600;cursor:pointer}
+.noticeBanner{display:flex;align-items:center;gap:10px;margin-bottom:16px;padding:11px 14px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--muted);font-size:13px}
+.noticeBanner span{flex:1}
+.noticeBanner button{padding:7px 11px;border:1px solid var(--slate-300);border-radius:6px;background:var(--surface);color:var(--accent);font-weight:600;cursor:pointer}
 .listCard{border:1px solid var(--border);border-radius:8px;background:var(--surface);box-shadow:0 1px 2px color-mix(in srgb, var(--primary) 5%, transparent)}
+.agendaDay+.agendaDay{border-top:1px solid var(--border)}
+.dayHeader{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 16px;background:var(--background)}
+.dayHeader h2{margin:0;color:var(--text);font-family:Lexend,sans-serif;font-size:13px;font-weight:600;text-transform:capitalize}
+.dayHeader span{color:var(--muted);font-size:12px}
 .sessionList{margin:0;padding:0;list-style:none}
 .sessionRow{padding:16px;border-bottom:1px solid var(--border)}
 .sessionRow:last-child{border-bottom:0}
@@ -32,8 +48,10 @@
 .rowDate{color:var(--text);font-family:Lexend,sans-serif;font-size:14px;font-weight:600;font-variant-numeric:tabular-nums}
 .rowTime{display:inline-flex;align-items:center;gap:5px;color:var(--neutral);font-size:12.5px;font-variant-numeric:tabular-nums}
 .rowTime small{color:var(--info)}
-.rowClass{margin:6px 0 2px;color:var(--muted);font-size:12.5px}
-.rowTopic{margin:0;color:var(--text);font-size:13px;font-weight:600}
+.rowClass{color:var(--muted);font-size:12.5px}
+.rowTopic{margin:8px 0 0;color:var(--text);font-size:13px;font-weight:600}
+.actualTime{margin:5px 0 0;color:var(--muted);font-size:12px;font-variant-numeric:tabular-nums}
+.rejectionReason{margin:7px 0 0;color:var(--danger);font-size:12px}
 .rowBottom{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:10px;flex-wrap:wrap}
 .attSummary{display:inline-flex;align-items:center;gap:6px;color:var(--neutral);font-size:12px}
 .rowActions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
@@ -43,6 +61,7 @@
 .emptyIcon{color:var(--slate-400)!important;opacity:.45!important}
 .emptyState h2{margin:16px 0 6px;font-family:Lexend,sans-serif;font-size:18px}
 .emptyState p{margin:0;color:var(--neutral)}
+.emptyState button{margin-top:18px}
 .modalBackdrop{position:fixed;inset:0;z-index:80;display:grid;place-items:center;padding:16px;background:color-mix(in srgb, var(--primary) 40%, transparent)}
 .modal{width:min(480px,100%);max-height:calc(100vh - 32px);overflow-y:auto;padding:24px;border-radius:8px;background:var(--surface);box-shadow:0 20px 25px -5px color-mix(in srgb, var(--primary) 15%, transparent)}
 .modal h2{margin:0 0 8px;font-family:Lexend,sans-serif;font-size:17px;font-weight:600}
@@ -50,11 +69,14 @@
 .modalClose{display:grid;width:32px;height:32px;place-items:center;border:0;border-radius:6px;background:transparent;color:var(--muted);cursor:pointer}
 .modalClose:hover{background:var(--slate-100)}
 .modalSub{margin:0 0 16px;color:var(--neutral);font-size:12.5px}
-.formGrid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:0 14px}
+.formGrid{display:grid;grid-template-columns:1fr 1fr;gap:0 14px}
 .field{display:flex;flex-direction:column;gap:6px;margin-bottom:14px;border:0;padding:0}
 .field>span{color:var(--muted);font-size:12px;font-weight:600}
-.field input,.field select{height:38px;padding:9px 11px;border:1px solid var(--slate-300);border-radius:6px;background:var(--surface);color:var(--text);font:inherit;font-size:13.5px}
-.field input:focus,.field select:focus{border-color:var(--accent);box-shadow:0 0 0 2px color-mix(in srgb, var(--accent) 14%, transparent);outline:0}
+.field input,.field select,.field textarea{min-height:38px;padding:9px 11px;border:1px solid var(--slate-300);border-radius:6px;background:var(--surface);color:var(--text);font:inherit;font-size:13.5px}
+.field textarea{resize:vertical}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--accent);box-shadow:0 0 0 2px color-mix(in srgb, var(--accent) 14%, transparent);outline:0}
+.field [aria-invalid="true"]{border-color:var(--danger)}
+.inlineError{color:var(--danger);font-size:12px;line-height:1.4}
 .attendanceList{max-height:320px;overflow-y:auto}
 .attRow{display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)}
 .attRow:last-child{border-bottom:0}
@@ -78,14 +100,20 @@
 .modalActions{display:flex;justify-content:flex-end;gap:10px;margin-top:16px}
 .modalActions button{height:38px;padding:0 16px;border-radius:6px;font-weight:600;cursor:pointer}
 .cancelButton{border:0;background:var(--slate-100);color:var(--muted)}
+.titleRow button:focus-visible,.periodActions button:focus-visible,.filterCard button:focus-visible,.noticeBanner button:focus-visible,.errorBanner button:focus-visible,.emptyState button:focus-visible,.modalActions button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 @keyframes shimmer{to{background-position:-200% 0}}
 @media(max-width:767px){
 .titleRow{align-items:flex-start;flex-direction:column;gap:14px}
 .titleRow h1{font-size:24px}
+.periodCard{align-items:stretch;flex-direction:column}
+.periodActions{display:grid;grid-template-columns:1fr 1fr 1fr}
 .filterCard{grid-template-columns:1fr;padding:14px}
 .filterMeta{height:auto;justify-content:space-between}
 .formGrid{grid-template-columns:1fr}
 .attRow>strong{width:100%}
 .errorBanner{align-items:flex-start;flex-wrap:wrap}
 .errorBanner button{margin-left:31px}
+.noticeBanner{align-items:flex-start;flex-wrap:wrap}
+.noticeBanner button{margin-left:29px}
 }
+@media(prefers-reduced-motion:reduce){.skeletonRow span{animation:none}}

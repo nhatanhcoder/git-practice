@@ -230,4 +230,36 @@ describe('Teacher Sessions Endpoints (GET /teacher/sessions & Ownership)', () =>
     const res = await req('GET', '/teacher/sessions', undefined, studentToken);
     assert.equal(res.status, 403);
   });
+
+  it('7. Same-date sessions have stable page boundaries in both sort directions', async () => {
+    const ids = [createdSessionId];
+    for (const topic of ['Phân trang A', 'Phân trang B']) {
+      const created = await req('POST', '/teacher/sessions', {
+        classId: classAId,
+        scheduledDate: '2026-10-15',
+        scheduledStart: '10:00',
+        scheduledEnd: '11:00',
+        topic,
+      }, teacherTokenA);
+      assert.equal(created.status, 201);
+      ids.push(created.body.data.id);
+    }
+
+    for (const sort of ['scheduledDate_asc', 'scheduledDate_desc']) {
+      const actual: string[] = [];
+      for (let page = 1; page <= ids.length; page++) {
+        const listed = await req('GET',
+          `/teacher/sessions?classId=${classAId}&from=2026-10-15&to=2026-10-15&sort=${sort}&page=${page}&limit=1`,
+          undefined, teacherTokenA);
+        assert.equal(listed.status, 200);
+        assert.equal(listed.body.meta.total, ids.length);
+        assert.equal(listed.body.data.length, 1);
+        actual.push(listed.body.data[0].id);
+      }
+      const expected = [...ids].sort((a, b) => sort === 'scheduledDate_asc'
+        ? a.localeCompare(b)
+        : b.localeCompare(a));
+      assert.deepEqual(actual, expected);
+    }
+  });
 });
