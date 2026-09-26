@@ -122,6 +122,17 @@ last_updated: 2026-09-18
 | `LESSON_ASSIGNMENT_ALREADY_LINKED` | 409 | This assignment is already linked to this lesson |
 | `LESSON_ASSIGNMENT_NOT_LINKED` | 404 | No such link between this lesson and assignment |
 
+### Supplement Errors (SUPPLEMENT_*) — agreed 2026-09-26 with API-020 (`teacher/08-supplements.md`)
+
+> ✅ **Agreed 2026-09-26** (owner sign-off with the API-020 contract).
+
+| Code | HTTP | Description |
+|------|------|-------|
+| `SUPPLEMENT_ALREADY_ATTACHED` | 409 | This source is already attached to this lesson |
+| `SUPPLEMENT_NOT_ATTACHED` | 404 | No such supplement link on this lesson |
+| `SUPPLEMENT_ORDER_CONFLICT` | 409 | Reorder payload is not the complete dense `1..N` permutation of the lesson's supplements |
+| `SUPPLEMENT_SOURCE_NOT_FOUND` | 404 | Attach source is unknown or not published — fail closed, no content leak |
+
 ### Question Errors (QUESTION_*)
 
 | Code | HTTP | Description |
