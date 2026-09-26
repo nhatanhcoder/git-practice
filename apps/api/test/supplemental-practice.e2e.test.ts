@@ -3,8 +3,10 @@ import { after, before, describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { NestFactory } from '@nestjs/core';
+import { getConnectionToken } from '@nestjs/mongoose';
 import { ValidationPipe, type INestApplication, type ValidationError } from '@nestjs/common';
 import cookieParser from 'cookie-parser';
+import type { Connection } from 'mongoose';
 import { AppModule } from '../dist/src/app.module';
 import { GlobalExceptionFilter } from '../dist/src/common/filters/global-exception.filter';
 import { EnvelopeInterceptor } from '../dist/src/common/interceptors/envelope.interceptor';
@@ -26,6 +28,7 @@ const tag = randomUUID().slice(0, 8);
 let app: INestApplication;
 let base: string;
 let prisma: PrismaService;
+let mongo: Connection;
 
 let adminToken: string;
 let teacherAToken: string;
@@ -105,6 +108,7 @@ before(async () => {
   await app.listen(0);
   base = (await app.getUrl()).replace('[::1]', 'localhost');
   prisma = app.get(PrismaService);
+  mongo = app.get<Connection>(getConnectionToken());
 
   const adminLogin = await req('POST', '/auth/login', {
     email: 'admin@hsk.local',
@@ -163,11 +167,30 @@ before(async () => {
     assert.equal(join.status, 201, JSON.stringify(join.body));
   }
 
-  // Real published sources, read-only: shared catalog rows are never written here.
+  // Keep the suite self-contained: CI seeds auth/grammar but intentionally has no
+  // published learning catalog. A built-in fixture (no pathId) exercises the same
+  // visibility rules as production catalog content and is removed in after().
+  unitSlug = `supp-fixture-${tag}`;
+  await mongo.collection('learning_units').insertOne({
+    slug: unitSlug,
+    curriculum: `supp-test-${tag}`,
+    level: 3,
+    order: 1,
+    title: `HSK supplement fixture ${tag}`,
+    sourceHash: `supp-test-${tag}`,
+    words: [{ hanzi: '测试', pinyin: 'cè shì', meaning: 'kiểm thử' }],
+    published: true,
+    firstPublishedAt: new Date(),
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  });
+
   const units = await req('GET', '/teacher/learning-units', undefined, teacherAToken);
   assert.equal(units.status, 200, JSON.stringify(units.body));
-  assert.ok(units.body.data.length > 0, 'shared catalog has no published units');
-  unitSlug = units.body.data[0].slug as string;
+  assert.ok(
+    units.body.data.some((unit: { slug: string }) => unit.slug === unitSlug),
+    'published fixture is missing from the learning-unit picker',
+  );
 
   const grams = await req('GET', '/student/grammar?limit=50', undefined, studentAToken);
   assert.equal(grams.status, 200, JSON.stringify(grams.body));
@@ -221,6 +244,9 @@ after(async () => {
       assert.equal(leftover, 0, 'supplement rows leaked past user cascade cleanup');
     }
   } finally {
+    if (mongo && unitSlug) {
+      await mongo.collection('learning_units').deleteOne({ slug: unitSlug });
+    }
     await app?.close();
   }
 });
@@ -621,4 +647,3 @@ async function studentIdOf(): Promise<string> {
   });
   return row.id;
 }
-
