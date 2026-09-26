@@ -2356,6 +2356,27 @@ after fetching origin on 2026-09-24, maximum IDs across local and remote refs we
 `API-022/023` and `DOC-021` without reuse.
 ---
 
+### [BUILD-007] Isolated Playwright ports cannot call the live API under the current CORS origin
+
+**Severity**: Low
+**Sprint**: —
+**Status**: Open — found 2026-09-26 during P7 browser verification
+
+**Description**: the API running on `localhost:3001` returns
+`Access-Control-Allow-Origin: http://localhost:3000`. A production Playwright server on an
+isolated port (P7 used `3307` to avoid verifying another worktree's server) can render the app,
+but any unmocked API read is blocked by the browser before it reaches the service.
+
+**Impact**: parallel worktrees cannot both run live browser/API verification safely without
+sharing port 3000 or changing the API environment. P7's endpoint semantics remain covered by
+P5 real-DB tests; P7's committed browser tests mock the accepted network envelopes and verify
+the frontend behavior only.
+
+**Fix plan**: define an explicit development/test CORS allowlist or a per-run frontend origin;
+keep production origins closed. Do not weaken CORS to `*` with credentialed requests. ID scan
+across all local and remote refs on 2026-09-26 found `BUILD-006` as the previous maximum.
+---
+
 ### [BUILD-008] API-020 E2E depended on optional learning and grammar catalog seeds
 
 **Severity**: High (blocked PR #103–#105 CI)

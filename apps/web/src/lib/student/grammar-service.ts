@@ -70,11 +70,13 @@ export async function fetchGrammarList(params: {
   search?: string;
   page?: number;
   limit?: number;
+  assignedOnly?: boolean;
 }): Promise<GrammarList> {
   const qs = new URLSearchParams();
   if (params.hskLevel !== undefined) qs.set("hskLevel", String(params.hskLevel));
   if (params.category) qs.set("category", params.category);
   if (params.search) qs.set("search", params.search);
+  if (params.assignedOnly) qs.set("assignedOnly", "true");
   if (params.page !== undefined) qs.set("page", String(params.page));
   if (params.limit !== undefined) qs.set("limit", String(params.limit));
   const suffix = qs.size > 0 ? `?${qs.toString()}` : "";

@@ -146,6 +146,21 @@
   border-radius: var(--r-md);
 }
 
+.student-root a.lms-attach {
+  color: inherit;
+  text-decoration: none;
+}
+
+.student-root a.lms-attach:hover,
+.student-root a.lms-attach:focus-visible {
+  border-color: var(--accent);
+}
+
+.student-root .lms-attach--unavailable {
+  background: var(--surface-2);
+  color: var(--fg-muted);
+}
+
 /* ---------- assignment rows ---------- */
 
 .student-root .lms-assignment {

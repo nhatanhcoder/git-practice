@@ -4,7 +4,8 @@
  * /student/classes/[classId]/lessons/[lessonId] — one lesson's material.
  *
  * Contract: docs/front-end-design-docs/pages/student-pages/student-lesson-detail.md
- * Features: S-LESSON-2 (content), S-LESSON-3 (attached assignments).
+ * Features: S-LESSON-2 (content), S-LESSON-3 (attached assignments),
+ * S-LESSON-4 (teacher-selected supplemental practice).
  *
  * Data: GET /student/classes/:classId/lessons/:lessonId via
  * fetchEnrolledLessonDetail — the server verifies active enrollment and that
@@ -218,6 +219,51 @@ export default function LessonDetailPage() {
           <p className="section-sub" style={{ color: "var(--text-2)" }}>
             Bài tập gắn với bài học sẽ khả dụng khi API bài tập (S-LESSON-3) hoàn tất.
           </p>
+        </div>
+      </Panel>
+
+      <Panel className="panel--pad">
+        <div className="stack gap-3">
+          <h2 className="section-title">Nội dung bổ trợ</h2>
+          {(lesson.supplements ?? []).length === 0 ? (
+            <p className="section-sub" style={{ color: "var(--text-2)", margin: 0 }}>
+              Giáo viên chưa gắn nội dung bổ trợ nào cho bài học này.
+            </p>
+          ) : (
+            <ul style={{ listStyle: "none", margin: 0, padding: 0 }} className="stack gap-2">
+              {(lesson.supplements ?? [])
+                .slice()
+                .sort((a, b) => a.orderIndex - b.orderIndex)
+                .map((s) => (
+                  <li key={s.id}>
+                    {s.available ? (
+                      <Link
+                        className="lms-attach"
+                        href={
+                          s.sourceType === "learning_unit"
+                            ? `/student/learning-path/${encodeURIComponent(s.sourceKey)}`
+                            : `/student/grammar?point=${encodeURIComponent(s.sourceKey)}`
+                        }
+                      >
+                        <FileText size={18} aria-hidden="true" />
+                        <span className="grow">{s.title ?? "Nội dung bổ trợ"}</span>
+                        <Chip>{s.sourceType === "learning_unit" ? "Bài học" : "Ngữ pháp"}</Chip>
+                      </Link>
+                    ) : (
+                      <div
+                        className="lms-attach lms-attach--unavailable"
+                        aria-label="Nội dung bổ trợ không khả dụng"
+                        aria-disabled="true"
+                      >
+                        <FileText size={18} aria-hidden="true" />
+                        <span className="grow">Nội dung này hiện không khả dụng</span>
+                        <Chip>Không khả dụng</Chip>
+                      </div>
+                    )}
+                  </li>
+                ))}
+            </ul>
+          )}
         </div>
       </Panel>
     </div>

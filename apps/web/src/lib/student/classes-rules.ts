@@ -108,6 +108,15 @@ export function describeLeaveFailure(code: string): string {
   return LEAVE_FAILURE_MESSAGES[code] ?? "Không thể rời lớp lúc này. Thử lại sau ít phút.";
 }
 
+export interface LessonSupplement {
+  id: string;
+  sourceType: "learning_unit" | "grammar_point";
+  sourceKey: string;
+  orderIndex: number;
+  title: string | null;
+  available: boolean;
+}
+
 export interface EnrolledLesson {
   id: string;
   title: string;
@@ -116,6 +125,8 @@ export interface EnrolledLesson {
   contentUrl: string | null;
   orderIndex: number;
   createdAt: string;
+  /** Present on the dedicated lesson-detail response (API-020). */
+  supplements?: LessonSupplement[];
 }
 
 export interface EnrolledClassDetail {

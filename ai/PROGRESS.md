@@ -236,6 +236,18 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
   pre-seeded learning-unit and grammar catalogs: it now creates and cleans isolated Mongo fixtures;
   targeted real-DB API-020 remains 11/11. Session below. PR stacked, merges after #102.
 - ✅ (opencode · 2026-09-26) **P6 done — teacher lesson supplements UI.**
+- ✅ (codex · 2026-09-26) **P7 done — student supplement + assigned filter.**
+  Branch `feat/api020-student-supplements` (base P6 head), worktree `../Real-p7`, FE lane
+  on explicit owner directive. Added Page Contracts + v1 specs, student lesson supplements
+  in server order (unit/grammar deep-links, kind chips, honest unavailable/empty states,
+  no progress/grade/XP UI), and the Grammar “Giáo viên giao” toggle backed by server-side
+  `assignedOnly=true`. Filter and point selection restore through the URL; point reads are
+  race-guarded and browser Back closes the drawer without losing filters. Accepted endpoints
+  only; no client-side sensitive filtering. Verified: type-check + lint + web production build
+  43/43 + check-docs 9/9; committed Playwright P7 suite 8/8 across desktop + 375px (ordered
+  links/unavailable/empty, assigned query + empty state, combined filter, point deep-link,
+  close and browser Back). Screenshots read; no horizontal overflow. The P7 browser suite
+  mocks its network boundary; P5 owns the real-DB endpoint proof. Merge after P4→P5→P6.
   Branch `feat/api020-teacher-supplements` (base P5 head + merge of #98 head for the
   lessons UI), worktree `../Real-p6`, FE lane on explicit owner directive. Extends the
   live lessons page, preserving #98 pending-dialog + rollback fixes (same
