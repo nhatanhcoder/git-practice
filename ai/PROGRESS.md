@@ -222,6 +222,11 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
   empty-DB full-chain deploy (scratch DB asserted + dropped), constraint e2e 6/6 real-DB
   (P2002 ×2, P2003, enum rejection, cascade spares progress), type-check + build + lint +
   check-docs green. Session above. Unblocks P5 on merge.
+- 🔶 (opencode · 2026-09-26) **P5 — supplemental attachment API (API-020).**
+  Branch `feat/api020-supplemental-api` stacked on P4 head (merge order: #102 first),
+  worktree `../Real-p5`, backend lane on explicit owner directive. Scope strictly the
+  accepted contract: teacher attach/remove/reorder + picker reads, student lesson-detail
+  embed + grammar assignedOnly, SUPPLEMENT_* wiring, §15 e2e. No official scores/XP/SRS.
 
 ## Sprint 3 — Question Bank & Assignments
 - ⬜ F3.1 Create MCQ question · ⬜ F3.2 Listening · ⬜ F3.3 Reading · ⬜ F3.4 Writing
