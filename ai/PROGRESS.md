@@ -214,16 +214,14 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
   ENTITY_LESSON_ASSIGNMENT / ENTITY_CLASS_ENROLLMENT, G-read + unit-read shapes,
   INV-TCL-06/08/10 precedents). P4 stays gated on owner acceptance of this contract.
 - **DoD**: Teacher creates class → student joins via code → teacher sees the student in the list
-- 🔶 (opencode · 2026-09-26) **P4 — SupplementalPractice migration (API-020 accepted, PR #101 merged).**
-  Owner acceptance recorded: contract verbatim + table/CASCADE/codes/reject-404 (2026-09-26).
-  Branch `feat/api020-supplemental-migration`, worktree `../Real-p4`. Lane note: `apps/api/**`
-  + Prisma schema is claude/codex lane — this migration slice runs on explicit owner directive
-  ("finish everything" chain P4→P7). Scope strictly the accepted §12: enum
-  `SupplementSourceType` + table `SupplementalPractice` (id, lessonId→Lesson CASCADE,
-  sourceType, sourceKey, orderIndex, createdAt; 2 UNIQUEs; index; no updatedAt, no spare
-  fields). Own PR, merges before P5 runtime. Checklist per slice: empty-DB deploy, with-data
-  deploy, unique/order constraints, no progress cascade, generate/build, real-DB constraint
-  tests, check-docs + record.
+- ✅ (opencode · 2026-09-26) **P4 done — SupplementalPractice migration (API-020 accepted).**
+  Owner acceptance: contract verbatim + table/CASCADE/codes/reject-404. Branch
+  `feat/api020-supplemental-migration`, worktree `../Real-p4` (backend lane on explicit
+  owner directive, P4→P7 chain). Migration `20260926090444_add_supplemental_practice` —
+  exactly the accepted §12, nothing else. Verified: with-data deploy (hsk_dev, 2 lessons),
+  empty-DB full-chain deploy (scratch DB asserted + dropped), constraint e2e 6/6 real-DB
+  (P2002 ×2, P2003, enum rejection, cascade spares progress), type-check + build + lint +
+  check-docs green. Session above. Unblocks P5 on merge.
 
 ## Sprint 3 — Question Bank & Assignments
 - ⬜ F3.1 Create MCQ question · ⬜ F3.2 Listening · ⬜ F3.3 Reading · ⬜ F3.4 Writing
