@@ -21,6 +21,9 @@ last_updated: 2026-09-26
   a 101st unit.
 - Added deterministic real-DB regression cases for the frozen transition race and the concurrent
   100-unit boundary. The focused catalog suite passes 14/14.
+- Aligned both successful Teacher DELETE routes with the canonical `204 No Content` convention and
+  made the E2E client handle empty response bodies. Removed legacy trailing whitespace from the
+  original runtime session record and added its missing status metadata.
 
 ## Verification completed before record
 

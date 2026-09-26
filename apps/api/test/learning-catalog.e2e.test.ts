@@ -57,8 +57,9 @@ async function request(method: string, path: string, token?: string, body?: unkn
     },
     ...(body === undefined ? {} : { body: JSON.stringify(body) }),
   });
-  const json = await response.json();
-  return { status: response.status, data: json.data, body: json };
+  const payload = await response.text();
+  const json = payload ? JSON.parse(payload) : null;
+  return { status: response.status, data: json?.data, body: json };
 }
 
 async function createActor(role: 'teacher' | 'admin' | 'student', tag: string): Promise<Actor> {
@@ -481,7 +482,11 @@ describe('Teacher-authored Learning Catalog invariants', () => {
         title: 'Draft xoá được',
       })
     ).data;
-    assert.equal((await request('DELETE', `/teacher/learning-paths/${clean.id}`, teacherA.token)).status, 200);
+    const cleanUnit = (
+      await request('POST', `/teacher/learning-paths/${clean.id}/units`, teacherA.token, authored('Draft unit xoá được'))
+    ).data;
+    assert.equal((await request('DELETE', `/teacher/learning-units/${cleanUnit.id}`, teacherA.token)).status, 204);
+    assert.equal((await request('DELETE', `/teacher/learning-paths/${clean.id}`, teacherA.token)).status, 204);
   });
 
   it('INV-LMOD-04/10/11 and student visibility: suspend hides, restore preserves published set and progress', async () => {

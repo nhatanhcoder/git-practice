@@ -42,6 +42,7 @@ export class TeacherLearningCatalogController {
   }
 
   @Delete('learning-paths/:pathId')
+  @HttpCode(204)
   removePath(@CurrentUser() user: AuthenticatedUser, @Param('pathId') pathId: string) {
     return this.service.removePath(user.id, pathId);
   }
@@ -79,6 +80,7 @@ export class TeacherLearningCatalogController {
   }
 
   @Delete('learning-units/:unitId')
+  @HttpCode(204)
   removeUnit(@CurrentUser() user: AuthenticatedUser, @Param('unitId') unitId: string) {
     return this.service.removeUnit(user.id, unitId);
   }

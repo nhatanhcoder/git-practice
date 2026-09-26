@@ -35,13 +35,13 @@ là CLI `apps/api/scripts/learning-path-import.ts`).
 | GET | `/api/v1/teacher/learning-paths` | teacher | List path của chính mình — `?status=&page=` | implemented |
 | GET | `/api/v1/teacher/learning-paths/:pathId` | teacher | Chi tiết path + danh sách unit của nó | implemented |
 | PATCH | `/api/v1/teacher/learning-paths/:pathId` | teacher | Sửa `title` / `description` | implemented |
-| DELETE | `/api/v1/teacher/learning-paths/:pathId` | teacher | Xoá path — chỉ khi chưa publish unit nào và chưa có tiến độ | implemented |
+| DELETE | `/api/v1/teacher/learning-paths/:pathId` | teacher | Xoá path — chỉ khi chưa publish unit nào và chưa có tiến độ; trả `204` | implemented |
 | POST | `/api/v1/teacher/learning-paths/:pathId/submit` | teacher | Gửi duyệt: `draft`/`rejected` → `pending_review` | implemented |
 | PATCH | `/api/v1/teacher/learning-paths/:pathId/units/reorder` | teacher | Đổi thứ tự unit — payload phải là permutation 1..N | implemented |
 | POST | `/api/v1/teacher/learning-paths/:pathId/units` | teacher | Tạo unit trong path (luôn ở `draft`) | implemented |
 | GET | `/api/v1/teacher/learning-units` | teacher | List unit đã publish để **tham chiếu** — `?level=&curriculum=&page=` | implemented |
 | PATCH | `/api/v1/teacher/learning-units/:unitId` | teacher | Sửa unit `draft`; unit đã từng publish là bất biến | implemented |
-| DELETE | `/api/v1/teacher/learning-units/:unitId` | teacher | Xoá unit `draft`; unit đã từng publish không được xoá | implemented |
+| DELETE | `/api/v1/teacher/learning-units/:unitId` | teacher | Xoá unit `draft`; unit đã từng publish không được xoá; thành công trả `204` | implemented |
 | POST | `/api/v1/teacher/learning-units/:unitId/publish` | teacher | `draft`/`unpublished` → `published` — path phải `approved` | implemented |
 | POST | `/api/v1/teacher/learning-units/:unitId/unpublish` | teacher | `published` → `unpublished`, giữ nguyên tiến độ học viên | implemented |
 
