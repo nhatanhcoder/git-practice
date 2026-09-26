@@ -79,7 +79,7 @@ Analytics (T-ANL-1…4): _not yet mapped._ Every other Teacher area has a contra
 | `/student/flashcards` | S-SRS-1..5 | [student-srs](./student-pages/student-srs.md) | built | v1 | vocabulary seed; streak timezone |
 | `/student/classes` | S-CLS-1,2 | [student-classes-list](./student-pages/student-classes-list.md) | built | v1 | — |
 | `/student/classes/[classId]` | S-CLS-3,4, S-LESSON-1 | [student-class-detail](./student-pages/student-class-detail.md) | built | v1 | — |
-| `/student/classes/[classId]/lessons/[lessonId]` | S-LESSON-2,3,4 | [student-lesson-detail](./student-pages/student-lesson-detail.md) | built | v1 | assignments (S-LESSON-3) + supplements (S-LESSON-4) render as unavailable |
+| `/student/classes/[classId]/lessons/[lessonId]` | S-LESSON-2,3,4 | [student-lesson-detail](./student-pages/student-lesson-detail.md) | built | v1 | lesson supplements live via API-020; assignments (S-LESSON-3) remain unavailable |
 | `/student/assignments` | S-ASGN-1 | [student-assignments-list](./student-pages/student-assignments-list.md) | built (live) | v1 | GET list live; ⛔ detail endpoint unimplemented; attempt status badges need PR #73 |
 | `/student/attempts/[attemptId]` | S-ASGN-2..6 | [student-attempt-take](./student-pages/student-attempt-take.md) | built (live) | v1 | **LIVE on attempt endpoints (Sprint 4)** — autosave debounce + server-enforced deadline; attempt status needs no mock |
 | `/student/attempts/[attemptId]/result` | S-ASGN-7,8 | [student-attempt-result](./student-pages/student-attempt-result.md) | built (live) | v1 | **LIVE on GET result (Sprint 4)** — partial (submitted) never presented as final; keys only at graded |
@@ -95,7 +95,7 @@ Analytics (T-ANL-1…4): _not yet mapped._ Every other Teacher area has a contra
 | `/student/lego` | S-SELF-5 | [student-lego](./student-pages/student-lego.md) | built (live) | v1 | — |
 | `/student/workplace` | S-SELF-6 | [student-workplace](./student-pages/student-workplace.md) | built (live) | v1 | model/rubric comparison only; no numeric/AI score |
 | `/student/foundation` | S-SELF-2,9 | [student-foundation](./student-pages/student-foundation.md) | built | v1 | live 2026-09-16 (catalog + studied-state); audio/PDF/record intentionally unavailable (D4) |
-| `/student/grammar` | S-SELF-3,9 | [student-grammar](./student-pages/student-grammar.md) | built | v1 | live 2026-09-16 (catalog/progress/save + reorder practice, option A); media absent (D4) |
+| `/student/grammar` | S-SELF-3,8,9 | [student-grammar](./student-pages/student-grammar.md) | built | v1 | live catalog/progress/practice + API-020 teacher-assigned filter; media absent (D4) |
 | `/student/invoices` | S-BILL-1 | [student-invoices](./student-pages/student-invoices.md) | built | v1 | — (endpoints defined in [API_STUDENT.md](../../api/API_STUDENT.md) § Billing; dedicated handler per SCOPE-BILL-01) |
 | `/student/invoices/[invoiceId]` | S-BILL-2 | [student-invoice-detail](./student-pages/student-invoice-detail.md) | built | v1 | — (embedded `payments[]`; `new_invoice` notification deep-link target) |
 | `/student/learning-path` | S-SELF-1,9 | [student-learning-path](./student-pages/student-learning-path.md) | built | v1 | live approved Hán Lộ catalog + owned progress; textbook catalogs empty |
