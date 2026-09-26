@@ -235,6 +235,20 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
   learning-catalog 49/49. CI follow-up 2026-09-26 removed the suite's dependency on
   pre-seeded learning-unit and grammar catalogs: it now creates and cleans isolated Mongo fixtures;
   targeted real-DB API-020 remains 11/11. Session below. PR stacked, merges after #102.
+- ✅ (opencode · 2026-09-26) **P6 done — teacher lesson supplements UI.**
+  Branch `feat/api020-teacher-supplements` (base P5 head + merge of #98 head for the
+  lessons UI), worktree `../Real-p6`, FE lane on explicit owner directive. Extends the
+  live lessons page, preserving #98 pending-dialog + rollback fixes (same
+  `mutationPending` gates `Overlay.closeDisabled` + `ConfirmModal.pending`): per-lesson
+  expandable supplements section, catalog picker modal (units/grammar tabs, search, HSK,
+  category-from-results, attached rows locked disabled), attach, optimistic drag + button
+  reorder with rollback, remove with locked confirmation, honest unavailable rows.
+  Accepted endpoints only, no mock fallback. Contract `teacher-lessons-list.md` extended
+  additively. Verified: type-check + lint + web build 43/43 + check-docs green; temp
+  Playwright spec 16/16 desktop+375px (picker real data, distinct kinds, duplicate 409
+  without fake success, keyboard+drag reorder + reload persistence, reorder-rollback,
+  remove-failure keeps item+modal, modal lock, screenshots read — spec deleted after run).
+  Session below. PR stacked, merges after #103 (and #98).
 
 ## Sprint 3 — Question Bank & Assignments
 - ⬜ F3.1 Create MCQ question · ⬜ F3.2 Listening · ⬜ F3.3 Reading · ⬜ F3.4 Writing
@@ -507,6 +521,10 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
 ---
 
 ## Off-sprint / spike
+
+- ✅ (codex · 2026-09-24) Teacher teaching schedule v1: live own-session GET + one-off POST with required topic, week agenda, active owned-class picker, truthful loading/error/empty states; removed in-memory lifecycle actions. Lesson create/edit/delete/reorder no longer report success on API failure; reorder rolls back. Branch `codex/class-content-schedule-v1`.
+- ✅ (codex · 2026-09-24 · PR #98 review follow-up) Uncertain session POST result now blocks blind retry and reloads the target week; Teacher session pagination uses a deterministic date+ID order; lesson save/delete dialogs cannot be dismissed mid-request; Teacher schedule spec status corrected. Focused browser tests cover both viewports. Server-wide create idempotency remains ⛔ (`API-023`); no schema, RBAC or payroll formula changed.
+- ⛔ (codex · 2026-09-24 · API-020) Class-lesson supplemental attach + Student assigned-grammar filter are NOT IMPLEMENTED: ADR-016 leaves relation, transport, content-kind/revision and permission details undecided; no approved endpoint or schema. Needs owner-approved contract before DB/RBAC/API code. No teacher-authored grammar, recurrence, reschedule/cancel or payroll change was made.
 
 - ✅ (opencode · 2026-09-19) **SRS reviewed-saved-words count** — branch
   `feat/srs-saved-review-count` (PR #97). Stats gains `savedWords` +

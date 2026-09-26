@@ -226,14 +226,6 @@
       "count": 1
     }
   },
-  "apps/web/src/app/teacher/classes/[classId]/lessons/page.tsx": {
-    "@typescript-eslint/no-unused-vars": {
-      "count": 2
-    },
-    "no-empty": {
-      "count": 5
-    }
-  },
   "apps/web/src/app/teacher/classes/[classId]/page.tsx": {
     "@typescript-eslint/no-unused-vars": {
       "count": 1
