@@ -222,11 +222,17 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
   empty-DB full-chain deploy (scratch DB asserted + dropped), constraint e2e 6/6 real-DB
   (P2002 ×2, P2003, enum rejection, cascade spares progress), type-check + build + lint +
   check-docs green. Session above. Unblocks P5 on merge.
-- 🔶 (opencode · 2026-09-26) **P5 — supplemental attachment API (API-020).**
+- ✅ (opencode · 2026-09-26) **P5 done — supplemental attachment API (API-020).**
   Branch `feat/api020-supplemental-api` stacked on P4 head (merge order: #102 first),
-  worktree `../Real-p5`, backend lane on explicit owner directive. Scope strictly the
-  accepted contract: teacher attach/remove/reorder + picker reads, student lesson-detail
-  embed + grammar assignedOnly, SUPPLEMENT_* wiring, §15 e2e. No official scores/XP/SRS.
+  worktree `../Real-p5`, backend lane on explicit owner directive. New
+  `apps/api/src/supplements/` (service/controller/DTOs) + `SUPPLEMENT_*` wiring +
+  teacher lesson-detail and student lesson-detail `supplements[]` embeds +
+  grammar `assignedOnly` + teacher grammar picker + units picker `search`.
+  Deviation from proposal (recorded): units picker reuses accepted
+  `GET /teacher/learning-units` (+`search`) instead of a new route — no duplicate endpoint.
+  Verified: type-check + build + lint + check-docs green; new e2e 11/11 real-DB (§15);
+  related suites teacher-lessons + student-lesson-detail + foundation-grammar +
+  learning-catalog 49/49. Session below. PR stacked, merges after #102.
 
 ## Sprint 3 — Question Bank & Assignments
 - ⬜ F3.1 Create MCQ question · ⬜ F3.2 Listening · ⬜ F3.3 Reading · ⬜ F3.4 Writing

@@ -58,7 +58,7 @@ contract and gain one additive field/param.
 | POST | `/teacher/lessons/:id/supplements` | teacher (own) | Attach a source; body `{ sourceType, sourceKey }`; order server-assigned `MAX+1` | defined |
 | DELETE | `/teacher/lessons/:id/supplements/:supplementId` | teacher (own) | Remove the link only — never the source, never progress | defined |
 | PATCH | `/teacher/lessons/:id/supplements/reorder` | teacher (own) | Bulk reorder, body `[{ id, orderIndex }]` complete dense `1..N` | defined |
-| GET | `/teacher/catalog/units?hskLevel=&search=&page=&limit=` | teacher | Picker: published units only, summary items | defined |
+| GET | `/teacher/learning-units?level=&curriculum=&search=&page=` | teacher | Picker: published units only, summary items (existing accepted endpoint, extended with `search` in P5) | defined |
 | GET | `/teacher/catalog/grammar?hskLevel=&category=&search=&page=&limit=` | teacher | Picker: grammar items only, summary items | defined |
 | GET | `/teacher/lessons/:id` | teacher (own) | **Extended**: detail embeds `supplements[]` (§3.6) alongside linked assignments | defined + additive |
 | GET | `/student/classes/:classId/lessons/:lessonId` | student | **Extended**: detail embeds `supplements[]` in server order with availability flags (§3.7) | defined + additive |
@@ -104,13 +104,14 @@ Each item: `id` uuid required, `orderIndex` int ≥ 1 required. The payload must
 **complete dense `1..N` permutation** of the lesson's current supplements (INV-TCL-08
 mirror). Response `200` with the full ordered list in `data[]` (same item shape as §3.6).
 
-### 3.4 GET `/teacher/catalog/units` — picker
+### 3.4 GET `/teacher/learning-units` — picker (existing accepted endpoint)
 
-Query: `hskLevel` 1–9 optional (C4/DOC-004 caveat inherited from G-read, not reopened),
-`search` optional substring on title, `page` default 1, `limit` default 20 max 50
-(G-read pagination mirror). Response: published units only, stable order
-(`level` asc, `slug` asc), item `{ slug, title, level }` — observed fields from the unit
-read (05-learning-path), summaries only, never full `words`.
+Query: `level`, `curriculum`, `page` as already defined, plus `search` (optional
+substring on title/slug, added in P5 — additive, existing callers unaffected).
+Response: published units only, stable order, item `{ slug, title, level }` — observed
+fields from the unit read (05-learning-path), summaries only, never full `words`.
+P5 deviation note: the proposal named a new `/teacher/catalog/units` path; implementation
+reuses the existing accepted picker endpoint instead — no duplicate route.
 
 ### 3.5 GET `/teacher/catalog/grammar` — picker
 

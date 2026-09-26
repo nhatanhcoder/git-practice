@@ -394,6 +394,16 @@ export class LearningCatalogService {
     const filter: FilterQuery<LearningUnitDocument> = { published: true };
     if ('level' in query && query.level) filter.level = query.level;
     if ('curriculum' in query && query.curriculum) filter.curriculum = query.curriculum;
+    const searchOr =
+      'search' in query && query.search?.trim()
+        ? (() => {
+            const escaped = query.search.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            return [
+              { title: { $regex: escaped, $options: 'i' } },
+              { slug: { $regex: escaped, $options: 'i' } },
+            ];
+          })()
+        : [];
     if ('teacherId' in query && query.teacherId) filter.authorId = query.teacherId;
     if ('pathId' in query && query.pathId) filter.pathId = query.pathId;
     if (!includeSuspended) {
@@ -401,11 +411,20 @@ export class LearningCatalogService {
         where: { status: 'approved' },
         select: { id: true },
       });
-      filter.$or = [
-        { pathId: { $exists: false } },
-        { pathId: null },
-        { pathId: { $in: approved.map((path) => path.id) } },
+      // Search and path-visibility are independent dimensions: AND them instead
+      // of letting one $or overwrite the other.
+      filter.$and = [
+        ...(searchOr.length ? [{ $or: searchOr }] : []),
+        {
+          $or: [
+            { pathId: { $exists: false } },
+            { pathId: null },
+            { pathId: { $in: approved.map((path) => path.id) } },
+          ],
+        },
       ];
+    } else if (searchOr.length) {
+      filter.$or = searchOr;
     }
     const total = await this.units.countDocuments(filter);
     const rows = await this.units
@@ -419,6 +438,27 @@ export class LearningCatalogService {
       data: rows.map((row) => toUnit(row, false, includeSuspended, wordCounts.get(row.slug))),
       meta: pageMeta(total, page),
     };
+  }
+
+  /**
+   * Batch published-unit lookup for supplement resolution (API-020). Same
+   * visibility as the picker: published rows whose parent path is builtin or
+   * approved. Minimal projection — title only, never words.
+   */
+  async findPublishedUnits(slugs: string[]): Promise<Array<{ slug: string; title: string; level: number }>> {
+    if (!slugs.length) return [];
+    const approved = await this.prisma.learningPath.findMany({
+      where: { status: 'approved' },
+      select: { id: true },
+    });
+    const approvedIds = new Set(approved.map((path) => path.id));
+    const rows = await this.units
+      .find({ slug: { $in: slugs }, published: true })
+      .select({ slug: 1, title: 1, level: 1, pathId: 1 })
+      .lean();
+    return rows
+      .filter((row) => !row.pathId || approvedIds.has(row.pathId))
+      .map((row) => ({ slug: row.slug, title: row.title, level: row.level }));
   }
 
   async listAdminPaths(query: AdminLearningPathQuery) {

@@ -10,6 +10,7 @@ import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
 import { ClassesModule } from './classes/classes.module';
 import { LessonsModule } from './lessons/lessons.module';
+import { SupplementsModule } from './supplements/supplements.module';
 import { QuestionsModule } from './questions/questions.module';
 import { AssignmentsModule } from './assignments/assignments.module';
 import { AttemptsModule } from './attempts/attempts.module';
@@ -44,6 +45,7 @@ import { RolesGuard } from './common/guards/roles.guard';
     AuthModule,
     ClassesModule,
     LessonsModule,
+    SupplementsModule,
     SessionsModule,
     PayrollModule,
     BillingModule,
