@@ -6,6 +6,7 @@ import {
 } from '../mongodb/schemas/content-revision.schema';
 import { GrammarItem, GrammarItemSchema } from '../mongodb/schemas/grammar-item.schema';
 import { GrammarController } from './grammar.controller';
+import { TeacherGrammarController } from './teacher-grammar.controller';
 import { GrammarService } from './grammar.service';
 
 /**
@@ -19,7 +20,8 @@ import { GrammarService } from './grammar.service';
       { name: ContentRevision.name, schema: ContentRevisionSchema },
     ]),
   ],
-  controllers: [GrammarController],
+  controllers: [GrammarController, TeacherGrammarController],
   providers: [GrammarService],
+  exports: [GrammarService],
 })
 export class GrammarModule {}

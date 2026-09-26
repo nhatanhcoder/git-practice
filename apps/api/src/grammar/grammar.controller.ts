@@ -33,8 +33,8 @@ export class GrammarController {
 
   @Get()
   @ApiOperation({ summary: 'Paginated grammar list (HSK/category/search filters)' })
-  list(@Query() query: ListGrammarQueryDto) {
-    return this.grammar.list(query);
+  list(@Query() query: ListGrammarQueryDto, @CurrentUser() user: AuthenticatedUser) {
+    return this.grammar.listForStudent(user.id, query);
   }
 
   @Get('progress')

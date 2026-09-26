@@ -1,4 +1,4 @@
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import {
   ArrayMaxSize,
   ArrayMinSize,
@@ -32,6 +32,18 @@ export class ListGrammarQueryDto {
   @IsString()
   @MaxLength(120)
   search?: string;
+
+  /**
+   * Assigned-only (API-020 §3.8): narrow the full catalog to grammar points
+   * attached to the caller's active-enrollment lessons, before pagination.
+   * Query booleans arrive as strings — accept both spellings.
+   */
+  @IsOptional()
+  @Transform(({ value }) =>
+    value === true || value === 'true' ? true : value === false || value === 'false' ? false : value,
+  )
+  @IsBoolean()
+  assignedOnly?: boolean;
 
   @IsOptional()
   @Type(() => Number)

@@ -2,6 +2,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AppException } from '../common/errors/app.exception';
 import { ErrorCode } from '../common/errors/error-codes';
+import { SupplementsService } from '../supplements/supplements.service';
 import type { CreateLessonDto } from './dto/create-lesson.dto';
 import type { UpdateLessonDto } from './dto/update-lesson.dto';
 import type { ReorderLessonItemDto } from './dto/reorder-lessons.dto';
@@ -10,7 +11,10 @@ const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12
 
 @Injectable()
 export class LessonsService {
-  constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
+  constructor(
+    @Inject(PrismaService) private readonly prisma: PrismaService,
+    @Inject(SupplementsService) private readonly supplements: SupplementsService,
+  ) {}
 
   /**
    * Helper: verify class exists and teacher is the owner.
@@ -94,7 +98,9 @@ export class LessonsService {
       );
     }
 
-    return lesson;
+    // API-020 §3.6: teacher management view embeds ordered supplements.
+    const supplements = await this.supplements.listForLesson(lesson.id);
+    return { ...lesson, supplements };
   }
 
   /**

@@ -4,6 +4,7 @@ import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { AppException } from '../common/errors/app.exception';
 import { ErrorCode } from '../common/errors/error-codes';
+import { SupplementsService } from '../supplements/supplements.service';
 import type { CreateClassDto } from './dto/create-class.dto';
 import type { UpdateClassDto } from './dto/update-class.dto';
 
@@ -21,7 +22,10 @@ export function generateEnrollmentCode(): string {
 
 @Injectable()
 export class ClassesService {
-  constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
+  constructor(
+    @Inject(PrismaService) private readonly prisma: PrismaService,
+    @Inject(SupplementsService) private readonly supplements: SupplementsService,
+  ) {}
 
   /**
    * Create a new class for a teacher.
@@ -501,7 +505,10 @@ export class ClassesService {
       throw new AppException(ErrorCode.LESSON_NOT_FOUND, 'Không tìm thấy bài học');
     }
 
-    return lesson;
+    // API-020 §3.7: student view embeds ordered supplements with availability
+    // flags. Enrollment was already verified active above.
+    const supplements = await this.supplements.listForLesson(lesson.id);
+    return { ...lesson, supplements };
   }
 
   private toEnrollmentResult(

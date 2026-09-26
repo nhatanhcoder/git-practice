@@ -53,7 +53,7 @@ export class GrammarService {
     return row?.revision ?? null;
   }
 
-  async list(query: ListGrammarQueryDto) {
+  async list(query: ListGrammarQueryDto, assignedKeys?: Set<string> | null) {
     const revision = await this.currentRevision();
     const page = query.page ?? 1;
     const limit = query.limit ?? 20;
@@ -63,6 +63,9 @@ export class GrammarService {
     const docs = await this.items.find({ revision }).lean();
     const q = (query.search ?? '').trim();
     const filtered = docs.filter((d) => {
+      // INV-SUP-09: assignedOnly narrows the FULL catalog to attached keys
+      // before pagination — never a client-side slice of one page.
+      if (assignedKeys && !assignedKeys.has(d.key)) return false;
       if (query.hskLevel !== undefined && d.level !== query.hskLevel) return false;
       if (query.category !== undefined && d.category !== query.category) return false;
       if (!q) return true;
@@ -88,6 +91,37 @@ export class GrammarService {
     };
   }
 
+  /**
+   * Student list entry point: resolves the assigned key set when the caller
+   * asks for assigned-only (API-020 §3.8), then delegates to list().
+   */
+  async listForStudent(studentId: string, query: ListGrammarQueryDto) {
+    if (!query.assignedOnly) return this.list(query);
+    return this.list(query, await this.assignedGrammarKeys(studentId));
+  }
+
+  /**
+   * Grammar keys attached to lessons of the caller's ACTIVE enrollments.
+   * Dropped enrollments and other classes contribute nothing (INV-SUP-09).
+   */
+  private async assignedGrammarKeys(studentId: string): Promise<Set<string>> {
+    const enrollments = await this.prisma.classEnrollment.findMany({
+      where: { studentId, status: 'active' },
+      select: { classId: true },
+    });
+    if (!enrollments.length) return new Set();
+    const lessons = await this.prisma.lesson.findMany({
+      where: { classId: { in: enrollments.map((e) => e.classId) } },
+      select: { id: true },
+    });
+    if (!lessons.length) return new Set();
+    const links = await this.prisma.supplementalPractice.findMany({
+      where: { lessonId: { in: lessons.map((l) => l.id) }, sourceType: 'grammar_point' },
+      select: { sourceKey: true },
+    });
+    return new Set(links.map((l) => l.sourceKey));
+  }
+
   async getOne(id: string) {
     const doc = await this.findDoc(id);
     if (!doc) {
@@ -97,6 +131,30 @@ export class GrammarService {
       );
     }
     return toListItem(doc.data as Record<string, unknown>);
+  }
+
+  /**
+   * Batch published-grammar lookup for supplement resolution (API-020). Only
+   * items in the current pinned revision resolve; anything else is an
+   * unavailable source, never an error. Public summaries only.
+   */
+  async findPublishedGrammars(
+    keys: string[],
+  ): Promise<Map<string, { name: string; level: number; category: string }>> {
+    const out = new Map<string, { name: string; level: number; category: string }>();
+    if (!keys.length) return out;
+    const revision = await this.currentRevision();
+    if (!revision) return out;
+    const docs = await this.items.find({ revision, key: { $in: keys } }).lean();
+    for (const doc of docs) {
+      const data = doc.data as Record<string, unknown>;
+      out.set(doc.key, {
+        name: String(data.name ?? doc.key),
+        level: doc.level,
+        category: doc.category,
+      });
+    }
+    return out;
   }
 
   async getProgress(studentId: string): Promise<{

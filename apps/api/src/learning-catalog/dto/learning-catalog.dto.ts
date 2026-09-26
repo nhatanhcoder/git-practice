@@ -151,6 +151,11 @@ export class TeacherPublishedLearningUnitQuery {
   curriculum?: string;
 
   @IsOptional()
+  @IsString()
+  @Length(1, 120)
+  search?: string;
+
+  @IsOptional()
   @Type(() => Number)
   @IsInt()
   @Min(1)

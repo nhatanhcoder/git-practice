@@ -104,6 +104,11 @@
       "count": 1
     }
   },
+  "apps/api/test/supplemental-practice.e2e.test.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 18
+    }
+  },
   "apps/web/scripts/student-demo-isolation.test.mjs": {
     "@typescript-eslint/no-unused-vars": {
       "count": 1

@@ -2150,3 +2150,21 @@ that lock is held. Real-DB E2E holds the lock while changing a path to `pending_
 the waiting Teacher write returns `LEARNING_PATH_FROZEN`; a second race proves two simultaneous
 creates at 99 units yield exactly one `201`, one `VALIDATION_ERROR`, 100 documents and orders
 `1..100`.
+
+---
+
+### [BUILD-008] API-020 E2E depended on optional learning and grammar catalog seeds
+
+**Severity**: High (blocked PR #103–#105 CI)
+**Sprint**: 5b
+**Status**: Resolved 2026-09-26 on `feat/api020-supplemental-api`
+
+**Description**: `supplemental-practice.e2e.test.ts` selected the first published learning unit
+and first two grammar points from shared Mongo catalogs. CI intentionally has neither catalog,
+so the suite stopped in its `before` hook first with `shared catalog has no published units`,
+then with `shared catalog has no grammar items`; every stacked PR inherited the failures.
+
+**Fix**: the suite now inserts one uniquely named, built-in published learning unit plus a pinned
+two-point grammar revision, asserts that the APIs expose their exact identities, and removes all
+fixture documents in `after`. Production services and API contracts are unchanged. Targeted
+real-DB verification passes 11/11.

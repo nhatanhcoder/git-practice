@@ -20,5 +20,6 @@ import { TeacherLearningCatalogController } from './teacher-learning-catalog.con
   ],
   controllers: [TeacherLearningCatalogController, AdminLearningCatalogController],
   providers: [LearningCatalogService],
+  exports: [LearningCatalogService],
 })
 export class LearningCatalogModule {}
