@@ -65,6 +65,39 @@
 .modalActions{display:flex;justify-content:flex-end;gap:10px;margin-top:18px}
 .modalActions button{height:38px;padding:0 16px;border-radius:6px;font-weight:600;cursor:pointer}
 .cancelButton{border:0;background:var(--slate-100);color:var(--muted)}
+.ghostButton{display:inline-flex;height:34px;align-items:center;gap:6px;padding:0 12px;border:1px solid var(--slate-300);border-radius:6px;background:var(--surface);color:var(--slate-700);font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap}
+.ghostButton:hover:not(:disabled){border-color:var(--accent);color:var(--accent)}
+.ghostButton:disabled{opacity:.5;cursor:not-allowed}
+.modalWide{width:min(620px,100%);max-height:calc(100vh - 32px);overflow-y:auto;padding:24px;border-radius:8px;background:var(--surface);box-shadow:0 20px 25px -5px color-mix(in srgb, var(--primary) 15%, transparent)}
+.modalWide h2{margin:0 0 6px;font-family:Lexend,sans-serif;font-size:17px;font-weight:600}
+.suppRow{padding:4px 16px 14px 58px;border-bottom:1px solid var(--border);background:var(--background);list-style:none}
+.suppRow:last-child{border-bottom:0}
+.suppHead{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:6px 0 8px}
+.suppHead strong{color:var(--text);font-size:13px}
+.suppHint{margin:6px 0;color:var(--neutral);font-size:12.5px}
+.suppError{display:flex;align-items:center;gap:10px;margin:6px 0;padding:8px 10px;border:1px solid var(--red-200);border-radius:6px;background:var(--danger-faint);color:var(--red-700);font-size:12.5px}
+.suppError button{padding:5px 10px;border:1px solid var(--red-200);border-radius:5px;background:var(--surface);color:var(--red-700);font-weight:600;cursor:pointer}
+.suppList{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:6px}
+.suppItem{display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--border);border-radius:6px;background:var(--surface)}
+.suppTitle{flex:1;min-width:0;overflow:hidden;color:var(--text);font-size:13px;font-weight:600;text-overflow:ellipsis;white-space:nowrap}
+.suppUnavail{flex:1;min-width:0;display:flex;flex-direction:column}
+.suppUnavail strong{color:var(--muted);font-size:13px}
+.suppUnavail small{color:var(--neutral);font-size:12px}
+.kindChip{flex-shrink:0;padding:2px 8px;border-radius:9999px;background:var(--blue-50);color:var(--accent);font-size:11.5px;font-weight:600}
+.pickerHint{margin:0 0 12px;color:var(--muted);font-size:12.5px}
+.pickerTabs{display:flex;gap:6px;margin-bottom:12px}
+.pickerTab{height:34px;padding:0 14px;border:1px solid var(--slate-300);border-radius:9999px;background:var(--surface);color:var(--muted);font-size:13px;font-weight:600;cursor:pointer}
+.pickerTabActive{height:34px;padding:0 14px;border:1px solid var(--primary);border-radius:9999px;background:var(--primary);color:var(--surface);font-size:13px;font-weight:600;cursor:pointer}
+.pickerFilters{display:flex;gap:8px;margin-bottom:12px}
+.pickerSearch{display:flex;flex:1;align-items:center;gap:7px;padding:0 10px;border:1px solid var(--slate-300);border-radius:6px;background:var(--surface)}
+.pickerSearch input{width:100%;height:34px;border:0;outline:0;background:transparent;color:var(--text);font-size:13px}
+.pickerSearch svg{flex-shrink:0;color:var(--neutral)}
+.pickerFilters select{height:34px;padding:0 8px;border:1px solid var(--slate-300);border-radius:6px;background:var(--surface);color:var(--text);font-size:13px}
+.pickerList{margin:0 0 6px;padding:0;list-style:none;display:flex;flex-direction:column;gap:6px;max-height:320px;overflow-y:auto}
+.pickerRow{display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid var(--border);border-radius:6px;background:var(--surface)}
+.pickerInfo{flex:1;min-width:0;display:flex;flex-direction:column}
+.pickerInfo strong{overflow:hidden;color:var(--text);font-size:13px;font-weight:600;text-overflow:ellipsis;white-space:nowrap}
+.pickerInfo small{color:var(--neutral);font-size:12px}
 @keyframes shimmer{to{background-position:-200% 0}}
 @media(max-width:767px){
 .titleRow{align-items:flex-start;flex-direction:column;gap:14px}
@@ -74,4 +107,7 @@
 .lessonInfo{flex-basis:calc(100% - 90px)}
 .errorBanner{align-items:flex-start;flex-wrap:wrap}
 .errorBanner button{margin-left:31px}
+.suppRow{padding-left:16px}
+.pickerFilters{flex-wrap:wrap}
+.modalWide{padding:18px}
 }

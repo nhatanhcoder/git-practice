@@ -46,6 +46,10 @@ touches RBAC and needs its own approval.
 1. Page title (class name context) + primary action "Thêm bài học"
 2. Lesson list — drag-handle, order number, title, content-type icon, assignment count,
    row menu (edit / delete)
+3. Per-lesson supplements section (API-020, added 2026-09-26) — expanded from the row
+   menu ("Nội dung bổ trợ"): ordered supplement rows (kind chip Bài học/Ngữ pháp,
+   title or honest "Không khả dụng", drag-handle + up/down + remove), "Thêm từ catalog"
+   button opening the picker modal (type tabs, search, HSK filter, per-row "Gắn")
 
 ## States
 - [ ] Loading — list skeleton, 3 placeholder rows
@@ -63,6 +67,9 @@ touches RBAC and needs its own approval.
 | Edit lesson | row menu → "Sửa" | modal, prefilled → row updates | `LESSON_NOT_FOUND`, `LESSON_ACCESS_DENIED` |
 | Delete lesson | row menu → "Xoá" | confirm modal → row removed. **Blocked when a linked assignment has active attempts** — documented in `ENTITY_LESSON.md` § Business Rules, no longer an assumption | `LESSON_HAS_ACTIVE_ATTEMPTS`, `LESSON_NOT_FOUND` |
 | Reorder | drag row to new position | optimistic reorder → revert on failure. Server swaps the whole set in **one transaction** (`(classId, orderIndex)` is unique) | `LESSON_ORDER_INDEX_CONFLICT` |
+| Attach supplement | picker "Gắn" | `POST /api/v1/teacher/lessons/:id/supplements` → row appended; duplicate stays visible as an error, never a fake success | `SUPPLEMENT_ALREADY_ATTACHED`, `SUPPLEMENT_SOURCE_NOT_FOUND`, `LESSON_ACCESS_DENIED` |
+| Remove supplement | row delete → confirm modal (locked while pending) | `DELETE` → row removed; failure keeps the row with the error in the modal | `SUPPLEMENT_NOT_ATTACHED` |
+| Reorder supplements | drag or up/down | optimistic → revert to server order on failure | `SUPPLEMENT_ORDER_CONFLICT` |
 
 All four codes are *proposed, not agreed* in `API_ERROR_CODES.md` — render them, but expect the
 names to move if the BE owner renames any.

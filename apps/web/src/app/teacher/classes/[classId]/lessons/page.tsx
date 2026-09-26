@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Fragment } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -12,9 +12,11 @@ import {
   Film,
   GripVertical,
   Inbox,
+  Link2,
   MoreHorizontal,
   Pencil,
   Plus,
+  Search,
   Trash2,
 } from "lucide-react";
 import { TeacherShell } from "@/components/teacher/teacher-shell";
@@ -39,6 +41,18 @@ import {
   deleteLesson,
   reorderLessons,
 } from "@/lib/teacher-service";
+import {
+  attachSupplement,
+  fetchCatalogGrammar,
+  fetchCatalogUnits,
+  fetchLessonSupplements,
+  removeSupplement,
+  reorderSupplements,
+  type CatalogGrammar,
+  type CatalogUnit,
+  type LessonSupplement,
+  type SupplementSourceType,
+} from "@/lib/teacher/teacher-supplements-service";
 import { useDismissMenu } from "@/hooks/use-overlay";
 import styles from "./lessons.module.css";
 
@@ -73,6 +87,22 @@ export default function TeacherLessonsPage({
   const [mutationError, setMutationError] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
   const [toast, setToast] = useState("");
+  const [expandedLesson, setExpandedLesson] = useState<string | null>(null);
+  const [supplements, setSupplements] = useState<Record<string, LessonSupplement[]>>({});
+  const [suppLoading, setSuppLoading] = useState(false);
+  const [suppError, setSuppError] = useState<{ lessonId: string; message: string } | null>(null);
+  const [suppDrag, setSuppDrag] = useState<{ lessonId: string; index: number } | null>(null);
+  const [picker, setPicker] = useState<{ lessonId: string } | null>(null);
+  const [pickerTab, setPickerTab] = useState<'units' | 'grammar'>('units');
+  const [pickerSearch, setPickerSearch] = useState('');
+  const [pickerLevel, setPickerLevel] = useState('');
+  const [pickerCategory, setPickerCategory] = useState('');
+  const [pickerLoading, setPickerLoading] = useState(false);
+  const [pickerError, setPickerError] = useState<string | null>(null);
+  const [pickerUnits, setPickerUnits] = useState<CatalogUnit[]>([]);
+  const [pickerGrammar, setPickerGrammar] = useState<CatalogGrammar[]>([]);
+  const [attachingKey, setAttachingKey] = useState<string | null>(null);
+  const [removingSupp, setRemovingSupp] = useState<{ lessonId: string; supp: LessonSupplement } | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -234,6 +264,160 @@ export default function TeacherLessonsPage({
     await persistReorder(next);
   }
 
+  function supplementList(lessonId: string): LessonSupplement[] {
+    return supplements[lessonId] ?? [];
+  }
+
+  async function toggleSupplements(lessonId: string) {
+    if (expandedLesson === lessonId) {
+      setExpandedLesson(null);
+      return;
+    }
+    setExpandedLesson(lessonId);
+    setSuppError(null);
+    if (supplements[lessonId] !== undefined) return;
+    setSuppLoading(true);
+    try {
+      const res = await fetchLessonSupplements(lessonId);
+      setSupplements((current) => ({ ...current, [lessonId]: res.supplements }));
+    } catch (error) {
+      setSuppError({
+        lessonId,
+        message: error instanceof Error ? error.message : "Không tải được nội dung bổ trợ. Thử lại.",
+      });
+    } finally {
+      setSuppLoading(false);
+    }
+  }
+
+  async function loadPicker(
+    tab: 'units' | 'grammar',
+    filters: { search: string; level: string; category: string },
+  ) {
+    if (pickerLoading) return;
+    setPickerLoading(true);
+    setPickerError(null);
+    try {
+      if (tab === 'units') {
+        const res = await fetchCatalogUnits({
+          level: filters.level ? Number(filters.level) : undefined,
+          search: filters.search.trim() || undefined,
+        });
+        setPickerUnits(res.units);
+      } else {
+        const res = await fetchCatalogGrammar({
+          level: filters.level ? Number(filters.level) : undefined,
+          category: filters.category || undefined,
+          search: filters.search.trim() || undefined,
+        });
+        setPickerGrammar(res.points);
+      }
+    } catch (error) {
+      setPickerError(error instanceof Error ? error.message : "Không tải được catalog. Thử lại.");
+    } finally {
+      setPickerLoading(false);
+    }
+  }
+
+  function openPicker(lessonId: string) {
+    setPickerError(null);
+    setPickerSearch('');
+    setPickerLevel('');
+    setPickerCategory('');
+    setPickerUnits([]);
+    setPickerGrammar([]);
+    setPickerTab('units');
+    setPicker({ lessonId });
+    void loadPicker('units', { search: '', level: '', category: '' });
+  }
+
+  async function handleAttach(sourceType: SupplementSourceType, sourceKey: string) {
+    if (!picker || mutationPending) return;
+    setMutationPending(true);
+    setAttachingKey(sourceType + ':' + sourceKey);
+    setPickerError(null);
+    try {
+      const res = await attachSupplement(picker.lessonId, { sourceType, sourceKey });
+      setSupplements((current) => ({
+        ...current,
+        [picker.lessonId]: [...(current[picker.lessonId] ?? []), res.supplement].sort(
+          (a, b) => a.orderIndex - b.orderIndex,
+        ),
+      }));
+      flash("Đã gắn nội dung bổ trợ");
+    } catch (error) {
+      // No fake success: a duplicate (409) or any failure stays visible here.
+      setPickerError(error instanceof Error ? error.message : "Không gắn được nội dung. Thử lại.");
+    } finally {
+      setMutationPending(false);
+      setAttachingKey(null);
+    }
+  }
+
+  async function handleRemoveSupplement() {
+    if (!removingSupp || mutationPending) return;
+    setMutationPending(true);
+    setMutationError(null);
+    try {
+      await removeSupplement(removingSupp.lessonId, removingSupp.supp.id);
+      const gone = removingSupp.supp.id;
+      const lid = removingSupp.lessonId;
+      setSupplements((current) => ({
+        ...current,
+        [lid]: (current[lid] ?? []).filter((s) => s.id !== gone),
+      }));
+      flash("Đã gỡ nội dung bổ trợ");
+      setRemovingSupp(null);
+    } catch (error) {
+      // The item stays: failed remove keeps the row, error shows in the modal.
+      setMutationError(error instanceof Error ? error.message : "Không gỡ được nội dung. Thử lại.");
+    } finally {
+      setMutationPending(false);
+    }
+  }
+
+  async function persistSuppReorder(lessonId: string, next: LessonSupplement[]) {
+    if (mutationPending) return;
+    const previous = supplementList(lessonId);
+    setSupplements((current) => ({ ...current, [lessonId]: next }));
+    setMutationPending(true);
+    setMutationError(null);
+    try {
+      await reorderSupplements(
+        lessonId,
+        next.map((s, index) => ({ id: s.id, orderIndex: index + 1 })),
+      );
+      flash("Đã đổi thứ tự nội dung bổ trợ");
+    } catch (error) {
+      setSupplements((current) => ({ ...current, [lessonId]: previous }));
+      setMutationError(error instanceof Error ? error.message : "Không lưu được thứ tự. Thử lại.");
+    } finally {
+      setMutationPending(false);
+    }
+  }
+
+  async function moveSupp(lessonId: string, index: number, delta: -1 | 1) {
+    const list = supplementList(lessonId);
+    const target = index + delta;
+    if (mutationPending || target < 0 || target >= list.length) return;
+    const next = [...list];
+    [next[index], next[target]] = [next[target], next[index]];
+    await persistSuppReorder(lessonId, next);
+  }
+
+  async function dropSuppOn(lessonId: string, target: number) {
+    if (mutationPending || !suppDrag || suppDrag.lessonId !== lessonId || suppDrag.index === target) {
+      setSuppDrag(null);
+      return;
+    }
+    const list = supplementList(lessonId);
+    const next = [...list];
+    const [moved] = next.splice(suppDrag.index, 1);
+    next.splice(target, 0, moved);
+    setSuppDrag(null);
+    await persistSuppReorder(lessonId, next);
+  }
+
   const valid = draft.title.trim().length >= 3;
   const crumbs = [
     { label: "Giáo viên" },
@@ -301,9 +485,11 @@ export default function TeacherLessonsPage({
           <ol className={styles.lessonList}>
             {lessons.map((lesson, i) => {
               const Icon = lesson.contentType === "video" ? Film : FileText;
+              const suppList = supplementList(lesson.id);
+              const suppOpen = expandedLesson === lesson.id;
               return (
+              <Fragment key={lesson.id}>
                 <li
-                  key={lesson.id}
                   className={
                     styles.lessonRow +
                     (dragIndex === i ? " " + styles.rowDragging : "") +
@@ -356,22 +542,107 @@ export default function TeacherLessonsPage({
                       >
                         <MoreHorizontal size={18} />
                       </button>
-                      {activeMenu === lesson.id && (
-                        <span className={styles.actionMenu} id={"lmenu-" + lesson.id} role="menu">
-                          <button onClick={() => openEdit(lesson)}>
-                            <Pencil size={14} /> Sửa
-                          </button>
-                          <button className={styles.dangerAction} onClick={() => { setActiveMenu(null); setDeleting(lesson); }}>
-                            <Trash2 size={14} /> Xoá
-                          </button>
-                        </span>
-                      )}
+                        {activeMenu === lesson.id && (
+                          <span className={styles.actionMenu} id={"lmenu-" + lesson.id} role="menu">
+                            <button onClick={() => openEdit(lesson)}>
+                              <Pencil size={14} /> Sửa
+                            </button>
+                            <button onClick={() => { setActiveMenu(null); toggleSupplements(lesson.id); }}>
+                              <Link2 size={14} /> Bổ trợ{suppList.length > 0 ? ` (${suppList.length})` : ""}
+                            </button>
+                            <button className={styles.dangerAction} onClick={() => { setActiveMenu(null); setDeleting(lesson); }}>
+                              <Trash2 size={14} /> Xoá
+                            </button>
+                          </span>
+                        )}
+                      </span>
                     </span>
-                  </span>
-                </li>
-              );
-            })}
-          </ol>
+                  </li>
+                  {suppOpen && (
+                    <li className={styles.suppRow} aria-label={"Nội dung bổ trợ của " + lesson.title}>
+                      <div className={styles.suppHead}>
+                        <strong>Nội dung bổ trợ</strong>
+                        <button
+                          className={styles.ghostButton}
+                          onClick={() => openPicker(lesson.id)}
+                          disabled={mutationPending}
+                        >
+                          <Plus size={14} />
+                          <span>Thêm từ catalog</span>
+                        </button>
+                      </div>
+                      {suppLoading && supplements[lesson.id] === undefined ? (
+                        <p className={styles.suppHint} role="status">Đang tải nội dung bổ trợ…</p>
+                      ) : suppError && suppError.lessonId === lesson.id ? (
+                        <div className={styles.suppError} role="alert">
+                          <span>{suppError.message}</span>
+                          <button onClick={() => toggleSupplements(lesson.id)}>Thử lại</button>
+                        </div>
+                      ) : suppList.length === 0 ? (
+                        <p className={styles.suppHint}>Chưa gắn nội dung bổ trợ nào.</p>
+                      ) : (
+                        <ul className={styles.suppList}>
+                          {suppList.map((s, si) => (
+                            <li
+                              key={s.id}
+                              className={styles.suppItem}
+                              draggable={!mutationPending}
+                              onDragStart={(e) => { e.stopPropagation(); setSuppDrag({ lessonId: lesson.id, index: si }); }}
+                              onDragOver={(e) => { e.stopPropagation(); e.preventDefault(); }}
+                              onDrop={(e) => { e.stopPropagation(); e.preventDefault(); void dropSuppOn(lesson.id, si); }}
+                              onDragEnd={() => setSuppDrag(null)}
+                            >
+                              <span className={styles.dragHandle} aria-hidden="true" title="Kéo để sắp xếp">
+                                <GripVertical size={14} />
+                              </span>
+                              <span className={styles.orderNo}>{si + 1}</span>
+                              <span className={styles.kindChip}>
+                                {s.sourceType === 'learning_unit' ? 'Bài học' : 'Ngữ pháp'}
+                              </span>
+                              {s.available ? (
+                                <strong className={styles.suppTitle}>{s.title}</strong>
+                              ) : (
+                                <span className={styles.suppUnavail}>
+                                  <strong>Không khả dụng</strong>
+                                  <small>Nội dung gốc đã gỡ hoặc ẩn</small>
+                                </span>
+                              )}
+                              <span className={styles.rowActions}>
+                                <button
+                                  className={styles.moveButton}
+                                  onClick={() => void moveSupp(lesson.id, si, -1)}
+                                  disabled={si === 0 || mutationPending}
+                                  aria-label={"Chuyển nội dung bổ trợ lên"}
+                                >
+                                  <ArrowUp size={14} />
+                                </button>
+                                <button
+                                  className={styles.moveButton}
+                                  onClick={() => void moveSupp(lesson.id, si, 1)}
+                                  disabled={si === suppList.length - 1 || mutationPending}
+                                  aria-label={"Chuyển nội dung bổ trợ xuống"}
+                                >
+                                  <ArrowDown size={14} />
+                                </button>
+                                <button
+                                  className={styles.moveButton}
+                                  onClick={() => setRemovingSupp({ lessonId: lesson.id, supp: s })}
+                                  disabled={mutationPending}
+                                  aria-label={"Gỡ " + (s.title || "nội dung bổ trợ")}
+                                >
+                                  <Trash2 size={14} />
+                                </button>
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </li>
+                  )}
+                </Fragment>
+                );
+              })}
+            </ol>
         )}
       </section>
 
@@ -455,6 +726,143 @@ export default function TeacherLessonsPage({
         >
           {mutationError && <p className={styles.mutationError} role="alert">{mutationError}</p>}
         </ConfirmModal>
+      )}
+      {removingSupp && (
+        <ConfirmModal
+          title="Gỡ nội dung bổ trợ"
+          description={
+            removingSupp.supp.available && removingSupp.supp.title
+              ? "«" + removingSupp.supp.title + "» sẽ bị gỡ khỏi bài học. Nội dung gốc trong catalog không bị xoá."
+              : "Nội dung này sẽ bị gỡ khỏi bài học."
+          }
+          confirmLabel="Gỡ nội dung"
+          danger
+          pending={mutationPending}
+          onClose={() => { if (!mutationPending) setRemovingSupp(null); }}
+          onConfirm={handleRemoveSupplement}
+        >
+          {mutationError && <p className={styles.mutationError} role="alert">{mutationError}</p>}
+        </ConfirmModal>
+      )}
+      {picker && (
+        <Overlay
+          label="Gắn nội dung bổ trợ"
+          onClose={() => { if (!mutationPending) setPicker(null); }}
+          closeDisabled={mutationPending}
+          backdropClassName={styles.modalBackdrop}
+          panelClassName={styles.modalWide}
+        >
+          <h2>Gắn nội dung bổ trợ</h2>
+          <p className={styles.pickerHint}>Chỉ hiện nội dung đã publish trong catalog.</p>
+          <div className={styles.pickerTabs} role="tablist" aria-label="Loại nội dung">
+            {(['units', 'grammar'] as const).map((t) => (
+              <button
+                key={t}
+                type="button"
+                role="tab"
+                aria-selected={pickerTab === t}
+                className={pickerTab === t ? styles.pickerTabActive : styles.pickerTab}
+                disabled={mutationPending}
+                onClick={() => {
+                  setPickerTab(t);
+                  setPickerError(null);
+                  void loadPicker(t, { search: pickerSearch, level: pickerLevel, category: pickerCategory });
+                }}
+              >
+                {t === 'units' ? 'Bài học' : 'Ngữ pháp'}
+              </button>
+            ))}
+          </div>
+          <form
+            className={styles.pickerFilters}
+            onSubmit={(e) => {
+              e.preventDefault();
+              void loadPicker(pickerTab, { search: pickerSearch, level: pickerLevel, category: pickerCategory });
+            }}
+          >
+            <label className={styles.pickerSearch}>
+              <Search size={15} />
+              <input
+                value={pickerSearch}
+                onChange={(e) => setPickerSearch(e.target.value)}
+                placeholder="Tìm theo tên…"
+                aria-label="Tìm trong catalog"
+              />
+            </label>
+            <select
+              value={pickerLevel}
+              onChange={(e) => {
+                setPickerLevel(e.target.value);
+                void loadPicker(pickerTab, { search: pickerSearch, level: e.target.value, category: pickerCategory });
+              }}
+              aria-label="Lọc theo cấp HSK"
+            >
+              <option value="">Mọi cấp</option>
+              {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((l) => (
+                <option key={l} value={l}>HSK {l}</option>
+              ))}
+            </select>
+            {pickerTab === 'grammar' && (
+              <select
+                value={pickerCategory}
+                onChange={(e) => {
+                  setPickerCategory(e.target.value);
+                  void loadPicker(pickerTab, { search: pickerSearch, level: pickerLevel, category: e.target.value });
+                }}
+                aria-label="Lọc theo nhóm ngữ pháp"
+              >
+                <option value="">Mọi nhóm</option>
+                {Array.from(new Set(pickerGrammar.map((g) => g.category).filter(Boolean))).map((c) => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+              </select>
+            )}
+            <button type="submit" className={styles.ghostButton} disabled={pickerLoading}>
+              <Search size={14} />
+              <span>Tìm</span>
+            </button>
+          </form>
+          {pickerError && <p className={styles.mutationError} role="alert">{pickerError}</p>}
+          {pickerLoading ? (
+            <p className={styles.suppHint} role="status">Đang tải catalog…</p>
+          ) : (pickerTab === 'units' ? pickerUnits.length === 0 : pickerGrammar.length === 0) ? (
+            <p className={styles.suppHint}>Không tìm thấy nội dung phù hợp.</p>
+          ) : (
+            <ul className={styles.pickerList}>
+              {(pickerTab === 'units'
+                ? pickerUnits.map((u) => ({ key: 'learning_unit:' + u.slug, title: u.title, meta: 'HSK ' + u.level, type: 'learning_unit' as const, sourceKey: u.slug }))
+                : pickerGrammar.map((g) => ({ key: 'grammar_point:' + g.id, title: g.name, meta: 'HSK ' + g.level + (g.category ? ' · ' + g.category : ''), type: 'grammar_point' as const, sourceKey: g.id }))
+              ).map((item) => {
+                const attached = picker && supplementList(picker.lessonId).some(
+                  (s) => s.sourceType === item.type && s.sourceKey === item.sourceKey,
+                );
+                const busy = attachingKey === item.key;
+                return (
+                  <li key={item.key} className={styles.pickerRow}>
+                    <span className={styles.pickerInfo}>
+                      <strong>{item.title}</strong>
+                      <small>{item.meta}</small>
+                    </span>
+                    <button
+                      type="button"
+                      className={styles.ghostButton}
+                      disabled={mutationPending || attached}
+                      title={attached ? "Đã gắn vào bài học" : undefined}
+                      onClick={() => void handleAttach(item.type, item.sourceKey)}
+                    >
+                      {busy ? "Đang gắn…" : attached ? "Đã gắn" : "Gắn"}
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+          <div className={styles.modalActions}>
+            <button type="button" className={styles.cancelButton} onClick={() => setPicker(null)} disabled={mutationPending}>
+              Đóng
+            </button>
+          </div>
+        </Overlay>
       )}
     </TeacherShell>
   );
