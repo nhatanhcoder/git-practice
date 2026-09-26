@@ -91,6 +91,7 @@ model User {
   learningPathsOwned     LearningPath[] @relation("LearningPathOwner")
   learningPathsReviewed  LearningPath[] @relation("LearningPathReviewer")
   learningPathsSuspended LearningPath[] @relation("LearningPathSuspender")
+  learningPathsRestored  LearningPath[] @relation("LearningPathRestorer")
 
   @@index([status])
   @@index([role, status])
@@ -571,16 +572,20 @@ model LearningPath {
   rejectionReason String?            @map("rejection_reason") @db.Text
   suspendedById   String?            @map("suspended_by_id") @db.Uuid
   suspendedAt     DateTime?          @map("suspended_at")
+  restoredById    String?            @map("restored_by_id") @db.Uuid
+  restoredAt      DateTime?          @map("restored_at")
   createdAt       DateTime           @default(now()) @map("created_at")
   updatedAt       DateTime           @updatedAt @map("updated_at")
 
   owner     User  @relation("LearningPathOwner", fields: [ownerId], references: [id], onDelete: Restrict)
   reviewer  User? @relation("LearningPathReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
   suspender User? @relation("LearningPathSuspender", fields: [suspendedById], references: [id], onDelete: SetNull)
+  restorer  User? @relation("LearningPathRestorer", fields: [restoredById], references: [id], onDelete: SetNull)
 
   @@index([ownerId, status])
   @@index([status])
   @@index([reviewedById, reviewedAt])
+  @@index([restoredById, restoredAt])
   @@map("learning_paths")
 }
 
