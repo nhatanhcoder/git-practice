@@ -234,6 +234,14 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
   related suites teacher-lessons + student-lesson-detail + foundation-grammar +
   learning-catalog 49/49. Session below. PR stacked, merges after #102.
 - ✅ (opencode · 2026-09-26) **P6 done — teacher lesson supplements UI.**
+- 🔶 (opencode · 2026-09-26) **P7 — student supplement + assigned filter.**
+  Branch `feat/api020-student-supplements` (base P6 head), worktree `../Real-p7`, FE lane
+  on explicit owner directive. Scope: contracts first (lesson-detail supplements region,
+  grammar assigned filter + point deep-link), then student lesson supplements section
+  (server order, kind chips, deep-links to unit/grammar hubs, honest unavailable rows,
+  no progress UI), grammar assigned toggle (server-side `assignedOnly`) + empty state.
+  Accepted endpoints only; no client-side sensitive filtering. Temp Playwright
+  desktop+mobile, deleted after run.
   Branch `feat/api020-teacher-supplements` (base P5 head + merge of #98 head for the
   lessons UI), worktree `../Real-p6`, FE lane on explicit owner directive. Extends the
   live lessons page, preserving #98 pending-dialog + rollback fixes (same
