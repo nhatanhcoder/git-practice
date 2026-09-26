@@ -71,6 +71,9 @@ function GrammarInner() {
   });
   const [category, setCategory] = useState<string>(() => params?.get("category") ?? "all");
   const [query, setQuery] = useState<string>(() => params?.get("search") ?? "");
+  const [assigned, setAssigned] = useState<boolean>(
+    () => params?.get("assignedOnly") === "true",
+  );
   const [page, setPage] = useState(1);
 
   const [openId, setOpenId] = useState<string | null>(null);
@@ -88,13 +91,15 @@ function GrammarInner() {
   const toast = useToast();
   // A stale response must never repaint a newer filter (module invariant 10).
   const requestSeq = useRef(0);
+  const detailRequestSeq = useRef(0);
 
   const syncUrl = useCallback(
-    (next: { level: number | "all"; category: string; search: string }) => {
+    (next: { level: number | "all"; category: string; search: string; assigned: boolean }) => {
       const qs = new URLSearchParams();
       if (next.level !== "all") qs.set("hskLevel", String(next.level));
       if (next.category !== "all") qs.set("category", next.category);
       if (next.search.trim() !== "") qs.set("search", next.search.trim());
+      if (next.assigned) qs.set("assignedOnly", "true");
       const suffix = qs.size > 0 ? `?${qs.toString()}` : "";
       router.replace(`/student/grammar${suffix}`, { scroll: false });
     },
@@ -109,6 +114,7 @@ function GrammarInner() {
         hskLevel: level === "all" ? undefined : level,
         category: category === "all" ? undefined : category,
         search: query.trim() || undefined,
+        assignedOnly: assigned || undefined,
         page,
         limit: PAGE_SIZE,
       });
@@ -125,7 +131,7 @@ function GrammarInner() {
       }
       setState("error");
     }
-  }, [level, category, query, page, router]);
+  }, [level, category, query, page, assigned, router]);
 
   const loadProgress = useCallback(async () => {
     try {
@@ -159,19 +165,30 @@ function GrammarInner() {
     if (rawCat !== category) setCategory(rawCat);
     const rawSearch = params?.get("search") ?? "";
     if (rawSearch !== query) setQuery(rawSearch);
+    const rawAssigned = params?.get("assignedOnly") === "true";
+    if (rawAssigned !== assigned) setAssigned(rawAssigned);
+    const rawPoint = params?.get("point");
+    if (rawPoint && rawPoint !== openId) void openDetail(rawPoint);
+    if (!rawPoint && openId !== null && !drillOpen) {
+      detailRequestSeq.current += 1;
+      setOpenId(null);
+      setOpenItem(null);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params]);
 
-  function changeFilters(next: { level: number | "all"; category: string; search: string }) {
+  function changeFilters(next: { level: number | "all"; category: string; search: string; assigned?: boolean }) {
+    const nextAssigned = next.assigned ?? assigned;
     setLevel(next.level);
     setCategory(next.category);
     setQuery(next.search);
+    setAssigned(nextAssigned);
     setPage(1);
-    syncUrl(next);
+    syncUrl({ level: next.level, category: next.category, search: next.search, assigned: nextAssigned });
   }
 
   function resetFilters() {
-    changeFilters({ level: "all", category: "all", search: "" });
+    changeFilters({ level: "all", category: "all", search: "", assigned: false });
   }
 
   // Categories come from the loaded catalog page — plus the active selection
@@ -184,15 +201,42 @@ function GrammarInner() {
   }, [items, category]);
 
   async function openDetail(id: string) {
+    const seq = ++detailRequestSeq.current;
     setOpenId(id);
     setOpenItem(null);
     setOpenState("loading");
     try {
-      setOpenItem(await fetchGrammarDetail(id));
+      const item = await fetchGrammarDetail(id);
+      if (seq !== detailRequestSeq.current) return;
+      setOpenItem(item);
       setOpenState("ready");
     } catch {
+      if (seq !== detailRequestSeq.current) return;
       setOpenState("error");
     }
+  }
+
+  function syncPoint(point: string | null) {
+    const qs = new URLSearchParams();
+    if (level !== "all") qs.set("hskLevel", String(level));
+    if (category !== "all") qs.set("category", category);
+    if (query.trim() !== "") qs.set("search", query.trim());
+    if (assigned) qs.set("assignedOnly", "true");
+    if (point) qs.set("point", point);
+    const suffix = qs.size > 0 ? `?${qs.toString()}` : "";
+    const href = `/student/grammar${suffix}`;
+    if (point) {
+      router.push(href, { scroll: false });
+    } else {
+      router.replace(href, { scroll: false });
+    }
+  }
+
+  function closeDetail() {
+    detailRequestSeq.current += 1;
+    syncPoint(null);
+    setOpenId(null);
+    setOpenItem(null);
   }
 
   async function toggleStudied(id: string, next: boolean) {
@@ -264,7 +308,7 @@ function GrammarInner() {
     }
   }
 
-  const filtersActive = level !== "all" || category !== "all" || query.trim() !== "";
+  const filtersActive = level !== "all" || category !== "all" || query.trim() !== "" || assigned;
 
   return (
     <>
@@ -323,7 +367,7 @@ function GrammarInner() {
                     const next = e.target.value;
                     setQuery(next);
                     setPage(1);
-                    syncUrl({ level, category, search: next });
+                    syncUrl({ level, category, search: next, assigned });
                   }}
                   placeholder="Tìm theo tên, công thức, chữ Hán hoặc pinyin…"
                   aria-label="Tìm điểm ngữ pháp"
@@ -391,6 +435,28 @@ function GrammarInner() {
                 ))}
               </div>
             </div>
+
+            <div className="stack gap-2">
+              <span className="metric__label">Nguồn</span>
+              <div className="row gap-2 wrap">
+                <button
+                  type="button"
+                  className={`pill ${!assigned ? "is-active" : ""}`}
+                  aria-pressed={!assigned}
+                  onClick={() => changeFilters({ level, category, search: query, assigned: false })}
+                >
+                  Tất cả
+                </button>
+                <button
+                  type="button"
+                  className={`pill ${assigned ? "is-active" : ""}`}
+                  aria-pressed={assigned}
+                  onClick={() => changeFilters({ level, category, search: query, assigned: true })}
+                >
+                  Giáo viên giao
+                </button>
+              </div>
+            </div>
           </Panel>
 
           {/* ---------- Results ---------- */}
@@ -398,15 +464,31 @@ function GrammarInner() {
             <SectionHeader title="Điểm ngữ pháp" sub={`${total} kết quả · trang ${page}/${Math.max(totalPages, 1)}`} />
             {items.length === 0 ? (
               <Panel className="panel--pad">
-                <EmptyState
-                  title="Không có điểm nào khớp"
-                  text="Thử bỏ bớt bộ lọc hoặc tìm bằng từ khoá khác."
-                  action={
-                    <button type="button" className="btn btn--outline" onClick={resetFilters}>
-                      Xoá bộ lọc
-                    </button>
-                  }
-                />
+                {assigned ? (
+                  <EmptyState
+                    title="Chưa có điểm ngữ pháp được giao"
+                    text="Giáo viên của các lớp bạn đang học chưa gắn điểm ngữ pháp nào."
+                    action={
+                      <button
+                        type="button"
+                        className="btn btn--outline"
+                        onClick={() => changeFilters({ level, category, search: query, assigned: false })}
+                      >
+                        Xem tất cả điểm ngữ pháp
+                      </button>
+                    }
+                  />
+                ) : (
+                  <EmptyState
+                    title="Không có điểm nào khớp"
+                    text="Thử bỏ bớt bộ lọc hoặc tìm bằng từ khoá khác."
+                    action={
+                      <button type="button" className="btn btn--outline" onClick={resetFilters}>
+                        Xoá bộ lọc
+                      </button>
+                    }
+                  />
+                )}
               </Panel>
             ) : (
               <>
@@ -415,7 +497,7 @@ function GrammarInner() {
                     const isStudied = studied.has(p.id);
                     const stats = practiceStats.get(p.id);
                     return (
-                      <button key={p.id} type="button" className="gcard" onClick={() => void openDetail(p.id)}>
+                      <button key={p.id} type="button" className="gcard" onClick={() => syncPoint(p.id)}>
                         <div className="row gap-2 wrap">
                           <Chip tone="accent">HSK {p.level}</Chip>
                           <Chip>{p.category}</Chip>
@@ -449,7 +531,7 @@ function GrammarInner() {
                   pageSize={PAGE_SIZE}
                   onPageChange={(next) => {
                     setPage(next);
-                    syncUrl({ level, category, search: query });
+                    syncUrl({ level, category, search: query, assigned });
                   }}
                   unit="điểm ngữ pháp"
                 />
@@ -462,10 +544,7 @@ function GrammarInner() {
       {/* ---------- Detail drawer (server-fetched, not the card copy) ---------- */}
       <Drawer
         open={openId !== null && !drillOpen}
-        onClose={() => {
-          setOpenId(null);
-          setOpenItem(null);
-        }}
+        onClose={closeDetail}
         eyebrow={openItem ? `HSK ${openItem.level} · ${openItem.category}` : ""}
         title={openItem?.name ?? ""}
         subtitle={openItem?.formula}
@@ -593,7 +672,14 @@ function GrammarInner() {
                   <button type="button" className="btn btn--outline btn--sm" onClick={() => openItem && void openDrill(openItem)}>
                     Luyện lại
                   </button>
-                  <button type="button" className="btn btn--ghost btn--sm" onClick={() => { setDrillOpen(false); setOpenId(null); setOpenItem(null); }}>
+                  <button
+                    type="button"
+                    className="btn btn--ghost btn--sm"
+                    onClick={() => {
+                      setDrillOpen(false);
+                      closeDetail();
+                    }}
+                  >
                     Xong
                   </button>
                 </div>

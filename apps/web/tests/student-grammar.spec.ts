@@ -43,6 +43,45 @@ async function apiLogin(page: Page): Promise<void> {
   if (!res.ok()) throw new Error(`login failed: HTTP ${res.status()}`);
 }
 
+async function mockStudentSession(page: Page): Promise<void> {
+  await page.route("**/api/v1/auth/refresh", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ data: { accessToken: "p7-student-token" } }),
+    }),
+  );
+  await page.route("**/api/v1/auth/me", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        data: {
+          id: "p7-student",
+          email: "p7.student@hsk.local",
+          nickname: "Học viên P7",
+          role: "student",
+          status: "active",
+        },
+      }),
+    }),
+  );
+  await page.route("**/api/v1/student/grammar/progress", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ data: { studied: [], practice: [] } }),
+    }),
+  );
+  await page.route("**/api/v1/notifications/unread-count", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ data: { count: 0 } }),
+    }),
+  );
+}
+
 test.describe("grammar library on the live catalog", () => {
   test("loads the server catalog with honest states", async ({ page }, testInfo) => {
     const errors = collectPageErrors(page);
@@ -146,6 +185,7 @@ test.describe("grammar library on the live catalog", () => {
     await page.getByRole("button", { name: "Kiểm tra" }).click();
     await expect(page.locator(".ex-feedback")).toBeVisible({ timeout: 10_000 });
     await page.getByRole("button", { name: "Xong" }).click();
+    await expect(page).not.toHaveURL(/(?:\?|&)point=/);
     // Attempts accumulate on the seeded account across runs — assert the two
     // submits from this test persisted (>= 2), never an exact total.
     const counter = page.getByText(/Đã luyện \d+ lần/);
@@ -153,6 +193,142 @@ test.describe("grammar library on the live catalog", () => {
     const shown = Number((await counter.first().innerText()).match(/Đã luyện (\d+) lần/)?.[1]);
     expect(shown).toBeGreaterThanOrEqual(2);
 
+    expect(errors).toEqual([]);
+  });
+
+  test("teacher-assigned filter is server-side, composable and URL-restorable", async ({
+    page,
+  }, testInfo) => {
+    const errors = collectPageErrors(page);
+    await mockStudentSession(page);
+
+    const listQueries: URLSearchParams[] = [];
+    await page.route("**/api/v1/student/grammar?**", async (route) => {
+      const url = new URL(route.request().url());
+      listQueries.push(url.searchParams);
+      const assignedOnly = url.searchParams.get("assignedOnly") === "true";
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          data: assignedOnly
+            ? []
+            : [
+                {
+                  id: "g-hsk2-ba",
+                  level: 2,
+                  category: "Câu chữ 把",
+                  name: "Câu chữ 把",
+                  formula: "S + 把 + O + V",
+                  hanzi: "我把书放在桌子上。",
+                  pinyin: "Wǒ bǎ shū fàng zài zhuōzi shàng.",
+                  vi: "Tôi đặt sách lên bàn.",
+                  note: "Nhấn mạnh cách xử lý tân ngữ.",
+                  key: "ba",
+                  frequency: "high",
+                },
+              ],
+          meta: {
+            total: assignedOnly ? 0 : 1,
+            page: 1,
+            limit: 20,
+            totalPages: assignedOnly ? 0 : 1,
+          },
+        }),
+      });
+    });
+    await page.route("**/api/v1/student/grammar/g-hsk2-ba", (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          data: {
+            id: "g-hsk2-ba",
+            level: 2,
+            category: "Câu chữ 把",
+            name: "Câu chữ 把",
+            formula: "S + 把 + O + V",
+            hanzi: "我把书放在桌子上。",
+            pinyin: "Wǒ bǎ shū fàng zài zhuōzi shàng.",
+            vi: "Tôi đặt sách lên bàn.",
+            note: "Nhấn mạnh cách xử lý tân ngữ.",
+            key: "ba",
+            frequency: "high",
+          },
+        }),
+      }),
+    );
+
+    await page.goto("/student/grammar?hskLevel=2&assignedOnly=true");
+    await expect(page.getByText("Chưa có điểm ngữ pháp được giao", { exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Giáo viên giao", exact: true })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    expect(listQueries.at(-1)?.get("hskLevel")).toBe("2");
+    expect(listQueries.at(-1)?.get("assignedOnly")).toBe("true");
+
+    await page.getByRole("button", { name: "Xem tất cả điểm ngữ pháp", exact: true }).click();
+    await expect(page.locator(".gcard")).toHaveCount(1);
+    await expect(page).toHaveURL(/hskLevel=2/);
+    await expect(page).not.toHaveURL(/assignedOnly/);
+    expect(listQueries.at(-1)?.get("hskLevel")).toBe("2");
+    expect(listQueries.at(-1)?.has("assignedOnly")).toBe(false);
+
+    await page.screenshot({
+      path: join(SCREEN_DIR, `grammar-assigned-${testInfo.project.name}.png`),
+      fullPage: true,
+    });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+
+    await page.locator(".gcard").click();
+    await expect(page.getByRole("dialog")).toContainText("Câu chữ 把");
+    await expect(page).toHaveURL(/point=g-hsk2-ba/);
+    await page.goBack();
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    await expect(page).toHaveURL(/hskLevel=2/);
+    await expect(page).not.toHaveURL(/(?:\?|&)point=/);
+    expect(errors).toEqual([]);
+  });
+
+  test("grammar point deep link closes without losing assigned filters", async ({ page }) => {
+    const errors = collectPageErrors(page);
+    await mockStudentSession(page);
+    const point = {
+      id: "g-hsk2-ba",
+      level: 2,
+      category: "Câu chữ 把",
+      name: "Câu chữ 把",
+      formula: "S + 把 + O + V",
+      hanzi: "我把书放在桌子上。",
+      pinyin: "Wǒ bǎ shū fàng zài zhuōzi shàng.",
+      vi: "Tôi đặt sách lên bàn.",
+      note: "Nhấn mạnh cách xử lý tân ngữ.",
+      key: "ba",
+      frequency: "high",
+    };
+    await page.route("**/api/v1/student/grammar?**", (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ data: [], meta: { total: 0, page: 1, limit: 20, totalPages: 0 } }),
+      }),
+    );
+    await page.route("**/api/v1/student/grammar/g-hsk2-ba", (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ data: point }),
+      }),
+    );
+
+    await page.goto("/student/grammar?hskLevel=2&assignedOnly=true&point=g-hsk2-ba");
+    await expect(page.getByRole("dialog")).toContainText("Câu chữ 把");
+    await page.getByRole("button", { name: "Đóng bảng chi tiết" }).click();
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    await expect(page).toHaveURL(/hskLevel=2/);
+    await expect(page).toHaveURL(/assignedOnly=true/);
+    await expect(page).not.toHaveURL(/(?:\?|&)point=/);
     expect(errors).toEqual([]);
   });
 });
