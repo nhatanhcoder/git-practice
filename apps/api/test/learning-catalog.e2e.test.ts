@@ -57,8 +57,8 @@ async function request(method: string, path: string, token?: string, body?: unkn
     },
     ...(body === undefined ? {} : { body: JSON.stringify(body) }),
   });
-  const json = await response.json();
-  return { status: response.status, data: json.data, body: json };
+  const json = await response.json().catch(() => null);
+  return { status: response.status, data: json?.data, body: json };
 }
 
 async function createActor(role: 'teacher' | 'admin' | 'student', tag: string): Promise<Actor> {
@@ -316,7 +316,7 @@ describe('Teacher-authored Learning Catalog invariants', () => {
     assert.equal(blocked.status, 409);
     assert.equal(blocked.body.code, 'LEARNING_PATH_HAS_PUBLISHED_UNITS');
     const clean = (await request('POST', '/teacher/learning-paths', teacherA.token, { title: 'Draft xoá được' })).data;
-    assert.equal((await request('DELETE', `/teacher/learning-paths/${clean.id}`, teacherA.token)).status, 200);
+    assert.equal((await request('DELETE', `/teacher/learning-paths/${clean.id}`, teacherA.token)).status, 204);
   });
 
   it('INV-LMOD-04/10/11 and student visibility: suspend hides, restore preserves published set and progress', async () => {
@@ -362,5 +362,112 @@ describe('Teacher-authored Learning Catalog invariants', () => {
     assert.ok(node);
     assert.equal(node.state, 'unavailable');
     assert.equal((await request('GET', `/student/learning-path/${referenceUnit.slug}`, student.token)).status, 404);
+  });
+
+  it('INV-LCAT-03 race: concurrent submit vs removeUnit never both succeed on an emptied path', async () => {
+    // P1-2: without serialization, removeUnit's check-then-delete can straddle
+    // submit's count-then-flip (or vice versa) and both return 200 — a unit
+    // deleted out of a pending_review path with no error anywhere.
+    for (let round = 0; round < 12; round += 1) {
+      const path = (
+        await request('POST', '/teacher/learning-paths', teacherA.token, { title: `Race path ${round}` })
+      ).data;
+      const unit = (
+        await request('POST', `/teacher/learning-paths/${path.id}/units`, teacherA.token, authored(`Race unit ${round}`))
+      ).data;
+      const [submitted, removed] = await Promise.all([
+        request('POST', `/teacher/learning-paths/${path.id}/submit`, teacherA.token, {}),
+        request('DELETE', `/teacher/learning-units/${unit.id}`, teacherA.token),
+      ]);
+      assert.ok([200, 409].includes(submitted.status), `round ${round}: submit=${submitted.status}`);
+      assert.ok([200, 204, 409].includes(removed.status), `round ${round}: remove=${removed.status}`);
+      // Both succeeding is always illegal here: remove-200 deleted the only
+      // unit, so submit must have failed EMPTY; submit-200 flipped first, so
+      // remove must have failed FROZEN. There is no legal interleaving.
+      assert.ok(
+        !(submitted.status === 200 && (removed.status === 200 || removed.status === 204)),
+        `round ${round}: submit and removeUnit both succeeded on path ${path.id}`,
+      );
+    }
+  });
+
+  it('P2: concurrent creates at the 100-unit cap keep exactly 100 units with unique orders', async () => {
+    const path = (
+      await request('POST', '/teacher/learning-paths', teacherA.token, { title: 'Cap race path' })
+    ).data;
+    const curriculumKey = path.curriculumKey as string;
+    await mongo.collection('learning_units').insertMany(
+      Array.from({ length: 99 }, (_, i) => ({
+        slug: `${curriculumKey}-cap-${i + 1}`,
+        curriculum: curriculumKey,
+        pathId: path.id,
+        authorId: teacherA.id,
+        kind: 'authored',
+        level: 1,
+        order: i + 1,
+        title: `Cap seed ${i + 1}`,
+        sourceHash: '0'.repeat(64),
+        words: [{ hanzi: `H${i}`, pinyin: `p${i}`, meaning: `m${i}` }],
+        published: false,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })),
+    );
+    const attempts = await Promise.all(
+      Array.from({ length: 10 }, (_, i) =>
+        request('POST', `/teacher/learning-paths/${path.id}/units`, teacherA.token, {
+          kind: 'authored',
+          title: `Cap racer ${i}`,
+          level: (i % 3) + 1,
+          words: [{ hanzi: `R${i}`, pinyin: `r${i}`, meaning: `n${i}` }],
+        }),
+      ),
+    );
+    const winners = attempts.filter((r) => r.status === 201);
+    const losers = attempts.filter((r) => r.status !== 201);
+    assert.equal(winners.length, 1, `expected one winner, got ${winners.length}: ${JSON.stringify(attempts.map((r) => r.status))}`);
+    for (const loser of losers) {
+      assert.equal(loser.status, 400, JSON.stringify(loser.body));
+      assert.equal(loser.body.code, 'VALIDATION_ERROR');
+    }
+    const detail = await request('GET', `/teacher/learning-paths/${path.id}`, teacherA.token);
+    assert.equal(detail.status, 200);
+    assert.equal(detail.data.units.length, 100);
+    assert.deepEqual(
+      detail.data.units.map((unit: any) => unit.order).sort((a: number, b: number) => a - b),
+      Array.from({ length: 100 }, (_, i) => i + 1),
+    );
+  });
+
+  it('double submit has exactly one winner', async () => {
+    const path = (
+      await request('POST', '/teacher/learning-paths', teacherA.token, { title: 'Double submit path' })
+    ).data;
+    await request('POST', `/teacher/learning-paths/${path.id}/units`, teacherA.token, authored('Double submit unit'));
+    const race = await Promise.all([
+      request('POST', `/teacher/learning-paths/${path.id}/submit`, teacherA.token, {}),
+      request('POST', `/teacher/learning-paths/${path.id}/submit`, teacherA.token, {}),
+    ]);
+    assert.deepEqual(race.map((response) => response.status).sort(), [200, 409]);
+  });
+
+  it('INV-LCAT-03 sequential: every unit mutation on a pending_review path answers FROZEN', async () => {
+    const path = (
+      await request('POST', '/teacher/learning-paths', teacherA.token, { title: 'Frozen sequential path' })
+    ).data;
+    const unit = (
+      await request('POST', `/teacher/learning-paths/${path.id}/units`, teacherA.token, authored('Frozen unit'))
+    ).data;
+    assert.equal((await request('POST', `/teacher/learning-paths/${path.id}/submit`, teacherA.token, {})).status, 200);
+    const frozen = [
+      await request('PATCH', `/teacher/learning-units/${unit.id}`, teacherA.token, { title: 'Không được sửa' }),
+      await request('DELETE', `/teacher/learning-units/${unit.id}`, teacherA.token),
+      await request('PATCH', `/teacher/learning-paths/${path.id}/units/reorder`, teacherA.token, [{ id: unit.id, order: 1 }]),
+      await request('POST', `/teacher/learning-units/${unit.id}/publish`, teacherA.token, {}),
+    ];
+    for (const response of frozen) {
+      assert.equal(response.status, 409, JSON.stringify(response.body));
+      assert.equal(response.body.code, 'LEARNING_PATH_FROZEN');
+    }
   });
 });

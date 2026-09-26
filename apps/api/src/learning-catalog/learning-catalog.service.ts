@@ -66,6 +66,30 @@ export class LearningCatalogService {
     private readonly progress: Model<UserLearningProgressDocument>,
   ) {}
 
+  /**
+   * P1-2/P2 coordination: every path-scoped mutation runs inside one Postgres
+   * interactive transaction that first takes a per-path advisory lock. The lock
+   * serializes concurrent teacher/admin operations on the SAME path across
+   * processes and instances (plain Postgres, no extension), so a status
+   * check-then-write can no longer straddle a submit/suspend flip, and
+   * count-then-create can no longer allocate the same order twice. Mongo writes
+   * run inside the lock — but outside the PG transaction, because there is no
+   * cross-store transaction (DEBT-001) — and cannot interleave with another
+   * locked operation on the same path.
+   */
+  private async withPathLock<T>(
+    pathId: string,
+    work: (tx: Prisma.TransactionClient) => Promise<T>,
+  ): Promise<T> {
+    return this.prisma.$transaction(
+      async (tx) => {
+        await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${pathId}), 7)`;
+        return work(tx);
+      },
+      { timeout: 15000, maxWait: 5000 },
+    );
+  }
+
   async createPath(ownerId: string, dto: CreateLearningPathDto) {
     const id = randomUUID();
     const title = dto.title.trim();
@@ -107,57 +131,74 @@ export class LearningCatalogService {
   }
 
   async updatePath(ownerId: string, pathId: string, dto: UpdateLearningPathDto) {
-    const path = await this.loadOwnedPath(ownerId, pathId);
-    this.assertTeacherWritable(path.status);
     if (dto.title !== undefined) assertLength(dto.title.trim(), 3, 300, 'title');
-    const updated = await this.prisma.learningPath.update({
-      where: { id: path.id },
-      data: {
-        ...(dto.title !== undefined ? { title: dto.title.trim() } : {}),
-        ...(dto.description !== undefined ? { description: cleanOptional(dto.description) } : {}),
-      },
+    return this.withPathLock(pathId, async (tx) => {
+      const path = await this.loadOwnedPath(ownerId, pathId, tx);
+      this.assertTeacherWritable(path.status);
+      // Atomic predicate, not just the check above: a submit/suspend that lands
+      // between the read and this write must fail the write, not slip through.
+      const changed = await tx.learningPath.updateMany({
+        where: {
+          id: path.id,
+          ownerId,
+          status: { in: [LearningPathStatus.draft, LearningPathStatus.rejected, LearningPathStatus.approved] },
+        },
+        data: {
+          ...(dto.title !== undefined ? { title: dto.title.trim() } : {}),
+          ...(dto.description !== undefined ? { description: cleanOptional(dto.description) } : {}),
+        },
+      });
+      if (changed.count !== 1) {
+        const fresh = await tx.learningPath.findUnique({ where: { id: path.id } });
+        if (!fresh) throw new AppException(ErrorCode.LEARNING_PATH_NOT_FOUND, 'Không tìm thấy path');
+        // The predicate covers every non-frozen status, so a surviving row froze mid-flight.
+        throw new AppException(ErrorCode.LEARNING_PATH_FROZEN, 'Path đang bị đóng băng');
+      }
+      const updated = await tx.learningPath.findUniqueOrThrow({ where: { id: path.id } });
+      return this.pathDetail(updated, false);
     });
-    return this.pathDetail(updated, false);
   }
 
   async removePath(ownerId: string, pathId: string) {
-    const path = await this.loadOwnedPath(ownerId, pathId);
-    this.assertTeacherWritable(path.status);
-    if (path.status !== LearningPathStatus.draft && path.status !== LearningPathStatus.rejected) {
-      throw new AppException(ErrorCode.LEARNING_PATH_INVALID_STATUS, 'Path đã duyệt không thể xoá');
-    }
-    const units = await this.units.find({ pathId: path.id }).select({ slug: 1, firstPublishedAt: 1 }).lean();
-    if (units.some((unit) => unit.firstPublishedAt)) {
-      throw new AppException(
-        ErrorCode.LEARNING_PATH_HAS_PUBLISHED_UNITS,
-        'Path có bài học đã từng publish nên không thể xoá',
-      );
-    }
-    if (units.length && (await this.progress.exists({ unitSlug: { $in: units.map((unit) => unit.slug) } }))) {
-      throw new AppException(
-        ErrorCode.LEARNING_PATH_HAS_PUBLISHED_UNITS,
-        'Path đã có tiến độ học viên nên không thể xoá',
-      );
-    }
+    return this.withPathLock(pathId, async (tx) => {
+      const path = await this.loadOwnedPath(ownerId, pathId, tx);
+      this.assertTeacherWritable(path.status);
+      if (path.status !== LearningPathStatus.draft && path.status !== LearningPathStatus.rejected) {
+        throw new AppException(ErrorCode.LEARNING_PATH_INVALID_STATUS, 'Path đã duyệt không thể xoá');
+      }
+      const units = await this.units.find({ pathId: path.id }).select({ slug: 1, firstPublishedAt: 1 }).lean();
+      if (units.some((unit) => unit.firstPublishedAt)) {
+        throw new AppException(
+          ErrorCode.LEARNING_PATH_HAS_PUBLISHED_UNITS,
+          'Path có bài học đã từng publish nên không thể xoá',
+        );
+      }
+      if (units.length && (await this.progress.exists({ unitSlug: { $in: units.map((unit) => unit.slug) } }))) {
+        throw new AppException(
+          ErrorCode.LEARNING_PATH_HAS_PUBLISHED_UNITS,
+          'Path đã có tiến độ học viên nên không thể xoá',
+        );
+      }
 
-    // ADR-017 §4: no cross-store transaction. Postgres is the source of truth and is written first.
-    await this.prisma.learningPath.delete({ where: { id: path.id } });
-    await this.units.deleteMany({ pathId: path.id });
-    return { id: path.id };
+      // ADR-017 §4: no cross-store transaction. Postgres is the source of truth and is written first.
+      await tx.learningPath.delete({ where: { id: path.id } });
+      await this.units.deleteMany({ pathId: path.id });
+      return { id: path.id };
+    });
   }
 
   async submitPath(ownerId: string, pathId: string) {
-    const path = await this.loadOwnedPath(ownerId, pathId);
-    this.assertTeacherWritable(path.status);
-    if (path.status !== LearningPathStatus.draft && path.status !== LearningPathStatus.rejected) {
-      throw new AppException(ErrorCode.LEARNING_PATH_INVALID_STATUS, 'Path không thể gửi duyệt ở trạng thái hiện tại');
-    }
-    const unitCount = await this.units.countDocuments({ pathId: path.id });
-    if (unitCount === 0) {
-      throw new AppException(ErrorCode.LEARNING_PATH_EMPTY, 'Path cần ít nhất một bài học trước khi gửi duyệt');
-    }
-    const submittedAt = new Date();
-    const result = await this.prisma.$transaction(async (tx) => {
+    return this.withPathLock(pathId, async (tx) => {
+      const path = await this.loadOwnedPath(ownerId, pathId, tx);
+      this.assertTeacherWritable(path.status);
+      if (path.status !== LearningPathStatus.draft && path.status !== LearningPathStatus.rejected) {
+        throw new AppException(ErrorCode.LEARNING_PATH_INVALID_STATUS, 'Path không thể gửi duyệt ở trạng thái hiện tại');
+      }
+      const unitCount = await this.units.countDocuments({ pathId: path.id });
+      if (unitCount === 0) {
+        throw new AppException(ErrorCode.LEARNING_PATH_EMPTY, 'Path cần ít nhất một bài học trước khi gửi duyệt');
+      }
+      const submittedAt = new Date();
       const changed = await tx.learningPath.updateMany({
         where: { id: path.id, ownerId, status: { in: ['draft', 'rejected'] } },
         data: {
@@ -168,7 +209,7 @@ export class LearningCatalogService {
           rejectionReason: null,
         },
       });
-      if (changed.count !== 1) return changed;
+      if (changed.count !== 1) this.invalidTransition(path.id, path.status, 'pending_review');
       const admins = await tx.user.findMany({
         where: { role: 'admin', status: 'active' },
         select: { id: true },
@@ -183,94 +224,107 @@ export class LearningCatalogService {
           payload: { pathId: path.id, ownerId, title: path.title },
         })),
       );
-      return changed;
+      this.logger.log(`learning path submitted pathId=${path.id} ownerId=${ownerId} unitCount=${unitCount}`);
+      const updated = await tx.learningPath.findUniqueOrThrow({ where: { id: path.id } });
+      return this.pathDetail(updated, false);
     });
-    if (result.count !== 1) this.invalidTransition(path.id, path.status, 'pending_review');
-    this.logger.log(`learning path submitted pathId=${path.id} ownerId=${ownerId} unitCount=${unitCount}`);
-    return this.teacherPathDetail(ownerId, path.id);
   }
 
   async createUnit(ownerId: string, pathId: string, dto: CreateLearningUnitDto) {
-    const path = await this.loadOwnedPath(ownerId, pathId);
-    this.assertTeacherWritable(path.status);
     this.validateUnitCreate(dto);
     assertLength(dto.title.trim(), 3, 300, 'title');
-    const count = await this.units.countDocuments({ pathId: path.id });
-    if (count >= 100) {
-      throw new AppException(ErrorCode.VALIDATION_ERROR, 'Mỗi path chỉ được tối đa 100 bài học');
-    }
-    if (dto.kind === 'reference') await this.assertValidReference(dto.referenceSlug!);
+    return this.withPathLock(pathId, async (tx) => {
+      const path = await this.loadOwnedPath(ownerId, pathId, tx);
+      this.assertTeacherWritable(path.status);
+      // P2: count-then-create is serialized by the path lock, so two concurrent
+      // creates can neither exceed the cap nor allocate the same order.
+      const count = await this.units.countDocuments({ pathId: path.id });
+      if (count >= 100) {
+        throw new AppException(ErrorCode.VALIDATION_ERROR, 'Mỗi path chỉ được tối đa 100 bài học');
+      }
+      if (dto.kind === 'reference') await this.assertValidReference(dto.referenceSlug!);
 
-    const words = dto.kind === 'authored' ? normaliseWords(dto.words!) : [];
-    const id = randomUUID().replaceAll('-', '').slice(0, 12);
-    const unit = await this.units.create({
-      slug: `${path.curriculumKey}-u${id}`,
-      curriculum: path.curriculumKey,
-      pathId: path.id,
-      authorId: ownerId,
-      kind: dto.kind,
-      referenceSlug: dto.kind === 'reference' ? dto.referenceSlug : undefined,
-      level: dto.level,
-      order: count + 1,
-      title: dto.title.trim(),
-      sourceHash: hashUnit(dto.title.trim(), dto.level, words, dto.referenceSlug),
-      words,
-      published: false,
+      const words = dto.kind === 'authored' ? normaliseWords(dto.words!) : [];
+      const id = randomUUID().replaceAll('-', '').slice(0, 12);
+      const unit = await this.units.create({
+        slug: `${path.curriculumKey}-u${id}`,
+        curriculum: path.curriculumKey,
+        pathId: path.id,
+        authorId: ownerId,
+        kind: dto.kind,
+        referenceSlug: dto.kind === 'reference' ? dto.referenceSlug : undefined,
+        level: dto.level,
+        order: count + 1,
+        title: dto.title.trim(),
+        sourceHash: hashUnit(dto.title.trim(), dto.level, words, dto.referenceSlug),
+        words,
+        published: false,
+      });
+      return toUnit(unit.toObject(), true);
     });
-    return toUnit(unit.toObject(), true);
   }
 
   async updateUnit(ownerId: string, unitId: string, dto: UpdateLearningUnitDto) {
-    const { unit, path } = await this.loadOwnedUnit(ownerId, unitId);
-    this.assertTeacherWritable(path.status);
-    this.assertUnitMutable(unit);
-    if (unit.kind === 'reference' && dto.words !== undefined) {
-      throw new AppException(ErrorCode.VALIDATION_ERROR, 'Unit tham chiếu không nhận words');
-    }
-    if (dto.title !== undefined) assertLength(dto.title.trim(), 3, 300, 'title');
-    const words = dto.words ? normaliseWords(dto.words) : unit.words;
-    const title = dto.title?.trim() ?? unit.title;
-    const level = dto.level ?? unit.level;
-    const updated = await this.units
-      .findByIdAndUpdate(
-        unit._id,
-        {
-          ...(dto.title !== undefined ? { title } : {}),
-          ...(dto.level !== undefined ? { level } : {}),
-          ...(dto.words !== undefined ? { words } : {}),
-          sourceHash: hashUnit(title, level, words, unit.referenceSlug),
-        },
-        { new: true },
-      )
-      .lean();
-    return toUnit(updated!, true);
+    // The lock key is the parent path: resolve it before locking, then re-read
+    // everything inside the lock — the probe is stale-tolerant by design.
+    const pathId = await this.pathIdForUnit(ownerId, unitId);
+    return this.withPathLock(pathId, async (tx) => {
+      const { unit, path } = await this.loadOwnedUnit(ownerId, unitId, tx);
+      this.assertTeacherWritable(path.status);
+      this.assertUnitMutable(unit);
+      if (unit.kind === 'reference' && dto.words !== undefined) {
+        throw new AppException(ErrorCode.VALIDATION_ERROR, 'Unit tham chiếu không nhận words');
+      }
+      if (dto.title !== undefined) assertLength(dto.title.trim(), 3, 300, 'title');
+      const words = dto.words ? normaliseWords(dto.words) : unit.words;
+      const title = dto.title?.trim() ?? unit.title;
+      const level = dto.level ?? unit.level;
+      const updated = await this.units
+        .findByIdAndUpdate(
+          unit._id,
+          {
+            ...(dto.title !== undefined ? { title } : {}),
+            ...(dto.level !== undefined ? { level } : {}),
+            ...(dto.words !== undefined ? { words } : {}),
+            sourceHash: hashUnit(title, level, words, unit.referenceSlug),
+          },
+          { new: true },
+        )
+        .lean();
+      if (!updated) throw new AppException(ErrorCode.LEARNING_UNIT_NOT_FOUND, 'Không tìm thấy bài học');
+      return toUnit(updated, true);
+    });
   }
 
   async removeUnit(ownerId: string, unitId: string) {
-    const { unit, path } = await this.loadOwnedUnit(ownerId, unitId);
-    this.assertTeacherWritable(path.status);
-    this.assertUnitMutable(unit);
-    const session = await this.units.db.startSession();
-    try {
-      await session.withTransaction(async () => {
-        await this.units.deleteOne({ _id: unit._id }, { session });
-        await this.units.updateMany(
-          { pathId: path.id, order: { $gt: unit.order } },
-          { $inc: { order: -1 } },
-          { session },
-        );
-      });
-    } finally {
-      await session.endSession();
-    }
-    return { id: String(unit._id) };
+    const pathId = await this.pathIdForUnit(ownerId, unitId);
+    return this.withPathLock(pathId, async (tx) => {
+      const { unit, path } = await this.loadOwnedUnit(ownerId, unitId, tx);
+      this.assertTeacherWritable(path.status);
+      this.assertUnitMutable(unit);
+      const session = await this.units.db.startSession();
+      try {
+        await session.withTransaction(async () => {
+          await this.units.deleteOne({ _id: unit._id }, { session });
+          await this.units.updateMany(
+            { pathId: path.id, order: { $gt: unit.order } },
+            { $inc: { order: -1 } },
+            { session },
+          );
+        });
+      } finally {
+        await session.endSession();
+      }
+      return { id: String(unit._id) };
+    });
   }
 
   async reorderUnits(ownerId: string, pathId: string, items: ReorderLearningUnitItemDto[]) {
-    const path = await this.loadOwnedPath(ownerId, pathId);
-    this.assertTeacherWritable(path.status);
-    const current = await this.units.find({ pathId: path.id }).sort({ order: 1 }).lean();
-    this.assertPermutation(current.map((unit) => String(unit._id)), items);
+    return this.withPathLock(pathId, async (tx) => {
+      const path = await this.loadOwnedPath(ownerId, pathId, tx);
+      this.assertTeacherWritable(path.status);
+      const current = await this.units.find({ pathId: path.id }).sort({ order: 1 }).lean();
+      this.assertPermutation(current.map((unit) => String(unit._id)), items);
 
     const session = await this.units.db.startSession();
     try {
@@ -291,34 +345,46 @@ export class LearningCatalogService {
     } finally {
       await session.endSession();
     }
-    return this.teacherPathDetail(ownerId, path.id);
+    return this.pathDetail(
+      await tx.learningPath.findUniqueOrThrow({ where: { id: path.id } }),
+      false,
+    );
+    });
   }
 
   async publishUnit(ownerId: string, unitId: string) {
-    const { unit, path } = await this.loadOwnedUnit(ownerId, unitId);
-    this.assertTeacherWritable(path.status);
-    if (path.status !== LearningPathStatus.approved) {
-      throw new AppException(ErrorCode.LEARNING_PATH_INVALID_STATUS, 'Chỉ path đã duyệt mới được publish bài học');
-    }
-    if (unit.kind === 'reference') await this.assertValidReference(unit.referenceSlug!);
-    const now = new Date();
-    const updated = await this.units
-      .findOneAndUpdate(
-        { _id: unit._id, published: false },
-        { $set: { published: true, ...(unit.firstPublishedAt ? {} : { firstPublishedAt: now }) } },
-        { new: true },
-      )
-      .lean();
-    if (!updated) {
-      throw new AppException(ErrorCode.LEARNING_UNIT_PUBLISHED_IMMUTABLE, 'Bài học đã được publish');
-    }
-    return toUnit(updated, true);
+    const pathId = await this.pathIdForUnit(ownerId, unitId);
+    return this.withPathLock(pathId, async (tx) => {
+      const { unit, path } = await this.loadOwnedUnit(ownerId, unitId, tx);
+      this.assertTeacherWritable(path.status);
+      if (path.status !== LearningPathStatus.approved) {
+        throw new AppException(ErrorCode.LEARNING_PATH_INVALID_STATUS, 'Chỉ path đã duyệt mới được publish bài học');
+      }
+      if (unit.kind === 'reference') await this.assertValidReference(unit.referenceSlug!);
+      const now = new Date();
+      // Conditional on published:false, so a concurrent double-publish has one
+      // deterministic winner and one IMMUTABLE — never two published writes.
+      const updated = await this.units
+        .findOneAndUpdate(
+          { _id: unit._id, published: false },
+          { $set: { published: true, ...(unit.firstPublishedAt ? {} : { firstPublishedAt: now }) } },
+          { new: true },
+        )
+        .lean();
+      if (!updated) {
+        throw new AppException(ErrorCode.LEARNING_UNIT_PUBLISHED_IMMUTABLE, 'Bài học đã được publish');
+      }
+      return toUnit(updated, true);
+    });
   }
 
   async teacherUnpublishUnit(ownerId: string, unitId: string) {
-    const { unit, path } = await this.loadOwnedUnit(ownerId, unitId);
-    this.assertTeacherWritable(path.status);
-    return this.unpublishUnit(unit);
+    const pathId = await this.pathIdForUnit(ownerId, unitId);
+    return this.withPathLock(pathId, async (tx) => {
+      const { unit, path } = await this.loadOwnedUnit(ownerId, unitId, tx);
+      this.assertTeacherWritable(path.status);
+      return this.unpublishUnit(unit);
+    });
   }
 
   async adminUnpublishUnit(adminId: string, unitId: string) {
@@ -397,11 +463,24 @@ export class LearningCatalogService {
     if (unitCount === 0) {
       throw new AppException(ErrorCode.LEARNING_PATH_EMPTY, 'Path cần ít nhất một bài học để duyệt');
     }
-    return this.moderatePath(path, adminId, 'pending_review', 'approved', 'learning_path_approved', {
-      reviewedById: adminId,
-      reviewedAt: new Date(),
-      rejectionReason: null,
+    // The empty-check above is advisory: re-check inside the lock, because a
+    // concurrent removeUnit could empty the path between the count and the flip.
+    await this.withPathLock(path.id, async (tx) => {
+      const fresh = await this.loadAdminPath(pathId, tx);
+      if (fresh.status !== LearningPathStatus.pending_review) {
+        this.invalidTransition(fresh.id, fresh.status, LearningPathStatus.approved);
+      }
+      const freshCount = await this.units.countDocuments({ pathId: fresh.id });
+      if (freshCount === 0) {
+        throw new AppException(ErrorCode.LEARNING_PATH_EMPTY, 'Path cần ít nhất một bài học để duyệt');
+      }
+      await this.moderatePath(tx, fresh, adminId, 'pending_review', 'approved', 'learning_path_approved', {
+        reviewedById: adminId,
+        reviewedAt: new Date(),
+        rejectionReason: null,
+      });
     });
+    return this.adminPathDetail(path.id);
   }
 
   async rejectPath(adminId: string, pathId: string, reason: string) {
@@ -413,32 +492,45 @@ export class LearningCatalogService {
       );
     }
     const path = await this.loadAdminPath(pathId);
-    return this.moderatePath(path, adminId, 'pending_review', 'rejected', 'learning_path_rejected', {
-      reviewedById: adminId,
-      reviewedAt: new Date(),
-      rejectionReason,
+    await this.withPathLock(path.id, async (tx) => {
+      const fresh = await this.loadAdminPath(pathId, tx);
+      await this.moderatePath(tx, fresh, adminId, 'pending_review', 'rejected', 'learning_path_rejected', {
+        reviewedById: adminId,
+        reviewedAt: new Date(),
+        rejectionReason,
+      });
     });
+    return this.adminPathDetail(path.id);
   }
 
   async suspendPath(adminId: string, pathId: string) {
     const path = await this.loadAdminPath(pathId);
-    return this.moderatePath(path, adminId, 'approved', 'suspended', 'learning_path_suspended', {
-      suspendedById: adminId,
-      suspendedAt: new Date(),
-      restoredById: null,
-      restoredAt: null,
+    await this.withPathLock(path.id, async (tx) => {
+      const fresh = await this.loadAdminPath(pathId, tx);
+      await this.moderatePath(tx, fresh, adminId, 'approved', 'suspended', 'learning_path_suspended', {
+        suspendedById: adminId,
+        suspendedAt: new Date(),
+        restoredById: null,
+        restoredAt: null,
+      });
     });
+    return this.adminPathDetail(path.id);
   }
 
   async restorePath(adminId: string, pathId: string) {
     const path = await this.loadAdminPath(pathId);
-    return this.moderatePath(path, adminId, 'suspended', 'approved', null, {
-      restoredById: adminId,
-      restoredAt: new Date(),
+    await this.withPathLock(path.id, async (tx) => {
+      const fresh = await this.loadAdminPath(pathId, tx);
+      await this.moderatePath(tx, fresh, adminId, 'suspended', 'approved', null, {
+        restoredById: adminId,
+        restoredAt: new Date(),
+      });
     });
+    return this.adminPathDetail(path.id);
   }
 
   private async moderatePath(
+    tx: Prisma.TransactionClient,
     path: Awaited<ReturnType<LearningCatalogService['loadAdminPath']>>,
     adminId: string,
     source: LearningPathStatus,
@@ -446,27 +538,23 @@ export class LearningCatalogService {
     notification: 'learning_path_approved' | 'learning_path_rejected' | 'learning_path_suspended' | null,
     data: Prisma.LearningPathUncheckedUpdateManyInput,
   ) {
-    const changed = await this.prisma.$transaction(async (tx) => {
-      const result = await tx.learningPath.updateMany({
-        where: { id: path.id, status: source },
-        data: { ...data, status: target },
-      });
-      if (result.count === 1 && notification) {
-        await this.notifications.createManyWithinTx(tx, [
-          {
-            userId: path.ownerId,
-            type: notification,
-            referenceId: path.id,
-            referenceType: 'learning_path',
-            payload: { pathId: path.id, title: path.title, actorId: adminId },
-          },
-        ]);
-      }
-      return result;
+    const result = await tx.learningPath.updateMany({
+      where: { id: path.id, status: source },
+      data: { ...data, status: target },
     });
-    if (changed.count !== 1) this.invalidTransition(path.id, path.status, target);
+    if (result.count === 1 && notification) {
+      await this.notifications.createManyWithinTx(tx, [
+        {
+          userId: path.ownerId,
+          type: notification,
+          referenceId: path.id,
+          referenceType: 'learning_path',
+          payload: { pathId: path.id, title: path.title, actorId: adminId },
+        },
+      ]);
+    }
+    if (result.count !== 1) this.invalidTransition(path.id, path.status, target);
     this.logger.log(`learning path moderated actor=${adminId} pathId=${path.id} ${source}->${target}`);
-    return this.adminPathDetail(path.id);
   }
 
   private async pathDetail(path: PathRow, admin: boolean) {
@@ -490,9 +578,9 @@ export class LearningCatalogService {
     };
   }
 
-  private async loadOwnedPath(ownerId: string, pathId: string) {
+  private async loadOwnedPath(ownerId: string, pathId: string, tx: Prisma.TransactionClient = this.prisma) {
     if (!UUID.test(pathId)) throw new AppException(ErrorCode.LEARNING_PATH_NOT_FOUND, 'Không tìm thấy path');
-    const path = await this.prisma.learningPath.findUnique({ where: { id: pathId } });
+    const path = await tx.learningPath.findUnique({ where: { id: pathId } });
     if (!path) throw new AppException(ErrorCode.LEARNING_PATH_NOT_FOUND, 'Không tìm thấy path');
     if (!ownerId || path.ownerId !== ownerId) {
       throw new AppException(ErrorCode.LEARNING_PATH_ACCESS_DENIED, 'Path không thuộc giáo viên hiện tại');
@@ -500,9 +588,9 @@ export class LearningCatalogService {
     return path;
   }
 
-  private async loadAdminPath(pathId: string) {
+  private async loadAdminPath(pathId: string, tx: Prisma.TransactionClient = this.prisma) {
     if (!UUID.test(pathId)) throw new AppException(ErrorCode.LEARNING_PATH_NOT_FOUND, 'Không tìm thấy path');
-    const path = await this.prisma.learningPath.findUnique({
+    const path = await tx.learningPath.findUnique({
       where: { id: pathId },
       include: {
         owner: { select: { id: true, nickname: true } },
@@ -515,16 +603,28 @@ export class LearningCatalogService {
     return path;
   }
 
-  private async loadOwnedUnit(ownerId: string, unitId: string) {
+  private async loadOwnedUnit(ownerId: string, unitId: string, tx: Prisma.TransactionClient = this.prisma) {
     const unit = await this.loadUnit(unitId);
     if (!unit.pathId || !UUID.test(unit.pathId)) {
       throw new AppException(ErrorCode.LEARNING_UNIT_NOT_OWNED, 'Bài học không thuộc giáo viên hiện tại');
     }
-    const path = await this.prisma.learningPath.findUnique({ where: { id: unit.pathId } });
+    const path = await tx.learningPath.findUnique({ where: { id: unit.pathId } });
     if (!path || path.ownerId !== ownerId || unit.authorId !== ownerId) {
       throw new AppException(ErrorCode.LEARNING_UNIT_NOT_OWNED, 'Bài học không thuộc giáo viên hiện tại');
     }
     return { unit, path };
+  }
+
+  /**
+   * Resolves the lock key for unit-scoped mutations. Fast 404/NOT_OWNED for
+   * garbage ids; the authoritative ownership check re-runs inside the lock.
+   */
+  private async pathIdForUnit(ownerId: string, unitId: string): Promise<string> {
+    const unit = await this.loadUnit(unitId);
+    if (!unit.pathId || !UUID.test(unit.pathId) || unit.authorId !== ownerId) {
+      throw new AppException(ErrorCode.LEARNING_UNIT_NOT_OWNED, 'Bài học không thuộc giáo viên hiện tại');
+    }
+    return unit.pathId;
   }
 
   private async loadUnit(unitId: string) {

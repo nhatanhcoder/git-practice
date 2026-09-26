@@ -421,6 +421,27 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
       (required by atomic catalog reorder) and its isolated API suite passes **378/378**; web-quality
       and check-docs also pass. The local pay-rate assertion was caused by reused `hsk_dev` state,
       not a clean-DB regression.
+- 🔶 (opencode · 2026-09-26) **PR #99 review fix — catalog concurrency blockers (P1-2, P2).**
+      Branch `fix/pr99-catalog-concurrency` (worktree `../Real-pr99-fix`), based at PR head.
+      Lane note: `apps/api/**` là lane của claude/codex — fix theo lệnh trực tiếp của owner;
+      không động vào worktree `learning-catalog-backend` của codex, không push vào nhánh đó.
+      P1-2: mọi mutation theo path (teacher update/remove/submit/createUnit/updateUnit/
+      removeUnit/reorder/publish/unpublish + admin approve/reject/suspend/restore) chạy trong
+      một PG interactive tx giữ `pg_advisory_xact_lock(hashtext(pathId), 7)` — serialize xuyên
+      process/instance; check-then-write thành conditional predicate + recheck; updatePath và
+      submit đọc lại qua tx; mọi PG I/O trong lock đi qua đúng 1 connection (fix lỗi
+      pool-convoy 500 phát hiện khi test).
+      P2: count+1 serialized → cap 100 + order duy nhất path-wide (kèm test chứng minh pre-fix
+      cho 3 winners + 5×500 duplicate-key).
+      Tests: +4 e2e (frozen race 12 vòng submit-vs-removeUnit, cap race 99+10 concurrent,
+      double-submit, frozen sequential); chạy đỏ-trên-chưa-fix (2 race tests rớt pre-fix) rồi
+      xanh 16/16 post-fix (riêng file) và xanh trong full suite.
+      Follow-up trong review: DELETE teacher → 204 (sửa helper `request()` chịu body rỗng);
+      strip trailing whitespace session 2026-09-20.
+      P1-1 (migration split) do lane khác làm song song qua PR #100 (đã merge) — nhánh này
+      không chạm schema/migration nên rebase-clean.
+      Full suite: 1 rớt duy nhất ở pay-rate (dev-DB state, trùng ghi nhận của codex; CI clean-DB
+      xanh; diff này không chạm pay-rate).
 - **DoD**: a learner can go pronunciation → grammar → character → Lego → mock exam, with
       XP/streak/badges updating correctly
 

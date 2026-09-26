@@ -1,9 +1,9 @@
 # Session — Learning Catalog backend runtime
 
-**Date:** 2026-09-20  
-**Agent:** Codex  
-**Branch:** `codex/learning-catalog-backend`  
-**Task type:** CODE  
+**Date:** 2026-09-20
+**Agent:** Codex
+**Branch:** `codex/learning-catalog-backend`
+**Task type:** CODE
 **Risk scope approved:** Learning Catalog DB schema correction + RBAC; no Auth or money behavior
 
 ## Started from
