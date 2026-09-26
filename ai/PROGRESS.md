@@ -202,6 +202,17 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
   (`/student/classes/[classId]`), aligned with accepted backend endpoints (`join`, `leave`,
   `detail`, `list`) in `StudentClassesController`. Closes contract gap `DOC-016` and prepares
   for wiring frontend to live endpoints.
+- 🔶 (opencode · 2026-09-26) **API-020 contract proposal — SupplementalPractice (lesson↔catalog link).**
+  Owner-authorized option 1 (2026-09-26): draft the module spec as a *proposal* for owner
+  acceptance; no code, no migration, no endpoint goes live from this slice. Lane note:
+  `docs/**` is claude's lane per `multi-agent-workflow.md` §2 — this docs-only proposal is
+  done on explicit owner authorization, branch `docs/api-020-supplements`, worktree
+  `../Real-api020`. Scope: `docs/api/modules/teacher/07-supplements.md` (16-section template,
+  INV-SUP-*) + `SUPPLEMENT_*` candidate codes in the registry's *proposed, not agreed*
+  section + T7 row in `teacher/_INDEX.md`. Grounded only in already-accepted sources
+  (RBAC_MATRIX SupplementalPractice rows, S-LESSON-4/S-SELF-8/S-SELF-9, ENTITY_LESSON /
+  ENTITY_LESSON_ASSIGNMENT / ENTITY_CLASS_ENROLLMENT, G-read + unit-read shapes,
+  INV-TCL-06/08/10 precedents). P4 stays gated on owner acceptance of this contract.
 - **DoD**: Teacher creates class → student joins via code → teacher sees the student in the list
 
 ## Sprint 3 — Question Bank & Assignments
