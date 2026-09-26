@@ -2129,3 +2129,24 @@ resetting Docker data. Migration `20260920120000_add_learning_catalog_moderation
 successfully and the Learning Catalog real-DB invariant suite passed 12/12 against PostgreSQL and
 an isolated Mongo database. BUILD-006 no longer blocks the catalog slice; this note is appended so
 the original incident record remains unchanged.
+
+---
+
+### [API-024] Learning Catalog state checks and unit allocation raced concurrent requests
+
+**Severity**: High
+**Sprint**: 5b
+**Status**: Resolved 2026-09-26 in PR #99 review hardening
+
+**Description**: Teacher mutations loaded a path state and then wrote later without coordinating
+with `submit` or Admin `suspend`. A transition could therefore freeze the path between the check
+and the write. Unit creation also counted documents and inserted at `count + 1` in separate
+operations, so two requests at 99 units could both pass the cap and select order 100.
+
+**Fix**: every Teacher mutation and Admin transition now takes the same PostgreSQL
+transaction-scoped advisory lock derived from `pathId`, then reloads authorization/state inside
+the critical section. Count, 100-unit validation, order allocation and Mongo insert execute while
+that lock is held. Real-DB E2E holds the lock while changing a path to `pending_review` and proves
+the waiting Teacher write returns `LEARNING_PATH_FROZEN`; a second race proves two simultaneous
+creates at 99 units yield exactly one `201`, one `VALIDATION_ERROR`, 100 documents and orders
+`1..100`.

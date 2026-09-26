@@ -421,6 +421,10 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
       (required by atomic catalog reorder) and its isolated API suite passes **378/378**; web-quality
       and check-docs also pass. The local pay-rate assertion was caused by reused `hsk_dev` state,
       not a clean-DB regression.
+      PR review hardening (2026-09-26): migration/audit fields split and merged first in PR #100;
+      all Teacher mutations and Admin transitions now serialize per `pathId` with a PostgreSQL
+      advisory transaction lock and re-read state inside the lock. Concurrent unit creation now
+      preserves the exact 100-unit cap and contiguous path-wide order. Catalog E2E is **14/14**.
 - **DoD**: a learner can go pronunciation → grammar → character → Lego → mock exam, with
       XP/streak/badges updating correctly
 

@@ -53,6 +53,7 @@ type PathRow = Prisma.LearningPathGetPayload<Record<string, never>> & {
   suspender?: { id: string; nickname: string | null } | null;
   restorer?: { id: string; nickname: string | null } | null;
 };
+type LearningPathClient = Pick<Prisma.TransactionClient, 'learningPath'>;
 
 @Injectable()
 export class LearningCatalogService {
@@ -60,8 +61,10 @@ export class LearningCatalogService {
 
   constructor(
     @Inject(PrismaService) private readonly prisma: PrismaService,
-    @Inject(NotificationsService) private readonly notifications: NotificationsService,
-    @InjectModel(LearningUnit.name) private readonly units: Model<LearningUnitDocument>,
+    @Inject(NotificationsService)
+    private readonly notifications: NotificationsService,
+    @InjectModel(LearningUnit.name)
+    private readonly units: Model<LearningUnitDocument>,
     @InjectModel(UserLearningProgress.name)
     private readonly progress: Model<UserLearningProgressDocument>,
   ) {}
@@ -84,7 +87,10 @@ export class LearningCatalogService {
 
   async listTeacherPaths(ownerId: string, query: TeacherLearningPathQuery) {
     const page = query.page ?? 1;
-    const where: Prisma.LearningPathWhereInput = { ownerId, ...(query.status ? { status: query.status } : {}) };
+    const where: Prisma.LearningPathWhereInput = {
+      ownerId,
+      ...(query.status ? { status: query.status } : {}),
+    };
     const [total, paths] = await this.prisma.$transaction([
       this.prisma.learningPath.count({ where }),
       this.prisma.learningPath.findMany({
@@ -107,59 +113,76 @@ export class LearningCatalogService {
   }
 
   async updatePath(ownerId: string, pathId: string, dto: UpdateLearningPathDto) {
-    const path = await this.loadOwnedPath(ownerId, pathId);
-    this.assertTeacherWritable(path.status);
     if (dto.title !== undefined) assertLength(dto.title.trim(), 3, 300, 'title');
-    const updated = await this.prisma.learningPath.update({
-      where: { id: path.id },
-      data: {
-        ...(dto.title !== undefined ? { title: dto.title.trim() } : {}),
-        ...(dto.description !== undefined ? { description: cleanOptional(dto.description) } : {}),
-      },
+    const updated = await this.withPathLock(pathId, async (tx) => {
+      const path = await this.loadOwnedPath(ownerId, pathId, tx);
+      this.assertTeacherWritable(path.status);
+      return tx.learningPath.update({
+        where: { id: path.id },
+        data: {
+          ...(dto.title !== undefined ? { title: dto.title.trim() } : {}),
+          ...(dto.description !== undefined ? { description: cleanOptional(dto.description) } : {}),
+        },
+      });
     });
     return this.pathDetail(updated, false);
   }
 
   async removePath(ownerId: string, pathId: string) {
-    const path = await this.loadOwnedPath(ownerId, pathId);
-    this.assertTeacherWritable(path.status);
-    if (path.status !== LearningPathStatus.draft && path.status !== LearningPathStatus.rejected) {
-      throw new AppException(ErrorCode.LEARNING_PATH_INVALID_STATUS, 'Path đã duyệt không thể xoá');
-    }
-    const units = await this.units.find({ pathId: path.id }).select({ slug: 1, firstPublishedAt: 1 }).lean();
-    if (units.some((unit) => unit.firstPublishedAt)) {
-      throw new AppException(
-        ErrorCode.LEARNING_PATH_HAS_PUBLISHED_UNITS,
-        'Path có bài học đã từng publish nên không thể xoá',
-      );
-    }
-    if (units.length && (await this.progress.exists({ unitSlug: { $in: units.map((unit) => unit.slug) } }))) {
-      throw new AppException(
-        ErrorCode.LEARNING_PATH_HAS_PUBLISHED_UNITS,
-        'Path đã có tiến độ học viên nên không thể xoá',
-      );
-    }
+    const removedId = await this.withPathLock(pathId, async (tx) => {
+      const path = await this.loadOwnedPath(ownerId, pathId, tx);
+      this.assertTeacherWritable(path.status);
+      if (path.status !== LearningPathStatus.draft && path.status !== LearningPathStatus.rejected) {
+        throw new AppException(ErrorCode.LEARNING_PATH_INVALID_STATUS, 'Path đã duyệt không thể xoá');
+      }
+      const units = await this.units.find({ pathId: path.id }).select({ slug: 1, firstPublishedAt: 1 }).lean();
+      if (units.some((unit) => unit.firstPublishedAt)) {
+        throw new AppException(
+          ErrorCode.LEARNING_PATH_HAS_PUBLISHED_UNITS,
+          'Path có bài học đã từng publish nên không thể xoá',
+        );
+      }
+      if (
+        units.length &&
+        (await this.progress.exists({
+          unitSlug: { $in: units.map((unit) => unit.slug) },
+        }))
+      ) {
+        throw new AppException(
+          ErrorCode.LEARNING_PATH_HAS_PUBLISHED_UNITS,
+          'Path đã có tiến độ học viên nên không thể xoá',
+        );
+      }
 
-    // ADR-017 §4: no cross-store transaction. Postgres is the source of truth and is written first.
-    await this.prisma.learningPath.delete({ where: { id: path.id } });
-    await this.units.deleteMany({ pathId: path.id });
-    return { id: path.id };
+      // ADR-017 §4: Postgres remains the source of truth and commits before Mongo cleanup.
+      await tx.learningPath.delete({ where: { id: path.id } });
+      return path.id;
+    });
+    await this.units.deleteMany({ pathId: removedId });
+    return { id: removedId };
   }
 
   async submitPath(ownerId: string, pathId: string) {
-    const path = await this.loadOwnedPath(ownerId, pathId);
-    this.assertTeacherWritable(path.status);
-    if (path.status !== LearningPathStatus.draft && path.status !== LearningPathStatus.rejected) {
-      throw new AppException(ErrorCode.LEARNING_PATH_INVALID_STATUS, 'Path không thể gửi duyệt ở trạng thái hiện tại');
-    }
-    const unitCount = await this.units.countDocuments({ pathId: path.id });
-    if (unitCount === 0) {
-      throw new AppException(ErrorCode.LEARNING_PATH_EMPTY, 'Path cần ít nhất một bài học trước khi gửi duyệt');
-    }
     const submittedAt = new Date();
-    const result = await this.prisma.$transaction(async (tx) => {
+    const { path, unitCount, result } = await this.withPathLock(pathId, async (tx) => {
+      const path = await this.loadOwnedPath(ownerId, pathId, tx);
+      this.assertTeacherWritable(path.status);
+      if (path.status !== LearningPathStatus.draft && path.status !== LearningPathStatus.rejected) {
+        throw new AppException(
+          ErrorCode.LEARNING_PATH_INVALID_STATUS,
+          'Path không thể gửi duyệt ở trạng thái hiện tại',
+        );
+      }
+      const unitCount = await this.units.countDocuments({ pathId: path.id });
+      if (unitCount === 0) {
+        throw new AppException(ErrorCode.LEARNING_PATH_EMPTY, 'Path cần ít nhất một bài học trước khi gửi duyệt');
+      }
       const changed = await tx.learningPath.updateMany({
-        where: { id: path.id, ownerId, status: { in: ['draft', 'rejected'] } },
+        where: {
+          id: path.id,
+          ownerId,
+          status: { in: ['draft', 'rejected'] },
+        },
         data: {
           status: 'pending_review',
           submittedAt,
@@ -168,7 +191,7 @@ export class LearningCatalogService {
           rejectionReason: null,
         },
       });
-      if (changed.count !== 1) return changed;
+      if (changed.count !== 1) return { path, unitCount, result: changed };
       const admins = await tx.user.findMany({
         where: { role: 'admin', status: 'active' },
         select: { id: true },
@@ -183,7 +206,7 @@ export class LearningCatalogService {
           payload: { pathId: path.id, ownerId, title: path.title },
         })),
       );
-      return changed;
+      return { path, unitCount, result: changed };
     });
     if (result.count !== 1) this.invalidTransition(path.id, path.status, 'pending_review');
     this.logger.log(`learning path submitted pathId=${path.id} ownerId=${ownerId} unitCount=${unitCount}`);
@@ -191,124 +214,151 @@ export class LearningCatalogService {
   }
 
   async createUnit(ownerId: string, pathId: string, dto: CreateLearningUnitDto) {
-    const path = await this.loadOwnedPath(ownerId, pathId);
-    this.assertTeacherWritable(path.status);
     this.validateUnitCreate(dto);
     assertLength(dto.title.trim(), 3, 300, 'title');
-    const count = await this.units.countDocuments({ pathId: path.id });
-    if (count >= 100) {
-      throw new AppException(ErrorCode.VALIDATION_ERROR, 'Mỗi path chỉ được tối đa 100 bài học');
-    }
-    if (dto.kind === 'reference') await this.assertValidReference(dto.referenceSlug!);
-
     const words = dto.kind === 'authored' ? normaliseWords(dto.words!) : [];
-    const id = randomUUID().replaceAll('-', '').slice(0, 12);
-    const unit = await this.units.create({
-      slug: `${path.curriculumKey}-u${id}`,
-      curriculum: path.curriculumKey,
-      pathId: path.id,
-      authorId: ownerId,
-      kind: dto.kind,
-      referenceSlug: dto.kind === 'reference' ? dto.referenceSlug : undefined,
-      level: dto.level,
-      order: count + 1,
-      title: dto.title.trim(),
-      sourceHash: hashUnit(dto.title.trim(), dto.level, words, dto.referenceSlug),
-      words,
-      published: false,
+    const unit = await this.withPathLock(pathId, async (tx) => {
+      const path = await this.loadOwnedPath(ownerId, pathId, tx);
+      this.assertTeacherWritable(path.status);
+      const count = await this.units.countDocuments({ pathId: path.id });
+      if (count >= 100) {
+        throw new AppException(ErrorCode.VALIDATION_ERROR, 'Mỗi path chỉ được tối đa 100 bài học');
+      }
+      if (dto.kind === 'reference') await this.assertValidReference(dto.referenceSlug!);
+
+      const id = randomUUID().replaceAll('-', '').slice(0, 12);
+      return this.units.create({
+        slug: `${path.curriculumKey}-u${id}`,
+        curriculum: path.curriculumKey,
+        pathId: path.id,
+        authorId: ownerId,
+        kind: dto.kind,
+        referenceSlug: dto.kind === 'reference' ? dto.referenceSlug : undefined,
+        level: dto.level,
+        order: count + 1,
+        title: dto.title.trim(),
+        sourceHash: hashUnit(dto.title.trim(), dto.level, words, dto.referenceSlug),
+        words,
+        published: false,
+      });
     });
     return toUnit(unit.toObject(), true);
   }
 
   async updateUnit(ownerId: string, unitId: string, dto: UpdateLearningUnitDto) {
-    const { unit, path } = await this.loadOwnedUnit(ownerId, unitId);
-    this.assertTeacherWritable(path.status);
-    this.assertUnitMutable(unit);
-    if (unit.kind === 'reference' && dto.words !== undefined) {
-      throw new AppException(ErrorCode.VALIDATION_ERROR, 'Unit tham chiếu không nhận words');
-    }
     if (dto.title !== undefined) assertLength(dto.title.trim(), 3, 300, 'title');
-    const words = dto.words ? normaliseWords(dto.words) : unit.words;
-    const title = dto.title?.trim() ?? unit.title;
-    const level = dto.level ?? unit.level;
-    const updated = await this.units
-      .findByIdAndUpdate(
-        unit._id,
-        {
-          ...(dto.title !== undefined ? { title } : {}),
-          ...(dto.level !== undefined ? { level } : {}),
-          ...(dto.words !== undefined ? { words } : {}),
-          sourceHash: hashUnit(title, level, words, unit.referenceSlug),
-        },
-        { new: true },
-      )
-      .lean();
+    const pathId = await this.pathIdForUnitLock(unitId);
+    const updated = await this.withPathLock(pathId, async (tx) => {
+      const { unit, path } = await this.loadOwnedUnit(ownerId, unitId, tx);
+      this.assertTeacherWritable(path.status);
+      this.assertUnitMutable(unit);
+      if (unit.kind === 'reference' && dto.words !== undefined) {
+        throw new AppException(ErrorCode.VALIDATION_ERROR, 'Unit tham chiếu không nhận words');
+      }
+      const words = dto.words ? normaliseWords(dto.words) : unit.words;
+      const title = dto.title?.trim() ?? unit.title;
+      const level = dto.level ?? unit.level;
+      return this.units
+        .findByIdAndUpdate(
+          unit._id,
+          {
+            ...(dto.title !== undefined ? { title } : {}),
+            ...(dto.level !== undefined ? { level } : {}),
+            ...(dto.words !== undefined ? { words } : {}),
+            sourceHash: hashUnit(title, level, words, unit.referenceSlug),
+          },
+          { new: true },
+        )
+        .lean();
+    });
     return toUnit(updated!, true);
   }
 
   async removeUnit(ownerId: string, unitId: string) {
-    const { unit, path } = await this.loadOwnedUnit(ownerId, unitId);
-    this.assertTeacherWritable(path.status);
-    this.assertUnitMutable(unit);
-    const session = await this.units.db.startSession();
-    try {
-      await session.withTransaction(async () => {
-        await this.units.deleteOne({ _id: unit._id }, { session });
-        await this.units.updateMany(
-          { pathId: path.id, order: { $gt: unit.order } },
-          { $inc: { order: -1 } },
-          { session },
-        );
-      });
-    } finally {
-      await session.endSession();
-    }
-    return { id: String(unit._id) };
+    const pathId = await this.pathIdForUnitLock(unitId);
+    return this.withPathLock(pathId, async (tx) => {
+      const { unit, path } = await this.loadOwnedUnit(ownerId, unitId, tx);
+      this.assertTeacherWritable(path.status);
+      this.assertUnitMutable(unit);
+      const session = await this.units.db.startSession();
+      try {
+        await session.withTransaction(async () => {
+          await this.units.deleteOne({ _id: unit._id }, { session });
+          await this.units.updateMany(
+            { pathId: path.id, order: { $gt: unit.order } },
+            { $inc: { order: -1 } },
+            { session },
+          );
+        });
+      } finally {
+        await session.endSession();
+      }
+      return { id: String(unit._id) };
+    });
   }
 
   async reorderUnits(ownerId: string, pathId: string, items: ReorderLearningUnitItemDto[]) {
-    const path = await this.loadOwnedPath(ownerId, pathId);
-    this.assertTeacherWritable(path.status);
-    const current = await this.units.find({ pathId: path.id }).sort({ order: 1 }).lean();
-    this.assertPermutation(current.map((unit) => String(unit._id)), items);
+    await this.withPathLock(pathId, async (tx) => {
+      const path = await this.loadOwnedPath(ownerId, pathId, tx);
+      this.assertTeacherWritable(path.status);
+      const current = await this.units.find({ pathId: path.id }).sort({ order: 1 }).lean();
+      this.assertPermutation(
+        current.map((unit) => String(unit._id)),
+        items,
+      );
 
-    const session = await this.units.db.startSession();
-    try {
-      await session.withTransaction(async () => {
-        await this.units.bulkWrite(
-          items.map((item, index) => ({
-            updateOne: { filter: { _id: item.id, pathId: path.id }, update: { $set: { order: -(index + 1) } } },
-          })),
-          { session, ordered: true },
-        );
-        await this.units.bulkWrite(
-          items.map((item) => ({
-            updateOne: { filter: { _id: item.id, pathId: path.id }, update: { $set: { order: item.order } } },
-          })),
-          { session, ordered: true },
-        );
-      });
-    } finally {
-      await session.endSession();
-    }
-    return this.teacherPathDetail(ownerId, path.id);
+      const session = await this.units.db.startSession();
+      try {
+        await session.withTransaction(async () => {
+          await this.units.bulkWrite(
+            items.map((item, index) => ({
+              updateOne: {
+                filter: { _id: item.id, pathId: path.id },
+                update: { $set: { order: -(index + 1) } },
+              },
+            })),
+            { session, ordered: true },
+          );
+          await this.units.bulkWrite(
+            items.map((item) => ({
+              updateOne: {
+                filter: { _id: item.id, pathId: path.id },
+                update: { $set: { order: item.order } },
+              },
+            })),
+            { session, ordered: true },
+          );
+        });
+      } finally {
+        await session.endSession();
+      }
+    });
+    return this.teacherPathDetail(ownerId, pathId);
   }
 
   async publishUnit(ownerId: string, unitId: string) {
-    const { unit, path } = await this.loadOwnedUnit(ownerId, unitId);
-    this.assertTeacherWritable(path.status);
-    if (path.status !== LearningPathStatus.approved) {
-      throw new AppException(ErrorCode.LEARNING_PATH_INVALID_STATUS, 'Chỉ path đã duyệt mới được publish bài học');
-    }
-    if (unit.kind === 'reference') await this.assertValidReference(unit.referenceSlug!);
-    const now = new Date();
-    const updated = await this.units
-      .findOneAndUpdate(
-        { _id: unit._id, published: false },
-        { $set: { published: true, ...(unit.firstPublishedAt ? {} : { firstPublishedAt: now }) } },
-        { new: true },
-      )
-      .lean();
+    const pathId = await this.pathIdForUnitLock(unitId);
+    const updated = await this.withPathLock(pathId, async (tx) => {
+      const { unit, path } = await this.loadOwnedUnit(ownerId, unitId, tx);
+      this.assertTeacherWritable(path.status);
+      if (path.status !== LearningPathStatus.approved) {
+        throw new AppException(ErrorCode.LEARNING_PATH_INVALID_STATUS, 'Chỉ path đã duyệt mới được publish bài học');
+      }
+      if (unit.kind === 'reference') await this.assertValidReference(unit.referenceSlug!);
+      const now = new Date();
+      return this.units
+        .findOneAndUpdate(
+          { _id: unit._id, published: false },
+          {
+            $set: {
+              published: true,
+              ...(unit.firstPublishedAt ? {} : { firstPublishedAt: now }),
+            },
+          },
+          { new: true },
+        )
+        .lean();
+    });
     if (!updated) {
       throw new AppException(ErrorCode.LEARNING_UNIT_PUBLISHED_IMMUTABLE, 'Bài học đã được publish');
     }
@@ -316,9 +366,12 @@ export class LearningCatalogService {
   }
 
   async teacherUnpublishUnit(ownerId: string, unitId: string) {
-    const { unit, path } = await this.loadOwnedUnit(ownerId, unitId);
-    this.assertTeacherWritable(path.status);
-    return this.unpublishUnit(unit);
+    const pathId = await this.pathIdForUnitLock(unitId);
+    return this.withPathLock(pathId, async (tx) => {
+      const { unit, path } = await this.loadOwnedUnit(ownerId, unitId, tx);
+      this.assertTeacherWritable(path.status);
+      return this.unpublishUnit(unit);
+    });
   }
 
   async adminUnpublishUnit(adminId: string, unitId: string) {
@@ -326,7 +379,11 @@ export class LearningCatalogService {
     if (!unit.firstPublishedAt) {
       throw new AppException(ErrorCode.LEARNING_UNIT_NOT_FOUND, 'Không tìm thấy bài học đã publish');
     }
-    return this.unpublishUnit(unit, adminId);
+    if (!unit.pathId || !UUID.test(unit.pathId)) return this.unpublishUnit(unit, adminId);
+    return this.withPathLock(unit.pathId, async () => {
+      const current = await this.loadUnit(unitId);
+      return this.unpublishUnit(current, adminId);
+    });
   }
 
   async listPublishedUnits(
@@ -344,7 +401,11 @@ export class LearningCatalogService {
         where: { status: 'approved' },
         select: { id: true },
       });
-      filter.$or = [{ pathId: { $exists: false } }, { pathId: null }, { pathId: { $in: approved.map((path) => path.id) } }];
+      filter.$or = [
+        { pathId: { $exists: false } },
+        { pathId: null },
+        { pathId: { $in: approved.map((path) => path.id) } },
+      ];
     }
     const total = await this.units.countDocuments(filter);
     const rows = await this.units
@@ -378,7 +439,10 @@ export class LearningCatalogService {
     ]);
     const counts = await this.unitCounts(paths.map((path) => path.id));
     return {
-      data: paths.map((path) => ({ ...this.toPath(path, counts.get(path.id)), owner: path.owner })),
+      data: paths.map((path) => ({
+        ...this.toPath(path, counts.get(path.id)),
+        owner: path.owner,
+      })),
       meta: pageMeta(total, page),
     };
   }
@@ -446,27 +510,32 @@ export class LearningCatalogService {
     notification: 'learning_path_approved' | 'learning_path_rejected' | 'learning_path_suspended' | null,
     data: Prisma.LearningPathUncheckedUpdateManyInput,
   ) {
-    const changed = await this.prisma.$transaction(async (tx) => {
+    const { changed, current } = await this.withPathLock(path.id, async (tx) => {
+      const current = await this.loadAdminPath(path.id, tx);
       const result = await tx.learningPath.updateMany({
-        where: { id: path.id, status: source },
+        where: { id: current.id, status: source },
         data: { ...data, status: target },
       });
       if (result.count === 1 && notification) {
         await this.notifications.createManyWithinTx(tx, [
           {
-            userId: path.ownerId,
+            userId: current.ownerId,
             type: notification,
-            referenceId: path.id,
+            referenceId: current.id,
             referenceType: 'learning_path',
-            payload: { pathId: path.id, title: path.title, actorId: adminId },
+            payload: {
+              pathId: current.id,
+              title: current.title,
+              actorId: adminId,
+            },
           },
         ]);
       }
-      return result;
+      return { changed: result, current };
     });
-    if (changed.count !== 1) this.invalidTransition(path.id, path.status, target);
-    this.logger.log(`learning path moderated actor=${adminId} pathId=${path.id} ${source}->${target}`);
-    return this.adminPathDetail(path.id);
+    if (changed.count !== 1) this.invalidTransition(current.id, current.status, target);
+    this.logger.log(`learning path moderated actor=${adminId} pathId=${current.id} ${source}->${target}`);
+    return this.adminPathDetail(current.id);
   }
 
   private async pathDetail(path: PathRow, admin: boolean) {
@@ -490,9 +559,30 @@ export class LearningCatalogService {
     };
   }
 
-  private async loadOwnedPath(ownerId: string, pathId: string) {
+  private async withPathLock<T>(pathId: string, operation: (tx: Prisma.TransactionClient) => Promise<T>): Promise<T> {
+    return this.prisma.$transaction(
+      async (tx) => {
+        const lockKey = `learning-catalog:${pathId}`;
+        await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtextextended(${lockKey}, 0))::text AS lock_result`;
+        return operation(tx);
+      },
+      { maxWait: 10_000, timeout: 30_000 },
+    );
+  }
+
+  private async pathIdForUnitLock(unitId: string) {
+    const unit = await this.loadUnit(unitId);
+    if (!unit.pathId || !UUID.test(unit.pathId)) {
+      throw new AppException(ErrorCode.LEARNING_UNIT_NOT_OWNED, 'Bài học không thuộc giáo viên hiện tại');
+    }
+    return unit.pathId;
+  }
+
+  private async loadOwnedPath(ownerId: string, pathId: string, client: LearningPathClient = this.prisma) {
     if (!UUID.test(pathId)) throw new AppException(ErrorCode.LEARNING_PATH_NOT_FOUND, 'Không tìm thấy path');
-    const path = await this.prisma.learningPath.findUnique({ where: { id: pathId } });
+    const path = await client.learningPath.findUnique({
+      where: { id: pathId },
+    });
     if (!path) throw new AppException(ErrorCode.LEARNING_PATH_NOT_FOUND, 'Không tìm thấy path');
     if (!ownerId || path.ownerId !== ownerId) {
       throw new AppException(ErrorCode.LEARNING_PATH_ACCESS_DENIED, 'Path không thuộc giáo viên hiện tại');
@@ -500,9 +590,9 @@ export class LearningCatalogService {
     return path;
   }
 
-  private async loadAdminPath(pathId: string) {
+  private async loadAdminPath(pathId: string, client: LearningPathClient = this.prisma) {
     if (!UUID.test(pathId)) throw new AppException(ErrorCode.LEARNING_PATH_NOT_FOUND, 'Không tìm thấy path');
-    const path = await this.prisma.learningPath.findUnique({
+    const path = await client.learningPath.findUnique({
       where: { id: pathId },
       include: {
         owner: { select: { id: true, nickname: true } },
@@ -515,12 +605,14 @@ export class LearningCatalogService {
     return path;
   }
 
-  private async loadOwnedUnit(ownerId: string, unitId: string) {
+  private async loadOwnedUnit(ownerId: string, unitId: string, client: LearningPathClient = this.prisma) {
     const unit = await this.loadUnit(unitId);
     if (!unit.pathId || !UUID.test(unit.pathId)) {
       throw new AppException(ErrorCode.LEARNING_UNIT_NOT_OWNED, 'Bài học không thuộc giáo viên hiện tại');
     }
-    const path = await this.prisma.learningPath.findUnique({ where: { id: unit.pathId } });
+    const path = await client.learningPath.findUnique({
+      where: { id: unit.pathId },
+    });
     if (!path || path.ownerId !== ownerId || unit.authorId !== ownerId) {
       throw new AppException(ErrorCode.LEARNING_UNIT_NOT_OWNED, 'Bài học không thuộc giáo viên hiện tại');
     }
@@ -637,7 +729,11 @@ export class LearningCatalogService {
   private async unitCounts(pathIds: string[]) {
     const map = new Map<string, { unitCount: number; publishedUnitCount: number }>();
     if (!pathIds.length) return map;
-    const rows = await this.units.aggregate<{ _id: string; unitCount: number; publishedUnitCount: number }>([
+    const rows = await this.units.aggregate<{
+      _id: string;
+      unitCount: number;
+      publishedUnitCount: number;
+    }>([
       { $match: { pathId: { $in: pathIds } } },
       {
         $group: {
@@ -677,7 +773,12 @@ export class LearningCatalogService {
 }
 
 function pageMeta(total: number, page: number) {
-  return { total, page, limit: PAGE_SIZE, totalPages: Math.ceil(total / PAGE_SIZE) };
+  return {
+    total,
+    page,
+    limit: PAGE_SIZE,
+    totalPages: Math.ceil(total / PAGE_SIZE),
+  };
 }
 
 function cleanOptional(value?: string) {
@@ -720,7 +821,14 @@ function hashUnit(
   referenceSlug?: string,
 ) {
   return createHash('sha256')
-    .update(JSON.stringify({ title, level, words, referenceSlug: referenceSlug ?? null }))
+    .update(
+      JSON.stringify({
+        title,
+        level,
+        words,
+        referenceSlug: referenceSlug ?? null,
+      }),
+    )
     .digest('hex');
 }
 
@@ -740,12 +848,21 @@ function toUnit(row: UnitRow, includeWords: boolean, includeModeration = false, 
     wordCount: resolvedWordCount ?? row.words?.length ?? 0,
     referenceSlug: row.referenceSlug ?? null,
     ...(includeWords && row.kind !== 'reference'
-      ? { words: (row.words ?? []).map((word) => ({ hanzi: word.hanzi, pinyin: word.pinyin, meaning: word.meaning })) }
+      ? {
+          words: (row.words ?? []).map((word) => ({
+            hanzi: word.hanzi,
+            pinyin: word.pinyin,
+            meaning: word.meaning,
+          })),
+        }
       : {}),
     ...(includeModeration
       ? {
           moderation: row.moderatedAt
-            ? { moderatedById: row.moderatedById ?? null, moderatedAt: iso(row.moderatedAt) }
+            ? {
+                moderatedById: row.moderatedById ?? null,
+                moderatedAt: iso(row.moderatedAt),
+              }
             : null,
         }
       : {}),

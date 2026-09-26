@@ -1,9 +1,9 @@
 ---
 module: Learning Catalog — Teacher authoring
-status: implemented — real-DB verified 2026-09-25
+status: implemented — real-DB verified 2026-09-26
 blocked_by: -
 owner: -
-last_updated: 2026-09-25
+last_updated: 2026-09-26
 ---
 
 ## 0. Summary
@@ -188,6 +188,12 @@ learning_unit
 - `submit`, `publish`, `unpublish` dùng **atomic conditional update** trên trạng thái nguồn
   (`updateMany({ where: { id, status: source } })`). Hai request song song: một thắng, người kia
   nhận `LEARNING_PATH_INVALID_STATUS` / `LEARNING_UNIT_PUBLISHED_IMMUTABLE`.
+- Mọi mutation Teacher và mọi transition Admin của cùng một path dùng chung PostgreSQL
+  transaction-scoped advisory lock theo `pathId`. Trạng thái được đọc lại sau khi lấy lock, nên
+  request đã chờ không thể ghi lọt sau khi path chuyển sang `pending_review` hoặc `suspended`.
+- Cấp `order` và kiểm tra giới hạn 100 unit nằm trong cùng critical section theo path. Hai request
+  tạo unit thứ 100 chạy đồng thời cho đúng một `201`; request còn lại nhận `VALIDATION_ERROR`, và
+  thứ tự vẫn là permutation `1..100`.
 - `slug` có unique index trong Mongo; tạo unit trùng slug trả lỗi chứ không ghi đè.
 - `reorder` validate toàn bộ payload trước, rồi ghi trong một lượt; không để lại thứ tự nửa vời.
 - `POST .../units` không idempotent theo thiết kế (tạo hai unit là hai unit); client không retry mù.

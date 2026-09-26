@@ -1,9 +1,9 @@
 ---
 module: Learning Catalog — Admin moderation
-status: implemented — real-DB verified 2026-09-25
+status: implemented — real-DB verified 2026-09-26
 blocked_by: -
 owner: -
-last_updated: 2026-09-25
+last_updated: 2026-09-26
 ---
 
 ## 0. Summary
@@ -127,6 +127,9 @@ Gỡ unit (Mongo) là một document update độc lập, **sau** khi Postgres �
 - Bốn endpoint chuyển trạng thái đều idempotent theo nghĩa: gọi lại sau khi thành công trả
   `LEARNING_PATH_INVALID_STATUS` (không nhân đôi hiệu ứng, không bắn notification lần hai).
 - Hai admin approve cùng lúc ⇒ đúng một `200`, người kia `409`.
+- Transition Admin và mutation Teacher của cùng path dùng chung PostgreSQL transaction-scoped
+  advisory lock theo `pathId`; service đọc lại trạng thái trong lock trước khi ghi. Vì vậy
+  `suspend`/`submit` không thể chạy xen kẽ để Teacher ghi sau khi path đã frozen.
 - `unpublish` unit đã `unpublished` ⇒ `LEARNING_PATH_INVALID_STATUS` (hoặc 404 nếu unit không tồn
   tại) — không im lặng thành công.
 
