@@ -232,7 +232,9 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
   `GET /teacher/learning-units` (+`search`) instead of a new route — no duplicate endpoint.
   Verified: type-check + build + lint + check-docs green; new e2e 11/11 real-DB (§15);
   related suites teacher-lessons + student-lesson-detail + foundation-grammar +
-  learning-catalog 49/49. Session below. PR stacked, merges after #102.
+  learning-catalog 49/49. CI follow-up 2026-09-26 removed the suite's dependency on a
+  pre-seeded published learning unit: it now creates and cleans an isolated Mongo fixture;
+  targeted real-DB API-020 remains 11/11. Session below. PR stacked, merges after #102.
 
 ## Sprint 3 — Question Bank & Assignments
 - ⬜ F3.1 Create MCQ question · ⬜ F3.2 Listening · ⬜ F3.3 Reading · ⬜ F3.4 Writing
