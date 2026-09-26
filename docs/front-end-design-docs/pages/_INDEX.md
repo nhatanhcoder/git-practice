@@ -58,7 +58,7 @@ and Income. **Analytics (T-ANL-1…4) is the only FEATURES_TEACHER area still un
 | `/teacher/questions` | T-QB-1,2,4,5,6 | [teacher-question-bank](./teacher-pages/teacher-question-bank.md) | built | v1 | error codes TODO; audio upload mocked |
 | `/teacher/assignments` | T-ASGN-1..5 | [teacher-assignments](./teacher-pages/teacher-assignments.md) | built | v1 | **LIVE on /teacher/assignments (S3, 2026-09-11)** — `ASSIGNMENT_*` codes agreed and used; submission stats real from Attempt records; per-student roster names need Sprint 4 `GET /teacher/attempts` |
 | `/teacher/grading` | T-GRADE-1..5 | [teacher-grading](./teacher-pages/teacher-grading.md) | built | v1 | error codes TODO |
-| `/teacher/sessions` | T-SES-1..7 | [teacher-sessions](./teacher-pages/teacher-sessions.md) | built | v1 | error codes TODO |
+| `/teacher/sessions` | T-SES-1,7 | [teacher-sessions](./teacher-pages/teacher-sessions.md) | built (live read/create v1) | v1 | lifecycle actions ⛔ pending contract reconciliation; archived-class create rule open |
 | `/teacher/income` | T-INC-1,2,3 | [teacher-income](./teacher-pages/teacher-income.md) | built | v1 | none — both endpoints defined |
 | `/teacher/learning-paths` | T-LCAT-1,4,7,8 | [teacher-learning-paths](./teacher-pages/teacher-learning-paths.md) | contracted | — | backend implemented + real-DB verified 2026-09-25; frontend not built |
 | `/teacher/learning-paths/[pathId]` | T-LCAT-2,3,4,5,6,8 | [teacher-learning-path-detail](./teacher-pages/teacher-learning-path-detail.md) | contracted | — | backend implemented + real-DB verified; frontend not built |
@@ -66,10 +66,9 @@ and Income. **Analytics (T-ANL-1…4) is the only FEATURES_TEACHER area still un
 
 Analytics (T-ANL-1…4): _not yet mapped._ Every other Teacher area has a contract above.
 
-> ⚠️ All nine Teacher screens are **fully mocked** — no API call anywhere (`ai/PROGRESS.md`
-> § Sprint 2). `built` here means the screen exists and renders, not that the feature works.
-> The Teacher **backend** has no module spec either — see
-> [`docs/api/modules/_INDEX.md` § 11](../../api/modules/_INDEX.md).
+> ⚠️ `built` means a route exists, not that every action is live. Teacher pages are now a
+> mix of live and mocked slices; consult each row and its Page Contract. Teacher backend
+> module specs exist under [`docs/api/modules/teacher/`](../../api/modules/teacher/_INDEX.md).
 
 ## Student
 **▶ [Student SRS & Classes Flow + API Map](./student-pages/student-flow.md)**

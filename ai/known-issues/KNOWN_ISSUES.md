@@ -2099,6 +2099,214 @@ replace the boolean with a three-value publication-state field and migrate every
 Owner selected the recommended `firstPublishedAt` option. The Slice 1A contract and Mongo schema
 now carry that field; service enforcement remains part of dependent backend Slice 1B.
 
+### [API-020] Class-lesson supplemental content and assigned-grammar filter have no contract
+
+**Severity**: High
+**Sprint**: —
+**Status**: Contract accepted 2026-09-26 — runtime pending (P4 migration PR, then P5)
+
+**Description**: ADR-016 permits a teacher to attach a published learning unit by reference
+to a class lesson, but deliberately leaves relation/cardinality and transport undecided.
+Teacher module 01 defines Lesson↔Assignment only; `Lesson` in Prisma has no supplemental
+relation, and Student lesson detail returns no supplements. Grammar points are source IDs in
+Mongo `grammar_items`, not vocabulary `learning_units`/`unitSlug` from ADR-017. The live
+`GET /student/grammar` has no assigned-only scope. Client-side filtering of one paginated
+page would give false totals and could misrepresent active-enrollment visibility.
+
+**Impact**: Teacher drag-to-attach, Student assigned grammar filter and lesson supplements
+are **NOT IMPLEMENTED**. No route, payload, field or `SUPPLEMENT_*` error is approved;
+reusing a vocabulary unit ID for a grammar ID would be a data-model error.
+
+**Needs decision**: approve target lesson vs class, allowed content kinds, many-to-many/order
+and duplicate/removal semantics, reference behavior when source content is unpublished or
+revised, active-enrollment visibility, narrowly scoped teacher completion access, response
+shapes, endpoint paths and errors. Then contract and test before code. ID scan: `API-019`
+was the highest API ID across local + remote refs on 2026-09-24.
+
+**Resolution note (2026-09-26)**: owner accepted API-020 verbatim as Teacher module
+`08-supplements.md` (PR #101, merged): link table `SupplementalPractice`, attach/remove/
+reorder + picker endpoints, student detail embed + grammar `assignedOnly`, four
+`SUPPLEMENT_*` codes agreed. P4 migration PR and P5 runtime follow; the original finding
+above is preserved as the pre-acceptance record.
+
+---
+
+### [API-021] Teacher session live service disagrees with module/Page contracts
+
+**Severity**: High
+**Sprint**: —
+**Status**: Open — found 2026-09-24; read/create-only UI is isolated from lifecycle drift
+
+**Description**: Teacher module 05 requires `scheduledEnd > scheduledStart`, yet
+`teacherCreateSession` currently checks only `HH:mm` syntax. The service also differs from
+module 05 on submit preconditions, attendance payload/active-enrollment validation and
+derived summary fields; the old Page Contract compounded this with `data.session` and
+client-supplied actual times. Whether sessions may be created for archived classes is
+unresolved in module 05 §16-Q2. `scheduledDate` anchors the payroll month (ADR-012), so
+validation must be resolved server-side before lifecycle/payroll work.
+
+**Impact**: v1 UI uses only existing GET/POST, validates its own create form and does not
+expose fake lifecycle actions, but direct API callers can still submit an inverted time
+range. No payroll calculation is changed in this slice.
+
+**Fix plan**: owner/BE reconcile module 05 with the implementation and settle archived
+class create, then enforce server validation and test direct requests. ID scan:
+`API-020` was allocated immediately before this entry; `API-019` was prior max.
+
+---
+
+### [DOC-019] Grammar module summary still says live backend is NOT IMPLEMENTED
+
+**Severity**: Low
+**Sprint**: —
+**Status**: Open — found 2026-09-24
+
+**Description**: `docs/api/modules/student/02-foundation-grammar.md` §0 still says all
+backend operations are `NOT IMPLEMENTED`, although its frontmatter records owner approval
+and the Grammar controller/service plus Student page call the listed live endpoints.
+This conflicts with `docs/api/API_STUDENT.md` and code. It is not evidence that the
+assigned-only contract in API-020 exists.
+
+**Fix plan**: reconcile the module's historical summary and status against tested
+endpoints in a documentation pass. ID scan: `DOC-018` was the highest DOC ID across
+local + remote refs on 2026-09-24.
+
+---
+
+### [WEB-024] Grammar category pills are incomplete on paginated results
+
+**Severity**: Medium
+**Sprint**: —
+**Status**: Open — found 2026-09-24
+
+**Description**: `/student/grammar` builds its category choices from the current
+`GET /student/grammar` page (default 20 records), while the published catalog has
+76 points and eight source categories. A category present only on a later page is
+not offered as a filter. This is distinct from the uncontracted class-assigned filter
+in API-020.
+
+**Fix plan**: agree a complete facet source or contract a facet response, then keep
+category/query pagination server-side and deep-linkable. ID scan: `WEB-023` was highest
+WEB ID across local + remote refs on 2026-09-24.
+
+---
+
+### Resolution note — DOC-018 (2026-09-24)
+
+The Teacher section of `docs/front-end-design-docs/pages/_INDEX.md` no longer claims
+all Teacher screens are mocked or that Teacher backend module specs do not exist. The
+per-route rows now carry their individual live/blocked state; this is an append-only
+resolution note rather than an edit to the original issue.
+
+---
+
+### [DOC-020] Teacher lesson reorder request shape differs between module spec and live API
+
+**Severity**: Medium
+**Sprint**: —
+**Status**: Open — found 2026-09-24 during Teacher lesson reliability fix
+
+**Description**: Teacher module `01-classes-lessons.md` §3.11 describes the reorder
+request as a bare array of `{ id, orderIndex }`, while the running
+`ReorderLessonsDto` requires `{ items: [{ id, orderIndex }] }`. The Teacher lessons
+Page Contract also labels create/update responses as `data.lesson`; the API envelope
+wraps the returned Lesson directly in `data`. Existing frontend code sends `{ items }`
+and reads direct `data`, consistent with implementation but not these documents.
+
+**Impact**: an agent coding from the documents alone would send a rejected reorder or
+parse a successful create/update as empty. The current v1 reliability fix changes
+error handling only and does not redefine the transport.
+
+**Fix plan**: BE owner reconcile the transport contract to the tested API or change the
+API and clients together; do not silently alter one side. ID scan: `DOC-019` was
+allocated earlier this session; `DOC-018` was the previous max across local + remote
+refs on 2026-09-24.
+
+---
+
+### [WEB-025] Uncertain Teacher session POST invited a duplicate retry
+
+**Severity**: High
+**Sprint**: —
+**Status**: Mitigated in PR #98 review follow-up, 2026-09-24
+
+**Description**: the first live schedule UI kept its create form open after any POST
+failure. A committed insert followed by a lost response was treated as a failed
+insert, so the user could submit the same payable session twice.
+
+**Resolution**: a definitive 4xx rejection keeps the draft editable; a network,
+timeout or 5xx result closes the form, reloads the target week, warns that the
+outcome is unknown and disables further create actions in the page instance.
+This prevents a blind in-page retry, not duplicates from another client or reload;
+the server gap is `API-023`. Regression tested with a committed-then-aborted HTTP
+response on desktop and 375px.
+
+---
+
+### [API-022] Teacher session pagination had unstable same-date boundaries
+
+**Severity**: Medium
+**Sprint**: —
+**Status**: Fixed in PR #98 review follow-up, 2026-09-24
+
+**Description**: GET `/teacher/sessions` sorted only by `scheduledDate`, so offset
+pages could duplicate or omit rows when more sessions shared a date than fit one
+page. Client-side sorting could not recover omitted rows.
+
+**Resolution**: order by scheduled date and unique session ID in the same requested
+direction. The Teacher sessions API test now requests one-row pages for same-date
+sessions in both sort directions. Local real-DB test status is recorded in the session
+file; a passing build alone does not prove the DB test.
+
+---
+
+### [WEB-026] Teacher lesson dialog could close after mutation began
+
+**Severity**: Medium
+**Sprint**: —
+**Status**: Fixed in PR #98 review follow-up, 2026-09-24
+
+**Description**: save/delete could complete after a user clicked Hủy or Escape,
+making cancellation appear to succeed before the list changed.
+
+**Resolution**: while a mutation is pending, disable Hủy/confirm/close controls
+and block backdrop/Escape dismissal while retaining focus inside the overlay.
+The dialog closes on confirmed success; errors remain visible in the dialog.
+Browser regression covers save and delete at both viewports.
+
+---
+
+### [DOC-021] Teacher schedule spec status lagged behind built route
+
+**Severity**: Low
+**Sprint**: —
+**Status**: Fixed in PR #98 review follow-up, 2026-09-24
+
+**Description**: the schedule spec still said `ready-for-design` while the Page
+Contract and index both said `built`.
+
+**Resolution**: spec frontmatter now says `built`; baseline version was not bumped.
+
+---
+
+### [API-023] Session create has no server idempotency key
+
+**Severity**: High
+**Sprint**: —
+**Status**: Open — found during PR #98 review, 2026-09-24
+
+**Description**: `teacherCreateSession` inserts unconditionally and the ClassSession
+schema has no idempotency key or unique scheduling constraint. The UI mitigation in
+`WEB-025` only prevents a blind second POST within one page instance. A reload,
+second tab or other API client can still repeat a committed request after a lost
+response and create duplicate sessions that may later enter payroll.
+
+**Needs decision**: separately approve the server contract and any schema migration
+for an idempotency key (request scope, expiry/replay response and conflict semantics),
+then test against a real DB. No server-wide guarantee is claimed by PR #98. ID scan:
+after fetching origin on 2026-09-24, maximum IDs across local and remote refs were
+`WEB-024`, `API-021` and `DOC-020`; this follow-up allocated `WEB-025/026`,
+`API-022/023` and `DOC-021` without reuse.
 ---
 
 ### [BUILD-006] Docker Desktop 4.83 crashes before starting the local Postgres container
