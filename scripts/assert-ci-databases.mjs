@@ -15,6 +15,7 @@ for (const [key, protocol, port] of [
   assert.equal(url.hostname, '127.0.0.1', `${key}: only runner-local services are allowed`);
   assert.equal(url.port, port, `${key}: unexpected port`);
   assert.equal(url.pathname, '/hsk_ci', `${key}: only hsk_ci may be used`);
-  assert.equal(url.search, '', `${key}: connection overrides are forbidden`);
+  const expectedSearch = key === 'MONGODB_URI' ? '?replicaSet=rs0' : '';
+  assert.equal(url.search, expectedSearch, `${key}: connection overrides are forbidden`);
 }
 console.log('CI database targets verified: runner-local hsk_ci services; no root .env.');

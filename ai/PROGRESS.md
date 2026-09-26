@@ -406,6 +406,25 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
       additive migration, Mongo authoring fields/indexes, notification registry + FE sentences/deep-links.
       Verify: Prisma validate/generate + shadow diff (`No difference detected`), API 365/365,
       web scripts 238/238, API build, web build, check-docs 9/9. Slice 1B chờ migration PR merge.
+- ✅ (codex · 2026-09-25) **Teacher-authored Learning Catalog — Slice 1B backend runtime.**
+      Branch `codex/learning-catalog-backend`, based on `main` after PR #96 merged green.
+      Scope: 13 teacher endpoints, 8 admin moderation endpoints, student catalog visibility,
+      notification side effects, ownership/state invariants, and complete API regression tests.
+      Runtime complete: role-prefixed controllers, exact DTO whitelist, ownership predicates,
+      atomic path transitions + notifications, immutable published units, reference resolution,
+      student curricula/visibility, moderation/restore audit, and 12-test invariant suite.
+      Verified after rebasing onto current `origin/main`: migration deployed to local `hsk_dev`;
+      the shared Teacher/Admin/Student catalog invariant suite passes **12/12** against real
+      PostgreSQL + isolated MongoDB; API build + type-check, workspace lint, web build and
+      check-docs pass. The test was corrected to use the project's flat error envelope and
+      explicit `.js` imports under current Node. CI now runs Mongo as a single-node replica set
+      (required by atomic catalog reorder) and its isolated API suite passes **378/378**; web-quality
+      and check-docs also pass. The local pay-rate assertion was caused by reused `hsk_dev` state,
+      not a clean-DB regression.
+      PR review hardening (2026-09-26): migration/audit fields split and merged first in PR #100;
+      all Teacher mutations and Admin transitions now serialize per `pathId` with a PostgreSQL
+      advisory transaction lock and re-read state inside the lock. Concurrent unit creation now
+      preserves the exact 100-unit cap and contiguous path-wide order. Catalog E2E is **14/14**.
 - **DoD**: a learner can go pronunciation → grammar → character → Lego → mock exam, with
       XP/streak/badges updating correctly
 
