@@ -122,9 +122,9 @@ last_updated: 2026-09-18
 | `LESSON_ASSIGNMENT_ALREADY_LINKED` | 409 | This assignment is already linked to this lesson |
 | `LESSON_ASSIGNMENT_NOT_LINKED` | 404 | No such link between this lesson and assignment |
 
-### Supplement Errors (SUPPLEMENT_*) — proposed with API-020 (`teacher/08-supplements.md`)
+### Supplement Errors (SUPPLEMENT_*) — agreed 2026-09-26 with API-020 (`teacher/08-supplements.md`)
 
-> ⛔ **Proposed, not agreed.** Needs BE-owner sign-off (API-020 §16). Not usable yet.
+> ✅ **Agreed 2026-09-26** (owner sign-off with the API-020 contract).
 
 | Code | HTTP | Description |
 |------|------|-------|

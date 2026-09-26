@@ -2,16 +2,14 @@
 
 ---
 module: teacher-lesson-supplements
-status: proposed
-blocked_by: owner acceptance of this contract (API-020)
-owner: —
+status: accepted
+blocked_by: —
+owner: project owner
 last_updated: 2026-09-26
 ---
 
-> **Proposal, not a contract yet.** Owner-requested label **API-020**; placement as Teacher
-> module T7 is proposed (§16-Q1). Nothing here is usable for code until the owner accepts:
-> every endpoint below is `proposed`, every new error code is ⛔ in the registry's
-> *proposed, not agreed* section. P4 (migration) stays gated on that acceptance.
+> **Accepted 2026-09-26** (owner: accept nguyên văn + chốt schema/codes/reject-404).
+> P4 migration gate is open. The proposal history is preserved in git (`docs/api-020-supplements`).
 >
 > Sources, verbatim: `RBAC_MATRIX.md` (SupplementalPractice rows), `SPRINT_PLAN.md`
 > S2 supplemental boxes, `FEATURES_STUDENT.md` (S-LESSON-4, S-ASGN-9, S-SELF-8, S-SELF-9),
@@ -52,16 +50,16 @@ are **never written** here (§4 INV-SUP-10); remove-attachment deletes no progre
 
 ## 2. Endpoints
 
-All paths prefixed `/api/v1`. New rows are `proposed`; extended rows keep their existing
+All paths prefixed `/api/v1`. New rows are `defined` (accepted 2026-09-26); extended rows keep their existing
 contract and gain one additive field/param.
 
 | Method | Path | Role | Description | Status |
 |---|---|---|---|---|
-| POST | `/teacher/lessons/:id/supplements` | teacher (own) | Attach a source; body `{ sourceType, sourceKey }`; order server-assigned `MAX+1` | proposed |
-| DELETE | `/teacher/lessons/:id/supplements/:supplementId` | teacher (own) | Remove the link only — never the source, never progress | proposed |
-| PATCH | `/teacher/lessons/:id/supplements/reorder` | teacher (own) | Bulk reorder, body `[{ id, orderIndex }]` complete dense `1..N` | proposed |
-| GET | `/teacher/catalog/units?hskLevel=&search=&page=&limit=` | teacher | Picker: published units only, summary items | proposed |
-| GET | `/teacher/catalog/grammar?hskLevel=&category=&search=&page=&limit=` | teacher | Picker: grammar items only, summary items | proposed |
+| POST | `/teacher/lessons/:id/supplements` | teacher (own) | Attach a source; body `{ sourceType, sourceKey }`; order server-assigned `MAX+1` | defined |
+| DELETE | `/teacher/lessons/:id/supplements/:supplementId` | teacher (own) | Remove the link only — never the source, never progress | defined |
+| PATCH | `/teacher/lessons/:id/supplements/reorder` | teacher (own) | Bulk reorder, body `[{ id, orderIndex }]` complete dense `1..N` | defined |
+| GET | `/teacher/catalog/units?hskLevel=&search=&page=&limit=` | teacher | Picker: published units only, summary items | defined |
+| GET | `/teacher/catalog/grammar?hskLevel=&category=&search=&page=&limit=` | teacher | Picker: grammar items only, summary items | defined |
 | GET | `/teacher/lessons/:id` | teacher (own) | **Extended**: detail embeds `supplements[]` (§3.6) alongside linked assignments | defined + additive |
 | GET | `/student/classes/:classId/lessons/:lessonId` | student | **Extended**: detail embeds `supplements[]` in server order with availability flags (§3.7) | defined + additive |
 | GET | `/student/grammar?...&assignedOnly=` | student | **Extended**: `assignedOnly=true` filters the full catalog to grammar attached to the caller's active-enrollment lessons (§3.8) | defined + additive |
@@ -94,7 +92,7 @@ published). No content, no progress.
 ### 3.2 DELETE `/teacher/lessons/:id/supplements/:supplementId`
 
 No body. Response `204` (no content — module conventions §4). Removing a link that is not
-there → `404 SUPPLEMENT_NOT_ATTACHED` (⛔ proposed).
+there → `404 SUPPLEMENT_NOT_ATTACHED` (agreed).
 
 ### 3.3 PATCH `/teacher/lessons/:id/supplements/reorder` — request
 
@@ -228,13 +226,13 @@ reused silently — a removed index returns only via an explicit reorder.
 | No / inactive enrollment (student) | 403 | `CLASS_ACCESS_DENIED` | agreed (student-lesson-detail precedent) |
 | Lesson outside `classId` (student) | 404 | `LESSON_NOT_FOUND` | agreed |
 | DTO invalid | 400 | `VALIDATION_ERROR` (+ `details`) | agreed |
-| Duplicate attach | 409 | `SUPPLEMENT_ALREADY_ATTACHED` | ⛔ proposed, §16 |
-| Remove a link that is not there | 404 | `SUPPLEMENT_NOT_ATTACHED` | ⛔ proposed, §16 |
-| Reorder not the complete dense `1..N` permutation | 409 | `SUPPLEMENT_ORDER_CONFLICT` | ⛔ proposed, §16 |
-| Attach source unknown or unpublished | 404 | `SUPPLEMENT_SOURCE_NOT_FOUND` | ⛔ proposed, §16 |
+| Duplicate attach | 409 | `SUPPLEMENT_ALREADY_ATTACHED` | agreed 2026-09-26 |
+| Remove a link that is not there | 404 | `SUPPLEMENT_NOT_ATTACHED` | agreed 2026-09-26 |
+| Reorder not the complete dense `1..N` permutation | 409 | `SUPPLEMENT_ORDER_CONFLICT` | agreed 2026-09-26 |
+| Attach source unknown or unpublished | 404 | `SUPPLEMENT_SOURCE_NOT_FOUND` | agreed 2026-09-26 |
 
-No other codes. The four `SUPPLEMENT_*` names are candidates in the registry's
-*proposed, not agreed* section — **not usable** until the BE owner signs them.
+No other codes. The four `SUPPLEMENT_*` names live in the registry's agreed section
+(signed 2026-09-26).
 
 ## 10. Side effects & notifications
 
@@ -254,7 +252,7 @@ by opening the lesson. Stating this so a coder does not invent a producer.
 
 ## 12. Migration & seed
 
-Prisma shape proposed for P4 (minimal — no spare fields, `LessonAssignment` precedent
+Prisma shape accepted for P4 (minimal — no spare fields, `LessonAssignment` precedent
 has no `updatedAt` either):
 
 ```prisma
@@ -322,8 +320,8 @@ one grammar key, one `active` and one `dropped` enrollment.
 
 | Question | What it blocks | Owner | Decide by |
 |---|---|---|---|
-| Accept this contract as **API-020**? Confirm the canonical ID and placement (proposed: Teacher module T8, `teacher/08-supplements.md`, invariants `INV-SUP-*`) | Everything — P4 migration, P5 runtime | Project owner | before P4 |
-| Sign the four `SUPPLEMENT_*` codes (registry *proposed* section) | Coding §9 | BE owner | before P5 |
+| Accept this contract as **API-020**? Confirm the canonical ID and placement (proposed: Teacher module T8, `teacher/08-supplements.md`, invariants `INV-SUP-*`) | Everything — P4 migration, P5 runtime | Project owner | **RESOLVED 2026-09-26 — accepted verbatim** |
+| Sign the four `SUPPLEMENT_*` codes (registry agreed section) | Coding §9 | BE owner | **RESOLVED 2026-09-26 — signed** |
 | Confirm table name `SupplementalPractice` (+ `onDelete: Cascade` on lesson delete, no `updatedAt`) | P4 migration | Project owner | before P4 |
 | `RBAC_MATRIX.md` / `PERMISSIONS_TEACHER.md` supplement rows + `API_TEACHER.md` / `API_STUDENT.md` catalog rows: separate-approval edits (precedent: teacher-lessons-list contract) | P6 wiring clarity (not coding) | BE owner | with acceptance |
 | Page Contract/spec updates for the three FE surfaces (teacher lessons picker region; student lesson-detail supplements region + states; grammar assigned-filter state) — follow-up slices, not this proposal | P6/P7 | FE lane | after acceptance |
