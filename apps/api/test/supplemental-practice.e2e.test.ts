@@ -44,6 +44,7 @@ let lessonBId: string;
 let unitSlug: string;
 let grammarKey: string;
 let grammarKey2: string;
+let grammarRevision: string;
 
 type Res = { status: number; body: any };
 
@@ -167,9 +168,9 @@ before(async () => {
     assert.equal(join.status, 201, JSON.stringify(join.body));
   }
 
-  // Keep the suite self-contained: CI seeds auth/grammar but intentionally has no
-  // published learning catalog. A built-in fixture (no pathId) exercises the same
-  // visibility rules as production catalog content and is removed in after().
+  // Keep the suite self-contained: CI intentionally has no published learning or
+  // grammar catalog. These unique fixtures exercise the same current-revision and
+  // built-in visibility rules as production content and are removed in after().
   unitSlug = `supp-fixture-${tag}`;
   await mongo.collection('learning_units').insertOne({
     slug: unitSlug,
@@ -185,6 +186,53 @@ before(async () => {
     updatedAt: new Date(),
   });
 
+  grammarRevision = `supp-grammar-${tag}`;
+  grammarKey = `supp-grammar-a-${tag}`;
+  grammarKey2 = `supp-grammar-b-${tag}`;
+  const grammarData = (id: string, name: string, hanzi: string) => ({
+    id,
+    level: 3,
+    category: 'Câu kiểm thử',
+    name,
+    formula: 'A + B',
+    hanzi,
+    pinyin: 'cè shì',
+    vi: 'mẫu ngữ pháp kiểm thử',
+    note: 'API-020 fixture',
+    key: hanzi,
+    tokens: ['A', 'B'],
+    frequency: 'test',
+  });
+  await mongo.collection('content_revisions').insertOne({
+    name: 'grammar',
+    revision: grammarRevision,
+    sourceHash: grammarRevision,
+    counts: { 3: 2 },
+    importedAt: new Date(),
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  });
+  await mongo.collection('grammar_items').insertMany([
+    {
+      revision: grammarRevision,
+      key: grammarKey,
+      level: 3,
+      category: 'Câu kiểm thử',
+      data: grammarData(grammarKey, 'Ngữ pháp kiểm thử A', '测试甲'),
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    },
+    {
+      revision: grammarRevision,
+      key: grammarKey2,
+      level: 3,
+      category: 'Câu kiểm thử',
+      data: grammarData(grammarKey2, 'Ngữ pháp kiểm thử B', '测试乙'),
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    },
+  ]);
+
   const units = await req('GET', '/teacher/learning-units', undefined, teacherAToken);
   assert.equal(units.status, 200, JSON.stringify(units.body));
   assert.ok(
@@ -199,9 +247,9 @@ before(async () => {
   // API grammar identity is the source `id` (= revision key). NOTE: `data.key`
   // is a DIFFERENT source field (e.g. a sample hanzi) — using it 404s everywhere.
   assert.ok(first.id, 'grammar list item has no id');
-  grammarKey = String(first.id);
+  assert.equal(String(first.id), grammarKey);
   const second = grams.body.data[1] as Record<string, any>;
-  grammarKey2 = String(second.id);
+  assert.equal(String(second.id), grammarKey2);
   assert.notEqual(grammarKey2, grammarKey);
 });
 
@@ -246,6 +294,13 @@ after(async () => {
   } finally {
     if (mongo && unitSlug) {
       await mongo.collection('learning_units').deleteOne({ slug: unitSlug });
+    }
+    if (mongo && grammarRevision) {
+      await mongo.collection('grammar_items').deleteMany({ revision: grammarRevision });
+      await mongo.collection('content_revisions').deleteOne({
+        name: 'grammar',
+        revision: grammarRevision,
+      });
     }
     await app?.close();
   }

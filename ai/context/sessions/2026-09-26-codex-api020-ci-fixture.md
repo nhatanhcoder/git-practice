@@ -4,10 +4,11 @@ Branch `feat/api020-supplemental-api`, propagated to the stacked P6/P7 branches 
 No DB schema, Auth, RBAC, money behavior, endpoint, or response contract changed.
 
 ## Completed
-- Diagnosed PR #103–#105 `api-quality`: all stopped because the API-020 suite assumed a shared
-  published learning unit that the CI seed does not provide.
-- Made the suite self-contained with a uniquely named built-in Mongo learning-unit fixture.
-- Asserted picker visibility by exact slug and guaranteed fixture cleanup in `after`.
+- Diagnosed PR #103–#105 `api-quality`: the API-020 suite assumed shared published learning and
+  grammar catalogs that CI does not seed.
+- Made the suite self-contained with a uniquely named built-in learning unit and a pinned
+  two-point grammar revision in Mongo.
+- Asserted API visibility by exact identities and guaranteed cleanup of both catalogs in `after`.
 
 ## Verification
 - `pnpm --filter api build` — pass after generating the fresh-worktree Prisma client.
