@@ -45,6 +45,7 @@ jobs:
           --health-interval 5s --health-timeout 5s --health-retries 12
       mongo:
         image: mongo:7
+        command: --replSet rs0 --bind_ip_all
         ports: ['27017:27017']
         options: >-
           --health-cmd "mongosh --quiet --eval 'db.adminCommand({ ping: 1 }).ok'"
@@ -53,7 +54,7 @@ jobs:
       CI: 'true'
       NODE_ENV: test
       DATABASE_URL: postgresql://ci:ci-only-password@127.0.0.1:5432/hsk_ci
-      MONGODB_URI: mongodb://127.0.0.1:27017/hsk_ci
+      MONGODB_URI: mongodb://127.0.0.1:27017/hsk_ci?replicaSet=rs0
       JWT_ACCESS_SECRET: ci-only-access-secret-never-used-outside-this-job
       JWT_ACCESS_TTL: 15m
     steps:
@@ -63,6 +64,19 @@ jobs:
           node-version: 24
       - uses: pnpm/action-setup@v4
       - run: pnpm install --frozen-lockfile
+      - name: Initiate Mongo replica set
+        run: |
+          docker exec "${{ job.services.mongo.id }}" mongosh --quiet --eval \
+            'rs.initiate({_id:"rs0",members:[{_id:0,host:"localhost:27017"}]})'
+          for attempt in {1..30}; do
+            if docker exec "${{ job.services.mongo.id }}" mongosh --quiet --eval \
+              'quit(db.hello().isWritablePrimary ? 0 : 1)'; then
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "Mongo replica set did not elect a primary" >&2
+          exit 1
       - run: node scripts/assert-ci-databases.mjs
       - run: pnpm --filter api exec prisma generate
       - run: pnpm --filter api exec prisma migrate deploy

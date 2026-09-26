@@ -2103,7 +2103,7 @@ now carry that field; service enforcement remains part of dependent backend Slic
 
 **Severity**: High
 **Sprint**: —
-**Status**: Open — found 2026-09-24 during class-content v1 implementation
+**Status**: Contract accepted 2026-09-26 — runtime pending (P4 migration PR, then P5)
 
 **Description**: ADR-016 permits a teacher to attach a published learning unit by reference
 to a class lesson, but deliberately leaves relation/cardinality and transport undecided.
@@ -2122,6 +2122,12 @@ and duplicate/removal semantics, reference behavior when source content is unpub
 revised, active-enrollment visibility, narrowly scoped teacher completion access, response
 shapes, endpoint paths and errors. Then contract and test before code. ID scan: `API-019`
 was the highest API ID across local + remote refs on 2026-09-24.
+
+**Resolution note (2026-09-26)**: owner accepted API-020 verbatim as Teacher module
+`08-supplements.md` (PR #101, merged): link table `SupplementalPractice`, attach/remove/
+reorder + picker endpoints, student detail embed + grammar `assignedOnly`, four
+`SUPPLEMENT_*` codes agreed. P4 migration PR and P5 runtime follow; the original finding
+above is preserved as the pre-acceptance record.
 
 ---
 
@@ -2301,3 +2307,54 @@ then test against a real DB. No server-wide guarantee is claimed by PR #98. ID s
 after fetching origin on 2026-09-24, maximum IDs across local and remote refs were
 `WEB-024`, `API-021` and `DOC-020`; this follow-up allocated `WEB-025/026`,
 `API-022/023` and `DOC-021` without reuse.
+---
+
+### [BUILD-006] Docker Desktop 4.83 crashes before starting the local Postgres container
+
+**Severity**: High (local verification only; production code is unaffected)
+**Sprint**: 5b
+**Status**: Open — reproduced 2026-09-20 on the Windows development host
+
+**Description**: Docker Desktop exits while initialising its Inference manager because the stale
+reparse-point `C:\Users\nhata\AppData\Local\Docker\run\dockerInference` cannot be removed. The
+backend log reports `starting services: initializing Inference manager ... The file cannot be
+accessed by the system`; `localhost:5432` consequently has no listener and Prisma returns `P1001`.
+Disabling `EnableDockerAI`, stopping Docker processes, terminating the `docker-desktop` WSL distro,
+and attempting to rename/remove the exact socket did not release the reparse-point.
+
+**Impact**: the 12-test Learning Catalog real-DB suite is discovered but cancelled in its `before`
+hook because `PrismaService.onModuleInit()` cannot reach Postgres. API build/type-check, workspace
+lint, web tests/build and docs checks remain runnable and pass, but they do not prove the database
+permission/state transitions.
+
+**Fix Plan**: reboot Windows or repair/reset Docker Desktop so the stale socket is recreated, then
+run `docker compose up -d`, `pnpm --filter api exec prisma migrate deploy`, and the complete API
+suite. Factory reset was deliberately not triggered because it would delete local Docker data and
+requires separate human authorisation.
+
+**Resolution note (2026-09-25)**: the project databases are reachable again on localhost without
+resetting Docker data. Migration `20260920120000_add_learning_catalog_moderation_audit` deployed
+successfully and the Learning Catalog real-DB invariant suite passed 12/12 against PostgreSQL and
+an isolated Mongo database. BUILD-006 no longer blocks the catalog slice; this note is appended so
+the original incident record remains unchanged.
+
+---
+
+### [API-024] Learning Catalog state checks and unit allocation raced concurrent requests
+
+**Severity**: High
+**Sprint**: 5b
+**Status**: Resolved 2026-09-26 in PR #99 review hardening
+
+**Description**: Teacher mutations loaded a path state and then wrote later without coordinating
+with `submit` or Admin `suspend`. A transition could therefore freeze the path between the check
+and the write. Unit creation also counted documents and inserted at `count + 1` in separate
+operations, so two requests at 99 units could both pass the cap and select order 100.
+
+**Fix**: every Teacher mutation and Admin transition now takes the same PostgreSQL
+transaction-scoped advisory lock derived from `pathId`, then reloads authorization/state inside
+the critical section. Count, 100-unit validation, order allocation and Mongo insert execute while
+that lock is held. Real-DB E2E holds the lock while changing a path to `pending_review` and proves
+the waiting Teacher write returns `LEARNING_PATH_FROZEN`; a second race proves two simultaneous
+creates at 99 units yield exactly one `201`, one `VALIDATION_ERROR`, 100 documents and orders
+`1..100`.

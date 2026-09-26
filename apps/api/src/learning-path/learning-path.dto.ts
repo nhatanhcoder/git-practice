@@ -1,16 +1,17 @@
 import { Type } from "class-transformer";
 import {
-  IsIn,
   IsInt,
   IsOptional,
   IsString,
   Length,
+  Matches,
   Max,
   Min,
 } from "class-validator";
 export class LearningPathQuery {
   @IsOptional()
-  @IsIn(["hanlo_vocabulary", "hsk_standard_course", "han_yu_jiao_cheng"])
+  @IsString()
+  @Matches(/^(hanlo_vocabulary|hsk_standard_course|han_yu_jiao_cheng|tp-[a-z0-9-]{1,97})$/)
   curriculum = "hanlo_vocabulary";
   @IsOptional() @Type(() => Number) @IsInt() @Min(1) @Max(9) level = 1;
   @IsOptional() @Type(() => Number) @IsInt() @Min(1) @Max(10000) page = 1;
