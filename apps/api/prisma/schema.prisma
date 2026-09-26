@@ -193,6 +193,7 @@ model Lesson {
   class   Class @relation(fields: [classId], references: [id], onDelete: Cascade)
   teacher User  @relation(fields: [teacherId], references: [id], onDelete: Cascade)
   assignmentLinks LessonAssignment[]
+  supplements SupplementalPractice[]
 
   @@unique([classId, orderIndex])
   @@index([classId])
@@ -253,6 +254,32 @@ model LessonAssignment {
   @@unique([lessonId, assignmentId])
   @@index([assignmentId])
   @@map("lesson_assignments")
+}
+
+// API-020 (teacher/08-supplements.md) — lesson ↔ catalog-source link, never a content
+// copy. sourceKey is unitSlug for learning_unit, source grammar id for grammar_point.
+// Order is stable per lesson; remove leaves gaps, reorder sends dense 1..N.
+enum SupplementSourceType {
+  learning_unit
+  grammar_point
+
+  @@map("supplement_source_type")
+}
+
+model SupplementalPractice {
+  id         String               @id @default(uuid()) @db.Uuid
+  lessonId   String               @map("lesson_id") @db.Uuid
+  sourceType SupplementSourceType @map("source_type")
+  sourceKey  String               @map("source_key")
+  orderIndex Int                  @map("order_index")
+  createdAt  DateTime             @default(now()) @map("created_at")
+
+  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@unique([lessonId, sourceType, sourceKey])
+  @@unique([lessonId, orderIndex])
+  @@index([lessonId, orderIndex])
+  @@map("supplemental_practice")
 }
 
 // ENTITY_ATTEMPT.md — a student's attempt on an assignment. The S3 assignments
