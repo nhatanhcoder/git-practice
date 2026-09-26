@@ -444,6 +444,9 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
       all Teacher mutations and Admin transitions now serialize per `pathId` with a PostgreSQL
       advisory transaction lock and re-read state inside the lock. Concurrent unit creation now
       preserves the exact 100-unit cap and contiguous path-wide order. Catalog E2E is **14/14**.
+- 🔶 (codex · 2026-09-27) **Admin Learning Catalog moderation — list/queue screen.**
+      Build `/admin/learning-paths` from its accepted Page Contract and v1 spec, wired only to the
+      existing Admin moderation API. The detail/review screen follows as the second isolated screen.
 - **DoD**: a learner can go pronunciation → grammar → character → Lego → mock exam, with
       XP/streak/badges updating correctly
 
