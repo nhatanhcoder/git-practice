@@ -233,6 +233,13 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
   Verified: type-check + build + lint + check-docs green; new e2e 11/11 real-DB (§15);
   related suites teacher-lessons + student-lesson-detail + foundation-grammar +
   learning-catalog 49/49. Session below. PR stacked, merges after #102.
+- 🔶 (opencode · 2026-09-26) **P6 — teacher lesson supplements UI.**
+  Branch `feat/api020-teacher-supplements` (base: P5 head + merge of #98 head for the
+  lessons UI), worktree `../Real-p6`, FE lane on explicit owner directive. Extends the
+  live lessons page (keeps #98 pending-dialog + rollback fixes): catalog picker modal
+  (units + grammar, HSK/search filters), attach, optimistic drag/button reorder with
+  rollback, remove with confirmation, honest unavailable rows. Accepted endpoints only,
+  no mock fallback. Temp Playwright spec desktop+mobile, deleted after run.
 
 ## Sprint 3 — Question Bank & Assignments
 - ⬜ F3.1 Create MCQ question · ⬜ F3.2 Listening · ⬜ F3.3 Reading · ⬜ F3.4 Writing
