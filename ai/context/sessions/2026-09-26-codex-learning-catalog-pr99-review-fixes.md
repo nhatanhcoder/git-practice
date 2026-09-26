@@ -28,8 +28,17 @@ last_updated: 2026-09-26
 - `pnpm --filter api build`
 - focused `learning-catalog.e2e.test.ts`: 14/14 pass against local PostgreSQL and isolated MongoDB
 
+## Final local verification
+
+- Workspace lint: pass.
+- `pnpm --filter web build`: pass (43 static/dynamic routes generated).
+- `node scripts/check-docs.mjs`: 9/9 pass.
+- Full local API suite: 378/380 pass. Both failures are outside this slice and depend on reused
+  `hsk_dev` state (`GET /admin/pay-rates` fixture lookup and Admin Users pagination while the
+  shared database contains additional rows). The focused catalog suite still passes 14/14 inside
+  that same full run. This local result is not reported as a full-suite pass; clean isolated CI is
+  the merge gate.
+
 ## Remaining verification
 
-- Run the complete API test suite, workspace lint, web production build and check-docs after the
-  record commit.
-- Obtain a fresh independent review of the rebased PR #99 diff and merge only if CI is green.
+- Obtain a fresh independent review of the rebased PR #99 diff and merge only if clean CI is green.
