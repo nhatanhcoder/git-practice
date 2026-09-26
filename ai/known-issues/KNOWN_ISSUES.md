@@ -2153,17 +2153,18 @@ creates at 99 units yield exactly one `201`, one `VALIDATION_ERROR`, 100 documen
 
 ---
 
-### [BUILD-008] API-020 E2E depended on an optional published catalog seed
+### [BUILD-008] API-020 E2E depended on optional learning and grammar catalog seeds
 
 **Severity**: High (blocked PR #103–#105 CI)
 **Sprint**: 5b
 **Status**: Resolved 2026-09-26 on `feat/api020-supplemental-api`
 
 **Description**: `supplemental-practice.e2e.test.ts` selected the first published learning unit
-from the shared Mongo catalog. CI intentionally seeds authentication and grammar data but no
-published teacher learning unit, so the suite stopped in its `before` hook with
-`shared catalog has no published units`; every stacked PR inherited the same failure.
+and first two grammar points from shared Mongo catalogs. CI intentionally has neither catalog,
+so the suite stopped in its `before` hook first with `shared catalog has no published units`,
+then with `shared catalog has no grammar items`; every stacked PR inherited the failures.
 
-**Fix**: the suite now inserts one uniquely named, built-in published learning-unit fixture,
-asserts that the picker exposes that exact slug, and removes it in `after`. The production
-service and API contract are unchanged. Targeted real-DB verification passes 11/11.
+**Fix**: the suite now inserts one uniquely named, built-in published learning unit plus a pinned
+two-point grammar revision, asserts that the APIs expose their exact identities, and removes all
+fixture documents in `after`. Production services and API contracts are unchanged. Targeted
+real-DB verification passes 11/11.
