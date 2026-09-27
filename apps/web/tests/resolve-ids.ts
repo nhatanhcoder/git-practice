@@ -209,13 +209,13 @@ export async function resolveOne(
     }
     case "teacherLearningPath":
     case "teacherLearningUnit": {
-      // Catalog list shape is `data.items[]` (contract), not a flat array.
+      // The implemented paginated catalog API returns a flat `data[]` plus `meta`.
       const token = await tokenFor(request, apiBase, "teacher");
       const list = await api(request, apiBase, "GET", "/teacher/learning-paths", token);
       if (list.status !== 200) throw new Error(`sweep list /teacher/learning-paths failed: HTTP ${list.status}`);
-      const items = Array.isArray(list.body?.data?.items) ? list.body.data.items : [];
+      const items = Array.isArray(list.body?.data) ? list.body.data : [];
       const pathId = items[0]?.id as string | undefined;
-      if (!pathId) return fail("seeded teacher owns no learning path (Slice 1B runtime)");
+      if (!pathId) return fail("seeded teacher owns no learning path");
       if (screen.resolve === "teacherLearningPath") {
         return { path: `/teacher/learning-paths/${pathId}` };
       }
@@ -223,7 +223,7 @@ export async function resolveOne(
       if (detail.status !== 200) throw new Error(`sweep path detail failed: HTTP ${detail.status}`);
       const units = Array.isArray(detail.body?.data?.units) ? detail.body.data.units : [];
       const unitId = units[0]?.id as string | undefined;
-      if (!unitId) return fail("learning path has no units (Slice 1B runtime)");
+      if (!unitId) return fail("learning path has no units");
       return { path: `/teacher/learning-paths/${pathId}/units/${unitId}` };
     }
     default:

@@ -451,6 +451,14 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
       publish verification is still required before marking this FE lane complete.
       Hai lỗi tự bắt khi đọc screenshot đã sửa cùng ngày (banner error đè empty state giả;
       subtitle "0 lộ trình" khi lỗi). Contracts/specs → `built`, `_INDEX` Design `v1`.
+      Follow-up 2026-09-27 (codex): merged current `origin/main` into the FE branch, so
+      Teacher Catalog runtime is now present alongside the screens. Corrected the dynamic
+      route resolver for the implemented flat `data[]` list, added a persistent create-path
+      Playwright test, and recorded the Page Contract/runtime mismatch as `DOC-022`.
+      Verified web production build, web type-check, 242/242 script tests, create-path
+      browser flow 2/2 (desktop and 375px) against API-shaped route stubs, and docs 9/9.
+      **Still 🔶** until a live FE→API→DB CRUD/submit/publish pass is run; local
+      PostgreSQL/API had no listener during this follow-up.
 - ✅ (codex · 2026-09-25) **Teacher-authored Learning Catalog — Slice 1B backend runtime.**
       Branch `codex/learning-catalog-backend`, based on `main` after PR #96 merged green.
       Scope: 13 teacher endpoints, 8 admin moderation endpoints, student catalog visibility,

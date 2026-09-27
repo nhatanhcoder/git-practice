@@ -3,11 +3,8 @@ import { apiRequest } from "../api-client";
 /**
  * Teacher-authored Learning Catalog (ADR-017, `docs/api/modules/teacher/07-learning-catalog.md`).
  *
- * The 13 endpoints below are contract-defined (contract "Blocked on: none").
- * The runtime lives in another lane (Slice 1B, `codex/learning-catalog-backend`,
- * unmerged at the time of writing). This file codes against the accepted contract
- * and invents nothing: an unreachable API surfaces as the page's Error state,
- * never as fabricated data.
+ * The 13 endpoints below are implemented by the LearningCatalog API module.
+ * An unreachable API surfaces as the page's Error state, never fabricated data.
  */
 
 export type LearningPathStatus =
@@ -92,19 +89,9 @@ export const PATH_STATUSES: LearningPathStatus[] = [
   "suspended",
 ];
 
-/** The contract's list shape is `data.items[]` with `meta.total`. */
-interface PathListData {
-  items: LearningPath[];
-}
-
-interface ReferenceListData {
-  items: CatalogReferenceUnit[];
-}
-
 function readItems<T>(data: unknown): T[] {
-  // Contract shape first; tolerate the flat-array convention other teacher
-  // list endpoints use, so a Slice-1B shape choice cannot blank the page
-  // silently — either way the rows come from the server, never invented.
+  // The implemented endpoint returns a flat data array. Keep the documented
+  // items shape as a compatibility fallback while the contract is reconciled.
   if (Array.isArray(data)) return data as T[];
   if (data && typeof data === "object" && Array.isArray((data as { items?: unknown }).items)) {
     return (data as { items: T[] }).items;
@@ -120,7 +107,7 @@ export async function fetchLearningPaths(params?: {
   if (params?.status) query.set("status", params.status);
   if (params?.page && params.page > 1) query.set("page", String(params.page));
   const suffix = query.toString() ? `?${query}` : "";
-  const res = await apiRequest<PathListData>(`/teacher/learning-paths${suffix}`);
+  const res = await apiRequest<LearningPath[] | { items: LearningPath[] }>(`/teacher/learning-paths${suffix}`);
   return {
     items: readItems<LearningPath>(res.data),
     meta: {
@@ -236,7 +223,7 @@ export async function fetchReferenceUnits(params?: {
   if (params?.curriculum) query.set("curriculum", params.curriculum);
   if (params?.page && params.page > 1) query.set("page", String(params.page));
   const suffix = query.toString() ? `?${query}` : "";
-  const res = await apiRequest<ReferenceListData>(`/teacher/learning-units${suffix}`);
+  const res = await apiRequest<CatalogReferenceUnit[] | { items: CatalogReferenceUnit[] }>(`/teacher/learning-units${suffix}`);
   return { items: readItems<CatalogReferenceUnit>(res.data), total: res.meta?.total ?? 0 };
 }
 
