@@ -130,6 +130,10 @@ test.describe("grammar library on the live catalog", () => {
 
     await page.reload();
     await expect(page.locator(".gcard").first()).toBeVisible({ timeout: 15_000 });
+    // The ?point= deep link reopens the drawer on load (contracted P7 behavior),
+    // so close it before interacting with the card list again.
+    await page.getByRole("button", { name: "Đóng bảng chi tiết", exact: true }).click();
+    await expect(page).not.toHaveURL(/(?:\?|&)point=/);
     await expect.poll(() => chipInCard(cardName), { timeout: 15_000 }).toBe(!wasMarked);
 
     const card = page
