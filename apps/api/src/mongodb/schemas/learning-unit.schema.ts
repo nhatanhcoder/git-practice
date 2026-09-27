@@ -24,6 +24,8 @@ export class LearningUnit {
   @Prop({ type: [LearningWordSchema], required: true }) words!: LearningWord[];
   @Prop({ default: false }) published!: boolean;
   @Prop() firstPublishedAt?: Date;
+  @Prop() moderatedById?: string;
+  @Prop() moderatedAt?: Date;
 }
 export const LearningUnitSchema = SchemaFactory.createForClass(LearningUnit);
 LearningUnitSchema.index(

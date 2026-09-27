@@ -28,6 +28,10 @@ import {
 @Controller("student/learning-path")
 export class LearningPathController {
   constructor(private readonly service: LearningPathService) {}
+  @Get("curricula")
+  curricula(@CurrentUser() u: AuthenticatedUser) {
+    return this.service.curricula(u.id);
+  }
   @Get() catalog(
     @CurrentUser() u: AuthenticatedUser,
     @Query() q: LearningPathQuery,

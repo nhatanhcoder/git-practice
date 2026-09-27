@@ -60,6 +60,7 @@
 .typeOption:hover{border-color:var(--slate-400)}
 .typeActive{border-color:var(--accent);background:var(--blue-50);color:var(--accent)}
 .hint{margin:0 0 4px;color:var(--amber-800);font-size:12px}
+.mutationError{margin:8px 0;padding:10px 12px;border:1px solid var(--red-200);border-radius:6px;background:var(--danger-faint);color:var(--red-700);font-size:12.5px}
 .warnNote{margin:0;padding:10px 12px;border-radius:6px;background:var(--amber-50);color:var(--amber-800);font-size:12.5px;line-height:1.5}
 .modalActions{display:flex;justify-content:flex-end;gap:10px;margin-top:18px}
 .modalActions button{height:38px;padding:0 16px;border-radius:6px;font-weight:600;cursor:pointer}

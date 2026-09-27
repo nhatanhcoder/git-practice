@@ -187,9 +187,9 @@ Rules that carry over unchanged from the module contract:
 - Only units whose path is `approved` **and** whose own `published` flag is true are listed or
   readable. A `suspended` path and its units disappear from the catalog — the same rule as an
   unpublished unit today (LP-10).
-- A unit whose referenced source has been unpublished renders as an honest unavailable node, never
-  as a silently missing one.
+- A unit whose referenced source has been unpublished remains in the list with
+  `state: "unavailable"` and `wordCount: 0`, never as a silently missing node. Its detail endpoint
+  returns `LEARNING_UNIT_NOT_FOUND`.
 - Progress stays keyed by `unitSlug` in `user_learning_progress`. Suspend or unpublish hides
   content; it never deletes progress, and restoring shows the same state as before.
 - Unlock order (LP-02) applies to teacher paths exactly as it does to `hanlo_vocabulary`.
-

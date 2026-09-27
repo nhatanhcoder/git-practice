@@ -14,7 +14,7 @@ test('CI database guard accepts disposable targets and rejects developer/remote 
     ...process.env,
     CI: 'true',
     DATABASE_URL: 'postgresql://ci:fixture@127.0.0.1:5432/hsk_ci',
-    MONGODB_URI: 'mongodb://127.0.0.1:27017/hsk_ci',
+    MONGODB_URI: 'mongodb://127.0.0.1:27017/hsk_ci?replicaSet=rs0',
   };
   const run = (overrides = {}) => spawnSync(process.execPath, [script], {
     env: { ...env, ...overrides }, encoding: 'utf8',
@@ -29,6 +29,8 @@ test('CI database guard accepts disposable targets and rejects developer/remote 
       { MONGODB_URI: 'mongodb+srv://remote.example.com/hsk_ci' },
       { MONGODB_URI: 'mongodb://127.0.0.1:27017/hsk_dev' },
       { MONGODB_URI: 'mongodb://127.0.0.1:27018/hsk_ci' },
+      { MONGODB_URI: 'mongodb://127.0.0.1:27017/hsk_ci?replicaSet=other' },
+      { MONGODB_URI: 'mongodb://127.0.0.1:27017/hsk_ci?replicaSet=rs0&directConnection=true' },
     ]) {
       const result = run(overrides);
       assert.notEqual(result.status, 0);

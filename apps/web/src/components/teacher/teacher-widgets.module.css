@@ -33,6 +33,7 @@
 .primaryButton{border:0;background:var(--primary);color:var(--surface)}
 .primaryButton:disabled{cursor:not-allowed;opacity:.5}
 .dangerButton{border:0;background:var(--danger);color:var(--surface)}
+.cancelButton:disabled,.dangerButton:disabled,.modalClose:disabled{cursor:not-allowed;opacity:.5}
 @media(max-width:767px){
 .stateSwitcher{position:static;max-width:calc(100vw - 32px);margin:0 16px 12px;overflow-x:auto}
 .stateSwitcher span{display:none}

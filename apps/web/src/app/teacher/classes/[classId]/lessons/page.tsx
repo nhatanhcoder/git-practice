@@ -21,7 +21,6 @@ import { TeacherShell } from "@/components/teacher/teacher-shell";
 import {
   ConfirmModal,
   Overlay,
-  ReviewSwitcher,
   Toast,
   type ReviewState,
 } from "@/components/teacher/teacher-widgets";
@@ -70,6 +69,9 @@ export default function TeacherLessonsPage({
   // C3: outside-click / Escape dismissal for the open row menu.
   const menuRef = useDismissMenu<HTMLSpanElement>(activeMenu !== null, () => setActiveMenu(null));
   const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const [mutationPending, setMutationPending] = useState(false);
+  const [mutationError, setMutationError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
   const [toast, setToast] = useState("");
 
   useEffect(() => {
@@ -95,7 +97,7 @@ export default function TeacherLessonsPage({
     return () => {
       isMounted = false;
     };
-  }, [classId]);
+  }, [classId, reloadKey]);
 
   function flash(message: string) {
     setToast(message);
@@ -103,15 +105,25 @@ export default function TeacherLessonsPage({
   }
 
   if (!cls) {
+    const loading = reviewState === "loading";
+    const failed = reviewState === "error";
     return (
       <TeacherShell crumbs={[{ label: "Giáo viên" }, { label: "Lớp học", href: "/teacher/classes" }, { label: "Không tìm thấy" }]}>
         <div className={styles.notFound}>
-          <Inbox size={38} />
-          <h2>Không tìm thấy lớp</h2>
-          <p>Lớp này không tồn tại hoặc bạn không có quyền truy cập.</p>
-          <button className={styles.primaryButton} onClick={() => router.push("/teacher/classes")}>
+          {failed ? <AlertCircle size={38} /> : <Inbox size={38} />}
+          <h2>{loading ? "Đang tải bài học" : failed ? "Không tải được bài học" : "Không tìm thấy lớp"}</h2>
+          <p>{failed ? loadError : loading ? "Vui lòng đợi trong giây lát." : "Lớp này không tồn tại hoặc bạn không có quyền truy cập."}</p>
+          <button className={styles.primaryButton} onClick={() => {
+            if (failed) {
+              setReviewState("loading");
+              setLoadError(null);
+              setReloadKey((key) => key + 1);
+            } else {
+              router.push("/teacher/classes");
+            }
+          }} disabled={loading}>
             <ArrowLeft size={16} />
-            <span>Quay lại danh sách lớp</span>
+            <span>{failed ? "Thử lại" : "Quay lại danh sách lớp"}</span>
           </button>
         </div>
       </TeacherShell>
@@ -119,11 +131,13 @@ export default function TeacherLessonsPage({
   }
 
   function openCreate() {
+    setMutationError(null);
     setDraft({ title: "", description: "", contentType: "document" });
     setEditing({ lesson: null });
   }
 
   function openEdit(lesson: ClassLesson) {
+    setMutationError(null);
     setDraft({
       title: lesson.title,
       description: lesson.description,
@@ -134,83 +148,90 @@ export default function TeacherLessonsPage({
   }
 
   async function submitDraft() {
-    if (draft.title.trim().length < 3) return;
-    if (editing?.lesson) {
-      try {
-        await updateLesson(editing.lesson.id, {
+    if (draft.title.trim().length < 3 || mutationPending) return;
+    setMutationPending(true);
+    setMutationError(null);
+    try {
+      if (editing?.lesson) {
+        const res = await updateLesson(editing.lesson.id, {
           title: draft.title.trim(),
           description: draft.description.trim(),
           contentType: draft.contentType,
         });
-      } catch {}
-      setLessons((current) =>
-        current.map((l) => (l.id === editing.lesson!.id ? { ...l, ...draft, title: draft.title.trim(), description: draft.description.trim() } : l)),
-      );
-      flash("Đã lưu bài học");
-    } else {
-      let createdLesson: ClassLesson = {
-        id: "l-" + Date.now(),
-        title: draft.title.trim(),
-        description: draft.description.trim(),
-        contentType: draft.contentType,
-        assignmentCount: 0,
-      };
-      try {
+        setLessons((current) => current.map((lesson) =>
+          lesson.id === res.lesson.id
+            ? { ...lesson, ...res.lesson, assignmentCount: lesson.assignmentCount }
+            : lesson,
+        ));
+        flash("Đã lưu bài học");
+      } else {
         const res = await createLesson(classId, {
           title: draft.title.trim(),
           description: draft.description.trim(),
           contentType: draft.contentType,
         });
-        createdLesson = res.lesson;
-      } catch {}
-      setLessons((current) => [...current, createdLesson]);
-      flash("Đã tạo bài học");
+        setLessons((current) => [...current, res.lesson]);
+        flash("Đã tạo bài học");
+      }
+      setEditing(null);
+    } catch (error) {
+      setMutationError(error instanceof Error ? error.message : "Không lưu được bài học. Thử lại.");
+    } finally {
+      setMutationPending(false);
     }
-    setEditing(null);
   }
 
   async function handleDelete() {
-    if (!deleting) return;
+    if (!deleting || mutationPending) return;
+    setMutationPending(true);
+    setMutationError(null);
     try {
       await deleteLesson(deleting.id);
-    } catch {}
-    setLessons((current) => current.filter((l) => l.id !== deleting.id));
-    flash("Đã xóa bài học");
-    setDeleting(null);
+      setLessons((current) => current.filter((l) => l.id !== deleting.id));
+      flash("Đã xóa bài học");
+      setDeleting(null);
+    } catch (error) {
+      setMutationError(error instanceof Error ? error.message : "Không xoá được bài học. Thử lại.");
+    } finally {
+      setMutationPending(false);
+    }
+  }
+
+  async function persistReorder(next: ClassLesson[]) {
+    if (mutationPending) return;
+    const previous = lessons;
+    setLessons(next);
+    setMutationPending(true);
+    setMutationError(null);
+    try {
+      await reorderLessons(classId, next.map((lesson, index) => ({ id: lesson.id, orderIndex: index + 1 })));
+      flash("Đã đổi thứ tự bài học");
+    } catch (error) {
+      setLessons(previous);
+      setMutationError(error instanceof Error ? error.message : "Không lưu được thứ tự bài học. Thử lại.");
+    } finally {
+      setMutationPending(false);
+    }
   }
 
   async function move(index: number, delta: -1 | 1) {
     const target = index + delta;
-    if (target < 0 || target >= lessons.length) return;
+    if (mutationPending || target < 0 || target >= lessons.length) return;
     const next = [...lessons];
     [next[index], next[target]] = [next[target], next[index]];
-    setLessons(next);
-    try {
-      await reorderLessons(
-        classId,
-        next.map((l, i) => ({ id: l.id, orderIndex: i + 1 })),
-      );
-    } catch {}
-    flash("Đã đổi thứ tự bài học");
+    await persistReorder(next);
   }
 
   async function dropOn(target: number) {
-    if (dragIndex === null || dragIndex === target) {
+    if (mutationPending || dragIndex === null || dragIndex === target) {
       setDragIndex(null);
       return;
     }
     const next = [...lessons];
     const [moved] = next.splice(dragIndex, 1);
     next.splice(target, 0, moved);
-    setLessons(next);
     setDragIndex(null);
-    try {
-      await reorderLessons(
-        classId,
-        next.map((l, i) => ({ id: l.id, orderIndex: i + 1 })),
-      );
-    } catch {}
-    flash("Đã đổi thứ tự bài học");
+    await persistReorder(next);
   }
 
   const valid = draft.title.trim().length >= 3;
@@ -244,14 +265,14 @@ export default function TeacherLessonsPage({
         <span className={styles.tab + " " + styles.tabActive}>Bài học</span>
       </nav>
 
-      {reviewState === "error" && (
+      {mutationError && !editing && !deleting && (
         <div className={styles.errorBanner} role="alert">
           <AlertCircle size={19} />
           <div>
-            <strong>Không tải được danh sách bài học.</strong>
-            <span>Thao tác sắp xếp bị tắt cho đến khi tải thành công.</span>
+            <strong>Không lưu được thay đổi.</strong>
+            <span>{mutationError}</span>
           </div>
-          <button onClick={() => setReviewState("ready")}>Thử lại</button>
+          <button onClick={() => setMutationError(null)}>Đóng</button>
         </div>
       )}
 
@@ -288,7 +309,7 @@ export default function TeacherLessonsPage({
                     (dragIndex === i ? " " + styles.rowDragging : "") +
                     (reviewState === "error" ? " " + styles.rowDisabled : "")
                   }
-                  draggable={reviewState !== "error"}
+                  draggable={!mutationPending}
                   onDragStart={() => setDragIndex(i)}
                   onDragOver={(e) => e.preventDefault()}
                   onDrop={() => dropOn(i)}
@@ -311,7 +332,7 @@ export default function TeacherLessonsPage({
                     <button
                       className={styles.moveButton}
                       onClick={() => move(i, -1)}
-                      disabled={i === 0 || reviewState === "error"}
+                      disabled={i === 0 || mutationPending}
                       aria-label={"Chuyển " + lesson.title + " lên"}
                     >
                       <ArrowUp size={15} />
@@ -319,12 +340,12 @@ export default function TeacherLessonsPage({
                     <button
                       className={styles.moveButton}
                       onClick={() => move(i, 1)}
-                      disabled={i === lessons.length - 1 || reviewState === "error"}
+                      disabled={i === lessons.length - 1 || mutationPending}
                       aria-label={"Chuyển " + lesson.title + " xuống"}
                     >
                       <ArrowDown size={15} />
                     </button>
-                    <span className={styles.menuWrap}>
+                    <span className={styles.menuWrap} ref={activeMenu === lesson.id ? menuRef : undefined}>
                       <button
                         className={styles.moreButton}
                         aria-haspopup="menu"
@@ -354,12 +375,12 @@ export default function TeacherLessonsPage({
         )}
       </section>
 
-      <ReviewSwitcher value={reviewState} onChange={setReviewState} />
       {toast && <Toast message={toast} />}
       {editing && (
         <Overlay
           label={editing.lesson ? "Sửa bài học" : "Thêm bài học"}
-          onClose={() => setEditing(null)}
+          onClose={() => { if (!mutationPending) setEditing(null); }}
+          closeDisabled={mutationPending}
           backdropClassName={styles.modalBackdrop}
           panelClassName={styles.modal}
         >
@@ -410,13 +431,13 @@ export default function TeacherLessonsPage({
                   })}
                 </div>
               </fieldset>
-              <p className={styles.hint}>⚠ MOCK: hành động này chưa có API — dữ liệu chỉ nằm trong trình duyệt.</p>
+              {mutationError && <p className={styles.mutationError} role="alert">{mutationError}</p>}
               <div className={styles.modalActions}>
-                <button type="button" className={styles.cancelButton} onClick={() => setEditing(null)}>
+                <button type="button" className={styles.cancelButton} onClick={() => setEditing(null)} disabled={mutationPending}>
                   Hủy
                 </button>
-                <button type="submit" className={styles.primaryButton} disabled={!valid}>
-                  {editing.lesson ? "Lưu thay đổi" : "Thêm bài học"}
+                <button type="submit" className={styles.primaryButton} disabled={!valid || mutationPending}>
+                  {mutationPending ? "Đang lưu..." : editing.lesson ? "Lưu thay đổi" : "Thêm bài học"}
                 </button>
               </div>
             </form>
@@ -428,13 +449,11 @@ export default function TeacherLessonsPage({
           description={"Bài học «" + deleting.title + "» sẽ bị xoá khỏi danh sách. Hành động này không thể hoàn tác."}
           confirmLabel="Xoá bài học"
           danger
-          onClose={() => setDeleting(null)}
+          pending={mutationPending}
+          onClose={() => { if (!mutationPending) setDeleting(null); }}
           onConfirm={handleDelete}
         >
-          <p className={styles.warnNote}>
-            ⚠ MOCK + chưa xác nhận nghiệp vụ: việc bài tập gắn với bài học ({deleting.assignmentCount}) có chặn xoá
-            hay không chưa được ghi nhận ở đâu — xem contract teacher-lessons-list.md.
-          </p>
+          {mutationError && <p className={styles.mutationError} role="alert">{mutationError}</p>}
         </ConfirmModal>
       )}
     </TeacherShell>

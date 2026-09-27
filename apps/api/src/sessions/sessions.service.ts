@@ -482,10 +482,10 @@ export class SessionsService {
       if (to) where.scheduledDate.lte = new Date(`${to}T00:00:00.000Z`);
     }
 
-    const orderBy: Prisma.ClassSessionOrderByWithRelationInput =
+    const orderBy: Prisma.ClassSessionOrderByWithRelationInput[] =
       query.sort === SessionSort.scheduledDate_asc
-        ? { scheduledDate: 'asc' }
-        : { scheduledDate: 'desc' };
+        ? [{ scheduledDate: 'asc' }, { id: 'asc' }]
+        : [{ scheduledDate: 'desc' }, { id: 'desc' }];
 
     const [total, sessions] = await this.prisma.$transaction([
       this.prisma.classSession.count({ where }),

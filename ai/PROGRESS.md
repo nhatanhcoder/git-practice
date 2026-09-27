@@ -202,7 +202,26 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
   (`/student/classes/[classId]`), aligned with accepted backend endpoints (`join`, `leave`,
   `detail`, `list`) in `StudentClassesController`. Closes contract gap `DOC-016` and prepares
   for wiring frontend to live endpoints.
+- 🔶 (opencode · 2026-09-26) **API-020 contract proposal — SupplementalPractice (lesson↔catalog link).**
+  Owner-authorized option 1 (2026-09-26): draft the module spec as a *proposal* for owner
+  acceptance; no code, no migration, no endpoint goes live from this slice. Lane note:
+  `docs/**` is claude's lane per `multi-agent-workflow.md` §2 — this docs-only proposal is
+  done on explicit owner authorization, branch `docs/api-020-supplements`, worktree
+  `../Real-api020`. Scope: `docs/api/modules/teacher/07-supplements.md` (16-section template,
+  INV-SUP-*) + `SUPPLEMENT_*` candidate codes in the registry's *proposed, not agreed*
+  section + T7 row in `teacher/_INDEX.md`. Grounded only in already-accepted sources
+  (RBAC_MATRIX SupplementalPractice rows, S-LESSON-4/S-SELF-8/S-SELF-9, ENTITY_LESSON /
+  ENTITY_LESSON_ASSIGNMENT / ENTITY_CLASS_ENROLLMENT, G-read + unit-read shapes,
+  INV-TCL-06/08/10 precedents). P4 stays gated on owner acceptance of this contract.
 - **DoD**: Teacher creates class → student joins via code → teacher sees the student in the list
+- ✅ (opencode · 2026-09-26) **P4 done — SupplementalPractice migration (API-020 accepted).**
+  Owner acceptance: contract verbatim + table/CASCADE/codes/reject-404. Branch
+  `feat/api020-supplemental-migration`, worktree `../Real-p4` (backend lane on explicit
+  owner directive, P4→P7 chain). Migration `20260926090444_add_supplemental_practice` —
+  exactly the accepted §12, nothing else. Verified: with-data deploy (hsk_dev, 2 lessons),
+  empty-DB full-chain deploy (scratch DB asserted + dropped), constraint e2e 6/6 real-DB
+  (P2002 ×2, P2003, enum rejection, cascade spares progress), type-check + build + lint +
+  check-docs green. Session above. Unblocks P5 on merge.
 
 ## Sprint 3 — Question Bank & Assignments
 - ⬜ F3.1 Create MCQ question · ⬜ F3.2 Listening · ⬜ F3.3 Reading · ⬜ F3.4 Writing
@@ -428,10 +447,29 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
       temp PW spec 6/6 (mount, error trung thực, redirect+toast, modal validate,
       no-overflow, screenshots đã đọc — đã xoá spec) · shared sweep route tĩnh báo đúng
       1 tín hiệu backend-vắng (6× resource 404 noise, h1/overflow/screenshot pass).
-      **Stays 🔶**: code gọi API thật, không mock — nhưng E2E live (CRUD/reorder/submit/
-      publish thật) bị chặn bởi backend runtime Slice 1B chưa merge; chạy lại sweep sau merge.
+      **Historical blocker resolved**: Slice 1B runtime has merged; live CRUD/reorder/submit/
+      publish verification is still required before marking this FE lane complete.
       Hai lỗi tự bắt khi đọc screenshot đã sửa cùng ngày (banner error đè empty state giả;
       subtitle "0 lộ trình" khi lỗi). Contracts/specs → `built`, `_INDEX` Design `v1`.
+- ✅ (codex · 2026-09-25) **Teacher-authored Learning Catalog — Slice 1B backend runtime.**
+      Branch `codex/learning-catalog-backend`, based on `main` after PR #96 merged green.
+      Scope: 13 teacher endpoints, 8 admin moderation endpoints, student catalog visibility,
+      notification side effects, ownership/state invariants, and complete API regression tests.
+      Runtime complete: role-prefixed controllers, exact DTO whitelist, ownership predicates,
+      atomic path transitions + notifications, immutable published units, reference resolution,
+      student curricula/visibility, moderation/restore audit, and 12-test invariant suite.
+      Verified after rebasing onto current `origin/main`: migration deployed to local `hsk_dev`;
+      the shared Teacher/Admin/Student catalog invariant suite passes **12/12** against real
+      PostgreSQL + isolated MongoDB; API build + type-check, workspace lint, web build and
+      check-docs pass. The test was corrected to use the project's flat error envelope and
+      explicit `.js` imports under current Node. CI now runs Mongo as a single-node replica set
+      (required by atomic catalog reorder) and its isolated API suite passes **378/378**; web-quality
+      and check-docs also pass. The local pay-rate assertion was caused by reused `hsk_dev` state,
+      not a clean-DB regression.
+      PR review hardening (2026-09-26): migration/audit fields split and merged first in PR #100;
+      all Teacher mutations and Admin transitions now serialize per `pathId` with a PostgreSQL
+      advisory transaction lock and re-read state inside the lock. Concurrent unit creation now
+      preserves the exact 100-unit cap and contiguous path-wide order. Catalog E2E is **14/14**.
 - **DoD**: a learner can go pronunciation → grammar → character → Lego → mock exam, with
       XP/streak/badges updating correctly
 
@@ -482,6 +520,12 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
 ---
 
 ## Off-sprint / spike
+
+- ✅ (codex · 2026-09-24) Teacher teaching schedule v1: live own-session GET + one-off POST with required topic, week agenda, active owned-class picker, truthful loading/error/empty states; removed in-memory lifecycle actions. Lesson create/edit/delete/reorder no longer report success on API failure; reorder rolls back. Branch `codex/class-content-schedule-v1`.
+- ✅ (codex · 2026-09-24 · PR #98 review follow-up) Uncertain session POST result now blocks blind retry and reloads the target week; Teacher session pagination uses a deterministic date+ID order; lesson save/delete dialogs cannot be dismissed mid-request; Teacher schedule spec status corrected. Focused browser tests cover both viewports. Server-wide create idempotency remains ⛔ (`API-023`); no schema, RBAC or payroll formula changed.
+- ⛔ (codex · 2026-09-24 · API-020) Class-lesson supplemental attach + Student assigned-grammar filter are NOT IMPLEMENTED: ADR-016 leaves relation, transport, content-kind/revision and permission details undecided; no approved endpoint or schema. Needs owner-approved contract before DB/RBAC/API code. No teacher-authored grammar, recurrence, reschedule/cancel or payroll change was made.
+- ✅ (opencode · 2026-09-26 · API-020 accepted) Owner accepted the supplemental contract verbatim (Teacher T8 `08-supplements.md`, PR #101 merged): link table, attach/remove/reorder + pickers, student embed + assigned filter, 4 codes agreed. P4 migration + P5 runtime follow as own slices.
+- 🔶 (opencode · 2026-09-26 · PR #98 merge assist) Resolving `codex/class-content-schedule-v1` conflicts against current main (append-order collisions in KNOWN_ISSUES + index date only; code auto-merged) on explicit owner directive; verifying green, pushing back to the lane branch for owner merge. Worktree `../Real-pr98-merge`. Does not touch codex's checkout (verified clean/in-sync).
 
 - ✅ (opencode · 2026-09-19) **SRS reviewed-saved-words count** — branch
   `feat/srs-saved-review-count` (PR #97). Stats gains `savedWords` +

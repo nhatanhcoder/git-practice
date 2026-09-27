@@ -97,6 +97,10 @@ Row: `{ id, classId, className, scheduledDate, scheduledStart, scheduledEnd, act
 actualEnd, topic, notes, status, rejectionReason, payrollPeriodId, attendanceSummary,
 createdAt, updatedAt }` + `meta`.
 
+For offset pagination, the running GET orders by `scheduledDate` in the requested
+direction and then by `id` in the same direction. The unique secondary key keeps
+page boundaries deterministic when multiple sessions share a teaching date.
+
 `attendanceSummary` — derived at read time, module 04 §3.1 verbatim:
 
 ```json

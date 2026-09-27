@@ -1,14 +1,15 @@
 ---
 title: Backend Module Specs — Teacher
 status: active
-last_updated: 2026-09-19
+last_updated: 2026-09-25
 ---
 
 # Backend Module Specs — Teacher
 
-> Backend specifications for the **Teacher area** — 7 modules, 49 endpoints. Written 2026-09-03
+> Backend specifications for the **Teacher area** — 8 modules, 57 endpoints. Written 2026-09-03
 > by opencode from the verbatim sources (see each file's §0); **T7 added 2026-09-19** (zcode) with
-> ADR-017. **These are specs, not code.**
+> ADR-017; **T8 (API-020 proposal) added 2026-09-26** (opencode, owner-authorized).
+> **These are specs, not code.**
 > Companion set: `docs/api/modules/` (Admin, 8 modules).
 >
 > Scope settled by the owner 2026-09-03:
@@ -31,9 +32,11 @@ last_updated: 2026-09-19
 | T4 | Attempts + Grading | `04-attempts-grading.md` | 🔶 proposed | 4 | 8 (INV-TGRD) | per-question max not modeled (Q2); AI unparked 2026-09-12 |
 | T5 | Sessions (teacher side) | `05-sessions.md` | 🔶 proposed | 6 | 9 (INV-TSES) | Q-SES-2 (re-submit after reject) |
 | T6 | Income (read-only) | `06-income.md` | 🔶 proposed | 2 | 4 (INV-TINC) | — (reads stored data only) |
-| T7 | Learning Catalog (authoring) | [07-learning-catalog.md](07-learning-catalog.md) | 🔶 proposed | 13 | 14 (INV-LCAT) | `LEARNING_PATH_*` agreed 2026-09-19; Slice 1A in progress |
+| T7 | Learning Catalog (authoring) | [07-learning-catalog.md](07-learning-catalog.md) | ✅ implemented; real-DB verified 2026-09-25 | 13 | 14 (INV-LCAT) | 12/12 shared catalog invariant cases pass against PostgreSQL + MongoDB |
+| T8 | Lesson Supplements (API-020) | `08-supplements.md` | ✅ accepted | 8 (5 new + 3 extended) | 12 (INV-SUP) | `SUPPLEMENT_*` agreed 2026-09-26 |
 
 46 new invariants, each with a test line in its module's §15 — the invariant gate.
+(T8 adds 12 more, accepted 2026-09-26.)
 Inherited invariants (INV-CLASS-*, INV-SESSION-*, INV-PAYROLL-*) are referenced, never
 redefined.
 
@@ -55,6 +58,10 @@ T1 Classes+Lessons ──► T3 Assignments ──► T4 Attempts+Grading
 ```
 
 - T3 needs T2's questions to exist (cross-DB validation) and T1's classes.
+- T5 needs T1 (classes + enrollments for attendance).
+- T8 needs T1's lessons (ownership join) plus read-only access to the published unit
+  catalog (student module 05-learning-path) and grammar catalog (student module
+  02-foundation-grammar); it writes no catalog content and no progress.
 - T5 needs T1 (classes + enrollments for attendance).
 - T6 needs T5's sessions to have something to read; the `PayrollPeriod` table itself is
   Admin module 05's (T6 §12: one migration set, `PayrollPeriod` first).
@@ -96,4 +103,4 @@ T1 Classes+Lessons ──► T3 Assignments ──► T4 Attempts+Grading
 | BE owner signing off | §4 above + every module's §9 + §16 |
 | Teacher-API coder | each module top to bottom; start T1 → T2 → T3 → T4 → T5 → T6 |
 | Reviewer | §4 + §15 of the module under review (invariant ↔ test) |
-| DB designer | §1, §7, §11, §12 of every module (new tables: Class, ClassEnrollment, Lesson, LessonAssignment, Assignment, Attempt, AttemptAnswer, ClassSession, SessionAttendance, PayrollPeriod; Mongo: questions) |
+| DB designer | §1, §7, §11, §12 of every module (new tables: Class, ClassEnrollment, Lesson, LessonAssignment, Assignment, Attempt, AttemptAnswer, ClassSession, SessionAttendance, PayrollPeriod, SupplementalPractice (T8, accepted); Mongo: questions) |
