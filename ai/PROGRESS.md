@@ -248,6 +248,12 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
   links/unavailable/empty, assigned query + empty state, combined filter, point deep-link,
   close and browser Back). Screenshots read; no horizontal overflow. The P7 browser suite
   mocks its network boundary; P5 owns the real-DB endpoint proof. Merge after P4→P5→P6.
+- ✅ (opencode · 2026-09-27 · P7 verify) Real-DB browser round on top: temp spec 12/12
+  (server order, unit/grammar deep-links, assignedOnly URL-restore, fresh/dropped
+  enrollment states, zero console errors; screenshots read, deleted after run). Fixed one
+  genuine regression the round exposed: `?point=` reopen broke mark-studied's reload
+  assumption (test now closes the drawer first). Committed specs 14/14. PR #106 (base:
+  P6 branch) — merge after #102 → #103 → #98 → #104.
   Branch `feat/api020-teacher-supplements` (base P5 head + merge of #98 head for the
   lessons UI), worktree `../Real-p6`, FE lane on explicit owner directive. Extends the
   live lessons page, preserving #98 pending-dialog + rollback fixes (same
