@@ -457,6 +457,10 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
       Playwright test, and recorded the Page Contract/runtime mismatch as `DOC-022`.
       Verified web production build, web type-check, 242/242 script tests, create-path
       browser flow 2/2 (desktop and 375px) against API-shaped route stubs, and docs 9/9.
+      PR #107 first web-quality run found four unsuppressed lint errors in the FE
+      screens; the follow-up removed unused imports, restored editor effect cleanup,
+      and disabled submit/publish confirmations while requests are pending. Local
+      lint, web build, and the 2/2 browser test pass after the fix.
       **Still 🔶** until a live FE→API→DB CRUD/submit/publish pass is run; local
       PostgreSQL/API had no listener during this follow-up.
 - ✅ (codex · 2026-09-25) **Teacher-authored Learning Catalog — Slice 1B backend runtime.**

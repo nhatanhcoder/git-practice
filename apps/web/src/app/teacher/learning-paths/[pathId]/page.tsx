@@ -405,6 +405,7 @@ export default function TeacherLearningPathDetailPage({
           title="Gửi duyệt lộ trình"
           description="Gửi lộ trình cho admin duyệt? Trong lúc chờ, lộ trình sẽ tạm khoá để admin duyệt đúng nội dung."
           confirmLabel="Gửi duyệt"
+          pending={submitBusy}
           onClose={() => setSubmitting(false)}
           onConfirm={() => void handleSubmit()}
         />
@@ -423,6 +424,7 @@ export default function TeacherLearningPathDetailPage({
           title="Publish bài học"
           description={`Bài học “${publishTarget.title || "—"}” sẽ hiển thị cho mọi học viên trên nền tảng. Nội dung đã publish không sửa được nữa — chỉ kiểm tra kỹ rồi publish.`}
           confirmLabel="Publish bài học"
+          pending={publishBusy}
           onClose={() => setPublishTarget(null)}
           onConfirm={() => void handlePublishToggle(publishTarget, true)}
         />
@@ -433,6 +435,7 @@ export default function TeacherLearningPathDetailPage({
           description="Bỏ publish bài học? Học viên sẽ không thấy bài này nữa. Tiến độ đã học vẫn được giữ."
           confirmLabel="Bỏ publish"
           danger
+          pending={publishBusy}
           onClose={() => setUnpublishTarget(null)}
           onConfirm={() => void handlePublishToggle(unpublishTarget, false)}
         />

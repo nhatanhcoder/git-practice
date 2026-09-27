@@ -14,6 +14,9 @@
 - Updated the web route resolver to read the API's actual flat `data[]` list.
   The FE service continues to accept flat `data[]` and documented `data.items[]`.
 - Added a persistent Playwright create-path flow test at desktop and 375px.
+- Fixed the first PR #107 `web-quality` lint failure (unused imports/variable and
+  missing effect cleanup); submit/publish confirm buttons now use the pending
+  state to prevent repeated clicks while a request is running.
 - Appended `DOC-022`: Page Contracts specify `data.items[]`, backend returns flat
   `data[]` plus `meta`. Contract correction or coordinated API change awaits decision.
 
@@ -21,6 +24,7 @@
 
 - `node scripts/check-docs.mjs`: 9/9 pass.
 - `pnpm --filter web build`: pass; all three Teacher Catalog routes are present.
+- `pnpm lint`: pass after the PR follow-up.
 - `pnpm --filter web exec tsc --noEmit --incremental false`: pass.
 - `node --test apps/web/scripts/*.test.mjs`: 242/242 pass.
 - `pnpm --filter web exec playwright test tests/teacher-learning-path-create.spec.ts`:

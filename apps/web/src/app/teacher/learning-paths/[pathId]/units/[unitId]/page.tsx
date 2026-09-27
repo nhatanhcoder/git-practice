@@ -7,7 +7,6 @@ import { AlertCircle, ArrowLeft, GripVertical, Plus, X } from "lucide-react";
 import { TeacherShell } from "@/components/teacher/teacher-shell";
 import {
   ConfirmModal,
-  Overlay,
   ReviewSwitcher,
   StatusPill,
   Toast,
@@ -108,6 +107,9 @@ export default function TeacherLearningUnitEditorPage({
         setReviewState("error");
         setLoadError(describeCatalogError(err));
       });
+    return () => {
+      isMounted = false;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathId, unitId, refreshKey]);
 
