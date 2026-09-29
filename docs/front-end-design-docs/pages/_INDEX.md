@@ -1,7 +1,7 @@
 ---
 status: active
 owner: Nhật
-last_updated: 2026-09-25
+last_updated: 2026-09-29
 ---
 
 # Page Contracts — Index
@@ -40,8 +40,8 @@ last_updated: 2026-09-25
 | `/admin/pay-rates` | A-PAY-1 | [admin-pay-rates](./admin-pages/admin-pay-rates.md) | built | v2 | no list endpoint; unit basis undecided |
 | `/admin/monitoring` | A-DASH-3 | [admin-monitoring](./admin-pages/admin-monitoring.md) | built | v2 | **all of it** — see contract |
 | `/admin/profile` | A-AUTH-4,5,6 | [admin-profile](./admin-pages/admin-profile.md) | built | v1 | — (endpoints defined in [API_AUTH.md](../../api/API_AUTH.md)) |
-| `/admin/learning-paths` | A-LCAT-1,2,3,5 | [admin-learning-paths](./admin-pages/admin-learning-paths.md) | contracted | — | backend implemented + real-DB verified 2026-09-25; frontend not built |
-| `/admin/learning-paths/[pathId]` | A-LCAT-2,3,4 | [admin-learning-path-detail](./admin-pages/admin-learning-path-detail.md) | contracted | — | backend implemented + real-DB verified; frontend not built |
+| `/admin/learning-paths` | A-LCAT-1,2,3,5 | [admin-learning-paths](./admin-pages/admin-learning-paths.md) | built | v1 | queue/actions wired; API-boundary browser tests; DOC-023 gaps |
+| `/admin/learning-paths/[pathId]` | A-LCAT-2,3,4 | [admin-learning-path-detail](./admin-pages/admin-learning-path-detail.md) | built | v1 | review/actions wired; reference preview NOT IMPLEMENTED (DOC-023) |
 
 ## Teacher
 

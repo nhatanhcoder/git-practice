@@ -95,6 +95,8 @@ const teacher: Screen[] = [
 ];
 
 const admin: Screen[] = [
+  { path: "/admin/learning-paths", name: "learning-paths", area: "admin" },
+  { path: "/admin/learning-paths/[pathId]", name: "learning-path-detail", area: "admin", resolve: "adminLearningPath" },
   { path: "/admin", name: "dashboard", area: "admin" },
   { path: "/admin/users", name: "users", area: "admin" },
   { path: "/admin/users/[userId]", name: "user-detail", area: "admin", resolve: "adminUser" },
