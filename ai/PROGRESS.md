@@ -469,6 +469,16 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
 
 ## Tooling / guardrails
 
+- ✅ (claude · 2026-10-01) **`pnpm wt:status`** — read-only table of every worktree: branch,
+  ahead/behind `origin/main`, dirty count, last-commit age, PR state, with flags DIRTY / DETACHED /
+  MAIN-OFF / MERGED / STALE / BEHIND (`--strict` exits 1 for a daily check, `--offline` skips
+  `git fetch`/`gh`). Opened as the visibility half of `GIT-005`. Ran against the real 11
+  worktrees: flagged 9, correctly marked #103/#104/#106 as MERGED. **Not done, awaiting owner
+  approval**: rewriting `multi-agent-workflow.md`, the PR template, the duplicate-ID check in
+  `check-docs.mjs`, and every worktree deletion. The primary checkout was returned to `main`;
+  its 44 uncommitted files are preserved on local branch `wip/antigravity-ui-polish-0918`
+  (`WEB-027`, never pushed).
+
 - ✅ (codex · 2026-09-08) **CI quality gates** — implemented: lint, type checks, web/API builds,
   frontend regression tests and API tests against disposable CI PostgreSQL/MongoDB services.
   No application behavior or schema changes; PR #50 web-quality, api-quality and check-docs passed.
