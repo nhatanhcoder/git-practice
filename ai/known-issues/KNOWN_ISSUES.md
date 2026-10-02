@@ -2361,6 +2361,27 @@ creates at 99 units yield exactly one `201`, one `VALIDATION_ERROR`, 100 documen
 
 ---
 
+### [DOC-023] Admin catalog Page Contracts exceed current response shapes
+
+**Severity**: Medium
+**Status**: Open — 2026-09-29; FE integration explicitly handles runtime gaps
+**Scope**: Admin moderation queue and detail; no schema/Auth/RBAC changes.
+
+Page Contracts describe nested items, published-unit owner/path columns and reference
+content preview. Runtime lists return flat `data[]` with `meta`; published-unit DTOs omit
+owner/path metadata and reference detail omits words. FE accepts the actual envelope,
+omits unsupported columns and labels reference preview **NOT IMPLEMENTED**, without
+inventing a source endpoint. Approval does not publish units: Teacher must publish them
+separately, and shipped confirmation copy states this prerequisite.
+
+There is no `status=all` API filter. FE merges FIFO results from the five supported
+status filters with exact page slicing; deep pages cost more requests and concurrent
+changes are not a transactional snapshot. A server aggregate would require a contract.
+Follow-up: reconcile contracts and define an authorized reference-preview response.
+IDs checked across local and origin refs: DOC-022 already reserved by Teacher UI lane.
+
+---
+
 ### [DOC-022] Teacher Learning Catalog list response shape differs from Page Contracts
 
 **Severity**: Medium

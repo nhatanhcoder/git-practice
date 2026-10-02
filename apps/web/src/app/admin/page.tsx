@@ -112,6 +112,10 @@ export default function AdminDashboardPage() {
             <WalletCards size={20} />
             <span>Lương</span>
           </Link>
+          <Link className={styles.navItem} href="/admin/learning-paths">
+            <BookOpen size={20} aria-hidden="true" />
+            <span>Lộ trình học</span>
+          </Link>
           <Link className={styles.navItem} href="/admin/monitoring">
             <ShieldCheck size={20} />
             <span>Giám sát</span>

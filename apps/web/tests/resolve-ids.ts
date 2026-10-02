@@ -163,6 +163,10 @@ export async function resolveOne(
 ): Promise<{ path: string } | Skip> {
   const fail = (reason: string): Skip => ({ screen, reason });
   switch (screen.resolve) {
+    case "adminLearningPath": {
+      const id = await firstId(request, apiBase, "admin", "/admin/learning-paths");
+      return id ? { path: `/admin/learning-paths/${id}` } : fail("no pending learning path available for review");
+    }
     case "adminUser": {
       const id = await firstId(request, apiBase, "admin", "/admin/users?limit=1");
       return id ? { path: `/admin/users/${id}` } : fail("seed has no users");

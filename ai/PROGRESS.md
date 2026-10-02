@@ -482,6 +482,11 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
       all Teacher mutations and Admin transitions now serialize per `pathId` with a PostgreSQL
       advisory transaction lock and re-read state inside the lock. Concurrent unit creation now
       preserves the exact 100-unit cap and contiguous path-wide order. Catalog E2E is **14/14**.
+- 🔶 (codex · 2026-09-29) **Admin Learning Catalog moderation — both screens implemented.**
+      Queue/detail support approve, reject, suspend, restore and unpublish using existing APIs.
+      Production build and 242 unit tests pass; browser verification uses API-boundary fixtures.
+      Live FE/API/DB lifecycle not verified this session. Reference preview remains NOT IMPLEMENTED
+      because runtime omits reference words; contract gaps tracked in DOC-023.
 - **DoD**: a learner can go pronunciation → grammar → character → Lego → mock exam, with
       XP/streak/badges updating correctly
 

@@ -2,11 +2,20 @@
 feature: A-LCAT-2, A-LCAT-3, A-LCAT-4
 role: admin
 route: /admin/learning-paths/[pathId]
-status: contracted
-last_updated: 2026-09-19
+status: built
+last_updated: 2026-09-29
 ---
 
 # Page Contract — Admin · Learning Path Review
+
+## Implementation notes (2026-09-29)
+
+Built with baseline v1 using the existing Admin API. DOC-023 records contract/runtime gaps:
+lists return flat `data[]` plus `meta`; reference-unit content preview is NOT IMPLEMENTED
+because detail omits its words. Published-unit rows do not expose owner/path metadata.
+Approval permits Teacher publishing; it does not publish units automatically.
+The All tab aggregates supported status filters; deep pages require additional requests.
+Browser verification uses API-boundary fixtures, not a live database lifecycle.
 
 ## Purpose
 Read a path's actual lessons, then approve it, reject it with a reason, or — if it is already live —

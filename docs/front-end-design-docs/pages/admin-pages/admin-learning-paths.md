@@ -2,11 +2,20 @@
 feature: A-LCAT-1, A-LCAT-2, A-LCAT-3, A-LCAT-5
 role: admin
 route: /admin/learning-paths
-status: contracted
-last_updated: 2026-09-19
+status: built
+last_updated: 2026-09-29
 ---
 
 # Page Contract — Admin · Learning Paths (review queue)
+
+## Implementation notes (2026-09-29)
+
+Built with baseline v1 using the existing Admin API. DOC-023 records contract/runtime gaps:
+lists return flat `data[]` plus `meta`; reference-unit content preview is NOT IMPLEMENTED
+because detail omits its words. Published-unit rows do not expose owner/path metadata.
+Approval permits Teacher publishing; it does not publish units automatically.
+The All tab aggregates supported status filters; deep pages require additional requests.
+Browser verification uses API-boundary fixtures, not a live database lifecycle.
 
 ## Purpose
 Work the queue of learning paths teachers have submitted, and find any published lesson that needs

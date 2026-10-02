@@ -5,7 +5,7 @@ contract: ../../pages/admin-pages/admin-learning-paths.md
 requires: _DESIGN-SYSTEM.md
 status: ready-for-design
 design_baseline: v1
-last_updated: 2026-09-19
+last_updated: 2026-09-29
 ---
 
 # Page Spec — Admin · Learning Paths
@@ -18,6 +18,12 @@ last_updated: 2026-09-19
 > spacing — this product has a locked design system.
 
 ---
+
+## Implementation status
+
+Screen built against baseline v1 on 2026-09-29; spec remains ready-for-design as its
+document status. See the Page Contract implementation notes and DOC-023 for explicit
+runtime deviations and reference-preview limitations. No design baseline promotion.
 
 ## 1. Purpose
 
