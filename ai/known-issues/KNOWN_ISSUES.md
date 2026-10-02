@@ -2361,6 +2361,24 @@ creates at 99 units yield exactly one `201`, one `VALIDATION_ERROR`, 100 documen
 
 ---
 
+### [DOC-022] Teacher Learning Catalog list response shape differs from Page Contracts
+
+**Severity**: Medium
+**Sprint**: 5b
+**Status**: Open — found during FE/backend integration, 2026-09-27
+
+**Description**: the Teacher list and reference-picker Page Contracts specify
+`data.items[]`, while the implemented `GET /teacher/learning-paths` and
+`GET /teacher/learning-units` return a flat `data[]` with pagination in `meta`.
+The FE accepts both shapes without fabricating records, and the route resolver now
+reads the implemented flat array. The contract and runtime remain inconsistent.
+
+**Needs decision**: approve a contract correction to flat `data[]` or change the
+API and its clients together; do not silently declare either shape canonical.
+ID scan across local and origin refs on 2026-09-27 found `DOC-021` as the maximum.
+
+---
+
 ### [GIT-005] Worktrees accumulate with no owner, PR or cleanup — 11 at once, 593 dirty files in one
 
 **Severity**: Medium

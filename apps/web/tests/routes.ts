@@ -92,6 +92,9 @@ const teacher: Screen[] = [
   { path: "/teacher/grading", name: "grading", area: "teacher" },
   { path: "/teacher/sessions", name: "sessions", area: "teacher" },
   { path: "/teacher/income", name: "income", area: "teacher" },
+  { path: "/teacher/learning-paths", name: "learning-paths", area: "teacher" },
+  { path: "/teacher/learning-paths/[pathId]", name: "learning-path-detail", area: "teacher", resolve: "teacherLearningPath" },
+  { path: "/teacher/learning-paths/[pathId]/units/[unitId]", name: "learning-unit-editor", area: "teacher", resolve: "teacherLearningUnit" },
 ];
 
 const admin: Screen[] = [

@@ -2,7 +2,7 @@
 feature: T-LCAT-1, T-LCAT-4, T-LCAT-7, T-LCAT-8
 role: teacher
 route: /teacher/learning-paths
-status: contracted
+status: built
 last_updated: 2026-09-19
 ---
 
@@ -62,4 +62,4 @@ Blocked on: none — all three defined in [API_TEACHER.md](../../../api/API_TEAC
 - No lesson authoring on this screen; that lives in the detail and the unit editor.
 - No student-facing preview of a path, and no "publish all" bulk action.
 
-Spec: [../../specs/teacher-pages/teacher-learning-paths.spec.md](../../specs/teacher-pages/teacher-learning-paths.spec.md) — written 2026-09-19, `ready-for-design`. The contract stays `contracted`: no mockup exists yet, so `designed` would overstate it.
+Spec: [../../specs/teacher-pages/teacher-learning-paths.spec.md](../../specs/teacher-pages/teacher-learning-paths.spec.md) — written 2026-09-19, `ready-for-design`. Built 2026-09-25 on `feat/teacher-learning-catalog` against this contract; no mockup was produced.
