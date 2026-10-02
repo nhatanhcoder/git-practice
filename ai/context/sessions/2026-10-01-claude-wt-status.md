@@ -29,11 +29,18 @@ reversible, additive parts; everything destructive or policy-changing was left f
 - `pnpm wt:status --offline --strict` exits 1 when flagged. `pnpm lint` clean, `check-docs` 9/9.
 - Not a UI change, so no Playwright run applies.
 
+## Added 2026-10-02
+
+- `.github/pull_request_template.md`: the PR body is the task card (brief, `Status:`, `Log:`,
+  lock checklist, record and cleanup checklists).
+- `check-docs` check 10 `issue-id-reused`: duplicate `KNOWN_ISSUES` ids fail. Three ids were already
+  duplicated (`API-010`, `DEBT-006`, `DOC-014`); renumbering is forbidden, so they are grandfathered
+  at exactly two uses. Verified by injecting a duplicate `GIT-005` (red) and removing it (green).
+  Counts in `docs-check.yml` and `working-rules.md` updated to 10.
+
 ## Not done (needs the owner)
 
 - Rewrite `ai/rules/multi-agent-workflow.md` to the one-task/one-branch/one-PR process.
-- PR template, duplicate-ID check in `check-docs.mjs` (it would currently fail: `DOC-014` and
-  `API-010` each exist twice in `KNOWN_ISSUES.md`).
 - Deleting or discarding any worktree: `Real-teacher-imgopt` (593 dirty), `Real-grammar-live`,
   `Real-lc-docs`, merged `p5fix/p6fix/p7`, `api020-integrate`, `pr99-fix`.
 - Deciding the fate of `wip/antigravity-ui-polish-0918`.
