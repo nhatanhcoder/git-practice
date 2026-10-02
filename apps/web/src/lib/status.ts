@@ -20,9 +20,11 @@ export const ENUM_STATUS_MAP: Record<string, StatusTone> = {
   paid: "success",
   approved: "success",
   present: "success",
+  published: "success",
 
   // Warning
   pending: "warning",
+  pending_review: "warning",
   unpaid: "warning",
   partially_paid: "warning",
   completed_pending: "warning",
@@ -43,6 +45,7 @@ export const ENUM_STATUS_MAP: Record<string, StatusTone> = {
   archived: "neutral",
   void: "neutral",
   dropped: "neutral",
+  unpublished: "neutral",
 };
 
 export function getStatusTone(status: string): StatusTone {

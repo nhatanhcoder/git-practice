@@ -425,6 +425,44 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
       additive migration, Mongo authoring fields/indexes, notification registry + FE sentences/deep-links.
       Verify: Prisma validate/generate + shadow diff (`No difference detected`), API 365/365,
       web scripts 238/238, API build, web build, check-docs 9/9. Slice 1B chờ migration PR merge.
+- 🔶 (opencode · 2026-09-25) **Teacher Learning Catalog FE — cả 3 màn teacher.**
+      Branch `feat/teacher-learning-catalog` (worktree `../Real-teacher-catalog`).
+      Lane flip: `apps/web/**` là lane của codex; solo agent, flip ghi ở đây theo
+      `multi-agent-workflow.md` §1. Owner duyệt "làm hết" ngày 2026-09-25 (gộp cả 3 màn,
+      chốt C1–C4 theo đề xuất, build chặt từ contract+spec+design-system vì skill
+      ui-ux-pro-max/ui-styling vắng mặt trong worktree mới).
+      Đã viết: `lib/teacher/learning-catalog-service.ts` (13 endpoint đúng contract,
+      `describeCatalogError`, shape `data.items[]` + fallback mảng phẳng) ·
+      `/teacher/learning-paths` (tabs link `?status=`, badge count từ `meta` mỗi tab,
+      bảng + card mobile, create modal, xoá có điều kiện + 409 trung thực, redirect
+      `?notice=` cho màn 2–3) · `/teacher/learning-paths/[pathId]` (header theo state,
+      review panel, frozen banner, split Tự soạn/Chọn từ catalog, reorder lạc quan +
+      revert, publish/unpublish confirm, submit confirm) ·
+      `/teacher/learning-paths/[pathId]/units/[unitId]` (word editor 1–8, dup-hanzi,
+      PATCH diff-field, Ctrl+S, beforeunload, reference panel read-only, banner
+      published amber, freeze + immutable đúng INV-LCAT-07) · nav `Lộ trình học` ·
+      `status.ts`: `pending_review`→warning, `published`→success, `unpublished`→neutral ·
+      `routes.ts` + 2 resolver (SKIP trung thực khi chưa có data).
+      Verify: web build ✅ · type-check ✅ · web scripts **238/238** · check-docs **9/9** ·
+      temp PW spec 6/6 (mount, error trung thực, redirect+toast, modal validate,
+      no-overflow, screenshots đã đọc — đã xoá spec) · shared sweep route tĩnh báo đúng
+      1 tín hiệu backend-vắng (6× resource 404 noise, h1/overflow/screenshot pass).
+      **Historical blocker resolved**: Slice 1B runtime has merged; live CRUD/reorder/submit/
+      publish verification is still required before marking this FE lane complete.
+      Hai lỗi tự bắt khi đọc screenshot đã sửa cùng ngày (banner error đè empty state giả;
+      subtitle "0 lộ trình" khi lỗi). Contracts/specs → `built`, `_INDEX` Design `v1`.
+      Follow-up 2026-09-27 (codex): merged current `origin/main` into the FE branch, so
+      Teacher Catalog runtime is now present alongside the screens. Corrected the dynamic
+      route resolver for the implemented flat `data[]` list, added a persistent create-path
+      Playwright test, and recorded the Page Contract/runtime mismatch as `DOC-022`.
+      Verified web production build, web type-check, 242/242 script tests, create-path
+      browser flow 2/2 (desktop and 375px) against API-shaped route stubs, and docs 9/9.
+      PR #107 first web-quality run found four unsuppressed lint errors in the FE
+      screens; the follow-up removed unused imports, restored editor effect cleanup,
+      and disabled submit/publish confirmations while requests are pending. Local
+      lint, web build, and the 2/2 browser test pass after the fix.
+      **Still 🔶** until a live FE→API→DB CRUD/submit/publish pass is run; local
+      PostgreSQL/API had no listener during this follow-up.
 - ✅ (codex · 2026-09-25) **Teacher-authored Learning Catalog — Slice 1B backend runtime.**
       Branch `codex/learning-catalog-backend`, based on `main` after PR #96 merged green.
       Scope: 13 teacher endpoints, 8 admin moderation endpoints, student catalog visibility,
@@ -1032,6 +1070,15 @@ _(discovered while mapping the Admin UI — 2026-08-13)_
       and cap the placement level. A richer bank (or the F13 corpus) raises the ceiling
       without any wire change (`04-placement.md` §16-Q3).
 - [ ] (fe → be) **Student analytics module spec** — `GET /student/progress` and
+- [ ] (catalog-be → catalog-docs) **`API_TEACHER.md:131` stale** — ghi family `LEARNING_PATH_*`
+      *"proposed, not agreed"* trong khi registry + module §9 + teacher `_INDEX` đều chốt
+      **agreed 2026-09-19**. FE theo registry. (Phát hiện khi build FE 2026-09-25,
+      lane docs của claude.)
+- [ ] (catalog-be) **List `GET /teacher/learning-paths` thiếu tín hiệu "đã có học viên"** —
+      contract bắt nút Xoá disabled khi path "đã publish hoặc đã có học viên", nhưng DTO
+      list không có field learner nào nên FE chỉ disable được theo `publishedUnitCount`/
+      status, trường hợp còn lại phải để 409 `LEARNING_PATH_HAS_PUBLISHED_UNITS` hiện lỗi.
+      Hoặc thêm field, hoặc xác nhận 409-only là thiết kế. (Phát hiện khi build FE 2026-09-25.)
       `/student/progress/chart` are reserved paths in `API_STUDENT.md`, but no module spec
       defines their request/response DTOs (F6.1/F6.2 blocked in Sprint 5). Found writing the
       `student-progress` Page Contract 2026-09-12. Streak/XP figures on the same screen are

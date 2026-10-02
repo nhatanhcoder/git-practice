@@ -60,9 +60,9 @@ and Income. **Analytics (T-ANL-1…4) is the only FEATURES_TEACHER area still un
 | `/teacher/grading` | T-GRADE-1..5 | [teacher-grading](./teacher-pages/teacher-grading.md) | built | v1 | error codes TODO |
 | `/teacher/sessions` | T-SES-1,7 | [teacher-sessions](./teacher-pages/teacher-sessions.md) | built (live read/create v1) | v1 | lifecycle actions ⛔ pending contract reconciliation; archived-class create rule open |
 | `/teacher/income` | T-INC-1,2,3 | [teacher-income](./teacher-pages/teacher-income.md) | built | v1 | none — both endpoints defined |
-| `/teacher/learning-paths` | T-LCAT-1,4,7,8 | [teacher-learning-paths](./teacher-pages/teacher-learning-paths.md) | contracted | — | backend implemented + real-DB verified 2026-09-25; frontend not built |
-| `/teacher/learning-paths/[pathId]` | T-LCAT-2,3,4,5,6,8 | [teacher-learning-path-detail](./teacher-pages/teacher-learning-path-detail.md) | contracted | — | backend implemented + real-DB verified; frontend not built |
-| `/teacher/learning-paths/[pathId]/units/[unitId]` | T-LCAT-2,5 | [teacher-learning-unit-editor](./teacher-pages/teacher-learning-unit-editor.md) | contracted | — | backend implemented + real-DB verified; frontend not built |
+| `/teacher/learning-paths` | T-LCAT-1,4,7,8 | [teacher-learning-paths](./teacher-pages/teacher-learning-paths.md) | built | v1 | FE calls implemented API; live FE CRUD verification pending |
+| `/teacher/learning-paths/[pathId]` | T-LCAT-2,3,4,5,6,8 | [teacher-learning-path-detail](./teacher-pages/teacher-learning-path-detail.md) | built | v1 | FE calls implemented API; live FE submit/reorder/publish verification pending |
+| `/teacher/learning-paths/[pathId]/units/[unitId]` | T-LCAT-2,5 | [teacher-learning-unit-editor](./teacher-pages/teacher-learning-unit-editor.md) | built | v1 | FE calls implemented API; live FE edit verification pending |
 
 Analytics (T-ANL-1…4): _not yet mapped._ Every other Teacher area has a contract above.
 

@@ -3,7 +3,7 @@ page: Teacher · Learning Path Detail
 route: /teacher/learning-paths/[pathId]
 contract: ../../pages/teacher-pages/teacher-learning-path-detail.md
 requires: _DESIGN-SYSTEM.md
-status: ready-for-design
+status: built
 design_baseline: v1
 last_updated: 2026-09-19
 ---

@@ -2,7 +2,7 @@
 feature: T-LCAT-2, T-LCAT-3, T-LCAT-4, T-LCAT-5, T-LCAT-6, T-LCAT-8
 role: teacher
 route: /teacher/learning-paths/[pathId]
-status: contracted
+status: built
 last_updated: 2026-09-19
 ---
 
@@ -72,4 +72,4 @@ Blocked on: none — all defined in [API_TEACHER.md](../../../api/API_TEACHER.md
 - No deleting a `pending_review` path, and no bulk publish.
 - No student preview and no XP/points display for a path.
 
-Spec: [../../specs/teacher-pages/teacher-learning-path-detail.spec.md](../../specs/teacher-pages/teacher-learning-path-detail.spec.md) — written 2026-09-19, `ready-for-design`. Contract stays `contracted`: no mockup yet.
+Spec: [../../specs/teacher-pages/teacher-learning-path-detail.spec.md](../../specs/teacher-pages/teacher-learning-path-detail.spec.md) — written 2026-09-19, `ready-for-design`. Built 2026-09-25 on `feat/teacher-learning-catalog` against this contract; no mockup was produced.
