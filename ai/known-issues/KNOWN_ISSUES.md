@@ -2459,3 +2459,32 @@ and `.github/pull_request_template.md` plus `check-docs` check 10 landed with `p
 Open: delete or save the stale worktrees (each needs the owner's explicit approval), and the
 Integrator-folds-records idea, which needs a CI change because the record gate still requires every
 PR to touch `ai/PROGRESS.md`.
+
+---
+
+### Resolution note — GIT-005 (2026-10-03)
+
+**Status**: Resolved for the 2026-10-01 backlog; the process now lives in
+`ai/rules/multi-agent-workflow.md` and `pnpm wt:status`.
+
+What was done, losslessly: PRs #110, #111, #107 and #109 were squash-merged. Five local branches whose
+tip equalled their merged PR head were deleted (and their remote copies). Fifteen other local branches
+that were unmerged, had no PR, or whose PR head differed were each saved as a tag `archive/<branch>`
+(local only, not pushed) and then deleted: restore with `git switch -c <name> archive/<name>`. Seven
+worktrees were removed after their real uncommitted files were committed to WIP branches first
+(`grammar-live` test files and `lc-docs` prompts survive in `archive/feat/student-grammar-live` and
+`archive/wip/learning-catalog-prompts`; the 593 "changes" in `teacher-imgopt` were deletions of tracked
+files and nothing else). `wip/antigravity-ui-polish-0918` is kept as a branch because `WEB-027` still
+cherry-picks from it.
+
+Left on origin on purpose: five branches of merged PRs (`codex/a02-isolate-demo`,
+`docs/merge-2026-08-31-claude-ai`, `feat/a11-vocab-importer`, `feat/api020-supplemental-migration`,
+`feat/student-hanlu-restore`) because each has commits beyond its PR head, plus closed/PR-less branches
+(`feat/student-hanlu-ui`, `fix/auth-map-cleanup-trust-proxy`, `fix/remove-landing-prototype`,
+`codex/a06-student-classes-list`, `feat/s1-web-dashboard`, `fix/pr99-catalog-concurrency`). Deleting any
+of them is a separate owner decision.
+
+`BUILD-006` reproduced on 2026-10-02: starting Docker Desktop 4.83 failed with the same
+`dockerInference` socket error, so Postgres, the API and Playwright could not run. `WEB-027`'s UI
+verification is therefore still outstanding.
+

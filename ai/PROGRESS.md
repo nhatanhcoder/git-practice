@@ -533,6 +533,9 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
   `AGENTS.md` + `CLAUDE.md`. Stacked on PR #110 (`wt-status` must exist for the rule file's paths). The primary checkout was returned to `main`;
   its 44 uncommitted files are preserved on local branch `wip/antigravity-ui-polish-0918`
   (`WEB-027`, never pushed).
+  **Backlog cleared (claude · 2026-10-03):** #110/#111/#107/#109 merged; 5 merged-PR branches deleted;
+  15 unmerged local branches saved as local `archive/*` tags then deleted; 7 worktrees removed (11 → 1,
+  the primary checkout). Nothing was discarded: see the `GIT-005` resolution note for what survives where.
 
 - ✅ (codex · 2026-09-08) **CI quality gates** — implemented: lint, type checks, web/API builds,
   frontend regression tests and API tests against disposable CI PostgreSQL/MongoDB services.
