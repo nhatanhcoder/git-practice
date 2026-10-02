@@ -2409,3 +2409,14 @@ and `check-docs`.
 from `main`, drop the scratch files (`student_test_results.xlsx`,
 `check-dashboard-live.mjs.uncommitted-scratch`, `scripts/run-blackbox-whitebox-tests.mjs`,
 `apps/web/src/data/`), then verify with Playwright desktop + 375px per the project rule.
+
+---
+
+### Update note — GIT-005 (2026-10-02)
+
+**Status**: still In Progress. `ai/rules/multi-agent-workflow.md` was rewritten to one task = one
+branch = one worktree = one PR (PR body as task card, hot-file locks, limits, same-day cleanup),
+and `.github/pull_request_template.md` plus `check-docs` check 10 landed with `pnpm wt:status`.
+Open: delete or save the stale worktrees (each needs the owner's explicit approval), and the
+Integrator-folds-records idea, which needs a CI change because the record gate still requires every
+PR to touch `ai/PROGRESS.md`.
