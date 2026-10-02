@@ -2376,3 +2376,65 @@ reads the implemented flat array. The contract and runtime remain inconsistent.
 **Needs decision**: approve a contract correction to flat `data[]` or change the
 API and its clients together; do not silently declare either shape canonical.
 ID scan across local and origin refs on 2026-09-27 found `DOC-021` as the maximum.
+
+---
+
+### [GIT-005] Worktrees accumulate with no owner, PR or cleanup — 11 at once, 593 dirty files in one
+
+**Severity**: Medium
+**Status**: In Progress — visibility tool landed 2026-10-01 (`pnpm wt:status`); the process
+rewrite and per-worktree cleanup are pending owner approval.
+
+**Description**: found 2026-10-01. `git worktree list` showed 11 checkouts (22 earlier the same
+day). Only 2 branches had an open PR (#107, #109). Three had merged PRs (#103/#104/#106) and were
+never cleaned; `Real-teacher-imgopt` held 593 uncommitted files 20 days old; `Real-lc-docs` was a
+detached HEAD with no branch. The **primary checkout** held 44 uncommitted files from 2026-09-18
+(Antigravity's UI polish, recorded in HANDOFF only) for 12 days — the same collision class as
+`GIT-004`, now without a tool that shows it.
+
+**Impact**: nobody can tell which agent owns what, stacked branches (`api020-*`) duplicate each
+other, and unfinished work survives only as uncommitted files.
+
+**Fix Plan**: `scripts/wt-status.mjs` (`pnpm wt:status`) lists branch, ahead/behind, dirty count,
+age and PR state per worktree and flags DIRTY / DETACHED / MAIN-OFF / MERGED / STALE / BEHIND.
+Still open, each needing the owner's approval: rewrite `multi-agent-workflow.md` around one
+task = one branch = one worktree = one PR, add a PR template, and delete the merged/stale
+worktrees one at a time.
+
+---
+
+### [WEB-027] Uncommitted student flashcards rewrite replaced the API-backed SRS page with local mock data
+
+**Severity**: High (not on `main` — preserved on a local WIP branch)
+**Status**: Open — decision pending: restore the API page and keep only the CSS/spacing parts.
+
+**Description**: the 2026-09-18 uncommitted UI-polish work (snapshot commit `fe37832` on local
+branch `wip/antigravity-ui-polish-0918`, **never pushed, do not merge**) rewrote
+`apps/web/src/app/student/(app)/flashcards/page.tsx` into a writing-character flashcard deck.
+It reads `@/data/writing.json` (an untracked 380 KB copy of `apps/api/content/writing.json`),
+keeps progress in `useStudentStore` and calls `awardXp`, removing `fetchFlashcards`,
+`fetchDueFlashcards`, `fetchSrsStats`, the SM-2 review and the word bank. This is the failure
+`WEB-011` and ADR-016 forbid: invented client-side progress shown as the learner's own.
+
+**Evidence** (2026-10-01, on the snapshot): `node --test apps/web/scripts/*.test.mjs` fails 5
+tests (`word-bank`, `srs-pagination`, `A05 · the real screen is the one on the canonical route`);
+`pnpm lint` reports 9 errors (unused imports in admin payroll/profile, a missing
+`react-hooks/exhaustive-deps` dependency in flashcards, 4 in `scripts/run-blackbox-whitebox-tests.mjs`)
+plus stale eslint suppressions; `tsc --noEmit` passes for web and api. `main` is green on lint
+and `check-docs`.
+
+**Fix Plan**: cherry-pick only the CSS/spacing/dropdown changes, restore `flashcards/page.tsx`
+from `main`, drop the scratch files (`student_test_results.xlsx`,
+`check-dashboard-live.mjs.uncommitted-scratch`, `scripts/run-blackbox-whitebox-tests.mjs`,
+`apps/web/src/data/`), then verify with Playwright desktop + 375px per the project rule.
+
+---
+
+### Update note — GIT-005 (2026-10-02)
+
+**Status**: still In Progress. `ai/rules/multi-agent-workflow.md` was rewritten to one task = one
+branch = one worktree = one PR (PR body as task card, hot-file locks, limits, same-day cleanup),
+and `.github/pull_request_template.md` plus `check-docs` check 10 landed with `pnpm wt:status`.
+Open: delete or save the stale worktrees (each needs the owner's explicit approval), and the
+Integrator-folds-records idea, which needs a CI change because the record gate still requires every
+PR to touch `ai/PROGRESS.md`.

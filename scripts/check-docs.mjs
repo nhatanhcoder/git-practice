@@ -185,6 +185,29 @@ const bodyOf = (f) => {
   }
 }
 
+/* 10 — KNOWN_ISSUES ids are never reused ---------------------------------- */
+// The file is append-only and ids are never renumbered, so a duplicate heading is a live
+// collision (two unrelated problems answering to one id). Three collisions already shipped
+// before this check existed; renumbering them is forbidden, so they are grandfathered at
+// exactly their current count. Anything new — or a third use of an old id — fails.
+const LEGACY_DUPLICATE_IDS = new Map([['API-010', 2], ['DEBT-006', 2], ['DOC-014', 2]]);
+{
+  const issuesFile = 'ai/known-issues/KNOWN_ISSUES.md';
+  if (existsSync(join(ROOT, issuesFile))) {
+    const counts = new Map();
+    for (const m of read(issuesFile).matchAll(/^#{2,4} \[([A-Z]+-\d+)\]/gm)) {
+      counts.set(m[1], (counts.get(m[1]) ?? 0) + 1);
+    }
+    for (const [id, n] of counts) {
+      if (n > (LEGACY_DUPLICATE_IDS.get(id) ?? 1)) {
+        fail('issue-id-reused',
+          `${id} is a heading ${n} times in ${issuesFile} — ids are never reused. ` +
+          `Take the next free id after checking every local and remote branch's copy of the file.`);
+      }
+    }
+  }
+}
+
 /* report ----------------------------------------------------------------- */
 // Tooling rules need executable enforcement too: keep all named quality gates.
 const qualityPath = join(ROOT, '.github/workflows/quality.yml');
@@ -213,9 +236,10 @@ const NAMES = {
   'status-drift': 'Page status disagrees with the code on disk',
   'skill-broken': 'Skill is unloadable or split across files',
   'agents-claude-drift': 'AGENTS.md and CLAUDE.md have drifted apart',
+  'issue-id-reused': 'A KNOWN_ISSUES id is used for more than one issue',
 };
 if (!failures.length) {
-  console.log('check-docs: all 9 checks passed.');
+  console.log('check-docs: all 10 checks passed.');
   process.exit(0);
 }
 for (const [check, msgs] of Object.entries(byCheck)) {

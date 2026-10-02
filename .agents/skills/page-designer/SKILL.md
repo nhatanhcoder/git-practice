@@ -45,12 +45,12 @@ Go run flow-mapper.
 
 ## 1. Lane check — read this before writing a file
 
-`apps/web/**` is **codex's lane** (`ai/rules/multi-agent-workflow.md` §2). If you are not
-codex and parallel work is active:
+One worker owns each area at a time (`ai/rules/multi-agent-workflow.md` §2). If another task
+holds the area you need and parallel work is active:
 
-- You may write the **Design Spec** (§6) — it lives in `docs/`, which is claude's lane.
-- You may **not** write the component. Hand the spec and the approved mockup over via
-  `## Needs from the other lane` in `ai/PROGRESS.md`.
+- You may write the **Design Spec** (§6) — it lives in `docs/`.
+- You may **not** write the component. Hand the spec and the approved mockup over by writing the
+  need under **Log** in the task's PR body (`ai/rules/multi-agent-workflow.md` §3).
 
 If you are the only agent running, ignore this section and do both.
 

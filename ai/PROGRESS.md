@@ -507,6 +507,28 @@ without checking disk. Previous verification 2026-08-14. See **DOC-010**.)_
 
 ## Tooling / guardrails
 
+- ✅ (claude · 2026-10-01) **`pnpm wt:status`** — read-only table of every worktree: branch,
+  ahead/behind `origin/main`, dirty count, last-commit age, PR state, with flags DIRTY / DETACHED /
+  MAIN-OFF / MERGED / STALE / BEHIND (`--strict` exits 1 for a daily check, `--offline` skips
+  `git fetch`/`gh`). Opened as the visibility half of `GIT-005`. Ran against the real 11
+  worktrees: flagged 9, correctly marked #103/#104/#106 as MERGED. **Not done, awaiting owner
+  approval**: rewriting `multi-agent-workflow.md` and every worktree deletion.
+  Also landed (claude · 2026-10-02): `.github/pull_request_template.md` (brief, `Status:`, `Log:`,
+  lock checklist, cleanup) and `check-docs` check 10 `issue-id-reused` — fails on any duplicate
+  `KNOWN_ISSUES` heading id; `API-010`, `DEBT-006`, `DOC-014` are grandfathered at exactly two
+  uses because ids may not be renumbered. Proven to fire on an injected duplicate and clear
+  after; `check-docs` is now 10/10, lint clean.
+  **`multi-agent-workflow.md` rewritten (claude · 2026-10-02)** around one task = one branch = one
+  worktree = one PR: PR body is the task card, hot-file locks replace the lane table, limits
+  (3 worktrees, 1 agent per task, 1 worker per area), cleanup the day of merge, only the owner
+  creates worktrees. Section numbers kept so ~25 existing references still resolve. **Deliberately
+  not adopted**: "Integrator folds session files into PROGRESS/KNOWN_ISSUES" — CI still requires each
+  PR to touch `ai/PROGRESS.md` and add a session file, so that change needs its own CI PR.
+  Dependent wording fixed in `build-screen`, `page-designer`, `flow-mapper`, `working-rules.md`,
+  `AGENTS.md` + `CLAUDE.md`. Stacked on PR #110 (`wt-status` must exist for the rule file's paths). The primary checkout was returned to `main`;
+  its 44 uncommitted files are preserved on local branch `wip/antigravity-ui-polish-0918`
+  (`WEB-027`, never pushed).
+
 - ✅ (codex · 2026-09-08) **CI quality gates** — implemented: lint, type checks, web/API builds,
   frontend regression tests and API tests against disposable CI PostgreSQL/MongoDB services.
   No application behavior or schema changes; PR #50 web-quality, api-quality and check-docs passed.
