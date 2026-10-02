@@ -71,7 +71,7 @@ or increment one.
 | To change | Edit |
 |---|---|
 | Steps 4, 6, 7 — work order, approval gate, Definition of Done, mock/date/token rules | **this file** |
-| Steps 2, 3, 8 — lanes, claiming, branch lifecycle, merge windows, worktrees | `ai/rules/multi-agent-workflow.md` |
+| Steps 2, 3, 8 — task card, claiming, branch lifecycle, merge order, worktrees | `ai/rules/multi-agent-workflow.md` |
 | Step 1 — what loads at startup, skill precedence | `AGENTS.md` **and** `CLAUDE.md` — two files, one shared body, **edit both** (check 8 fails if they drift) |
 | Step 5 — the contract and spec templates themselves | `.agents/skills/flow-mapper/SKILL.md`, `.agents/skills/page-designer/SKILL.md` |
 | The promote step — versioning, catch-up prompts, what the human runs after merge | `.agents/skills/design-promote/SKILL.md` |
@@ -102,7 +102,7 @@ Do not skip straight to writing code just because a request looks simple — ste
 
 A task is not done when the code runs. It is done when the next agent cannot be misled by it.
 
-**Run `pnpm check:docs` before opening the PR.** It is 7 mechanical checks over the docs,
+**Run `pnpm check:docs` before opening the PR.** It is 10 mechanical checks over the docs,
 zero dependencies, under a second. CI runs the same thing and will block the merge, so
 finding it locally is strictly cheaper. See `multi-agent-workflow.md` §15. This is never
 skipped — it runs faster than the time it takes to read this sentence. (Batch work: once per batch is enough.)

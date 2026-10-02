@@ -52,7 +52,7 @@ test('ignored local skills do not make clean CI and local checks disagree', () =
     });
 
     assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`);
-    assert.match(result.stdout, /all 9 checks passed/);
+    assert.match(result.stdout, /all 10 checks passed/);
 
     write(fixture, '.github/workflows/quality.yml', quality.replace('run: pnpm lint', 'run: echo skipped'));
     const missingGate = spawnSync(process.execPath, ['scripts/check-docs.mjs'], {
