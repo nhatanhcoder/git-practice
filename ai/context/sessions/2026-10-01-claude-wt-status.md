@@ -38,9 +38,15 @@ reversible, additive parts; everything destructive or policy-changing was left f
   at exactly two uses. Verified by injecting a duplicate `GIT-005` (red) and removing it (green).
   Counts in `docs-check.yml` and `working-rules.md` updated to 10.
 
+## Added 2026-10-02 (second PR, stacked on #110)
+
+- `ai/rules/multi-agent-workflow.md` rewritten (see PROGRESS tooling entry); section numbers kept.
+- Dependent wording fixed: `build-screen`, `page-designer`, `flow-mapper`, `working-rules.md`,
+  `AGENTS.md`/`CLAUDE.md` (kept identical — check 8). `check-docs` 10/10.
+- Not adopted: Integrator folding records (needs a CI change).
+
 ## Not done (needs the owner)
 
-- Rewrite `ai/rules/multi-agent-workflow.md` to the one-task/one-branch/one-PR process.
 - Deleting or discarding any worktree: `Real-teacher-imgopt` (593 dirty), `Real-grammar-live`,
   `Real-lc-docs`, merged `p5fix/p6fix/p7`, `api020-integrate`, `pr99-fix`.
 - Deciding the fate of `wip/antigravity-ui-polish-0918`.

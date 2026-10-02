@@ -56,11 +56,13 @@ Do not install it yourself and do not carry on without it.
 
 ## Before writing code
 
-LANE: `apps/web/**` belongs to codex (multi-agent-workflow §1). Not codex? Record the flip in
-`ai/PROGRESS.md` first.
+TASK: work only in the worktree your task card (the PR body) names, as the one agent on the
+`student`/`teacher`/`admin` area (multi-agent-workflow §1–§3). Never create a worktree yourself.
 
-1. `git switch -c feat/s<sprint>-web-<slice> origin/main`
-2. Claim in `ai/PROGRESS.md` → `🔶 (agent · date)`, commit that line **alone**
+1. Confirm you are in the task's worktree on its own branch (`git worktree list`) — never in the
+   primary checkout, and never create a worktree yourself; ask the owner
+2. Claim in `ai/PROGRESS.md` → `🔶 (agent · date)`, commit that line **alone**; set the PR
+   `Status: building`
 3. Read `docs/shared/RBAC_MATRIX.md` + `docs/actors/<role>/PERMISSIONS_<ROLE>.md`
 4. Read `apps/web/src/app/admin/users/**` — reuse that shell, do not invent a second one.
    Note WEB-002/003/004 before copying their defects.

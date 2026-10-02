@@ -71,7 +71,7 @@ Run flow-mapper first. Never run page-designer without a Page Contract.
 Do **not** read `DATABASE_SCHEMA.md`, entity specs, or `PROJECT_STRUCTURE.md` at this
 stage. If you find yourself needing a raw DB column to describe a screen, you are
 designing the API, not the page — stop and raise it under `## Needs from the other lane`
-in `ai/PROGRESS.md` (see `ai/rules/multi-agent-workflow.md` §4).
+in `ai/PROGRESS.md` and in the PR **Log** (see `ai/rules/multi-agent-workflow.md` §4).
 
 If a needed endpoint does not exist in `docs/api/`, **do not invent it**. Write it into
 the contract's `Blocked on` field and continue — page-designer will build against a mock.
@@ -245,6 +245,6 @@ file read instead of a directory crawl.
 - [ ] **`<role>-flow.md` written (§3b)** — trees + full transition table + state machines
 - [ ] Every `Action` row in every contract appears as an edge in the Flow Map, and
       every Flow Map edge traces back to a contract. **They must not drift.**
-- [ ] `ai/PROGRESS.md` claim line updated per `ai/rules/multi-agent-workflow.md` §3
+- [ ] PR task card (`Status:`/`Log:`) and the `ai/PROGRESS.md` line updated per `ai/rules/multi-agent-workflow.md` §3
 
 Then hand off to `ai/skills/page-designer.md`.

@@ -71,7 +71,7 @@ or increment one.
 | To change | Edit |
 |---|---|
 | Steps 4, 6, 7 — work order, approval gate, Definition of Done, mock/date/token rules | **this file** |
-| Steps 2, 3, 8 — lanes, claiming, branch lifecycle, merge windows, worktrees | `ai/rules/multi-agent-workflow.md` |
+| Steps 2, 3, 8 — task card, claiming, branch lifecycle, merge order, worktrees | `ai/rules/multi-agent-workflow.md` |
 | Step 1 — what loads at startup, skill precedence | `AGENTS.md` **and** `CLAUDE.md` — two files, one shared body, **edit both** (check 8 fails if they drift) |
 | Step 5 — the contract and spec templates themselves | `.agents/skills/flow-mapper/SKILL.md`, `.agents/skills/page-designer/SKILL.md` |
 | The promote step — versioning, catch-up prompts, what the human runs after merge | `.agents/skills/design-promote/SKILL.md` |
