@@ -102,7 +102,7 @@ Do not skip straight to writing code just because a request looks simple — ste
 
 A task is not done when the code runs. It is done when the next agent cannot be misled by it.
 
-**Run `pnpm check:docs` before opening the PR.** It is 7 mechanical checks over the docs,
+**Run `pnpm check:docs` before opening the PR.** It is 10 mechanical checks over the docs,
 zero dependencies, under a second. CI runs the same thing and will block the merge, so
 finding it locally is strictly cheaper. See `multi-agent-workflow.md` §15. This is never
 skipped — it runs faster than the time it takes to read this sentence. (Batch work: once per batch is enough.)
